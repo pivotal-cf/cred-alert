@@ -1,0 +1,6 @@
+#!/bin/bash
+# vim: set ft=sh
+
+gosub list \
+  -a cred-alert \
+  | xargs gosub sync
