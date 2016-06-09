@@ -1,0 +1,4 @@
+[submodule "src/github.com/nbutton23/zxcvbn-go"]
+	path = src/github.com/nbutton23/zxcvbn-go
+	url = https://github.com/nbutton23/zxcvbn-go
+	branch = master

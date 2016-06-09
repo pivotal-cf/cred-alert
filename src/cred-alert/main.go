@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	"cred-alert/entropy"
+)
 
 func main() {
-	fmt.Println("Hello, credentials!")
+	fmt.Println("password?", entropy.IsPasswordSuspect(os.Args[1]))
 }

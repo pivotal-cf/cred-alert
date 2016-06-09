@@ -1,27 +1,8 @@
-# entropy based credential scanning
+# cred-alert scanning
 
 ## usage
 
-First let's extract all the strings from a collection of source code:
+You need:
 
-    find ~/some/go/source/code -name "*.go" \
-      -exec python tokens.py {} \; | sort | uniq > strings.txt
-
-Feel free to alter the `find` to make sure it scans the source code you want.
-
-Next let's try and detect passwords in these strings:
-
-    python entropy.py strings.txt
-
-or
-
-    cat strings.txt | python entropy.py
-
-This tool outputs the estimated entropy, the estimated entropy per character,
-and the string.
-
-## caveats
-
-This works really well on deployment manifests but has only average performance
-when looking at source code. Perhaps a more context aware scanning would
-perform better here.
+* gosub (github.com/vito/gosub)
+* ginkgo to run tests (github.com/onsi/ginkgo/ginkgo)
