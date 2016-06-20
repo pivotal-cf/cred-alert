@@ -1,7 +1,10 @@
-# cred-alert
+                             _             _           _
+            ___ _ __ ___  __| |       __ _| | ___ _ __| |_
+           / __| '__/ _ \/ _` |_____ / _` | |/ _ \ '__| __|
+          | (__| | |  __/ (_| |_____| (_| | |  __/ |  | |_
+           \___|_|  \___|\__,_|      \__,_|_|\___|_|   \__|
 
-> It scans repositories for credentials and then shouts really loudly about
-> them if it finds any.
+     scans repos for credentials and then shouts if it finds them
 
 
 ## set up
