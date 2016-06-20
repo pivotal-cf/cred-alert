@@ -23,3 +23,5 @@ submodule_log() {
 }
 
 submodule_log | git ci --file -
+
+git ci --amend --reset-author

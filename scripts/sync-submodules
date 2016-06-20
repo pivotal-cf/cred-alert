@@ -2,5 +2,8 @@
 # vim: set ft=sh
 
 gosub list \
-  -a cmd/cred-alert-cli \
+  -a cred-alert/cmd/cred-alert-cli \
+  -a github.com/onsi/ginkgo \
+  -a github.com/onsi/gomega \
+  -a github.com/golang/protobuf \
   | xargs gosub sync

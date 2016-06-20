@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -x -e
+
+export GOPATH=$PWD/cred-alert
+export PATH=$GOPATH/bin:$PATH
+
+pushd ${GOPATH}/src/cred-alert
+  go install github.com/onsi/ginkgo/ginkgo
+  ginkgo -r -p -race "$@"
+popd
