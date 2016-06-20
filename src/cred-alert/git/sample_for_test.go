@@ -36,4 +36,18 @@ index 940393e..fa5a232 100644
 +private_key: "ExAmPlE_should_not_match"
  
  ## Misc. Exclusions
- ### 20 digit number`
+ ### 20 digit number
+diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests2.txt
+index 940393e..fa5a232 100644
+--- a/spec/integration/git-secrets-pattern-tests2.txt
++++ b/spec/integration/git-secrets-pattern-tests2.txt
+@@ -28,7 +28,7 @@ private_key = "should_match" # TODO: comments shouldn't have an effect
+ private_key '$should_match'
+ 
+ ## Suspicious Variable Names
+-some_secret: "should-match"
++some_secret: "should_match"
+ hard_coded_salt: "should_match"
+ private_key: "should_match"
+ some_password: "should_match"
+`

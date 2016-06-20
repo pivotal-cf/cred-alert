@@ -73,7 +73,7 @@ var _ = Describe("DiffScanner", func() {
 		diffScanner := git.NewDiffScanner(sampleDiff)
 		for i := 0; i < 8; i++ {
 			diffScanner.Scan()
-			fmt.Printf("%d: %s\n", diffScanner.Line().LineNumber, diffScanner.Line().Content)
+			fmt.Fprintf(GinkgoWriter, "%d: %s\n", diffScanner.Line().LineNumber, diffScanner.Line().Content)
 		}
 
 		Expect(diffScanner.Line().LineNumber).To(Equal(36))
@@ -81,8 +81,27 @@ var _ = Describe("DiffScanner", func() {
 	})
 
 	It("keeps track of the filename in sections of a unified diff", func() {
+		diffScanner := git.NewDiffScanner(sampleDiff)
+		for i := 0; i < 30; i++ {
+			diffScanner.Scan()
+			fmt.Fprintf(GinkgoWriter, "%d: %s\n", diffScanner.Line().LineNumber, diffScanner.Line().Content)
+		}
+
+		Expect(diffScanner.Line().LineNumber).To(Equal(28))
+		Expect(diffScanner.Line().Content).To(Equal("private_key '$should_match'"))
+		Expect(diffScanner.Line().Path).To(Equal("spec/integration/git-secrets-pattern-tests2.txt"))
 	})
 
 	It("keeps track of line numbers in sections of a unified diff", func() {
+		diffScanner := git.NewDiffScanner(sampleDiff)
+		for i := 0; i < 5; i++ {
+			diffScanner.Scan()
+			fmt.Fprintf(GinkgoWriter, "%d: %s\n", diffScanner.Line().LineNumber, diffScanner.Line().Content)
+		}
+
+		Expect(diffScanner.Line().LineNumber).To(Equal(32))
+		Expect(diffScanner.Line().Content).To(Equal(`hard_coded_salt: "should_match"`))
+		Expect(diffScanner.Line().Path).To(Equal("spec/integration/git-secrets-pattern-tests.txt"))
+
 	})
 })

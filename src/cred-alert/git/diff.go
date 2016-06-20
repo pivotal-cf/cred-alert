@@ -2,7 +2,6 @@ package git
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 )
 
@@ -40,7 +39,7 @@ func fileHeader(diff []string, cursor int) (string, error) {
 func contextOrAddedLine(rawLine string) bool {
 	matches := regexp.MustCompile(`^(\s|\+)`).FindStringSubmatch(rawLine)
 	if len(matches) < 2 {
-		fmt.Printf("NOT a context or added line: <<<%s>>>\n", rawLine)
+		// fmt.Printf("NOT a context or added line: <<<%s>>>\n", rawLine)
 		return false
 	}
 
