@@ -3,7 +3,8 @@
 > It scans repositories for credentials and then shouts really loudly about
 > them if it finds any.
 
-## usage
+
+## set up
 
 You'll need to install `gosub` in order to manage the submodules of this
 project. It can be installed by running the following command (try to install
@@ -12,15 +13,22 @@ tooling):
 
     $ go get github.com/vito/gosub
 
-
 In order to have your $GOPATH and $PATH set up properly when you enter this
 directory you should install `direnv`. On macOS you can install this by running
 this command and following the instructions to set up your shell:
 
     $ brew install direnv
 
-
 The tests can be run using the `ginkgo` command line tool. This can be
 installed with:
 
     $ go install github.com/onsi/ginkgo/ginkgo
+
+
+## workflow
+
+You can `go get` and edit the files like normal in this repository. If any
+dependencies have changed them make sure to run `scripts/sync-submodules` in
+order to make sure that the submodules are updated correctly.
+
+You can generate a pretty commit message by running `scripts/commit-with-log`.
