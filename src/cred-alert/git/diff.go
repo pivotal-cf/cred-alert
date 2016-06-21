@@ -23,6 +23,18 @@ func init() {
 	plusMinusSpacePattern = regexp.MustCompile(`^(\s|\+|\-)(.*)`)
 }
 
+func isInHeader(currentLineNumber int, currentHunk *Hunk) bool {
+	if currentHunk == nil {
+		return true
+	}
+
+	if currentHunk != nil && currentHunk.endOfHunk(currentLineNumber) {
+		return true
+	}
+
+	return false
+}
+
 func fileHeader(rawLine string, currentLineNumber int, currentHunk *Hunk) (string, error) {
 	if currentHunk != nil && currentHunk.endOfHunk(currentLineNumber) == false {
 		return "", errors.New("Still processing a hunk, not a file header")
