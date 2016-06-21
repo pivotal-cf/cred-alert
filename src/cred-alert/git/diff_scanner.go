@@ -25,33 +25,34 @@ func (d *DiffScanner) Scan() bool {
 
 	for isContentLine := false; isContentLine == false; {
 		d.cursor++
+		nextLineNumber := d.currentLineNumber + 1
 		if d.cursor >= len(d.diff) {
-			//fmt.Println("\nWe have passed the last line, returning false...\n")
+			// fmt.Println("\nWe have passed the last line, returning false...\n")
 			return false
 		}
 
 		rawLine := d.diff[d.cursor]
-		//fmt.Printf("\nConsidering line: <<<%s>>>\n", rawLine)
+		// fmt.Printf("\nConsidering line: <<<%s>>>\n", rawLine)
 
-		path, err := fileHeader(d.diff, d.cursor)
+		path, err := fileHeader(rawLine, nextLineNumber, d.currentHunk)
 		if err == nil {
-			//fmt.Printf("Detected file header: %s\n", rawLine)
+			// fmt.Printf("Detected file header: %s\n", rawLine)
 			d.currentPath = path
 			d.currentHunk = nil
 		}
 
 		startLine, length, err := hunkHeader(rawLine)
 		if err == nil {
-			//fmt.Printf("Detected hunk header: %s\n", rawLine)
+			// fmt.Printf("Detected hunk header: %s\n", rawLine)
 			d.currentHunk = newHunk(d.currentPath, startLine, length)
 			// the hunk header exists immeidately before the first line
 			d.currentLineNumber = startLine - 1
 		}
 
-		if d.currentHunk != nil && d.currentHunk.endOfHunk(d.currentLineNumber) != true && contextOrAddedLine(rawLine) {
-			//fmt.Printf("Detected content line: %s\n", rawLine)
+		if d.currentHunk != nil && d.currentHunk.endOfHunk(nextLineNumber) != true && contextOrAddedLine(rawLine) {
+			// fmt.Printf("Detected content line: %s\n", rawLine)
 			isContentLine = true
-			d.currentLineNumber++
+			d.currentLineNumber = nextLineNumber
 		}
 	}
 
@@ -70,6 +71,8 @@ func (d *DiffScanner) Line() *Line {
 		fmt.Println(err)
 	}
 	line.LineNumber = d.currentLineNumber
+
+	// fmt.Printf("%d: %s\n", line.LineNumber, line.Content)
 
 	return line
 }

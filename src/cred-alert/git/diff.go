@@ -13,31 +13,33 @@ type Line struct {
 	action string
 }
 
-func fileHeader(diff []string, cursor int) (string, error) {
-	// the very last line of a file could not be file header
-	if cursor+1 >= len(diff) {
-		return "", errors.New("Reached end of file")
+var fileHeaderPattern *regexp.Regexp
+var contextAddedLinePattern *regexp.Regexp
+var plusMinusSpacePattern *regexp.Regexp
+
+func init() {
+	fileHeaderPattern = regexp.MustCompile(`^\+\+\+\s\w\/(.*)$`)
+	contextAddedLinePattern = regexp.MustCompile(`^(\s|\+)`)
+	plusMinusSpacePattern = regexp.MustCompile(`^(\s|\+|\-)(.*)`)
+}
+
+func fileHeader(rawLine string, currentLineNumber int, currentHunk *Hunk) (string, error) {
+	if currentHunk != nil && currentHunk.endOfHunk(currentLineNumber) == false {
+		return "", errors.New("Still processing a hunk, not a file header")
 	}
+	return readFileHeader(rawLine)
+}
 
-	rawLine := diff[cursor]
-
-	matches := regexp.MustCompile(`^\+\+\+\s\w\/(.*)$`).FindStringSubmatch(rawLine)
+func readFileHeader(line string) (string, error) {
+	matches := fileHeaderPattern.FindStringSubmatch(line)
 	if len(matches) < 2 {
 		return "", errors.New("Not a path")
 	}
-
-	// next line must be a hunk header
-	nextRawLine := diff[cursor+1]
-	_, _, err := hunkHeader(nextRawLine)
-	if err != nil {
-		return "", errors.New("Not a file header")
-	}
-
 	return matches[1], nil
 }
 
 func contextOrAddedLine(rawLine string) bool {
-	matches := regexp.MustCompile(`^(\s|\+)`).FindStringSubmatch(rawLine)
+	matches := contextAddedLinePattern.FindStringSubmatch(rawLine)
 	if len(matches) < 2 {
 		// fmt.Printf("NOT a context or added line: <<<%s>>>\n", rawLine)
 		return false
@@ -47,14 +49,8 @@ func contextOrAddedLine(rawLine string) bool {
 }
 
 func content(rawLine string) (string, error) {
-	// detect hunk header, which is on the same line as the first line of content
-	matches := regexp.MustCompile(`^@@\s-\d+,\d+\s+\+(\d+),\d+\s@@\s(.*)`).FindStringSubmatch(rawLine)
-	if len(matches) >= 3 {
-		return matches[2], nil
-	}
-
-	// detecdt +, -, or <space>
-	matches = regexp.MustCompile(`^(\s|\+|\-)(.*)`).FindStringSubmatch(rawLine)
+	// detect +, -, or <space>
+	matches := plusMinusSpacePattern.FindStringSubmatch(rawLine)
 	if len(matches) >= 3 {
 		return matches[2], nil
 	}
