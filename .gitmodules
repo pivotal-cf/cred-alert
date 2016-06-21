@@ -18,3 +18,11 @@
 	path = src/github.com/golang/protobuf
 	url = https://github.com/golang/protobuf
 	branch = master
+[submodule "src/github.com/google/go-github"]
+	path = src/github.com/google/go-github
+	url = https://github.com/google/go-github
+	branch = master
+[submodule "src/github.com/google/go-querystring"]
+	path = src/github.com/google/go-querystring
+	url = https://github.com/google/go-querystring
+	branch = master

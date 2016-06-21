@@ -6,4 +6,5 @@ gosub list \
   -a github.com/onsi/ginkgo \
   -a github.com/onsi/gomega \
   -a github.com/golang/protobuf \
+  -a github.com/google/go-github/github \
   | xargs gosub sync
