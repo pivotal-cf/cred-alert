@@ -1,7 +1,7 @@
-package main_test
+package webhook_test
 
 import (
-	. "cred-alert/cmd/server"
+	. "cred-alert/webhook"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Server", func() {
+var _ = Describe("Webhook", func() {
 	BeforeSuite(func() {
 		SecretKey = []byte("example-key")
 	})
@@ -20,7 +20,7 @@ var _ = Describe("Server", func() {
 		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{}"))
 		fakeRequest.Header.Set("X-Hub-Signature", "sha1=aca19cdfbae3091d5977eb8b00e95451f1e94571")
 
-		WebhookFunc(fakeWriter, fakeRequest)
+		HandleWebhook(fakeWriter, fakeRequest)
 
 		Expect(fakeWriter.Code).To(Equal(200))
 	})
@@ -30,7 +30,7 @@ var _ = Describe("Server", func() {
 		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{}"))
 		fakeRequest.Header.Set("X-Hub-Signature", "thisaintnohmacsignature")
 
-		WebhookFunc(fakeWriter, fakeRequest)
+		HandleWebhook(fakeWriter, fakeRequest)
 
 		Expect(fakeWriter.Code).To(Equal(403))
 	})
@@ -40,9 +40,8 @@ var _ = Describe("Server", func() {
 		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{'ooops:---"))
 		fakeRequest.Header.Set("X-Hub-Signature", "sha1=77812823a4bf1dae951267bbbb7b7f737cf418c6")
 
-		WebhookFunc(fakeWriter, fakeRequest)
+		HandleWebhook(fakeWriter, fakeRequest)
 
 		Expect(fakeWriter.Code).To(Equal(400))
 	})
-
 })
