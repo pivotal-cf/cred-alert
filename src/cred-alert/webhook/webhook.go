@@ -23,10 +23,16 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Received a webhook. Before: %s, After: %s\n", *event.Before, *event.After)
-	fmt.Printf("Owner: %s, Repo Name: %s\n", *event.Repo.Owner.Name, *event.Repo.Name)
-	if event.Repo.FullName != nil {
-		fmt.Printf("Repo Fullname: %s\n", *event.Repo.FullName)
+	if event.Repo != nil {
+		fmt.Printf("Owner: %s, Repo Name: %s\n", *event.Repo.Owner.Name, *event.Repo.Name)
 	}
+
+	if event.Before == nil || *event.Before == "0000000000000000000000000000000000000000" || event.After == nil {
+		fmt.Println("Push event is missing either a Before or After")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	fmt.Printf("Received a webhook. Before: %s, After: %s\n", *event.Before, *event.After)
 	w.WriteHeader(http.StatusOK)
 }
