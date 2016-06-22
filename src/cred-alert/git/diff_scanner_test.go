@@ -21,6 +21,32 @@ var _ = Describe("DiffScanner", func() {
 +++sneaky line of content
  last line of content`
 
+	singleLineRemovedFile := `diff --git a/stuff.txt b/stuff.txt
+index f2e4113..fa5a232 100644
+--- a/stuff.txt
++++ b/stuff.txt
+@@ -1 +1,2 @@
+-stuff
++blah
++lol`
+
+	singleLineAddedFile := `--git a/stuff.txt b/stuff.txt
+index fa5a232..1e13fe8 100644
+--- a/stuff.txt
++++ b/stuff.txt
+@@ -1,2 +1 @@
+-blah
+-lol
++rofl`
+
+	singleLineReplacementFile := `diff --git a/stuff.txt b/stuff.txt
+index 1e13fe8..06b14f8 100644
+--- a/stuff.txt
++++ b/stuff.txt
+@@ -1 +1 @@
+-rofl
++afk`
+
 	It("scans lines from a diff", func() {
 		diffScanner := git.NewDiffScanner(shortFile)
 		Expect(diffScanner.Scan()).To(BeTrue())
@@ -78,6 +104,29 @@ var _ = Describe("DiffScanner", func() {
 
 		Expect(diffScanner.Line().LineNumber).To(Equal(36))
 		Expect(diffScanner.Line().Content).To(Equal("## Special Characters"))
+	})
+
+	It("scans single line hunks", func() {
+		diffScanner := git.NewDiffScanner(singleLineRemovedFile)
+		diffScanner.Scan()
+		Expect(diffScanner.Line().LineNumber).To(Equal(1))
+		Expect(diffScanner.Line().Content).To(Equal("blah"))
+		diffScanner.Scan()
+		Expect(diffScanner.Line().LineNumber).To(Equal(2))
+		Expect(diffScanner.Line().Content).To(Equal("lol"))
+		Expect(diffScanner.Scan()).To(BeFalse())
+
+		diffScanner = git.NewDiffScanner(singleLineAddedFile)
+		diffScanner.Scan()
+		Expect(diffScanner.Line().LineNumber).To(Equal(1))
+		Expect(diffScanner.Line().Content).To(Equal("rofl"))
+		Expect(diffScanner.Scan()).To(BeFalse())
+
+		diffScanner = git.NewDiffScanner(singleLineReplacementFile)
+		diffScanner.Scan()
+		Expect(diffScanner.Line().LineNumber).To(Equal(1))
+		Expect(diffScanner.Line().Content).To(Equal("afk"))
+		Expect(diffScanner.Scan()).To(BeFalse())
 	})
 
 	It("keeps track of the filename in sections of a unified diff", func() {

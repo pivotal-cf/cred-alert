@@ -22,7 +22,7 @@ func newHunk(path string, startLine int, length int) *Hunk {
 }
 
 func hunkHeader(rawLine string) (int, int, error) {
-	matches := regexp.MustCompile(`^@@\s-\d+,\d+\s+\+(\d+),(\d+)\s@@`).FindStringSubmatch(rawLine)
+	matches := regexp.MustCompile(`^@@.*\+(\d+),?(\d+)?\s@@`).FindStringSubmatch(rawLine)
 	if len(matches) < 3 {
 		return 0, 0, errors.New("Not a hunk header")
 	}
@@ -32,9 +32,14 @@ func hunkHeader(rawLine string) (int, int, error) {
 		return 0, 0, err
 	}
 
-	length, err := strconv.Atoi(matches[2])
-	if err != nil {
-		return 0, 0, err
+	var length int
+	if matches[2] == "" {
+		length = 1
+	} else {
+		var err error
+		if length, err = strconv.Atoi(matches[2]); err != nil {
+			return 0, 0, err
+		}
 	}
 
 	return startLine, length, nil
