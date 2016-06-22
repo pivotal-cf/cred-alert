@@ -1,4 +1,0 @@
----
-applications:
-  - env:
-      GOPACKAGENAME: server
