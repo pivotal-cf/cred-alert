@@ -2,10 +2,11 @@ package main
 
 import (
 	"cred-alert/webhook"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	_ "cred-alert/logging"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 	}
 	webhook.SecretKey = []byte(os.Getenv("GITHUB_WEBHOOK_SECRET_KEY"))
 
-	fmt.Println("Starting webserver...")
+	log.Print("Starting webserver...")
 
 	http.HandleFunc("/webhook", webhook.HandleWebhook)
 

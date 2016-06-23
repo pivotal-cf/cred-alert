@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"cred-alert/git"
 	myGithub "cred-alert/github"
@@ -45,23 +44,8 @@ func handlePushEvent(w http.ResponseWriter, event github.PushEvent) {
 
 	w.WriteHeader(http.StatusOK)
 
-	go scanPushEvent(event)
-}
-
-func scanPushEvent(event github.PushEvent) {
-	diff, err := fetchDiff(event)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "request error: ", err)
-	}
-
-	lines := git.Scan(diff)
-	for _, line := range lines {
-		fmt.Printf("Found match in repo: %s, file: %s, After SHA: %s, line number: %d\n",
-			*event.Repo.FullName,
-			line.Path,
-			*event.After,
-			line.LineNumber)
-	}
+	scanner := NewPushEventScanner(fetchDiff, git.Scan)
+	go scanner.ScanPushEvent(event)
 }
 
 func fetchDiff(event github.PushEvent) (string, error) {
