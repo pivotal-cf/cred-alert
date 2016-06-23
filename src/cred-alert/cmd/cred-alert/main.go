@@ -1,12 +1,12 @@
 package main
 
 import (
-	"cred-alert/webhook"
 	"log"
 	"net/http"
 	"os"
 
 	_ "cred-alert/logging"
+	"cred-alert/webhook"
 )
 
 func main() {
