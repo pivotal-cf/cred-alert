@@ -10,7 +10,7 @@ inputs:
 - name: cred-alert
 
 outputs:
-- name: cred-alert-binary
+- name: cred-alert-app
 
 run:
-  path: cred-alert/ci/scripts/build-server
+  path: cred-alert/ci/scripts/build-app

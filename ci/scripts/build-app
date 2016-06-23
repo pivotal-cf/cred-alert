@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -x -e
+
+export GOPATH=$PWD/cred-alert
+export PATH=$GOPATH/bin:$PATH
+
+APP_DIR=$PWD/cred-alert-app
+
+GOARCH=amd64 GOOS=linux go build -o $APP_DIR/cred-alert cred-alert/cmd/cred-alert
+
+cp cred-alert/environments/cred-alert-staging/Procfile $APP_DIR
