@@ -1,0 +1,9 @@
+applications:
+- name: cred-alert-staging
+  instances: 2
+  memory: 128M
+  disk_quota: 1024M
+  host: cred-alert-staging
+  domain: cfapps.io
+  buildpack: binary_buildpack
+  stack: cflinuxfs2

@@ -9,4 +9,4 @@ APP_DIR=$PWD/cred-alert-app
 
 GOARCH=amd64 GOOS=linux go build -o $APP_DIR/cred-alert cred-alert/cmd/cred-alert
 
-cp cred-alert/environments/cred-alert-staging/Procfile $APP_DIR
+cp cred-alert/environments/staging/Procfile $APP_DIR
