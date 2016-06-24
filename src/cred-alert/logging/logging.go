@@ -13,7 +13,7 @@ func init() {
 }
 
 type Emitter interface {
-	CountViolation()
+	CountViolation(count int)
 }
 
 type emitter struct {
@@ -45,7 +45,11 @@ func DefaultEmitter() (Emitter, error) {
 	return emitter, nil
 }
 
-func (e *emitter) CountViolation() {
+func (e *emitter) CountViolation(count int) {
+	if count <= 0 {
+		return
+	}
+
 	points := []datadog.Point{}
 	tags := []string{"credential_violation"}
 	if e.environmentTag != "" {
@@ -53,7 +57,7 @@ func (e *emitter) CountViolation() {
 	}
 	metric := datadog.Metric{
 		Name:   "cred_alert.violations",
-		Points: append(points, datadog.Point{time.Now(), 1}),
+		Points: append(points, datadog.Point{time.Now(), float32(count)}),
 		Type:   "count",
 		Tags:   tags,
 	}

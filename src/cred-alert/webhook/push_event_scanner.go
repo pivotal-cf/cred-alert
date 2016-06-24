@@ -52,10 +52,11 @@ func (s PushEventScanner) ScanPushEvent(event github.PushEvent) {
 			line.Path,
 			*event.After,
 			line.LineNumber)
-		if s.emitter == nil {
-			fmt.Fprintf(os.Stderr, "Error: data dog client is missing")
-		} else {
-			s.emitter.CountViolation()
-		}
+	}
+
+	if s.emitter == nil {
+		fmt.Fprintf(os.Stderr, "Error: data dog client is missing")
+	} else {
+		s.emitter.CountViolation(len(lines))
 	}
 }

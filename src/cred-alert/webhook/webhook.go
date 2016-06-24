@@ -29,12 +29,12 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePushEvent(w http.ResponseWriter, event github.PushEvent) {
-	if event.Repo != nil {
-		fmt.Printf("Owner: %s, Repo Name: %s\n", *event.Repo.Owner.Name, *event.Repo.Name)
+	if event.Repo != nil && event.Repo.FullName != nil {
+		fmt.Printf("Repo: %s\n", *event.Repo.FullName)
 	}
 
 	if event.Before == nil || *event.Before == "0000000000000000000000000000000000000000" || event.After == nil {
-		fmt.Println("Push event is missing either a Before or After")
+		fmt.Println("Push event is missing either a Before or After SHA")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
