@@ -5,7 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/onsi/gomega/ghttp"
+	"github.com/pivotal-golang/lager/lagertest"
 
 	"cred-alert/github"
 )
@@ -14,6 +16,8 @@ var _ = Describe("Client", func() {
 	var (
 		client github.Client
 		server *ghttp.Server
+
+		logger *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
@@ -21,6 +25,8 @@ var _ = Describe("Client", func() {
 
 		httpClient := &http.Client{}
 		client = github.NewClient(server.URL(), httpClient)
+
+		logger = lagertest.NewTestLogger("client")
 	})
 
 	AfterEach(func() {
@@ -40,7 +46,7 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		diff, err := client.CompareRefs("owner", "repo", "a", "b")
+		diff, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(diff).To(Equal("THIS IS THE DIFF"))
 	})
@@ -56,7 +62,7 @@ var _ = Describe("Client", func() {
 			),
 		)
 
-		_, err := client.CompareRefs("owner", "repo", "a", "b")
+		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -64,7 +70,7 @@ var _ = Describe("Client", func() {
 		server.Close()
 		server = nil
 
-		_, err := client.CompareRefs("owner", "repo", "a", "b")
+		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 		Expect(err).To(HaveOccurred())
 	})
 })

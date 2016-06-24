@@ -1,15 +1,17 @@
 package github
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/cloudfoundry/gunk/urljoiner"
+	"github.com/pivotal-golang/lager"
 )
 
 type Client interface {
-	CompareRefs(owner, repo, base, head string) (string, error)
+	CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error)
 }
 
 type client struct {
@@ -24,14 +26,16 @@ func NewClient(baseURL string, httpClient *http.Client) *client {
 	}
 }
 
-func (c *client) CompareRefs(owner, repo, base, head string) (string, error) {
-	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
+func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error) {
+	logger = logger.Session("comparing-refs")
 
+	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
 	request, _ := http.NewRequest("GET", url, nil)
 	request.Header.Set("Accept", "application/vnd.github.diff")
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
+		logger.Error("failed", err)
 		return "", err
 	}
 
@@ -39,11 +43,18 @@ func (c *client) CompareRefs(owner, repo, base, head string) (string, error) {
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
+		logger.Error("failed", err)
 		return "", err
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("bad status code (%d): %s", response.StatusCode, string(body))
+		err := errors.New("status code not 200")
+		logger.Error("unexpected-status-code", err, lager.Data{
+			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
+			"body":   string(body),
+		})
+
+		return "", err
 	}
 
 	return string(body), nil

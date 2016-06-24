@@ -1,16 +1,22 @@
 package webhook_test
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 
+	"github.com/google/go-github/github"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/pivotal-golang/lager/lagertest"
 
 	"cred-alert/webhook"
+	"cred-alert/webhook/webhookfakes"
 )
 
 var _ = Describe("Webhook", func() {
@@ -18,40 +24,75 @@ var _ = Describe("Webhook", func() {
 		logger *lagertest.TestLogger
 
 		handler http.Handler
+		scanner *webhookfakes.FakeScanner
+
+		recorder *httptest.ResponseRecorder
+
+		token string
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("webhook")
-		handler = webhook.Handler(logger, "example-key")
+		recorder = httptest.NewRecorder()
+		scanner = &webhookfakes.FakeScanner{}
+		token = "example-key"
+
+		handler = webhook.Handler(logger, scanner, token)
 	})
 
-	It("Responds with 200", func() {
-		fakeWriter := httptest.NewRecorder()
-		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{}"))
-		fakeRequest.Header.Set("X-Hub-Signature", "sha1=aca19cdfbae3091d5977eb8b00e95451f1e94571")
+	It("scans the push event successfully", func() {
+		pushEvent := github.PushEvent{
+			Before: github.String("beef04"),
+			After:  github.String("af7e40"),
+		}
 
-		handler.ServeHTTP(fakeWriter, fakeRequest)
+		body := &bytes.Buffer{}
+		err := json.NewEncoder(body).Encode(pushEvent)
+		Expect(err).NotTo(HaveOccurred())
 
-		Expect(fakeWriter.Code).To(Equal(200))
+		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", body)
+		fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(token, body.Bytes())))
+
+		handler.ServeHTTP(recorder, fakeRequest)
+
+		Eventually(scanner.ScanPushEventCallCount).Should(Equal(1))
+		Expect(recorder.Code).To(Equal(http.StatusOK))
 	})
 
-	It("Respons with 403 when the signature is invalid", func() {
-		fakeWriter := httptest.NewRecorder()
-		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{}"))
+	It("responds with 403 when the signature is invalid", func() {
+		pushEvent := github.PushEvent{
+			Before: github.String("beef04"),
+			After:  github.String("af7e40"),
+		}
+
+		body := &bytes.Buffer{}
+		err := json.NewEncoder(body).Encode(pushEvent)
+		Expect(err).NotTo(HaveOccurred())
+
+		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", body)
 		fakeRequest.Header.Set("X-Hub-Signature", "thisaintnohmacsignature")
 
-		handler.ServeHTTP(fakeWriter, fakeRequest)
+		handler.ServeHTTP(recorder, fakeRequest)
 
-		Expect(fakeWriter.Code).To(Equal(403))
+		Consistently(scanner.ScanPushEventCallCount).Should(BeZero())
+		Expect(recorder.Code).To(Equal(http.StatusForbidden))
 	})
 
-	It("Responds with 400 when the payload is not valid JSON", func() {
-		fakeWriter := httptest.NewRecorder()
-		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{'ooops:---"))
-		fakeRequest.Header.Set("X-Hub-Signature", "sha1=77812823a4bf1dae951267bbbb7b7f737cf418c6")
+	It("responds with 400 when the payload is not valid JSON", func() {
+		badJSON := bytes.NewBufferString("{'ooops:---")
 
-		handler.ServeHTTP(fakeWriter, fakeRequest)
+		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", badJSON)
+		fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(token, badJSON.Bytes())))
 
-		Expect(fakeWriter.Code).To(Equal(400))
+		handler.ServeHTTP(recorder, fakeRequest)
+
+		Consistently(scanner.ScanPushEventCallCount).Should(BeZero())
+		Expect(recorder.Code).To(Equal(http.StatusBadRequest))
 	})
 })
+
+func messageMAC(key string, body []byte) string {
+	mac := hmac.New(sha1.New, []byte(key))
+	mac.Write(body)
+	return fmt.Sprintf("%x", mac.Sum(nil))
+}

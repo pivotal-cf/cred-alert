@@ -10,6 +10,7 @@ import (
 	"cred-alert/webhook"
 
 	"github.com/google/go-github/github"
+	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
@@ -21,9 +22,10 @@ var _ = Describe("PushEventScanner", func() {
 	)
 
 	BeforeEach(func() {
-		fetchDiff := func(event github.PushEvent) (string, error) {
+		fetchDiff := func(logger lager.Logger, event github.PushEvent) (string, error) {
 			return "", nil
 		}
+
 		scan := func(diff string) []git.Line {
 			lines := []git.Line{}
 

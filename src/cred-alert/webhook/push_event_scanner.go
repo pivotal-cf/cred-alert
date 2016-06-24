@@ -13,13 +13,19 @@ import (
 	gh "cred-alert/github"
 )
 
+//go:generate counterfeiter . Scanner
+
+type Scanner interface {
+	ScanPushEvent(lager.Logger, github.PushEvent)
+}
+
 type PushEventScanner struct {
-	fetchDiff func(github.PushEvent) (string, error)
+	fetchDiff func(lager.Logger, github.PushEvent) (string, error)
 	scan      func(string) []git.Line
 	emitter   logging.Emitter
 }
 
-func NewPushEventScanner(fetchDiff func(github.PushEvent) (string, error), scan func(string) []git.Line, emitter logging.Emitter) *PushEventScanner {
+func NewPushEventScanner(fetchDiff func(lager.Logger, github.PushEvent) (string, error), scan func(string) []git.Line, emitter logging.Emitter) *PushEventScanner {
 	scanner := new(PushEventScanner)
 	scanner.fetchDiff = fetchDiff
 	scanner.scan = scan
@@ -44,7 +50,7 @@ func DefaultPushEventScanner() *PushEventScanner {
 }
 
 func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEvent) {
-	diff, err := s.fetchDiff(event)
+	diff, err := s.fetchDiff(logger, event)
 	if err != nil {
 		logger.Error("failed-to-fetch-diff", err)
 	}
@@ -65,14 +71,9 @@ func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEv
 	}
 }
 
-func fetchDiff(event github.PushEvent) (string, error) {
+func fetchDiff(logger lager.Logger, event github.PushEvent) (string, error) {
 	httpClient := &http.Client{}
 	githubClient := gh.NewClient("https://api.github.com/", httpClient)
 
-	diff, err := githubClient.CompareRefs(*event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
-	if err != nil {
-		return "", err
-	}
-
-	return diff, nil
+	return githubClient.CompareRefs(logger, *event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
 }

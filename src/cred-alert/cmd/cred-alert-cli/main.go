@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/pivotal-golang/lager"
+
 	"cred-alert/git"
 	"cred-alert/github"
 )
@@ -19,7 +21,10 @@ func main() {
 
 	githubClient := github.NewClient("https://api.github.com/", httpClient)
 
-	input, err := githubClient.CompareRefs(owner, repo, base, head)
+	logger := lager.NewLogger("cred-alert-cli")
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+
+	input, err := githubClient.CompareRefs(logger, owner, repo, base, head)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "request error: ", err)
 		os.Exit(1)

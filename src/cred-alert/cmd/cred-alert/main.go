@@ -33,7 +33,9 @@ func main() {
 		"port": opts.Port,
 	})
 
-	http.Handle("/webhook", webhook.Handler(logger, opts.Token))
+	scanner := webhook.DefaultPushEventScanner()
+
+	http.Handle("/webhook", webhook.Handler(logger, scanner, opts.Token))
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", opts.Port), nil))
 }
