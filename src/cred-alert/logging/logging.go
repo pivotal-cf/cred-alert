@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-func init() {
-}
-
 type Emitter interface {
 	CountViolation(count int)
 }

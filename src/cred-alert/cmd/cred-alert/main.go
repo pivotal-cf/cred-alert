@@ -7,7 +7,6 @@ import (
 
 	"github.com/pivotal-golang/lager"
 
-	_ "cred-alert/logging"
 	"cred-alert/webhook"
 )
 
