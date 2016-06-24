@@ -4,10 +4,13 @@ import (
 	"cred-alert/git"
 	"cred-alert/logging"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager"
+
+	gh "cred-alert/github"
 )
 
 type PushEventScanner struct {
@@ -60,4 +63,16 @@ func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEv
 			s.emitter.CountViolation(len(lines))
 		}
 	}
+}
+
+func fetchDiff(event github.PushEvent) (string, error) {
+	httpClient := &http.Client{}
+	githubClient := gh.NewClient("https://api.github.com/", httpClient)
+
+	diff, err := githubClient.CompareRefs(*event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
+	if err != nil {
+		return "", err
+	}
+
+	return diff, nil
 }

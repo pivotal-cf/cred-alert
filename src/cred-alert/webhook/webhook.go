@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	myGithub "cred-alert/github"
-
 	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager"
 )
@@ -58,16 +56,4 @@ func handlePushEvent(logger lager.Logger, w http.ResponseWriter, event github.Pu
 
 	scanner := DefaultPushEventScanner()
 	go scanner.ScanPushEvent(logger, event)
-}
-
-func fetchDiff(event github.PushEvent) (string, error) {
-	httpClient := &http.Client{}
-	githubClient := myGithub.NewClient("https://api.github.com/", httpClient)
-
-	diff, err := githubClient.CompareRefs(*event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
-	if err != nil {
-		return "", err
-	}
-
-	return diff, nil
 }
