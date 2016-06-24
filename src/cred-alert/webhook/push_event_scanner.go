@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/google/go-github/github"
+	"github.com/pivotal-golang/lager"
 )
 
 type PushEventScanner struct {
@@ -39,24 +40,24 @@ func DefaultPushEventScanner() *PushEventScanner {
 	return scanner
 }
 
-func (s PushEventScanner) ScanPushEvent(event github.PushEvent) {
+func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEvent) {
 	diff, err := s.fetchDiff(event)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "request error: ", err)
+		logger.Error("failed-to-fetch-diff", err)
 	}
 
 	lines := s.scan(diff)
-	for _, line := range lines {
-		fmt.Printf("Found match in repo: %s, file: %s, After SHA: %s, line number: %d\n",
-			*event.Repo.FullName,
-			line.Path,
-			*event.After,
-			line.LineNumber)
-	}
 
-	if s.emitter == nil {
-		fmt.Fprintf(os.Stderr, "Error: data dog client is missing")
-	} else {
-		s.emitter.CountViolation(len(lines))
+	for _, line := range lines {
+		logger.Info("found-credential", lager.Data{
+			"path":        line.Path,
+			"line-number": line.LineNumber,
+		})
+
+		if s.emitter == nil {
+			fmt.Fprintf(os.Stderr, "Error: data dog client is missing")
+		} else {
+			s.emitter.CountViolation(len(lines))
+		}
 	}
 }

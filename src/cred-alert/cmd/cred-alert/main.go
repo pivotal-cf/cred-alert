@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/pivotal-golang/lager"
+
 	_ "cred-alert/logging"
 	"cred-alert/webhook"
 )
@@ -15,9 +17,17 @@ func main() {
 	}
 	webhook.SecretKey = []byte(os.Getenv("GITHUB_WEBHOOK_SECRET_KEY"))
 
-	log.Print("Starting webserver...")
+	logger := lager.NewLogger("cred-alert")
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
-	http.HandleFunc("/webhook", webhook.HandleWebhook)
+	port := os.Getenv("PORT")
 
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
+	logger.Info("starting-server", lager.Data{
+		"port": port,
+	})
+
+	webhookHandler := webhook.HandleWebhook(logger)
+	http.Handle("/webhook", webhookHandler)
+
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

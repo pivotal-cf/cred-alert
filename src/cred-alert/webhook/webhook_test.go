@@ -1,17 +1,29 @@
 package webhook_test
 
 import (
-	. "cred-alert/webhook"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/pivotal-golang/lager/lagertest"
+
+	. "cred-alert/webhook"
 )
 
 var _ = Describe("Webhook", func() {
-	BeforeSuite(func() {
+	var (
+		logger *lagertest.TestLogger
+
+		handler http.Handler
+	)
+
+	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("webhook")
+		handler = HandleWebhook(logger)
+
 		SecretKey = []byte("example-key")
 	})
 
@@ -20,7 +32,7 @@ var _ = Describe("Webhook", func() {
 		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{}"))
 		fakeRequest.Header.Set("X-Hub-Signature", "sha1=aca19cdfbae3091d5977eb8b00e95451f1e94571")
 
-		HandleWebhook(fakeWriter, fakeRequest)
+		handler.ServeHTTP(fakeWriter, fakeRequest)
 
 		Expect(fakeWriter.Code).To(Equal(200))
 	})
@@ -30,7 +42,7 @@ var _ = Describe("Webhook", func() {
 		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{}"))
 		fakeRequest.Header.Set("X-Hub-Signature", "thisaintnohmacsignature")
 
-		HandleWebhook(fakeWriter, fakeRequest)
+		handler.ServeHTTP(fakeWriter, fakeRequest)
 
 		Expect(fakeWriter.Code).To(Equal(403))
 	})
@@ -40,7 +52,7 @@ var _ = Describe("Webhook", func() {
 		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", strings.NewReader("{'ooops:---"))
 		fakeRequest.Header.Set("X-Hub-Signature", "sha1=77812823a4bf1dae951267bbbb7b7f737cf418c6")
 
-		HandleWebhook(fakeWriter, fakeRequest)
+		handler.ServeHTTP(fakeWriter, fakeRequest)
 
 		Expect(fakeWriter.Code).To(Equal(400))
 	})

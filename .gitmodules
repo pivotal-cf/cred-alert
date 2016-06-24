@@ -26,3 +26,7 @@
 	path = src/github.com/google/go-querystring
 	url = https://github.com/google/go-querystring
 	branch = master
+[submodule "src/github.com/pivotal-golang/lager"]
+	path = src/github.com/pivotal-golang/lager
+	url = https://github.com/pivotal-golang/lager
+	branch = master
