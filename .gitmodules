@@ -30,3 +30,7 @@
 	path = src/github.com/pivotal-golang/lager
 	url = https://github.com/pivotal-golang/lager
 	branch = master
+[submodule "src/github.com/jessevdk/go-flags"]
+	path = src/github.com/jessevdk/go-flags
+	url = https://github.com/jessevdk/go-flags
+	branch = master
