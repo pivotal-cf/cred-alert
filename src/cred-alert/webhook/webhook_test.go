@@ -22,9 +22,7 @@ var _ = Describe("Webhook", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("webhook")
-		handler = webhook.HandleWebhook(logger)
-
-		webhook.SecretKey = []byte("example-key")
+		handler = webhook.HandleWebhook(logger, "example-key")
 	})
 
 	It("Responds with 200", func() {

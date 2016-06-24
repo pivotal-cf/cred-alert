@@ -10,13 +10,11 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-var SecretKey []byte
-
-func HandleWebhook(logger lager.Logger) http.Handler {
+func HandleWebhook(logger lager.Logger, secretKey string) http.Handler {
 	logger = logger.Session("webhook-handler")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		payload, err := github.ValidatePayload(r, SecretKey)
+		payload, err := github.ValidatePayload(r, []byte(secretKey))
 		if err != nil {
 			logger.Error("invalid-payload", err)
 			w.WriteHeader(http.StatusForbidden)
