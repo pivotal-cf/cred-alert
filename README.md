@@ -53,7 +53,7 @@ count the violations in Datadog.
 The server can be built with the following command. Your `$GOPATH` should
 already be set correctly by `direnv`.
 
-    go build cred-alert/cmd/cred-alert
+    $ go build cred-alert/cmd/cred-alert
 
 ### Pushing to CF
 
@@ -62,11 +62,11 @@ already be set correctly by `direnv`.
 We can use Concourse to build an application package that is identical to the
 one that we build in CI.
 
-    fly -t ci execute -x -c ci/build-app.yml -o cred-alert-app=/tmp/app
+    $ fly -t ci execute -x -c ci/build-app.yml -o cred-alert-app=/tmp/app
 
 #### Deploying the Application
 
-    cf push cred-alert -b binary_buildpack -p /tmp/app
+    $ cf push cred-alert -b binary_buildpack -p /tmp/app
 
 When you push the application for the first time it will fail since the
 necessary environment variables are not set. Refer to the next section for all
