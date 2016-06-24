@@ -7,3 +7,5 @@ applications:
   domain: cfapps.io
   buildpack: binary_buildpack
   stack: cflinuxfs2
+  services:
+  - cred-alert-staging-logs
