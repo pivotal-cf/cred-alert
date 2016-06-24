@@ -12,12 +12,29 @@ import (
 type PushEventScanner struct {
 	fetchDiff func(github.PushEvent) (string, error)
 	scan      func(string) []git.Line
+	emitter   logging.Emitter
 }
 
-func NewPushEventScanner(fetchDiff func(github.PushEvent) (string, error), scan func(string) []git.Line) *PushEventScanner {
+func NewPushEventScanner(fetchDiff func(github.PushEvent) (string, error), scan func(string) []git.Line, emitter logging.Emitter) *PushEventScanner {
 	scanner := new(PushEventScanner)
 	scanner.fetchDiff = fetchDiff
 	scanner.scan = scan
+	scanner.emitter = emitter
+
+	return scanner
+}
+
+func DefaultPushEventScanner() *PushEventScanner {
+	var scanner *PushEventScanner
+
+	emitter, err := logging.DefaultEmitter()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: ", err)
+		scanner = NewPushEventScanner(fetchDiff, git.Scan, nil)
+	} else {
+		scanner = NewPushEventScanner(fetchDiff, git.Scan, emitter)
+	}
 
 	return scanner
 }
@@ -35,6 +52,10 @@ func (s PushEventScanner) ScanPushEvent(event github.PushEvent) {
 			line.Path,
 			*event.After,
 			line.LineNumber)
-		logging.CountViolation()
+		if s.emitter == nil {
+			fmt.Fprintf(os.Stderr, "Error: data dog client is missing")
+		} else {
+			s.emitter.CountViolation()
+		}
 	}
 }

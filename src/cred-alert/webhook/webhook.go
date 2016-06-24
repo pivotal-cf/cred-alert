@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"cred-alert/git"
 	myGithub "cred-alert/github"
 
 	"github.com/google/go-github/github"
@@ -44,7 +43,7 @@ func handlePushEvent(w http.ResponseWriter, event github.PushEvent) {
 
 	w.WriteHeader(http.StatusOK)
 
-	scanner := NewPushEventScanner(fetchDiff, git.Scan)
+	scanner := DefaultPushEventScanner()
 	go scanner.ScanPushEvent(event)
 }
 

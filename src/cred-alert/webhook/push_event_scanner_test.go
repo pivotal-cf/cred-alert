@@ -1,6 +1,7 @@
 package webhook_test
 
 import (
+	"cred-alert/fakes"
 	"cred-alert/git"
 	"cred-alert/logging"
 	. "cred-alert/webhook"
@@ -13,6 +14,8 @@ import (
 var _ = Describe("PushEventScanner", func() {
 
 	var scanner *PushEventScanner
+	var fakeClient *fakes.FakeClient
+
 	BeforeEach(func() {
 		fetchDiff := func(event github.PushEvent) (string, error) {
 			return "", nil
@@ -27,14 +30,12 @@ var _ = Describe("PushEventScanner", func() {
 			})
 		}
 
-		scanner = NewPushEventScanner(fetchDiff, scan)
+		fakeClient = new(fakes.FakeClient)
+		emitter := logging.NewEmitter(fakeClient)
+		scanner = NewPushEventScanner(fetchDiff, scan, emitter)
 	})
 
 	It("Counts violations in a push event", func() {
-		calls := 0
-		logging.CountViolation = func() {
-			calls++
-		}
 		someString := "some-string"
 		scanner.ScanPushEvent(github.PushEvent{
 			Repo: &github.PushEventRepository{
@@ -43,6 +44,6 @@ var _ = Describe("PushEventScanner", func() {
 			After: &someString,
 		})
 
-		Expect(calls).To(Equal(1))
+		Expect(fakeClient.PublishSeriesCallCount()).To(Equal(1))
 	})
 })
