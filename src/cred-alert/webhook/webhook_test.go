@@ -10,7 +10,7 @@ import (
 
 	"github.com/pivotal-golang/lager/lagertest"
 
-	. "cred-alert/webhook"
+	"cred-alert/webhook"
 )
 
 var _ = Describe("Webhook", func() {
@@ -22,9 +22,9 @@ var _ = Describe("Webhook", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("webhook")
-		handler = HandleWebhook(logger)
+		handler = webhook.HandleWebhook(logger)
 
-		SecretKey = []byte("example-key")
+		webhook.SecretKey = []byte("example-key")
 	})
 
 	It("Responds with 200", func() {
