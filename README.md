@@ -1,13 +1,8 @@
-                             _             _           _
-            ___ _ __ ___  __| |       __ _| | ___ _ __| |_
-           / __| '__/ _ \/ _` |_____ / _` | |/ _ \ '__| __|
-          | (__| | |  __/ (_| |_____| (_| | |  __/ |  | |_
-           \___|_|  \___|\__,_|      \__,_|_|\___|_|   \__|
+# cred-alert
 
-     scans repos for credentials and then shouts if it finds them
+> scans repos for credentials and then shouts if it finds them
 
-
-## set up
+## Set Up
 
 You'll need to install `gosub` in order to manage the submodules of this
 project. It can be installed by running the following command (try to install
@@ -27,8 +22,7 @@ installed with:
 
     $ go install github.com/onsi/ginkgo/ginkgo
 
-
-## workflow
+## Workflow
 
 You can `go get` and edit the files like normal in this repository. If any
 dependencies have changed them make sure to run `scripts/sync-submodules` in
@@ -36,56 +30,54 @@ order to make sure that the submodules are updated correctly.
 
 You can generate a pretty commit message by running `scripts/commit-with-log`.
 
-# Command Line App
+## CLI
 
-## Building
+### Building
 
-```
-export GOPATH=$WORKSPACE/cred-alert
-go build cred-alert/cmd/cred-alert-cli
-```
+The command line application can be built with the following command. Your
+`$GOPATH` should already be set correctly by `direnv`.
 
-# Server
+    $ go build cred-alert/cmd/cred-alert-cli
 
-The server app will set up an endpoint at `/webhook` to receive Github webhooks. When it receives a [PushEvent](https://developer.github.com/v3/activity/events/types/#pushevent), it will log any violations it detects. Furthermore, if the Datadog environment variables are set, it will count the violations in Datadog.
+## Server
 
-## Building
+The server app sets up an endpoint at `/webhook` to receive Github webhooks.
+When it receives a [PushEvent][push-event], it will log any violations it
+detects. Furthermore, if the Datadog environment variables are set, it will
+count the violations in Datadog.
 
-```
-export GOPATH=$WORKSPACE/cred-alert
-go build cred-alert/cmd/server
-```
+[push-event]: https://developer.github.com/v3/activity/events/types/#pushevent
 
-## Pushing to CF
+### Building
 
-To use with CF, build the app into a linux binary, then push to CF using the binary buildpack. In this example we'll use docker to build our linux binary.
+The server can be built with the following command. Your `$GOPATH` should
+already be set correctly by `direnv`.
 
-##### Create docker image
-```
-cd $WORKSPACE/cred-alert
-docker run -v $(pwd):/app -it cloudfoundry/cflinuxfs2 bash
-```
-##### Inside docker
-```
-apt-get install golang -y
-export GOPATH=/app
-cd /app
-go build cred-alert/cmd/server
-exit
-```
-##### Outside docker
-```
-cf push cred-alert -c './server' -b binary_buildpack
-```
+    go build cred-alert/cmd/cred-alert
 
-When you push the app the first time, it will fail since the necessary environment variables are not set. Referr to the next section for all the needed environment variables.
+### Pushing to CF
 
-## Environment Variables
+#### Building with Concourse
 
-| Name | Description |
-| ---- | ----------- |
-| `DATA_DOG_ENVIRONMENT_TAG` | Tag to use in emitted events (eg. `production`, `staging`) |
-| `DATA_DOG_API_KEY` | API key to use for Data Dog api access |
-| `GITHUB_WEBHOOK_SECRET_KEY` | shared secret configured on github webhooks and|
-| `PORT` | port on which to listen for webhook requests for (set automatically if using CF) |
+We can use Concourse to build an application package that is identical to the
+one that we build in CI.
+
+    fly -t ci execute -x -c ci/build-app.yml -o cred-alert-app=/tmp/app
+
+#### Deploying the Application
+
+    cf push cred-alert -b binary_buildpack -p /tmp/app
+
+When you push the application for the first time it will fail since the
+necessary environment variables are not set. Refer to the next section for all
+the needed environment variables.
+
+### Environment Variables
+
+| Name                        | Description                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `DATA_DOG_ENVIRONMENT_TAG`  | Tag to use in emitted events (eg. `production`, `staging`)                       |
+| `DATA_DOG_API_KEY`          | API key to use for Data Dog API access                                           |
+| `GITHUB_WEBHOOK_SECRET_KEY` | shared secret configured on github webhooks                                      |
+| `PORT`                      | port on which to listen for webhook requests for (set automatically if using CF) |
 
