@@ -33,8 +33,7 @@ func main() {
 		"port": opts.Port,
 	})
 
-	webhookHandler := webhook.HandleWebhook(logger, opts.Token)
-	http.Handle("/webhook", webhookHandler)
+	http.Handle("/webhook", webhook.Handler(logger, opts.Token))
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", opts.Port), nil))
 }

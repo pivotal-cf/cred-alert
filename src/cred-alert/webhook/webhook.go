@@ -8,31 +8,39 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-func HandleWebhook(logger lager.Logger, secretKey string) http.Handler {
-	logger = logger.Session("webhook-handler")
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		payload, err := github.ValidatePayload(r, []byte(secretKey))
-		if err != nil {
-			logger.Error("invalid-payload", err)
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
-		var event github.PushEvent
-		if err := json.Unmarshal(payload, &event); err != nil {
-			logger.Error("unmarshal-failed", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		handlePushEvent(logger, w, event)
-	})
-}
-
 const initalCommitParentHash = "0000000000000000000000000000000000000000"
 
-func handlePushEvent(logger lager.Logger, w http.ResponseWriter, event github.PushEvent) {
+type handler struct {
+	logger    lager.Logger
+	secretKey []byte
+}
+
+func Handler(logger lager.Logger, secretKey string) *handler {
+	return &handler{
+		logger:    logger.Session("webhook-handler"),
+		secretKey: []byte(secretKey),
+	}
+}
+
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	payload, err := github.ValidatePayload(r, h.secretKey)
+	if err != nil {
+		h.logger.Error("invalid-payload", err)
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	var event github.PushEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		h.logger.Error("unmarshal-failed", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	h.handlePushEvent(h.logger, w, event)
+}
+
+func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, event github.PushEvent) {
 	logger = logger.Session("handling-push-event")
 
 	if event.Repo != nil {
