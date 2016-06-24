@@ -1,14 +1,13 @@
 package webhook_test
 
 import (
-	"cred-alert/fakes"
-	"cred-alert/git"
-	"cred-alert/logging"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "cred-alert/webhook"
+	"cred-alert/datadog/datadogfakes"
+	"cred-alert/git"
+	"cred-alert/logging"
+	"cred-alert/webhook"
 
 	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -16,9 +15,9 @@ import (
 
 var _ = Describe("PushEventScanner", func() {
 	var (
-		scanner    *PushEventScanner
+		scanner    *webhook.PushEventScanner
 		logger     *lagertest.TestLogger
-		fakeClient *fakes.FakeClient
+		fakeClient *datadogfakes.FakeClient
 	)
 
 	BeforeEach(func() {
@@ -35,13 +34,13 @@ var _ = Describe("PushEventScanner", func() {
 			})
 		}
 
-		fakeClient = new(fakes.FakeClient)
+		fakeClient = new(datadogfakes.FakeClient)
 		emitter := logging.NewEmitter(fakeClient)
 		logger = lagertest.NewTestLogger("scanner")
-		scanner = NewPushEventScanner(fetchDiff, scan, emitter)
+		scanner = webhook.NewPushEventScanner(fetchDiff, scan, emitter)
 	})
 
-	It("Counts violations in a push event", func() {
+	It("counts violations in a push event", func() {
 		someString := "some-string"
 		scanner.ScanPushEvent(logger, github.PushEvent{
 			Repo: &github.PushEventRepository{

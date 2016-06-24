@@ -22,6 +22,11 @@ installed with:
 
     $ go install github.com/onsi/ginkgo/ginkgo
 
+The fakes can be generated using the `counterfeiter` tool. This can be
+installed with:
+
+    $ go get github.com/maxbrunsfeld/counterfeiter
+
 ## Workflow
 
 You can `go get` and edit the files like normal in this repository. If any
