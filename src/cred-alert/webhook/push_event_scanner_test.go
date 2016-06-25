@@ -6,9 +6,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"cred-alert/datadog/datadogfakes"
 	"cred-alert/git"
-	"cred-alert/logging"
+	"cred-alert/logging/loggingfakes"
 	"cred-alert/webhook"
 
 	"github.com/google/go-github/github"
@@ -18,9 +17,9 @@ import (
 
 var _ = Describe("PushEventScanner", func() {
 	var (
-		scanner    *webhook.PushEventScanner
-		logger     *lagertest.TestLogger
-		fakeClient *datadogfakes.FakeClient
+		scanner *webhook.PushEventScanner
+		logger  *lagertest.TestLogger
+		emitter *loggingfakes.FakeEmitter
 	)
 
 	BeforeEach(func() {
@@ -38,8 +37,7 @@ var _ = Describe("PushEventScanner", func() {
 			})
 		}
 
-		fakeClient = new(datadogfakes.FakeClient)
-		emitter := logging.NewEmitter(fakeClient)
+		emitter = &loggingfakes.FakeEmitter{}
 		logger = lagertest.NewTestLogger("scanner")
 		scanner = webhook.NewPushEventScanner(fetchDiff, scan, emitter)
 	})
@@ -53,7 +51,7 @@ var _ = Describe("PushEventScanner", func() {
 			After: &someString,
 		})
 
-		Expect(fakeClient.PublishSeriesCallCount()).To(Equal(1))
+		Expect(emitter.CountViolationCallCount()).To(Equal(1))
 	})
 
 	Context("when we fail to fetch the diff", func() {
@@ -69,7 +67,7 @@ var _ = Describe("PushEventScanner", func() {
 			fetchDiff := func(logger lager.Logger, event github.PushEvent) (string, error) {
 				return "", errors.New("disaster")
 			}
-			emitter := logging.NewEmitter(fakeClient)
+			emitter = &loggingfakes.FakeEmitter{}
 
 			scanner = webhook.NewPushEventScanner(fetchDiff, scan, emitter)
 		})
@@ -84,7 +82,7 @@ var _ = Describe("PushEventScanner", func() {
 			})
 
 			Expect(wasScanned).To(BeFalse())
-			Expect(fakeClient.PublishSeriesCallCount()).To(Equal(0))
+			Expect(emitter.CountViolationCallCount()).To(Equal(0))
 		})
 	})
 })

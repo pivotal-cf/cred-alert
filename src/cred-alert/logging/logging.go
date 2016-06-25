@@ -1,51 +1,53 @@
 package logging
 
 import (
-	"cred-alert/datadog"
-	"errors"
+	"time"
 
 	"github.com/pivotal-golang/lager"
 
-	"fmt"
-	"os"
-	"time"
+	"cred-alert/datadog"
 )
+
+func BuildEmitter(apiKey string, environment string) Emitter {
+	if apiKey == "" {
+		return &nullEmitter{
+			environment: environment,
+		}
+	}
+
+	client := datadog.NewClient(apiKey)
+
+	return &emitter{
+		dataDogClient: client,
+		environment:   environment,
+	}
+}
+
+//go:generate counterfeiter . Emitter
 
 type Emitter interface {
 	CountViolation(logger lager.Logger, count int)
 }
 
+type nullEmitter struct {
+	environment string
+}
+
+func (e *nullEmitter) CountViolation(logger lager.Logger, count int) {
+	logger.Session("emit-violation-count", lager.Data{
+		"environment":     e.environment,
+		"violation-count": count,
+	}).Debug("emitted")
+}
+
 type emitter struct {
-	dataDogClient  datadog.Client
-	environmentTag string
-}
-
-func NewEmitter(client datadog.Client) *emitter {
-	return &emitter{dataDogClient: client}
-}
-
-func DefaultEmitter() (Emitter, error) {
-	apiKey := os.Getenv("DATA_DOG_API_KEY")
-	environmentTag := os.Getenv("DATA_DOG_ENVIRONMENT_TAG")
-
-	if apiKey == "" {
-		return nil, errors.New("Error: environment variable DATA_DOG_API_KEY not set")
-	}
-
-	client := datadog.NewClient(apiKey)
-	emitter := NewEmitter(client)
-
-	if environmentTag == "" {
-		fmt.Printf("Warning: DATA_DOG_ENVIRONMENT_TAG not set")
-	} else {
-		emitter.environmentTag = environmentTag
-	}
-
-	return emitter, nil
+	dataDogClient datadog.Client
+	environment   string
 }
 
 func (e *emitter) CountViolation(logger lager.Logger, count int) {
-	logger.Session("emit-violation-count", lager.Data{
+	logger = logger.Session("emit-violation-count", lager.Data{
+		"environment":     e.environment,
 		"violation-count": count,
 	})
 
@@ -54,10 +56,8 @@ func (e *emitter) CountViolation(logger lager.Logger, count int) {
 	}
 
 	points := []datadog.Point{}
-	tags := []string{"credential_violation"}
-	if e.environmentTag != "" {
-		tags = append(tags, e.environmentTag)
-	}
+	tags := []string{e.environment}
+
 	metric := datadog.Metric{
 		Name:   "cred_alert.violations",
 		Points: append(points, datadog.Point{time.Now(), float32(count)}),
