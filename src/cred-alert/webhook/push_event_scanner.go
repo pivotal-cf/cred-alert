@@ -21,11 +21,11 @@ type Scanner interface {
 
 type PushEventScanner struct {
 	fetchDiff func(lager.Logger, github.PushEvent) (string, error)
-	scan      func(string) []git.Line
+	scan      func(lager.Logger, string) []git.Line
 	emitter   logging.Emitter
 }
 
-func NewPushEventScanner(fetchDiff func(lager.Logger, github.PushEvent) (string, error), scan func(string) []git.Line, emitter logging.Emitter) *PushEventScanner {
+func NewPushEventScanner(fetchDiff func(lager.Logger, github.PushEvent) (string, error), scan func(lager.Logger, string) []git.Line, emitter logging.Emitter) *PushEventScanner {
 	scanner := new(PushEventScanner)
 	scanner.fetchDiff = fetchDiff
 	scanner.scan = scan
@@ -50,12 +50,14 @@ func DefaultPushEventScanner() *PushEventScanner {
 }
 
 func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEvent) {
+	logger = logger.Session("scan-event")
+
 	diff, err := s.fetchDiff(logger, event)
 	if err != nil {
-		logger.Error("failed-to-fetch-diff", err)
+		return
 	}
 
-	lines := s.scan(diff)
+	lines := s.scan(logger, diff)
 
 	for _, line := range lines {
 		logger.Info("found-credential", lager.Data{
@@ -66,7 +68,7 @@ func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEv
 		if s.emitter == nil {
 			fmt.Fprintf(os.Stderr, "Error: data dog client is missing")
 		} else {
-			s.emitter.CountViolation(len(lines))
+			s.emitter.CountViolation(logger, len(lines))
 		}
 	}
 }

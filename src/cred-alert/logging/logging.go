@@ -4,13 +4,15 @@ import (
 	"cred-alert/datadog"
 	"errors"
 
+	"github.com/pivotal-golang/lager"
+
 	"fmt"
 	"os"
 	"time"
 )
 
 type Emitter interface {
-	CountViolation(count int)
+	CountViolation(logger lager.Logger, count int)
 }
 
 type emitter struct {
@@ -42,7 +44,11 @@ func DefaultEmitter() (Emitter, error) {
 	return emitter, nil
 }
 
-func (e *emitter) CountViolation(count int) {
+func (e *emitter) CountViolation(logger lager.Logger, count int) {
+	logger.Session("emit-violation-count", lager.Data{
+		"violation-count": count,
+	})
+
 	if count <= 0 {
 		return
 	}
@@ -63,6 +69,9 @@ func (e *emitter) CountViolation(count int) {
 	client := e.dataDogClient
 	err := client.PublishSeries(append(series, metric))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: datadog api returned error %s\n", err)
+		logger.Error("failed", err)
+		return
 	}
+
+	logger.Debug("emitted")
 }

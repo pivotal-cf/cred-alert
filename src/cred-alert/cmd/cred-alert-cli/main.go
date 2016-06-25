@@ -30,7 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	matchingLines := git.Scan(input)
+	matchingLines := git.Scan(logger, input)
 	for _, line := range matchingLines {
 		fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
 	}

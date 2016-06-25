@@ -1,6 +1,8 @@
 package webhook_test
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -26,7 +28,7 @@ var _ = Describe("PushEventScanner", func() {
 			return "", nil
 		}
 
-		scan := func(diff string) []git.Line {
+		scan := func(logger lager.Logger, diff string) []git.Line {
 			lines := []git.Line{}
 
 			return append(lines, git.Line{
@@ -52,5 +54,37 @@ var _ = Describe("PushEventScanner", func() {
 		})
 
 		Expect(fakeClient.PublishSeriesCallCount()).To(Equal(1))
+	})
+
+	Context("when we fail to fetch the diff", func() {
+		var wasScanned bool
+
+		BeforeEach(func() {
+			scan := func(logger lager.Logger, diff string) []git.Line {
+				wasScanned = true
+
+				return nil
+			}
+
+			fetchDiff := func(logger lager.Logger, event github.PushEvent) (string, error) {
+				return "", errors.New("disaster")
+			}
+			emitter := logging.NewEmitter(fakeClient)
+
+			scanner = webhook.NewPushEventScanner(fetchDiff, scan, emitter)
+		})
+
+		It("does not try to scan the diff", func() {
+			someString := "some-string"
+			scanner.ScanPushEvent(logger, github.PushEvent{
+				Repo: &github.PushEventRepository{
+					FullName: &someString,
+				},
+				After: &someString,
+			})
+
+			Expect(wasScanned).To(BeFalse())
+			Expect(fakeClient.PublishSeriesCallCount()).To(Equal(0))
+		})
 	})
 })

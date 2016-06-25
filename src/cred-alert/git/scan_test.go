@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("Scan", func() {
@@ -25,8 +26,8 @@ index 940393e..fa5a232 100644
 +private_key: "ExAmPlE_should_not_match"
 `
 	It("scans a diff and return Lines", func() {
-		matchingLines := git.Scan(shortDiff)
+		logger := lagertest.NewTestLogger("scanner")
+		matchingLines := git.Scan(logger, shortDiff)
 		Expect(len(matchingLines)).To(Equal(2))
 	})
-
 })

@@ -1,8 +1,12 @@
 package git
 
-import "cred-alert/patterns"
+import (
+	"cred-alert/patterns"
 
-func Scan(input string) []Line {
+	"github.com/pivotal-golang/lager"
+)
+
+func Scan(logger lager.Logger, input string) []Line {
 	matcher := patterns.DefaultMatcher()
 	diffScanner := NewDiffScanner(input)
 
