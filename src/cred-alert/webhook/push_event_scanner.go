@@ -47,8 +47,9 @@ func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEv
 			"line-number": line.LineNumber,
 		})
 
-		s.emitter.CountViolation(logger, len(lines))
 	}
+
+	s.emitter.CountViolation(logger, len(lines))
 }
 
 func FetchDiff(logger lager.Logger, event github.PushEvent) (string, error) {
