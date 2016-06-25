@@ -27,7 +27,7 @@ func main() {
 	}
 
 	logger := lager.NewLogger("cred-alert")
-	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
 	logger.Info("starting-server", lager.Data{
 		"port": opts.Port,

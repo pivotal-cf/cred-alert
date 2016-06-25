@@ -7,12 +7,14 @@ import (
 )
 
 func Scan(logger lager.Logger, input string) []Line {
+	logger = logger.Session("scan")
+
 	matcher := patterns.DefaultMatcher()
 	diffScanner := NewDiffScanner(input)
 
 	matchingLines := []Line{}
 
-	for diffScanner.Scan() {
+	for diffScanner.Scan(logger) {
 		line := *diffScanner.Line()
 		found := matcher.Match(line.Content)
 

@@ -3,6 +3,8 @@ package git
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pivotal-golang/lager"
 )
 
 type DiffScanner struct {
@@ -20,29 +22,39 @@ func NewDiffScanner(diff string) *DiffScanner {
 	return d
 }
 
-func (d *DiffScanner) Scan() bool {
-	// read information about hunk
+func (d *DiffScanner) Scan(logger lager.Logger) bool {
+	logger = logger.Session("diff-scanner")
 
+	// read information about hunk
 	for isContentLine := false; isContentLine == false; {
+		logger = logger.WithData(lager.Data{
+			"line-number": d.cursor,
+		})
+
 		d.cursor++
+
 		if d.cursor >= len(d.diff) {
-			// fmt.Println("\nWe have passed the last line, returning false...\n")
+			logger.Debug("passed-last-line")
 			return false
 		}
 
+		logger.Debug("considering-line")
 		rawLine := d.diff[d.cursor]
-		// fmt.Printf("\nConsidering line: <<<%s>>>\n", rawLine)
 
-		d.scanHeader(rawLine)
-		isContentLine = d.scanHunk(rawLine)
+		d.scanHeader(logger, rawLine)
+		isContentLine = d.scanHunk(logger, rawLine)
 	}
 
-	// fmt.Println("Out of the loop, returning true...")
+	logger.Debug("out-of-the-loop")
 	return true
 }
 
-func (d *DiffScanner) scanHeader(rawLine string) {
+func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 	nextLineNumber := d.currentLineNumber + 1
+
+	logger = logger.Session("scan-header", lager.Data{
+		"next-line-number": nextLineNumber,
+	})
 
 	if isInHeader(nextLineNumber, d.currentHunk) == false {
 		return
@@ -50,29 +62,34 @@ func (d *DiffScanner) scanHeader(rawLine string) {
 
 	path, err := fileHeader(rawLine, nextLineNumber, d.currentHunk)
 	if err == nil {
-		// fmt.Printf("Detected file header: %s\n", rawLine)
+		logger.Debug("detected-file-header")
 		d.currentPath = path
 		d.currentHunk = nil
 	}
 
 	startLine, length, err := hunkHeader(rawLine)
 	if err == nil {
-		// fmt.Printf("Detected hunk header: %s\n", rawLine)
+		logger.Debug("detected-hunk-header")
 		d.currentHunk = newHunk(d.currentPath, startLine, length)
+
 		// the hunk header exists immeidately before the first line
 		d.currentLineNumber = startLine - 1
 	}
 }
 
-func (d *DiffScanner) scanHunk(rawLine string) bool {
+func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
 	nextLineNumber := d.currentLineNumber + 1
+
+	logger = logger.Session("scan-hunk", lager.Data{
+		"next-line-number": nextLineNumber,
+	})
 
 	if isInHeader(nextLineNumber, d.currentHunk) {
 		return false
 	}
 
 	if contextOrAddedLine(rawLine) {
-		// fmt.Printf("Detected content line: %s\n", rawLine)
+		logger.Debug("detected-content-line")
 		d.currentLineNumber = nextLineNumber
 		return true
 	}
@@ -91,8 +108,6 @@ func (d *DiffScanner) Line() *Line {
 		fmt.Println(err)
 	}
 	line.LineNumber = d.currentLineNumber
-
-	// fmt.Printf("%d: %s\n", line.LineNumber, line.Content)
 
 	return line
 }
