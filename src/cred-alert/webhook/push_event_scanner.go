@@ -6,41 +6,44 @@ import (
 	"fmt"
 	"os"
 
+	myGithub "cred-alert/github"
+
 	"github.com/google/go-github/github"
 )
 
 type PushEventScanner struct {
-	fetchDiff func(github.PushEvent) (string, error)
-	scan      func(string) []git.Line
-	emitter   logging.Emitter
+	githubClient myGithub.Client
+	scan         func(string) []git.Line
+	emitter      logging.Emitter
 }
 
-func NewPushEventScanner(fetchDiff func(github.PushEvent) (string, error), scan func(string) []git.Line, emitter logging.Emitter) *PushEventScanner {
-	scanner := new(PushEventScanner)
-	scanner.fetchDiff = fetchDiff
-	scanner.scan = scan
-	scanner.emitter = emitter
+func NewPushEventScanner(githubClient myGithub.Client, scan func(string) []git.Line, emitter logging.Emitter) *PushEventScanner {
+	scanner := PushEventScanner{
+		githubClient: githubClient,
+		scan:         scan,
+		emitter:      emitter,
+	}
 
-	return scanner
+	return &scanner
 }
 
-func DefaultPushEventScanner() *PushEventScanner {
+func DefaultPushEventScanner(githubClient myGithub.Client) *PushEventScanner {
 	var scanner *PushEventScanner
 
 	emitter, err := logging.DefaultEmitter()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: ", err)
-		scanner = NewPushEventScanner(fetchDiff, git.Scan, nil)
+		scanner = NewPushEventScanner(githubClient, git.Scan, nil)
 	} else {
-		scanner = NewPushEventScanner(fetchDiff, git.Scan, emitter)
+		scanner = NewPushEventScanner(githubClient, git.Scan, emitter)
 	}
 
 	return scanner
 }
 
 func (s PushEventScanner) ScanPushEvent(event github.PushEvent) {
-	diff, err := s.fetchDiff(event)
+	diff, err := s.githubClient.CompareRefs(*event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "request error: ", err)
 	}

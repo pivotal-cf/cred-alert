@@ -10,22 +10,36 @@ import (
 	"github.com/google/go-github/github"
 )
 
-var SecretKey []byte
+type WebhookHandler interface {
+	HandleWebhook(w http.ResponseWriter, r *http.Request)
+}
 
-func HandleWebhook(w http.ResponseWriter, r *http.Request) {
-	payload, err := github.ValidatePayload(r, SecretKey)
+type webhookHandler struct {
+	secretKey         []byte
+	githubAccessToken string
+}
+
+func NewWebhookHandler(secretKey, githubAccessToken string) webhookHandler {
+	return webhookHandler{
+		secretKey:         []byte(secretKey),
+		githubAccessToken: githubAccessToken,
+	}
+}
+
+func (w webhookHandler) HandleWebhook(writer http.ResponseWriter, r *http.Request) {
+	payload, err := github.ValidatePayload(r, w.secretKey)
 	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
+		writer.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	var event github.PushEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	handlePushEvent(w, event)
+	handlePushEvent(writer, event)
 }
 
 func handlePushEvent(w http.ResponseWriter, event github.PushEvent) {
@@ -43,18 +57,7 @@ func handlePushEvent(w http.ResponseWriter, event github.PushEvent) {
 
 	w.WriteHeader(http.StatusOK)
 
-	scanner := DefaultPushEventScanner()
+	githubClient := myGithub.DefaultClient()
+	scanner := DefaultPushEventScanner(githubClient)
 	go scanner.ScanPushEvent(event)
-}
-
-func fetchDiff(event github.PushEvent) (string, error) {
-	httpClient := &http.Client{}
-	githubClient := myGithub.NewClient("https://api.github.com/", httpClient)
-
-	diff, err := githubClient.CompareRefs(*event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
-	if err != nil {
-		return "", err
-	}
-
-	return diff, nil
 }

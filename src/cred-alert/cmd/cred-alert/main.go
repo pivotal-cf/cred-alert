@@ -13,11 +13,17 @@ func main() {
 	if os.Getenv("GITHUB_WEBHOOK_SECRET_KEY") == "" {
 		log.Fatal("Error: environment variable GITHUB_WEBHOOK_SECRET_KEY not set")
 	}
-	webhook.SecretKey = []byte(os.Getenv("GITHUB_WEBHOOK_SECRET_KEY"))
+	if os.Getenv("GITHUB_ACCESS_TOKEN") == "" {
+		log.Fatal("Error: environment variable GITHUB_ACCESS_TOKEN not set")
+	}
 
 	log.Print("Starting webserver...")
 
-	http.HandleFunc("/webhook", webhook.HandleWebhook)
+	secretKey := os.Getenv("GITHUB_WEBHOOK_SECRET_KEY")
+	githubAccessToken := os.Getenv("GITHUB_ACCESS_TOKEN")
+
+	webhookHandler := webhook.NewWebhookHandler(secretKey, githubAccessToken)
+	http.HandleFunc("/webhook", webhookHandler.HandleWebhook)
 
 	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 }

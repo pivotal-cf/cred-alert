@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/cloudfoundry/gunk/urljoiner"
+	"golang.org/x/oauth2"
 )
+
+const DEFAULT_GITHUB_URL = "https://api.github.com/"
 
 type Client interface {
 	CompareRefs(owner, repo, base, head string) (string, error)
@@ -20,6 +24,19 @@ type client struct {
 func NewClient(baseURL string, httpClient *http.Client) *client {
 	return &client{
 		baseURL:    baseURL,
+		httpClient: httpClient,
+	}
+}
+
+func DefaultClient() *client {
+	githubAccessToken := os.Getenv("GITHUB_ACCESS_TOKEN")
+	tokenSource := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: githubAccessToken},
+	)
+	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
+
+	return &client{
+		baseURL:    DEFAULT_GITHUB_URL,
 		httpClient: httpClient,
 	}
 }

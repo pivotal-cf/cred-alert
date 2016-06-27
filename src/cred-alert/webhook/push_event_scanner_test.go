@@ -14,12 +14,10 @@ import (
 var _ = Describe("PushEventScanner", func() {
 
 	var scanner *PushEventScanner
-	var fakeClient *fakes.FakeClient
+	var fakeDatadogClient *fakes.FakeClient
+	var fakeGithubClient *fakes.FakeGithubClient
 
 	BeforeEach(func() {
-		fetchDiff := func(event github.PushEvent) (string, error) {
-			return "", nil
-		}
 		scan := func(diff string) []git.Line {
 			lines := []git.Line{}
 
@@ -30,9 +28,10 @@ var _ = Describe("PushEventScanner", func() {
 			})
 		}
 
-		fakeClient = new(fakes.FakeClient)
-		emitter := logging.NewEmitter(fakeClient)
-		scanner = NewPushEventScanner(fetchDiff, scan, emitter)
+		fakeDatadogClient = new(fakes.FakeClient)
+		fakeGithubClient = new(fakes.FakeGithubClient)
+		emitter := logging.NewEmitter(fakeDatadogClient)
+		scanner = NewPushEventScanner(fakeGithubClient, scan, emitter)
 	})
 
 	It("Counts violations in a push event", func() {
@@ -40,10 +39,15 @@ var _ = Describe("PushEventScanner", func() {
 		scanner.ScanPushEvent(github.PushEvent{
 			Repo: &github.PushEventRepository{
 				FullName: &someString,
+				Name:     &someString,
+				Owner: &github.PushEventRepoOwner{
+					Name: &someString,
+				},
 			},
-			After: &someString,
+			Before: &someString,
+			After:  &someString,
 		})
 
-		Expect(fakeClient.PublishSeriesCallCount()).To(Equal(1))
+		Expect(fakeDatadogClient.PublishSeriesCallCount()).To(Equal(1))
 	})
 })
