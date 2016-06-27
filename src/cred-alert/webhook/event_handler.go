@@ -35,6 +35,8 @@ func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, strin
 func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) {
 	logger = logger.Session("handle-event")
 
+	s.emitter.CountAPIRequest(logger)
+
 	diff, err := s.githubClient.CompareRefs(logger, *event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
 	if err != nil {
 		return
