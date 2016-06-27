@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"os"
 
+	"golang.org/x/oauth2"
+
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-golang/lager"
 
 	"cred-alert/git"
+	"cred-alert/github"
 	"cred-alert/logging"
 	"cred-alert/webhook"
 )
@@ -17,7 +20,10 @@ import (
 type Opts struct {
 	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
 
-	Token string `short:"t" long:"token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_KEY" value-name:"TOKEN" required:"true"`
+	GitHub struct {
+		WebhookToken string `short:"w" long:"webhook-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_KEY" value-name:"TOKEN" required:"true"`
+		AccessToken  string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
+	} `group:"GitHub Options"`
 
 	Datadog struct {
 		APIKey      string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATA_DOG_API_KEY" value-name:"KEY"`
@@ -40,10 +46,15 @@ func main() {
 		"port": opts.Port,
 	})
 
+	tokenSource := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
+	)
+	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
+	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient)
+
 	emitter := logging.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
-	scanner := webhook.NewPushEventScanner(webhook.FetchDiff, git.Scan, emitter)
+	scanner := webhook.NewPushEventScanner(ghClient, git.Scan, emitter)
 
-	http.Handle("/webhook", webhook.Handler(logger, scanner, opts.Token))
-
+	http.Handle("/webhook", webhook.Handler(logger, scanner, opts.GitHub.WebhookToken))
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", opts.Port), nil))
 }

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cred-alert/git"
+	"cred-alert/github/githubfakes"
 	"cred-alert/logging/loggingfakes"
 	"cred-alert/webhook"
 
@@ -17,16 +18,13 @@ import (
 
 var _ = Describe("PushEventScanner", func() {
 	var (
-		scanner *webhook.PushEventScanner
-		logger  *lagertest.TestLogger
-		emitter *loggingfakes.FakeEmitter
+		scanner          *webhook.PushEventScanner
+		logger           *lagertest.TestLogger
+		emitter          *loggingfakes.FakeEmitter
+		fakeGithubClient *githubfakes.FakeClient
 	)
 
 	BeforeEach(func() {
-		fetchDiff := func(logger lager.Logger, event github.PushEvent) (string, error) {
-			return "", nil
-		}
-
 		scan := func(logger lager.Logger, diff string) []git.Line {
 			lines := []git.Line{}
 
@@ -39,7 +37,8 @@ var _ = Describe("PushEventScanner", func() {
 
 		emitter = &loggingfakes.FakeEmitter{}
 		logger = lagertest.NewTestLogger("scanner")
-		scanner = webhook.NewPushEventScanner(fetchDiff, scan, emitter)
+		fakeGithubClient = new(githubfakes.FakeClient)
+		scanner = webhook.NewPushEventScanner(fakeGithubClient, scan, emitter)
 	})
 
 	It("counts violations in a push event", func() {
@@ -47,8 +46,13 @@ var _ = Describe("PushEventScanner", func() {
 		scanner.ScanPushEvent(logger, github.PushEvent{
 			Repo: &github.PushEventRepository{
 				FullName: &someString,
+				Name:     &someString,
+				Owner: &github.PushEventRepoOwner{
+					Name: &someString,
+				},
 			},
-			After: &someString,
+			Before: &someString,
+			After:  &someString,
 		})
 
 		Expect(emitter.CountViolationCallCount()).To(Equal(1))
@@ -64,21 +68,24 @@ var _ = Describe("PushEventScanner", func() {
 				return nil
 			}
 
-			fetchDiff := func(logger lager.Logger, event github.PushEvent) (string, error) {
-				return "", errors.New("disaster")
-			}
 			emitter = &loggingfakes.FakeEmitter{}
 
-			scanner = webhook.NewPushEventScanner(fetchDiff, scan, emitter)
+			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
+			scanner = webhook.NewPushEventScanner(fakeGithubClient, scan, emitter)
 		})
 
 		It("does not try to scan the diff", func() {
-			someString := "some-string"
+			someString := github.String("some-string")
 			scanner.ScanPushEvent(logger, github.PushEvent{
 				Repo: &github.PushEventRepository{
-					FullName: &someString,
+					Name:     someString,
+					FullName: someString,
+					Owner: &github.PushEventRepoOwner{
+						Name: someString,
+					},
 				},
-				After: &someString,
+				After:  someString,
+				Before: someString,
 			})
 
 			Expect(wasScanned).To(BeFalse())

@@ -10,6 +10,10 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+const DEFAULT_GITHUB_URL = "https://api.github.com/"
+
+//go:generate counterfeiter . Client
+
 type Client interface {
 	CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error)
 }
