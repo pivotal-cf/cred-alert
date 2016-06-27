@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-golang/lager"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/grouper"
+	"github.com/tedsuo/ifrit/http_server"
+	"github.com/tedsuo/ifrit/sigmon"
 
 	"cred-alert/git"
 	"cred-alert/logging"
@@ -36,14 +39,27 @@ func main() {
 	logger := lager.NewLogger("cred-alert")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
+	emitter := logging.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
+	scanner := webhook.NewPushEventScanner(webhook.FetchDiff, git.Scan, emitter)
+
 	logger.Info("starting-server", lager.Data{
 		"port": opts.Port,
 	})
 
-	emitter := logging.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
-	scanner := webhook.NewPushEventScanner(webhook.FetchDiff, git.Scan, emitter)
+	router := http.NewServeMux()
+	router.Handle("/webhook", webhook.Handler(logger, scanner, opts.Token))
 
-	http.Handle("/webhook", webhook.Handler(logger, scanner, opts.Token))
+	members := []grouper.Member{
+		{"api", http_server.New(
+			fmt.Sprintf(":%d", opts.Port),
+			router,
+		)},
+	}
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", opts.Port), nil))
+	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
+
+	err = <-ifrit.Invoke(runner).Wait()
+	if err != nil {
+		logger.Error("running-app-failed", err)
+	}
 }
