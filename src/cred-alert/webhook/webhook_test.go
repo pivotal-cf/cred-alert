@@ -23,8 +23,8 @@ var _ = Describe("Webhook", func() {
 	var (
 		logger *lagertest.TestLogger
 
-		handler http.Handler
-		scanner *webhookfakes.FakeScanner
+		handler      http.Handler
+		eventHandler *webhookfakes.FakeEventHandler
 
 		recorder *httptest.ResponseRecorder
 
@@ -34,10 +34,10 @@ var _ = Describe("Webhook", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("webhook")
 		recorder = httptest.NewRecorder()
-		scanner = &webhookfakes.FakeScanner{}
+		eventHandler = &webhookfakes.FakeEventHandler{}
 		token = "example-key"
 
-		handler = webhook.Handler(logger, scanner, token)
+		handler = webhook.Handler(logger, eventHandler, token)
 	})
 
 	It("scans the push event successfully", func() {
@@ -55,7 +55,7 @@ var _ = Describe("Webhook", func() {
 
 		handler.ServeHTTP(recorder, fakeRequest)
 
-		Eventually(scanner.ScanPushEventCallCount).Should(Equal(1))
+		Eventually(eventHandler.HandleEventCallCount).Should(Equal(1))
 		Expect(recorder.Code).To(Equal(http.StatusOK))
 	})
 
@@ -74,7 +74,7 @@ var _ = Describe("Webhook", func() {
 
 		handler.ServeHTTP(recorder, fakeRequest)
 
-		Consistently(scanner.ScanPushEventCallCount).Should(BeZero())
+		Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
 		Expect(recorder.Code).To(Equal(http.StatusForbidden))
 	})
 
@@ -86,7 +86,7 @@ var _ = Describe("Webhook", func() {
 
 		handler.ServeHTTP(recorder, fakeRequest)
 
-		Consistently(scanner.ScanPushEventCallCount).Should(BeZero())
+		Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
 		Expect(recorder.Code).To(Equal(http.StatusBadRequest))
 	})
 })

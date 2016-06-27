@@ -11,16 +11,16 @@ import (
 const initalCommitParentHash = "0000000000000000000000000000000000000000"
 
 type handler struct {
-	logger    lager.Logger
-	secretKey []byte
-	scanner   Scanner
+	logger       lager.Logger
+	secretKey    []byte
+	eventHandler EventHandler
 }
 
-func Handler(logger lager.Logger, scanner Scanner, secretKey string) *handler {
+func Handler(logger lager.Logger, eventHandler EventHandler, secretKey string) *handler {
 	return &handler{
-		logger:    logger.Session("webhook-handler"),
-		secretKey: []byte(secretKey),
-		scanner:   scanner,
+		logger:       logger.Session("webhook-handler"),
+		secretKey:    []byte(secretKey),
+		eventHandler: eventHandler,
 	}
 }
 
@@ -64,5 +64,5 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 
 	w.WriteHeader(http.StatusOK)
 
-	go h.scanner.ScanPushEvent(logger, event)
+	go h.eventHandler.HandleEvent(logger, event)
 }

@@ -10,30 +10,30 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-//go:generate counterfeiter . Scanner
+//go:generate counterfeiter . EventHandler
 
-type Scanner interface {
-	ScanPushEvent(lager.Logger, github.PushEvent)
+type EventHandler interface {
+	HandleEvent(lager.Logger, github.PushEvent)
 }
 
-type PushEventScanner struct {
+type eventHandler struct {
 	githubClient myGithub.Client
 	scan         func(lager.Logger, string) []git.Line
 	emitter      logging.Emitter
 }
 
-func NewPushEventScanner(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter logging.Emitter) *PushEventScanner {
-	scanner := PushEventScanner{
+func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter logging.Emitter) *eventHandler {
+	handler := &eventHandler{
 		githubClient: githubClient,
 		scan:         scan,
 		emitter:      emitter,
 	}
 
-	return &scanner
+	return handler
 }
 
-func (s PushEventScanner) ScanPushEvent(logger lager.Logger, event github.PushEvent) {
-	logger = logger.Session("scan-event")
+func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) {
+	logger = logger.Session("handle-event")
 
 	diff, err := s.githubClient.CompareRefs(logger, *event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
 	if err != nil {

@@ -16,9 +16,9 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
-var _ = Describe("PushEventScanner", func() {
+var _ = Describe("EventHandler", func() {
 	var (
-		scanner          *webhook.PushEventScanner
+		eventHandler     webhook.EventHandler
 		logger           *lagertest.TestLogger
 		emitter          *loggingfakes.FakeEmitter
 		fakeGithubClient *githubfakes.FakeClient
@@ -36,14 +36,14 @@ var _ = Describe("PushEventScanner", func() {
 		}
 
 		emitter = &loggingfakes.FakeEmitter{}
-		logger = lagertest.NewTestLogger("scanner")
+		logger = lagertest.NewTestLogger("event-handler")
 		fakeGithubClient = new(githubfakes.FakeClient)
-		scanner = webhook.NewPushEventScanner(fakeGithubClient, scan, emitter)
+		eventHandler = webhook.NewEventHandler(fakeGithubClient, scan, emitter)
 	})
 
 	It("counts violations in a push event", func() {
 		someString := "some-string"
-		scanner.ScanPushEvent(logger, github.PushEvent{
+		eventHandler.HandleEvent(logger, github.PushEvent{
 			Repo: &github.PushEventRepository{
 				FullName: &someString,
 				Name:     &someString,
@@ -71,12 +71,12 @@ var _ = Describe("PushEventScanner", func() {
 			emitter = &loggingfakes.FakeEmitter{}
 
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
-			scanner = webhook.NewPushEventScanner(fakeGithubClient, scan, emitter)
+			eventHandler = webhook.NewEventHandler(fakeGithubClient, scan, emitter)
 		})
 
 		It("does not try to scan the diff", func() {
 			someString := github.String("some-string")
-			scanner.ScanPushEvent(logger, github.PushEvent{
+			eventHandler.HandleEvent(logger, github.PushEvent{
 				Repo: &github.PushEventRepository{
 					Name:     someString,
 					FullName: someString,
