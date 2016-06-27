@@ -9,3 +9,5 @@ applications:
   stack: cflinuxfs2
   services:
   - cred-alert-staging-logs
+  env:
+    DATA_DOG_ENVIRONMENT_TAG: staging
