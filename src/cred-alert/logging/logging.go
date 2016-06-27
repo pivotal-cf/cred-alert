@@ -8,6 +8,13 @@ import (
 	"cred-alert/datadog"
 )
 
+func NewEmitter(dataDogClient datadog.Client, environment string) Emitter {
+	return &emitter{
+		client:      dataDogClient,
+		environment: environment,
+	}
+}
+
 func BuildEmitter(apiKey string, environment string) Emitter {
 	if apiKey == "" {
 		return &nullEmitter{
@@ -17,16 +24,14 @@ func BuildEmitter(apiKey string, environment string) Emitter {
 
 	client := datadog.NewClient(apiKey)
 
-	return &emitter{
-		dataDogClient: client,
-		environment:   environment,
-	}
+	return NewEmitter(client, environment)
 }
 
 //go:generate counterfeiter . Emitter
 
 type Emitter interface {
 	CountViolation(logger lager.Logger, count int)
+	CountAPIRequest(logger lager.Logger)
 }
 
 type nullEmitter struct {
@@ -40,9 +45,15 @@ func (e *nullEmitter) CountViolation(logger lager.Logger, count int) {
 	}).Debug("emitted")
 }
 
+func (e *nullEmitter) CountAPIRequest(logger lager.Logger) {
+	logger.Session("emit-api-request-count", lager.Data{
+		"environment": e.environment,
+	}).Debug("emitted")
+}
+
 type emitter struct {
-	dataDogClient datadog.Client
-	environment   string
+	client      datadog.Client
+	environment string
 }
 
 func (e *emitter) CountViolation(logger lager.Logger, count int) {
@@ -55,19 +66,39 @@ func (e *emitter) CountViolation(logger lager.Logger, count int) {
 		return
 	}
 
-	points := []datadog.Point{}
-	tags := []string{e.environment}
+	metric := datadog.Metric{
+		Name: "cred_alert.violations",
+		Points: []datadog.Point{
+			{Timestamp: time.Now(), Value: float32(count)},
+		},
+		Type: "count",
+		Tags: []string{e.environment},
+	}
+
+	err := e.client.PublishSeries([]datadog.Metric{metric})
+	if err != nil {
+		logger.Error("failed", err)
+		return
+	}
+
+	logger.Debug("emitted")
+}
+
+func (e *emitter) CountAPIRequest(logger lager.Logger) {
+	logger = logger.Session("emit-api-request-count", lager.Data{
+		"environment": e.environment,
+	})
 
 	metric := datadog.Metric{
-		Name:   "cred_alert.violations",
-		Points: append(points, datadog.Point{time.Now(), float32(count)}),
-		Type:   "count",
-		Tags:   tags,
+		Name: "cred_alert.webhook_requests",
+		Points: []datadog.Point{
+			{Timestamp: time.Now(), Value: float32(1)},
+		},
+		Type: "count",
+		Tags: []string{e.environment},
 	}
-	series := []datadog.Metric{}
 
-	client := e.dataDogClient
-	err := client.PublishSeries(append(series, metric))
+	err := e.client.PublishSeries([]datadog.Metric{metric})
 	if err != nil {
 		logger.Error("failed", err)
 		return
