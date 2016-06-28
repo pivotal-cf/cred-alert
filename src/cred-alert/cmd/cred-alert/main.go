@@ -52,7 +52,7 @@ func main() {
 	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient)
 
 	emitter := logging.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
-	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter)
+	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter, nil)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))

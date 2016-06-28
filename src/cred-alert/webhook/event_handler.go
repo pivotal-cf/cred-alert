@@ -3,6 +3,7 @@ package webhook
 import (
 	"cred-alert/git"
 	"cred-alert/logging"
+	"regexp"
 
 	myGithub "cred-alert/github"
 
@@ -19,18 +20,25 @@ type EventHandler interface {
 type eventHandler struct {
 	githubClient myGithub.Client
 	scan         func(lager.Logger, string) []git.Line
+	whitelist    []*regexp.Regexp
 
 	requestCounter    logging.Counter
 	credentialCounter logging.Counter
 }
 
-func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter logging.Emitter) *eventHandler {
+func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter logging.Emitter, whitelist []string) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
+
+	patterns := make([]*regexp.Regexp, len(whitelist))
+	for i, uncompiled := range whitelist {
+		patterns[i] = regexp.MustCompile(uncompiled)
+	}
 
 	handler := &eventHandler{
 		githubClient: githubClient,
 		scan:         scan,
+		whitelist:    patterns,
 
 		requestCounter:    requestCounter,
 		credentialCounter: credentialCounter,
@@ -41,6 +49,13 @@ func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, strin
 
 func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) {
 	logger = logger.Session("handle-event")
+
+	if s.isWhitelisted(event) {
+		logger.Info("ignored-repo", lager.Data{
+			"repo": *event.Repo.Name,
+		})
+		return
+	}
 
 	s.requestCounter.Inc(logger)
 
@@ -58,4 +73,18 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 	}
 
 	s.credentialCounter.IncN(logger, len(lines))
+}
+
+func (s *eventHandler) isWhitelisted(event github.PushEvent) bool {
+	if event.Repo.Name == nil {
+		return false
+	}
+
+	for _, pattern := range s.whitelist {
+		if pattern.MatchString(*event.Repo.Name) {
+			return true
+		}
+	}
+
+	return false
 }

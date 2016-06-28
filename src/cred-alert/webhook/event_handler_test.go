@@ -28,6 +28,8 @@ var _ = Describe("EventHandler", func() {
 
 		requestCounter    *loggingfakes.FakeCounter
 		credentialCounter *loggingfakes.FakeCounter
+
+		whitelist []string
 	)
 
 	BeforeEach(func() {
@@ -55,7 +57,7 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		eventHandler = webhook.NewEventHandler(fakeGithubClient, scanFunc, emitter)
+		eventHandler = webhook.NewEventHandler(fakeGithubClient, scanFunc, emitter, whitelist)
 	})
 
 	It("emits count when it is invoked", func() {
@@ -73,6 +75,41 @@ var _ = Describe("EventHandler", func() {
 		})
 
 		Expect(requestCounter.IncCallCount()).To(Equal(1))
+	})
+
+	Context("It has a whitelist of ignored repos", func() {
+		var scanCount int
+		BeforeEach(func() {
+			scanCount = 0
+			scanFunc = func(logger lager.Logger, diff string) []git.Line {
+				scanCount++
+				return []git.Line{}
+			}
+			whitelist = []string{"some-credentials"}
+		})
+
+		It("ignores patterns in whitelist", func() {
+			someString := "some-string"
+			repoName := "some-credentials"
+
+			pushEvent := github.PushEvent{
+				Repo: &github.PushEventRepository{
+					FullName: &someString,
+					Name:     &repoName,
+					Owner: &github.PushEventRepoOwner{
+						Name: &someString,
+					},
+				},
+				Before: &someString,
+				After:  &someString,
+			}
+
+			eventHandler.HandleEvent(logger, pushEvent)
+			Expect(scanCount).To(BeZero())
+			Expect(len(logger.LogMessages())).To(Equal(1))
+			Expect(logger.LogMessages()[0]).To(ContainSubstring("ignored-repo"))
+			Expect(logger.Logs()[0].Data["repo"]).To(Equal("some-credentials"))
+		})
 	})
 
 	Context("when a credential is found", func() {
