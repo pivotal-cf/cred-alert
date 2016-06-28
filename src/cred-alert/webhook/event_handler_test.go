@@ -37,6 +37,7 @@ var _ = Describe("EventHandler", func() {
 		credentialCounter *metricsfakes.FakeCounter
 
 		whitelist []string
+		event     github.PushEvent
 	)
 
 	BeforeEach(func() {
@@ -66,14 +67,9 @@ var _ = Describe("EventHandler", func() {
 
 		logger = lagertest.NewTestLogger("event-handler")
 		fakeGithubClient = new(githubfakes.FakeClient)
-	})
 
-	JustBeforeEach(func() {
-		eventHandler = webhook.NewEventHandler(fakeGithubClient, scanFunc, emitter, notifier, whitelist)
-	})
-
-	It("emits count when it is invoked", func() {
-		eventHandler.HandleEvent(logger, github.PushEvent{
+		someString := "some-string"
+		event = github.PushEvent{
 			Repo: &github.PushEventRepository{
 				FullName: &repoFullName,
 				Name:     &someString,
@@ -83,7 +79,49 @@ var _ = Describe("EventHandler", func() {
 			},
 			Before: &someString,
 			After:  &someString,
+			Commits: []github.PushEventCommit{
+				github.PushEventCommit{ID: &someString},
+			},
+		}
+	})
+
+	JustBeforeEach(func() {
+		eventHandler = webhook.NewEventHandler(fakeGithubClient, scanFunc, emitter, notifier, whitelist)
+	})
+
+	Context("when there are multiple commits in a single event", func() {
+		var before string = "before"
+		var id0, id1, id2 string = "a", "b", "c"
+
+		BeforeEach(func() {
+			commit0 := github.PushEventCommit{ID: &id0}
+			commit1 := github.PushEventCommit{ID: &id1}
+			commit2 := github.PushEventCommit{ID: &id2}
+			commits := []github.PushEventCommit{commit0, commit1, commit2}
+
+			event.Before = &before
+			event.Commits = commits
 		})
+
+		It("compares each commit individually", func() {
+			eventHandler.HandleEvent(logger, event)
+
+			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
+			Expect(fakeGithubClient.CompareRefsCallCount()).To(Equal(3))
+			_, _, _, sha0, sha1 := fakeGithubClient.CompareRefsArgsForCall(0)
+			Expect(sha0).To(Equal(before))
+			Expect(sha1).To(Equal(id0))
+			_, _, _, sha0, sha1 = fakeGithubClient.CompareRefsArgsForCall(1)
+			Expect(sha0).To(Equal(id0))
+			Expect(sha1).To(Equal(id1))
+			_, _, _, sha0, sha1 = fakeGithubClient.CompareRefsArgsForCall(2)
+			Expect(sha0).To(Equal(id1))
+			Expect(sha1).To(Equal(id2))
+		})
+	})
+
+	It("emits count when it is invoked", func() {
+		eventHandler.HandleEvent(logger, event)
 
 		Expect(requestCounter.IncCallCount()).To(Equal(1))
 	})
@@ -100,22 +138,12 @@ var _ = Describe("EventHandler", func() {
 				return []git.Line{}
 			}
 			whitelist = []string{repoName}
+			event.Repo.Name = &repoName
 		})
 
 		It("ignores patterns in whitelist", func() {
-			pushEvent := github.PushEvent{
-				Repo: &github.PushEventRepository{
-					FullName: &repoFullName,
-					Name:     &repoName,
-					Owner: &github.PushEventRepoOwner{
-						Name: &someString,
-					},
-				},
-				Before: &someString,
-				After:  &someString,
-			}
+			eventHandler.HandleEvent(logger, event)
 
-			eventHandler.HandleEvent(logger, pushEvent)
 			Expect(scanCount).To(BeZero())
 			Expect(len(logger.LogMessages())).To(Equal(1))
 			Expect(logger.LogMessages()[0]).To(ContainSubstring("ignored-repo"))
@@ -130,44 +158,22 @@ var _ = Describe("EventHandler", func() {
 			filePath = "some/file/path"
 
 			scanFunc = func(logger lager.Logger, diff string) []git.Line {
-				lines := []git.Line{}
-
-				return append(lines, git.Line{
+				return []git.Line{git.Line{
 					Path:       filePath,
 					LineNumber: 1,
 					Content:    "content",
-				})
+				}}
 			}
 		})
 
 		It("emits count of the credentials it has found", func() {
-			eventHandler.HandleEvent(logger, github.PushEvent{
-				Repo: &github.PushEventRepository{
-					FullName: &repoFullName,
-					Name:     &repoName,
-					Owner: &github.PushEventRepoOwner{
-						Name: &someString,
-					},
-				},
-				Before: &someString,
-				After:  &someString,
-			})
+			eventHandler.HandleEvent(logger, event)
 
 			Expect(credentialCounter.IncNCallCount()).To(Equal(1))
 		})
 
 		It("sends a notification", func() {
-			eventHandler.HandleEvent(logger, github.PushEvent{
-				Repo: &github.PushEventRepository{
-					FullName: &repoFullName,
-					Name:     &repoName,
-					Owner: &github.PushEventRepoOwner{
-						Name: &someString,
-					},
-				},
-				Before: &someString,
-				After:  &someString,
-			})
+			eventHandler.HandleEvent(logger, event)
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
 			Expect(notifier.SendNotificationArgsForCall(0)).To(Equal(
@@ -192,17 +198,7 @@ var _ = Describe("EventHandler", func() {
 		})
 
 		It("does not try to scan the diff", func() {
-			eventHandler.HandleEvent(logger, github.PushEvent{
-				Repo: &github.PushEventRepository{
-					FullName: &repoFullName,
-					Name:     &repoName,
-					Owner: &github.PushEventRepoOwner{
-						Name: &someString,
-					},
-				},
-				After:  &someString,
-				Before: &someString,
-			})
+			eventHandler.HandleEvent(logger, event)
 
 			Expect(wasScanned).To(BeFalse())
 			Expect(credentialCounter.IncNCallCount()).To(Equal(0))

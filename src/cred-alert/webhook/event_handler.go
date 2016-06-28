@@ -4,6 +4,7 @@ import (
 	"cred-alert/git"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -63,21 +64,38 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 
 	s.requestCounter.Inc(logger)
 
-	diff, err := s.githubClient.CompareRefs(logger, *event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
-	if err != nil {
-		return
+	previousSHA := *event.Before
+	violations := 0
+
+	for _, commit := range event.Commits {
+		if commit.ID == nil {
+			continue
+		}
+		currentSHA := *commit.ID
+
+		diff, err := s.githubClient.CompareRefs(logger, *event.Repo.Owner.Name, *event.Repo.Name, previousSHA, currentSHA)
+		if err != nil {
+			logger.Error("failed-fetch-diff", errors.New("Couldn't fetch diff "+previousSHA+" "+currentSHA))
+			continue
+		}
+
+		lines := s.scan(logger, diff)
+		for _, line := range lines {
+			logger.Info("found-credential", lager.Data{
+				"path":        line.Path,
+				"line-number": line.LineNumber,
+				"sha":         currentSHA,
+			})
+			s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tFile: %s:%d\n", *event.Repo.FullName, line.Path, line.LineNumber))
+			violations++
+		}
+
+		previousSHA = currentSHA
 	}
 
-	lines := s.scan(logger, diff)
-	for _, line := range lines {
-		logger.Info("found-credential", lager.Data{
-			"path":        line.Path,
-			"line-number": line.LineNumber,
-		})
-		s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tFile: %s:%d\n", *event.Repo.FullName, line.Path, line.LineNumber))
+	if violations > 0 {
+		s.credentialCounter.IncN(logger, violations)
 	}
-
-	s.credentialCounter.IncN(logger, len(lines))
 }
 
 func (s *eventHandler) isWhitelisted(event github.PushEvent) bool {
