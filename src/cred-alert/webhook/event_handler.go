@@ -6,7 +6,7 @@ import (
 	"cred-alert/notifications"
 	"regexp"
 
-	myGithub "cred-alert/github"
+	gh "cred-alert/github"
 
 	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager"
@@ -19,7 +19,7 @@ type EventHandler interface {
 }
 
 type eventHandler struct {
-	githubClient myGithub.Client
+	githubClient gh.Client
 	scan         func(lager.Logger, string) []git.Line
 	whitelist    []*regexp.Regexp
 
@@ -27,7 +27,7 @@ type eventHandler struct {
 	credentialCounter metrics.Counter
 }
 
-func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
+func NewEventHandler(githubClient gh.Client, scan func(lager.Logger, string) []git.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
