@@ -21,7 +21,8 @@ import (
 )
 
 type Opts struct {
-	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
+	Port      uint16   `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
+	Whitelist []string `short:"i" long:"ignore-repos" description:"comma separated list of repo names to ignore. The names may be regex patterns." env:"IGNORED_REPOS" value-name:"REPOS_TO_IGNORE"`
 
 	GitHub struct {
 		WebhookToken string `short:"w" long:"webhook-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_KEY" value-name:"TOKEN" required:"true"`
@@ -52,7 +53,7 @@ func main() {
 	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient)
 
 	emitter := logging.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
-	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter, nil)
+	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter, opts.Whitelist)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))
