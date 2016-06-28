@@ -1,0 +1,14 @@
+applications:
+- name: cred-alert-production
+  instances: 2
+  memory: 128M
+  disk_quota: 1024M
+  host: cred-alert
+  domain: cfapps.io
+  buildpack: binary_buildpack
+  stack: cflinuxfs2
+  services:
+  - cred-alert-production-logs
+  env:
+    IGNORED_REPOS: ".*-credentials$"
+    DATA_DOG_ENVIRONMENT_TAG: "production"
