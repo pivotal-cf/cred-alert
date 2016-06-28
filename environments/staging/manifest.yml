@@ -10,4 +10,5 @@ applications:
   services:
   - cred-alert-staging-logs
   env:
-    DATA_DOG_ENVIRONMENT_TAG: staging
+    IGNORED_REPOS: ".*-credentials$"
+    DATA_DOG_ENVIRONMENT_TAG: "staging"
