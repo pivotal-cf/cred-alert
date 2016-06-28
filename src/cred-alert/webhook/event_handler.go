@@ -19,14 +19,21 @@ type EventHandler interface {
 type eventHandler struct {
 	githubClient myGithub.Client
 	scan         func(lager.Logger, string) []git.Line
-	emitter      logging.Emitter
+
+	requestCounter    logging.Counter
+	credentialCounter logging.Counter
 }
 
 func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter logging.Emitter) *eventHandler {
+	requestCounter := emitter.Counter("cred_alert.webhook_requests")
+	credentialCounter := emitter.Counter("cred_alert.violations")
+
 	handler := &eventHandler{
 		githubClient: githubClient,
 		scan:         scan,
-		emitter:      emitter,
+
+		requestCounter:    requestCounter,
+		credentialCounter: credentialCounter,
 	}
 
 	return handler
@@ -35,7 +42,7 @@ func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, strin
 func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) {
 	logger = logger.Session("handle-event")
 
-	s.emitter.CountAPIRequest(logger)
+	s.requestCounter.Inc(logger)
 
 	diff, err := s.githubClient.CompareRefs(logger, *event.Repo.Owner.Name, *event.Repo.Name, *event.Before, *event.After)
 	if err != nil {
@@ -50,5 +57,5 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 		})
 	}
 
-	s.emitter.CountViolation(logger, len(lines))
+	s.credentialCounter.IncN(logger, len(lines))
 }

@@ -20,6 +20,14 @@ type FakeEmitter struct {
 	countAPIRequestArgsForCall []struct {
 		logger lager.Logger
 	}
+	CounterStub        func(name string) logging.Counter
+	counterMutex       sync.RWMutex
+	counterArgsForCall []struct {
+		name string
+	}
+	counterReturns struct {
+		result1 logging.Counter
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -73,6 +81,39 @@ func (fake *FakeEmitter) CountAPIRequestArgsForCall(i int) lager.Logger {
 	return fake.countAPIRequestArgsForCall[i].logger
 }
 
+func (fake *FakeEmitter) Counter(name string) logging.Counter {
+	fake.counterMutex.Lock()
+	fake.counterArgsForCall = append(fake.counterArgsForCall, struct {
+		name string
+	}{name})
+	fake.recordInvocation("Counter", []interface{}{name})
+	fake.counterMutex.Unlock()
+	if fake.CounterStub != nil {
+		return fake.CounterStub(name)
+	} else {
+		return fake.counterReturns.result1
+	}
+}
+
+func (fake *FakeEmitter) CounterCallCount() int {
+	fake.counterMutex.RLock()
+	defer fake.counterMutex.RUnlock()
+	return len(fake.counterArgsForCall)
+}
+
+func (fake *FakeEmitter) CounterArgsForCall(i int) string {
+	fake.counterMutex.RLock()
+	defer fake.counterMutex.RUnlock()
+	return fake.counterArgsForCall[i].name
+}
+
+func (fake *FakeEmitter) CounterReturns(result1 logging.Counter) {
+	fake.CounterStub = nil
+	fake.counterReturns = struct {
+		result1 logging.Counter
+	}{result1}
+}
+
 func (fake *FakeEmitter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -80,6 +121,8 @@ func (fake *FakeEmitter) Invocations() map[string][][]interface{} {
 	defer fake.countViolationMutex.RUnlock()
 	fake.countAPIRequestMutex.RLock()
 	defer fake.countAPIRequestMutex.RUnlock()
+	fake.counterMutex.RLock()
+	defer fake.counterMutex.RUnlock()
 	return fake.invocations
 }
 

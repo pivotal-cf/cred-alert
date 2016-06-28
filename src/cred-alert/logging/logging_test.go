@@ -27,16 +27,18 @@ var _ = Describe("Logging", func() {
 		emitter = logging.NewEmitter(client, environment)
 	})
 
-	Context("CountViolation", func() {
-		It("sends a violation count to datadog", func() {
-			emitter.CountViolation(logger, 1)
+	Describe("counters", func() {
+		It("can increment once", func() {
+			counter := emitter.Counter("counter")
+
+			counter.Inc(logger)
 
 			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
 			series := client.PublishSeriesArgsForCall(0)
 
 			metric := series[0]
 
-			Expect(metric.Name).To(Equal("cred_alert.violations"))
+			Expect(metric.Name).To(Equal("counter"))
 			Expect(metric.Type).To(Equal("count"))
 			Expect(metric.Tags).To(ConsistOf(environment))
 
@@ -46,42 +48,32 @@ var _ = Describe("Logging", func() {
 			Expect(point.Value).To(BeNumerically("==", 1))
 		})
 
-		It("can increment by more than one", func() {
-			emitter.CountViolation(logger, 9)
+		It("does not emit anything if the count is zero", func() {
+			counter := emitter.Counter("counter")
 
-			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-			series := client.PublishSeriesArgsForCall(0)
+			counter.IncN(logger, 0)
 
-			metric := series[0]
-
-			Expect(metric.Name).To(Equal("cred_alert.violations"))
-			Expect(metric.Type).To(Equal("count"))
-			Expect(metric.Tags).To(ConsistOf(environment))
-
-			point := metric.Points[0]
-
-			Expect(point.Timestamp).To(BeTemporally("~", time.Now()))
-			Expect(point.Value).To(BeNumerically("==", 9))
+			Expect(client.PublishSeriesCallCount()).Should(Equal(0))
 		})
-	})
 
-	Context("CountAPIRequest", func() {
-		It("sends a github API request event to datadog", func() {
-			emitter.CountAPIRequest(logger)
+		It("can increment many times", func() {
+			counter := emitter.Counter("counter")
+
+			counter.IncN(logger, 234)
 
 			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
 			series := client.PublishSeriesArgsForCall(0)
 
 			metric := series[0]
 
-			Expect(metric.Name).To(Equal("cred_alert.webhook_requests"))
+			Expect(metric.Name).To(Equal("counter"))
 			Expect(metric.Type).To(Equal("count"))
 			Expect(metric.Tags).To(ConsistOf(environment))
 
 			point := metric.Points[0]
 
 			Expect(point.Timestamp).To(BeTemporally("~", time.Now()))
-			Expect(point.Value).To(BeNumerically("==", 1))
+			Expect(point.Value).To(BeNumerically("==", 234))
 		})
 	})
 })

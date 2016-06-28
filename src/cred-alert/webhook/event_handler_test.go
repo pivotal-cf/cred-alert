@@ -8,6 +8,7 @@ import (
 
 	"cred-alert/git"
 	"cred-alert/github/githubfakes"
+	"cred-alert/logging"
 	"cred-alert/logging/loggingfakes"
 	"cred-alert/webhook"
 
@@ -24,6 +25,9 @@ var _ = Describe("EventHandler", func() {
 		fakeGithubClient *githubfakes.FakeClient
 
 		scanFunc func(lager.Logger, string) []git.Line
+
+		requestCounter    *loggingfakes.FakeCounter
+		credentialCounter *loggingfakes.FakeCounter
 	)
 
 	BeforeEach(func() {
@@ -32,6 +36,20 @@ var _ = Describe("EventHandler", func() {
 		}
 
 		emitter = &loggingfakes.FakeEmitter{}
+		requestCounter = &loggingfakes.FakeCounter{}
+		credentialCounter = &loggingfakes.FakeCounter{}
+
+		emitter.CounterStub = func(name string) logging.Counter {
+			switch name {
+			case "cred_alert.webhook_requests":
+				return requestCounter
+			case "cred_alert.violations":
+				return credentialCounter
+			default:
+				panic("unexpected counter name! " + name)
+			}
+		}
+
 		logger = lagertest.NewTestLogger("event-handler")
 		fakeGithubClient = new(githubfakes.FakeClient)
 	})
@@ -54,7 +72,7 @@ var _ = Describe("EventHandler", func() {
 			After:  &someString,
 		})
 
-		Expect(emitter.CountAPIRequestCallCount()).To(Equal(1))
+		Expect(requestCounter.IncCallCount()).To(Equal(1))
 	})
 
 	Context("when a credential is found", func() {
@@ -84,7 +102,7 @@ var _ = Describe("EventHandler", func() {
 				After:  &someString,
 			})
 
-			Expect(emitter.CountViolationCallCount()).To(Equal(1))
+			Expect(credentialCounter.IncNCallCount()).To(Equal(1))
 		})
 	})
 
