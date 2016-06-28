@@ -4,6 +4,7 @@ import (
 	"cred-alert/git"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
+	"fmt"
 	"regexp"
 
 	gh "cred-alert/github"
@@ -25,6 +26,7 @@ type eventHandler struct {
 
 	requestCounter    metrics.Counter
 	credentialCounter metrics.Counter
+	notifier          notifications.Notifier
 }
 
 func NewEventHandler(githubClient gh.Client, scan func(lager.Logger, string) []git.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
@@ -43,6 +45,7 @@ func NewEventHandler(githubClient gh.Client, scan func(lager.Logger, string) []g
 
 		requestCounter:    requestCounter,
 		credentialCounter: credentialCounter,
+		notifier:          notifier,
 	}
 
 	return handler
@@ -71,6 +74,7 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 			"path":        line.Path,
 			"line-number": line.LineNumber,
 		})
+		s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tFile: %s:%d\n", *event.Repo.FullName, line.Path, line.LineNumber))
 	}
 
 	s.credentialCounter.IncN(logger, len(lines))
