@@ -15,6 +15,16 @@ type FakeClient struct {
 	publishSeriesReturns struct {
 		result1 error
 	}
+	BuildCountMetricStub        func(metricName string, count float32, tags ...string) datadog.Metric
+	buildCountMetricMutex       sync.RWMutex
+	buildCountMetricArgsForCall []struct {
+		metricName string
+		count      float32
+		tags       []string
+	}
+	buildCountMetricReturns struct {
+		result1 datadog.Metric
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -52,11 +62,48 @@ func (fake *FakeClient) PublishSeriesReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeClient) BuildCountMetric(metricName string, count float32, tags ...string) datadog.Metric {
+	fake.buildCountMetricMutex.Lock()
+	fake.buildCountMetricArgsForCall = append(fake.buildCountMetricArgsForCall, struct {
+		metricName string
+		count      float32
+		tags       []string
+	}{metricName, count, tags})
+	fake.recordInvocation("BuildCountMetric", []interface{}{metricName, count, tags})
+	fake.buildCountMetricMutex.Unlock()
+	if fake.BuildCountMetricStub != nil {
+		return fake.BuildCountMetricStub(metricName, count, tags...)
+	} else {
+		return fake.buildCountMetricReturns.result1
+	}
+}
+
+func (fake *FakeClient) BuildCountMetricCallCount() int {
+	fake.buildCountMetricMutex.RLock()
+	defer fake.buildCountMetricMutex.RUnlock()
+	return len(fake.buildCountMetricArgsForCall)
+}
+
+func (fake *FakeClient) BuildCountMetricArgsForCall(i int) (string, float32, []string) {
+	fake.buildCountMetricMutex.RLock()
+	defer fake.buildCountMetricMutex.RUnlock()
+	return fake.buildCountMetricArgsForCall[i].metricName, fake.buildCountMetricArgsForCall[i].count, fake.buildCountMetricArgsForCall[i].tags
+}
+
+func (fake *FakeClient) BuildCountMetricReturns(result1 datadog.Metric) {
+	fake.BuildCountMetricStub = nil
+	fake.buildCountMetricReturns = struct {
+		result1 datadog.Metric
+	}{result1}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.publishSeriesMutex.RLock()
 	defer fake.publishSeriesMutex.RUnlock()
+	fake.buildCountMetricMutex.RLock()
+	defer fake.buildCountMetricMutex.RUnlock()
 	return fake.invocations
 }
 

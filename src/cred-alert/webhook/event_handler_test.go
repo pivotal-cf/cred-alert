@@ -173,7 +173,7 @@ var _ = Describe("EventHandler", func() {
 			})
 
 			Expect(wasScanned).To(BeFalse())
-			Expect(emitter.CountViolationCallCount()).To(Equal(0))
+			Expect(credentialCounter.IncNCallCount()).To(Equal(0))
 		})
 	})
 })

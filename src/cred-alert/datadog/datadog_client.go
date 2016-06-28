@@ -52,6 +52,7 @@ type request struct {
 
 type Client interface {
 	PublishSeries(series Series) error
+	BuildCountMetric(metricName string, count float32, tags ...string) Metric
 }
 
 type client struct {
@@ -63,6 +64,16 @@ func NewClient(apiKey string) *client {
 	return &client{
 		apiKey: apiKey,
 		client: &http.Client{},
+	}
+}
+
+func (c *client) BuildCountMetric(metricName string, count float32, tags ...string) Metric {
+	return Metric{
+		Name: metricName,
+		Points: []Point{
+			{Timestamp: time.Now(), Value: count},
+		},
+		Tags: tags,
 	}
 }
 

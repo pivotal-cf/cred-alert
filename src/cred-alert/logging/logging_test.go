@@ -1,13 +1,14 @@
 package logging_test
 
 import (
-	"cred-alert/datadog/datadogfakes"
-	"cred-alert/logging"
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-golang/lager/lagertest"
+
+	"cred-alert/datadog"
+	"cred-alert/datadog/datadogfakes"
+	"cred-alert/logging"
 )
 
 var _ = Describe("Logging", func() {
@@ -28,32 +29,32 @@ var _ = Describe("Logging", func() {
 	})
 
 	Describe("counters", func() {
-		It("can increment once", func() {
-			counter := emitter.Counter("counter")
-
-			counter.Inc(logger)
-
-			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-			series := client.PublishSeriesArgsForCall(0)
-
-			metric := series[0]
-
-			Expect(metric.Name).To(Equal("counter"))
-			Expect(metric.Type).To(Equal("count"))
-			Expect(metric.Tags).To(ConsistOf(environment))
-
-			point := metric.Points[0]
-
-			Expect(point.Timestamp).To(BeTemporally("~", time.Now()))
-			Expect(point.Value).To(BeNumerically("==", 1))
-		})
-
 		It("does not emit anything if the count is zero", func() {
 			counter := emitter.Counter("counter")
 
 			counter.IncN(logger, 0)
 
+			Expect(client.BuildCountMetricCallCount()).Should(Equal(0))
 			Expect(client.PublishSeriesCallCount()).Should(Equal(0))
+		})
+
+		It("can increment once", func() {
+			counter := emitter.Counter("counter")
+
+			counter.Inc(logger)
+
+			Expect(client.BuildCountMetricCallCount()).Should(Equal(1))
+
+			counterName, counterCount, counterTag := client.BuildCountMetricArgsForCall(0)
+			Expect(counterName).To(Equal("counter"))
+			Expect(counterCount).To(Equal(float32(1)))
+			Expect(counterTag).To(Equal([]string{environment}))
+
+			expectedMetric := datadog.Metric{}
+			client.BuildCountMetricReturns(expectedMetric)
+
+			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
+			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
 		})
 
 		It("can increment many times", func() {
@@ -61,19 +62,16 @@ var _ = Describe("Logging", func() {
 
 			counter.IncN(logger, 234)
 
+			counterName, counterCount, counterTag := client.BuildCountMetricArgsForCall(0)
+			Expect(counterName).To(Equal("counter"))
+			Expect(counterCount).To(Equal(float32(234)))
+			Expect(counterTag).To(Equal([]string{environment}))
+
+			expectedMetric := datadog.Metric{}
+			client.BuildCountMetricReturns(expectedMetric)
+
 			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-			series := client.PublishSeriesArgsForCall(0)
-
-			metric := series[0]
-
-			Expect(metric.Name).To(Equal("counter"))
-			Expect(metric.Type).To(Equal("count"))
-			Expect(metric.Tags).To(ConsistOf(environment))
-
-			point := metric.Points[0]
-
-			Expect(point.Timestamp).To(BeTemporally("~", time.Now()))
-			Expect(point.Value).To(BeNumerically("==", 234))
+			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
 		})
 	})
 })

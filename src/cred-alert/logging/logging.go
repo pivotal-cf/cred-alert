@@ -1,8 +1,6 @@
 package logging
 
 import (
-	"time"
-
 	"github.com/pivotal-golang/lager"
 
 	"cred-alert/datadog"
@@ -72,15 +70,7 @@ func (c *counter) IncN(logger lager.Logger, count int) {
 		return
 	}
 
-	metric := datadog.Metric{
-		Name: c.name,
-		Points: []datadog.Point{
-			{Timestamp: time.Now(), Value: float32(count)},
-		},
-		Type: "count",
-		Tags: []string{c.emitter.environment},
-	}
-
+	metric := c.emitter.client.BuildCountMetric(c.name, float32(count), c.emitter.environment)
 	err := c.emitter.client.PublishSeries([]datadog.Metric{metric})
 	if err != nil {
 		logger.Error("failed", err)
