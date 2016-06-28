@@ -17,6 +17,7 @@ import (
 	"cred-alert/git"
 	"cred-alert/github"
 	"cred-alert/metrics"
+	"cred-alert/notifications"
 	"cred-alert/webhook"
 )
 
@@ -33,6 +34,10 @@ type Opts struct {
 		APIKey      string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATA_DOG_API_KEY" value-name:"KEY"`
 		Environment string `long:"datadog-environment" description:"environment tag for datadog" env:"DATA_DOG_ENVIRONMENT_TAG" value-name:"NAME" default:"development"`
 	} `group:"Datadog Options"`
+
+	Slack struct {
+		WebhookUrl string `long:"slack-webhook-url" description:"Slack webhook URL" env:"SLACK_WEBHOOK_URL" value-name:"WEBHOOK"`
+	}
 }
 
 func main() {
@@ -53,7 +58,8 @@ func main() {
 	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient)
 
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
-	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter, opts.Whitelist)
+	notifier := notifications.NewSlackNotifier(logger, opts.Slack.WebhookUrl)
+	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter, notifier, opts.Whitelist)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))

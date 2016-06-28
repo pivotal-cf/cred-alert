@@ -10,6 +10,7 @@ import (
 	"cred-alert/github/githubfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
+	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/webhook"
 
 	"github.com/google/go-github/github"
@@ -22,6 +23,7 @@ var _ = Describe("EventHandler", func() {
 		eventHandler     webhook.EventHandler
 		logger           *lagertest.TestLogger
 		emitter          *metricsfakes.FakeEmitter
+		notifier         *notificationsfakes.FakeNotifier
 		fakeGithubClient *githubfakes.FakeClient
 
 		scanFunc func(lager.Logger, string) []git.Line
@@ -38,6 +40,7 @@ var _ = Describe("EventHandler", func() {
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
+		notifier = &notificationsfakes.FakeNotifier{}
 		requestCounter = &metricsfakes.FakeCounter{}
 		credentialCounter = &metricsfakes.FakeCounter{}
 
@@ -57,7 +60,7 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		eventHandler = webhook.NewEventHandler(fakeGithubClient, scanFunc, emitter, whitelist)
+		eventHandler = webhook.NewEventHandler(fakeGithubClient, scanFunc, emitter, notifier, whitelist)
 	})
 
 	It("emits count when it is invoked", func() {
