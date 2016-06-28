@@ -2,7 +2,7 @@ package webhook
 
 import (
 	"cred-alert/git"
-	"cred-alert/logging"
+	"cred-alert/metrics"
 	"regexp"
 
 	myGithub "cred-alert/github"
@@ -22,11 +22,11 @@ type eventHandler struct {
 	scan         func(lager.Logger, string) []git.Line
 	whitelist    []*regexp.Regexp
 
-	requestCounter    logging.Counter
-	credentialCounter logging.Counter
+	requestCounter    metrics.Counter
+	credentialCounter metrics.Counter
 }
 
-func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter logging.Emitter, whitelist []string) *eventHandler {
+func NewEventHandler(githubClient myGithub.Client, scan func(lager.Logger, string) []git.Line, emitter metrics.Emitter, whitelist []string) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
 

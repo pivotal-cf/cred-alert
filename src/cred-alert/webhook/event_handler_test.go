@@ -8,8 +8,8 @@ import (
 
 	"cred-alert/git"
 	"cred-alert/github/githubfakes"
-	"cred-alert/logging"
-	"cred-alert/logging/loggingfakes"
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
 	"cred-alert/webhook"
 
 	"github.com/google/go-github/github"
@@ -21,13 +21,13 @@ var _ = Describe("EventHandler", func() {
 	var (
 		eventHandler     webhook.EventHandler
 		logger           *lagertest.TestLogger
-		emitter          *loggingfakes.FakeEmitter
+		emitter          *metricsfakes.FakeEmitter
 		fakeGithubClient *githubfakes.FakeClient
 
 		scanFunc func(lager.Logger, string) []git.Line
 
-		requestCounter    *loggingfakes.FakeCounter
-		credentialCounter *loggingfakes.FakeCounter
+		requestCounter    *metricsfakes.FakeCounter
+		credentialCounter *metricsfakes.FakeCounter
 
 		whitelist []string
 	)
@@ -37,11 +37,11 @@ var _ = Describe("EventHandler", func() {
 			return []git.Line{}
 		}
 
-		emitter = &loggingfakes.FakeEmitter{}
-		requestCounter = &loggingfakes.FakeCounter{}
-		credentialCounter = &loggingfakes.FakeCounter{}
+		emitter = &metricsfakes.FakeEmitter{}
+		requestCounter = &metricsfakes.FakeCounter{}
+		credentialCounter = &metricsfakes.FakeCounter{}
 
-		emitter.CounterStub = func(name string) logging.Counter {
+		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
 			case "cred_alert.webhook_requests":
 				return requestCounter

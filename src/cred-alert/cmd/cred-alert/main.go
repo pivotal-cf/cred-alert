@@ -16,7 +16,7 @@ import (
 
 	"cred-alert/git"
 	"cred-alert/github"
-	"cred-alert/logging"
+	"cred-alert/metrics"
 	"cred-alert/webhook"
 )
 
@@ -52,7 +52,7 @@ func main() {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient)
 
-	emitter := logging.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
+	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
 	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter, opts.Whitelist)
 
 	router := http.NewServeMux()

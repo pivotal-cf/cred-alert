@@ -1,4 +1,4 @@
-package logging_test
+package metrics_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,24 +8,24 @@ import (
 
 	"cred-alert/datadog"
 	"cred-alert/datadog/datadogfakes"
-	"cred-alert/logging"
+	"cred-alert/metrics"
 )
 
-var _ = Describe("Logging", func() {
+var _ = Describe("Metrics", func() {
 	var (
 		logger *lagertest.TestLogger
 
 		client  *datadogfakes.FakeClient
-		emitter logging.Emitter
+		emitter metrics.Emitter
 	)
 
 	environment := "test"
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("logging")
+		logger = lagertest.NewTestLogger("metrics")
 
 		client = &datadogfakes.FakeClient{}
-		emitter = logging.NewEmitter(client, environment)
+		emitter = metrics.NewEmitter(client, environment)
 	})
 
 	Describe("counters", func() {

@@ -1,4 +1,4 @@
-package logging
+package metrics
 
 import (
 	"github.com/pivotal-golang/lager"

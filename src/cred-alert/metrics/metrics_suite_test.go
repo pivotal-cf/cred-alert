@@ -1,4 +1,4 @@
-package logging_test
+package metrics_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestLogging(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Logging Suite")
 }
