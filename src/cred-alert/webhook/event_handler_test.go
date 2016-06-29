@@ -153,6 +153,7 @@ var _ = Describe("EventHandler", func() {
 
 	Context("when a credential is found", func() {
 		var filePath string
+		var sha0 string = "sha0"
 
 		BeforeEach(func() {
 			filePath = "some/file/path"
@@ -164,6 +165,8 @@ var _ = Describe("EventHandler", func() {
 					Content:    "content",
 				}}
 			}
+
+			event.Commits[0].ID = &sha0
 		})
 
 		It("emits count of the credentials it has found", func() {
@@ -176,9 +179,9 @@ var _ = Describe("EventHandler", func() {
 			eventHandler.HandleEvent(logger, event)
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
-			Expect(notifier.SendNotificationArgsForCall(0)).To(Equal(
-				fmt.Sprintf("Found credential in %s\n\tFile: %s:%d\n", repoFullName, filePath, 1),
-			))
+			Expect(notifier.SendNotificationArgsForCall(0)).To(ContainSubstring(repoFullName))
+			Expect(notifier.SendNotificationArgsForCall(0)).To(ContainSubstring(sha0))
+			Expect(notifier.SendNotificationArgsForCall(0)).To(ContainSubstring(filePath + ":1"))
 		})
 	})
 

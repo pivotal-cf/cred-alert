@@ -86,7 +86,7 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 				"line-number": line.LineNumber,
 				"sha":         currentSHA,
 			})
-			s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tFile: %s:%d\n", *event.Repo.FullName, line.Path, line.LineNumber))
+			s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tCommit SHA: %s\n\tFile: %s:%d\n", *event.Repo.FullName, currentSHA, line.Path, line.LineNumber))
 			violations++
 		}
 
