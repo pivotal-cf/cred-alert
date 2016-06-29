@@ -83,6 +83,7 @@ the needed environment variables.
 | --------------------------- | -------------------------------------------------------------------------------- |
 | `DATA_DOG_ENVIRONMENT_TAG`  | Tag to use in emitted events (eg. `production`, `staging`)                       |
 | `DATA_DOG_API_KEY`          | API key to use for Data Dog API access                                           |
-| `GITHUB_WEBHOOK_SECRET_KEY` | shared secret configured on github webhooks                                      |
-| `PORT`                      | port on which to listen for webhook requests for (set automatically if using CF) |
+| `GITHUB_WEBHOOK_SECRET_KEY` | Shared secret configured on github webhooks                                      |
+| `PORT`                      | Port on which to listen for webhook requests for (set automatically if using CF) |
+| `IGNORED_REPOS`             | A comma-separated list of patterns for repos to ignore (eg. `.*-credentials$`)   |
 
