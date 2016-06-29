@@ -1,7 +1,7 @@
 package git_test
 
 import (
-	"cred-alert/git"
+	"cred-alert/scanners/git"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"

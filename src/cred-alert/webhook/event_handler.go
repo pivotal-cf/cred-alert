@@ -1,9 +1,9 @@
 package webhook
 
 import (
-	"cred-alert/git"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
+	"cred-alert/scanners/git"
 	"cred-alert/sniff"
 	"errors"
 	"fmt"

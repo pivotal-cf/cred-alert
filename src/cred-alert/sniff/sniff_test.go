@@ -1,7 +1,7 @@
 package sniff_test
 
 import (
-	"cred-alert/git"
+	"cred-alert/scanners/git"
 	"cred-alert/sniff"
 
 	. "github.com/onsi/ginkgo"

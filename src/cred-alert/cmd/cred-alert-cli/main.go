@@ -7,8 +7,8 @@ import (
 
 	"github.com/pivotal-golang/lager"
 
-	"cred-alert/git"
 	"cred-alert/github"
+	"cred-alert/scanners/git"
 	"cred-alert/sniff"
 )
 
