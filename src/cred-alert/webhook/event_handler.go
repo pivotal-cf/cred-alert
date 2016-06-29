@@ -25,14 +25,16 @@ type eventHandler struct {
 	scan         func(lager.Logger, string) []git.Line
 	whitelist    []*regexp.Regexp
 
-	requestCounter    metrics.Counter
-	credentialCounter metrics.Counter
-	notifier          notifications.Notifier
+	requestCounter      metrics.Counter
+	credentialCounter   metrics.Counter
+	ignoredEventCounter metrics.Counter
+	notifier            notifications.Notifier
 }
 
 func NewEventHandler(githubClient gh.Client, scan func(lager.Logger, string) []git.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
+	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
 	patterns := make([]*regexp.Regexp, len(whitelist))
 	for i, uncompiled := range whitelist {
@@ -44,9 +46,10 @@ func NewEventHandler(githubClient gh.Client, scan func(lager.Logger, string) []g
 		scan:         scan,
 		whitelist:    patterns,
 
-		requestCounter:    requestCounter,
-		credentialCounter: credentialCounter,
-		notifier:          notifier,
+		requestCounter:      requestCounter,
+		credentialCounter:   credentialCounter,
+		ignoredEventCounter: ignoredEventCounter,
+		notifier:            notifier,
 	}
 
 	return handler
@@ -59,6 +62,7 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 		logger.Info("ignored-repo", lager.Data{
 			"repo": *event.Repo.Name,
 		})
+		s.ignoredEventCounter.Inc(logger)
 		return
 	}
 

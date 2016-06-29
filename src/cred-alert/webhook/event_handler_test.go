@@ -33,8 +33,9 @@ var _ = Describe("EventHandler", func() {
 
 		scanFunc func(lager.Logger, string) []git.Line
 
-		requestCounter    *metricsfakes.FakeCounter
-		credentialCounter *metricsfakes.FakeCounter
+		requestCounter      *metricsfakes.FakeCounter
+		credentialCounter   *metricsfakes.FakeCounter
+		ignoredEventCounter *metricsfakes.FakeCounter
 
 		whitelist []string
 		event     github.PushEvent
@@ -53,6 +54,7 @@ var _ = Describe("EventHandler", func() {
 		notifier = &notificationsfakes.FakeNotifier{}
 		requestCounter = &metricsfakes.FakeCounter{}
 		credentialCounter = &metricsfakes.FakeCounter{}
+		ignoredEventCounter = &metricsfakes.FakeCounter{}
 
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
@@ -60,6 +62,8 @@ var _ = Describe("EventHandler", func() {
 				return requestCounter
 			case "cred_alert.violations":
 				return credentialCounter
+			case "cred_alert.ignored_events":
+				return ignoredEventCounter
 			default:
 				panic("unexpected counter name! " + name)
 			}
@@ -148,6 +152,11 @@ var _ = Describe("EventHandler", func() {
 			Expect(len(logger.LogMessages())).To(Equal(1))
 			Expect(logger.LogMessages()[0]).To(ContainSubstring("ignored-repo"))
 			Expect(logger.Logs()[0].Data["repo"]).To(Equal(repoName))
+		})
+
+		It("emits a count of ignored push events", func() {
+			eventHandler.HandleEvent(logger, event)
+			Expect(ignoredEventCounter.IncCallCount()).To(Equal(1))
 		})
 	})
 
