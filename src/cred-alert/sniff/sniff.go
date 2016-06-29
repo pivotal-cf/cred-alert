@@ -1,7 +1,7 @@
 package sniff
 
 import (
-	"cred-alert/patterns"
+	"cred-alert/sniff/patterns"
 
 	"github.com/pivotal-golang/lager"
 )

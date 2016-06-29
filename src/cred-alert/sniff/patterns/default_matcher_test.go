@@ -1,7 +1,7 @@
 package patterns_test
 
 import (
-	"cred-alert/patterns"
+	"cred-alert/sniff/patterns"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
