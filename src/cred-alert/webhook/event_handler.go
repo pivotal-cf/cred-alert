@@ -22,7 +22,7 @@ type EventHandler interface {
 
 type eventHandler struct {
 	githubClient gh.Client
-	scan         func(lager.Logger, string) []git.Line
+	sniff        func(lager.Logger, git.Scanner) []git.Line
 	whitelist    []*regexp.Regexp
 
 	requestCounter      metrics.Counter
@@ -31,7 +31,7 @@ type eventHandler struct {
 	notifier            notifications.Notifier
 }
 
-func NewEventHandler(githubClient gh.Client, scan func(lager.Logger, string) []git.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
+func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, git.Scanner) []git.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
@@ -43,7 +43,7 @@ func NewEventHandler(githubClient gh.Client, scan func(lager.Logger, string) []g
 
 	handler := &eventHandler{
 		githubClient: githubClient,
-		scan:         scan,
+		sniff:        sniff,
 		whitelist:    patterns,
 
 		requestCounter:      requestCounter,
@@ -82,8 +82,8 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 			logger.Error("failed-fetch-diff", errors.New("Couldn't fetch diff "+previousSHA+" "+currentSHA))
 			continue
 		}
-
-		lines := s.scan(logger, diff)
+		diffScanner := git.NewDiffScanner(diff)
+		lines := s.sniff(logger, diffScanner)
 		for _, line := range lines {
 			logger.Info("found-credential", lager.Data{
 				"path":        line.Path,

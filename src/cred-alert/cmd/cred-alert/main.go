@@ -59,7 +59,7 @@ func main() {
 
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
 	notifier := notifications.NewSlackNotifier(logger, opts.Slack.WebhookUrl)
-	eventHandler := webhook.NewEventHandler(ghClient, git.Scan, emitter, notifier, opts.Whitelist)
+	eventHandler := webhook.NewEventHandler(ghClient, git.Sniff, emitter, notifier, opts.Whitelist)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))

@@ -29,8 +29,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "request error: ", err)
 		os.Exit(1)
 	}
-
-	matchingLines := git.Scan(logger, input)
+	scanner := git.NewDiffScanner(input)
+	matchingLines := git.Sniff(logger, scanner)
 	for _, line := range matchingLines {
 		fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
 	}

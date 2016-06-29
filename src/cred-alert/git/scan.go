@@ -6,16 +6,20 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-func Scan(logger lager.Logger, input string) []Line {
-	logger = logger.Session("scan")
+type Scanner interface {
+	Scan(lager.Logger) bool
+	Line() *Line
+}
+
+func Sniff(logger lager.Logger, scanner Scanner) []Line {
+	logger = logger.Session("sniff")
 
 	matcher := patterns.DefaultMatcher()
-	diffScanner := NewDiffScanner(input)
 
 	matchingLines := []Line{}
 
-	for diffScanner.Scan(logger) {
-		line := *diffScanner.Line()
+	for scanner.Scan(logger) {
+		line := *scanner.Line()
 		found := matcher.Match(line.Content)
 
 		if found {

@@ -25,9 +25,11 @@ index 940393e..fa5a232 100644
 +private_key: "FaKe_should_not_match"
 +private_key: "ExAmPlE_should_not_match"
 `
+
 	It("scans a diff and return Lines", func() {
 		logger := lagertest.NewTestLogger("scanner")
-		matchingLines := git.Scan(logger, shortDiff)
+		scanner := git.NewDiffScanner(shortDiff)
+		matchingLines := git.Sniff(logger, scanner)
 		Expect(len(matchingLines)).To(Equal(2))
 	})
 })

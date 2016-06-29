@@ -27,11 +27,10 @@ var _ = Describe("EventHandler", func() {
 		notifier         *notificationsfakes.FakeNotifier
 		fakeGithubClient *githubfakes.FakeClient
 
-		someString   string
 		repoName     string
 		repoFullName string
 
-		scanFunc func(lager.Logger, string) []git.Line
+		sniffFunc func(lager.Logger, git.Scanner) []git.Line
 
 		requestCounter      *metricsfakes.FakeCounter
 		credentialCounter   *metricsfakes.FakeCounter
@@ -42,11 +41,10 @@ var _ = Describe("EventHandler", func() {
 	)
 
 	BeforeEach(func() {
-		someString = "some-string"
 		repoName = "my-awesome-repo"
 		repoFullName = fmt.Sprintf("rad-co/%s", repoName)
 
-		scanFunc = func(logger lager.Logger, diff string) []git.Line {
+		sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
 			return []git.Line{}
 		}
 
@@ -90,7 +88,7 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		eventHandler = webhook.NewEventHandler(fakeGithubClient, scanFunc, emitter, notifier, whitelist)
+		eventHandler = webhook.NewEventHandler(fakeGithubClient, sniffFunc, emitter, notifier, whitelist)
 	})
 
 	Context("when there are multiple commits in a single event", func() {
@@ -137,7 +135,7 @@ var _ = Describe("EventHandler", func() {
 			repoName = "some-credentials"
 
 			scanCount = 0
-			scanFunc = func(logger lager.Logger, diff string) []git.Line {
+			sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
 				scanCount++
 				return []git.Line{}
 			}
@@ -167,7 +165,7 @@ var _ = Describe("EventHandler", func() {
 		BeforeEach(func() {
 			filePath = "some/file/path"
 
-			scanFunc = func(logger lager.Logger, diff string) []git.Line {
+			sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
 				return []git.Line{git.Line{
 					Path:       filePath,
 					LineNumber: 1,
@@ -202,7 +200,7 @@ var _ = Describe("EventHandler", func() {
 
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
 
-			scanFunc = func(logger lager.Logger, diff string) []git.Line {
+			sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
 				wasScanned = true
 
 				return nil
