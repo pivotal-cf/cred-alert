@@ -9,6 +9,7 @@ import (
 
 	"cred-alert/git"
 	"cred-alert/github"
+	"cred-alert/sniff"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 		os.Exit(1)
 	}
 	scanner := git.NewDiffScanner(input)
-	matchingLines := git.Sniff(logger, scanner)
+	matchingLines := sniff.Sniff(logger, scanner)
 	for _, line := range matchingLines {
 		fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
 	}

@@ -5,14 +5,6 @@ import (
 	"regexp"
 )
 
-type Line struct {
-	Path       string
-	LineNumber int
-	Content    string
-
-	action string
-}
-
 var fileHeaderPattern *regexp.Regexp
 var contextAddedLinePattern *regexp.Regexp
 var plusMinusSpacePattern *regexp.Regexp

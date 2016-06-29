@@ -4,6 +4,7 @@ import (
 	"cred-alert/git"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
+	"cred-alert/sniff"
 	"errors"
 	"fmt"
 	"regexp"
@@ -22,7 +23,7 @@ type EventHandler interface {
 
 type eventHandler struct {
 	githubClient gh.Client
-	sniff        func(lager.Logger, git.Scanner) []git.Line
+	sniff        func(lager.Logger, sniff.Scanner) []sniff.Line
 	whitelist    []*regexp.Regexp
 
 	requestCounter      metrics.Counter
@@ -31,7 +32,7 @@ type eventHandler struct {
 	notifier            notifications.Notifier
 }
 
-func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, git.Scanner) []git.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
+func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner) []sniff.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")

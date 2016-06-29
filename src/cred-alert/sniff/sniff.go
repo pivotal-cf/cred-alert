@@ -1,10 +1,18 @@
-package git
+package sniff
 
 import (
 	"cred-alert/patterns"
 
 	"github.com/pivotal-golang/lager"
 )
+
+type Line struct {
+	Path       string
+	LineNumber int
+	Content    string
+
+	action string
+}
 
 type Scanner interface {
 	Scan(lager.Logger) bool

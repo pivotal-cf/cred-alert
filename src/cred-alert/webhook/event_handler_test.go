@@ -7,11 +7,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"cred-alert/git"
 	"cred-alert/github/githubfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/notifications/notificationsfakes"
+	"cred-alert/sniff"
 	"cred-alert/webhook"
 
 	"github.com/google/go-github/github"
@@ -30,7 +30,7 @@ var _ = Describe("EventHandler", func() {
 		repoName     string
 		repoFullName string
 
-		sniffFunc func(lager.Logger, git.Scanner) []git.Line
+		sniffFunc func(lager.Logger, sniff.Scanner) []sniff.Line
 
 		requestCounter      *metricsfakes.FakeCounter
 		credentialCounter   *metricsfakes.FakeCounter
@@ -44,8 +44,8 @@ var _ = Describe("EventHandler", func() {
 		repoName = "my-awesome-repo"
 		repoFullName = fmt.Sprintf("rad-co/%s", repoName)
 
-		sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
-			return []git.Line{}
+		sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
+			return []sniff.Line{}
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
@@ -135,9 +135,9 @@ var _ = Describe("EventHandler", func() {
 			repoName = "some-credentials"
 
 			scanCount = 0
-			sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
+			sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
 				scanCount++
-				return []git.Line{}
+				return []sniff.Line{}
 			}
 			whitelist = []string{repoName}
 			event.Repo.Name = &repoName
@@ -165,8 +165,8 @@ var _ = Describe("EventHandler", func() {
 		BeforeEach(func() {
 			filePath = "some/file/path"
 
-			sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
-				return []git.Line{git.Line{
+			sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
+				return []sniff.Line{sniff.Line{
 					Path:       filePath,
 					LineNumber: 1,
 					Content:    "content",
@@ -200,7 +200,7 @@ var _ = Describe("EventHandler", func() {
 
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
 
-			sniffFunc = func(lager.Logger, git.Scanner) []git.Line {
+			sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
 				wasScanned = true
 
 				return nil

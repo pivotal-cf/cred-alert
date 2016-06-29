@@ -1,7 +1,8 @@
-package git_test
+package sniff_test
 
 import (
 	"cred-alert/git"
+	"cred-alert/sniff"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,7 +30,7 @@ index 940393e..fa5a232 100644
 	It("scans a diff and return Lines", func() {
 		logger := lagertest.NewTestLogger("scanner")
 		scanner := git.NewDiffScanner(shortDiff)
-		matchingLines := git.Sniff(logger, scanner)
+		matchingLines := sniff.Sniff(logger, scanner)
 		Expect(len(matchingLines)).To(Equal(2))
 	})
 })

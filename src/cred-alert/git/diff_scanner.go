@@ -1,6 +1,7 @@
 package git
 
 import (
+	"cred-alert/sniff"
 	"fmt"
 	"strings"
 
@@ -97,8 +98,8 @@ func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
 	return false
 }
 
-func (d *DiffScanner) Line() *Line {
-	line := new(Line)
+func (d *DiffScanner) Line() *sniff.Line {
+	line := new(sniff.Line)
 	line.Path = d.currentHunk.path
 	content, err := content(d.diff[d.cursor])
 	if err == nil {
