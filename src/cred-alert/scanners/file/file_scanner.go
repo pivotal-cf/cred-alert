@@ -3,7 +3,6 @@ package file
 import (
 	"bufio"
 	"cred-alert/sniff"
-	"fmt"
 	"os"
 
 	"github.com/pivotal-golang/lager"
@@ -30,7 +29,7 @@ func (s *fileScanner) Scan(logger lager.Logger) bool {
 	success := s.bufioScanner.Scan()
 
 	if err := s.bufioScanner.Err(); err != nil {
-		fmt.Println(err)
+		logger.Error("bufio-error", err)
 		return false
 	}
 
