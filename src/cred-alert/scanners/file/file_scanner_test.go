@@ -28,7 +28,7 @@ var _ = Describe("File", func() {
 line2
 line3`
 
-		tempFilePath = fmt.Sprintf("%sfile-scanner-test-temp", os.TempDir())
+		tempFilePath = fmt.Sprintf("%s/file-scanner-test-temp", os.TempDir())
 		if err := ioutil.WriteFile(tempFilePath, []byte(fileContent), 0644); err != nil {
 			fmt.Println(err)
 		}
