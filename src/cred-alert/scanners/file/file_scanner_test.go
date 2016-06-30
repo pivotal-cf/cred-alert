@@ -32,7 +32,11 @@ line3`
 		if err := ioutil.WriteFile(tempFilePath, []byte(fileContent), 0644); err != nil {
 			fmt.Println(err)
 		}
-		myFile, _ = os.Open(tempFilePath)
+		var err error
+		myFile, err = os.Open(tempFilePath)
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		logger = lagertest.NewTestLogger("file-scanner")
 	})
