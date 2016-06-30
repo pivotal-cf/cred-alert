@@ -30,7 +30,7 @@ var _ = Describe("EventHandler", func() {
 		repoName     string
 		repoFullName string
 
-		sniffFunc func(lager.Logger, sniff.Scanner) []sniff.Line
+		sniffFunc func(lager.Logger, sniff.Scanner, func(sniff.Line))
 
 		requestCounter      *metricsfakes.FakeCounter
 		credentialCounter   *metricsfakes.FakeCounter
@@ -44,9 +44,7 @@ var _ = Describe("EventHandler", func() {
 		repoName = "my-awesome-repo"
 		repoFullName = fmt.Sprintf("rad-co/%s", repoName)
 
-		sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
-			return []sniff.Line{}
-		}
+		sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {}
 
 		emitter = &metricsfakes.FakeEmitter{}
 		notifier = &notificationsfakes.FakeNotifier{}
@@ -135,9 +133,8 @@ var _ = Describe("EventHandler", func() {
 			repoName = "some-credentials"
 
 			scanCount = 0
-			sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
+			sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
 				scanCount++
-				return []sniff.Line{}
 			}
 			whitelist = []string{repoName}
 			event.Repo.Name = &repoName
@@ -165,12 +162,12 @@ var _ = Describe("EventHandler", func() {
 		BeforeEach(func() {
 			filePath = "some/file/path"
 
-			sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
-				return []sniff.Line{sniff.Line{
+			sniffFunc = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(sniff.Line)) {
+				handleViolation(sniff.Line{
 					Path:       filePath,
 					LineNumber: 1,
 					Content:    "content",
-				}}
+				})
 			}
 
 			event.Commits[0].ID = &sha0
@@ -200,10 +197,8 @@ var _ = Describe("EventHandler", func() {
 
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
 
-			sniffFunc = func(lager.Logger, sniff.Scanner) []sniff.Line {
+			sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
 				wasScanned = true
-
-				return nil
 			}
 		})
 

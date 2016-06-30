@@ -1,38 +1,22 @@
 package main
 
 import (
+	"cred-alert/scanners/file"
+	"cred-alert/sniff"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/pivotal-golang/lager"
-
-	"cred-alert/github"
-	"cred-alert/scanners/git"
-	"cred-alert/sniff"
 )
 
 func main() {
-	owner := os.Args[1]
-	repo := os.Args[2]
-	base := os.Args[3]
-	head := os.Args[4]
-
-	httpClient := &http.Client{}
-
-	githubClient := github.NewClient("https://api.github.com/", httpClient)
-
 	logger := lager.NewLogger("cred-alert-cli")
-	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
+	scanner := file.NewFileScanner(os.Stdin)
 
-	input, err := githubClient.CompareRefs(logger, owner, repo, base, head)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "request error: ", err)
-		os.Exit(1)
-	}
-	scanner := git.NewDiffScanner(input)
-	matchingLines := sniff.Sniff(logger, scanner)
-	for _, line := range matchingLines {
-		fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
-	}
+	sniff.Sniff(logger, scanner, handleViolation)
+}
+
+func handleViolation(line sniff.Line) {
+	fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
 }

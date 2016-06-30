@@ -23,7 +23,7 @@ type EventHandler interface {
 
 type eventHandler struct {
 	githubClient gh.Client
-	sniff        func(lager.Logger, sniff.Scanner) []sniff.Line
+	sniff        func(lager.Logger, sniff.Scanner, func(sniff.Line))
 	whitelist    []*regexp.Regexp
 
 	requestCounter      metrics.Counter
@@ -32,7 +32,7 @@ type eventHandler struct {
 	notifier            notifications.Notifier
 }
 
-func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner) []sniff.Line, emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
+func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
@@ -84,22 +84,27 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 			continue
 		}
 		diffScanner := git.NewDiffScanner(diff)
-		lines := s.sniff(logger, diffScanner)
-		for _, line := range lines {
-			logger.Info("found-credential", lager.Data{
-				"path":        line.Path,
-				"line-number": line.LineNumber,
-				"sha":         currentSHA,
-			})
-			s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tCommit SHA: %s\n\tFile: %s:%d\n", *event.Repo.FullName, currentSHA, line.Path, line.LineNumber))
-			violations++
-		}
+
+		handleViolation := s.createHandleViolation(logger, currentSHA, *event.Repo.FullName, &violations)
+		s.sniff(logger, diffScanner, handleViolation)
 
 		previousSHA = currentSHA
 	}
 
 	if violations > 0 {
 		s.credentialCounter.IncN(logger, violations)
+	}
+}
+
+func (s *eventHandler) createHandleViolation(logger lager.Logger, sha string, repoName string, violations *int) func(sniff.Line) {
+	return func(line sniff.Line) {
+		logger.Info("found-credential", lager.Data{
+			"path":        line.Path,
+			"line-number": line.LineNumber,
+			"sha":         sha,
+		})
+		s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tCommit SHA: %s\n\tFile: %s:%d\n", repoName, sha, line.Path, line.LineNumber))
+		*violations++
 	}
 }
 

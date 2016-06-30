@@ -30,7 +30,11 @@ index 940393e..fa5a232 100644
 	It("scans a diff and return Lines", func() {
 		logger := lagertest.NewTestLogger("scanner")
 		scanner := git.NewDiffScanner(shortDiff)
-		matchingLines := sniff.Sniff(logger, scanner)
-		Expect(len(matchingLines)).To(Equal(2))
+		called := 0
+		handleViolation := func(sniff.Line) {
+			called++
+		}
+		sniff.Sniff(logger, scanner, handleViolation)
+		Expect(called).To(Equal(2))
 	})
 })

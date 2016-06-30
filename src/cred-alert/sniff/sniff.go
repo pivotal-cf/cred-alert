@@ -19,21 +19,17 @@ type Scanner interface {
 	Line() *Line
 }
 
-func Sniff(logger lager.Logger, scanner Scanner) []Line {
+func Sniff(logger lager.Logger, scanner Scanner, handleViolation func(Line)) {
 	logger = logger.Session("sniff")
 
 	matcher := patterns.DefaultMatcher()
-
-	matchingLines := []Line{}
 
 	for scanner.Scan(logger) {
 		line := *scanner.Line()
 		found := matcher.Match(line.Content)
 
 		if found {
-			matchingLines = append(matchingLines, line)
+			handleViolation(line)
 		}
 	}
-
-	return matchingLines
 }
