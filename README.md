@@ -44,6 +44,24 @@ The command line application can be built with the following command. Your
 
     $ go build cred-alert/cmd/cred-alert-cli
 
+### Examples
+
+The default behavior of the cli is to read from standard input, scan for secrets, and report any
+matches on standard output. It can also be used to recursively scan files in a directory.
+Use --help to see all options.
+
+#### Scan a directory
+
+
+    $ ./cred-alert-cli -d src/cred-alert/
+
+
+#### Scan from standard input
+
+
+    $ cat src/cred-alert/sniff/patterns/samples_for_test.go | ./cred-alert-cli
+
+
 ## Server
 
 The server app sets up an endpoint at `/webhook` to receive Github webhooks.
