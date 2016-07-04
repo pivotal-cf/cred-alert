@@ -34,7 +34,7 @@ var _ = Describe("Metrics", func() {
 
 			counter.IncN(logger, 0)
 
-			Expect(client.BuildCountMetricCallCount()).Should(Equal(0))
+			Expect(client.BuildMetricCallCount()).Should(Equal(0))
 			Expect(client.PublishSeriesCallCount()).Should(Equal(0))
 		})
 
@@ -43,15 +43,16 @@ var _ = Describe("Metrics", func() {
 
 			counter.Inc(logger)
 
-			Expect(client.BuildCountMetricCallCount()).Should(Equal(1))
+			Expect(client.BuildMetricCallCount()).Should(Equal(1))
 
-			counterName, counterCount, counterTag := client.BuildCountMetricArgsForCall(0)
+			counterType, counterName, counterCount, counterTag := client.BuildMetricArgsForCall(0)
+			Expect(counterType).To(Equal(datadog.COUNTER_METRIC_TYPE))
 			Expect(counterName).To(Equal("counter"))
 			Expect(counterCount).To(Equal(float32(1)))
 			Expect(counterTag).To(Equal([]string{environment}))
 
 			expectedMetric := datadog.Metric{}
-			client.BuildCountMetricReturns(expectedMetric)
+			client.BuildMetricReturns(expectedMetric)
 
 			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
 			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
@@ -62,16 +63,47 @@ var _ = Describe("Metrics", func() {
 
 			counter.IncN(logger, 234)
 
-			counterName, counterCount, counterTag := client.BuildCountMetricArgsForCall(0)
+			counterType, counterName, counterCount, counterTag := client.BuildMetricArgsForCall(0)
+			Expect(counterType).To(Equal(datadog.COUNTER_METRIC_TYPE))
 			Expect(counterName).To(Equal("counter"))
 			Expect(counterCount).To(Equal(float32(234)))
 			Expect(counterTag).To(Equal([]string{environment}))
 
 			expectedMetric := datadog.Metric{}
-			client.BuildCountMetricReturns(expectedMetric)
+			client.BuildMetricReturns(expectedMetric)
 
 			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
 			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
 		})
+	})
+
+	Describe("guages", func() {
+		It("does emit zero values", func() {
+			guage := emitter.Guage("myGuage")
+
+			guage.Update(logger, 123)
+
+			Expect(client.BuildMetricCallCount()).Should(Equal(1))
+			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
+		})
+
+		It("Updates a metric value", func() {
+			guage := emitter.Guage("myGuage")
+
+			guage.Update(logger, 234)
+
+			counterType, counterName, counterCount, counterTag := client.BuildMetricArgsForCall(0)
+			Expect(counterType).To(Equal(datadog.GUAGE_METRIC_TYPE))
+			Expect(counterName).To(Equal("myGuage"))
+			Expect(counterCount).To(Equal(float32(234)))
+			Expect(counterTag).To(Equal([]string{environment}))
+
+			expectedMetric := datadog.Metric{}
+			client.BuildMetricReturns(expectedMetric)
+
+			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
+			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
+		})
+
 	})
 })

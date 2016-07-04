@@ -27,6 +27,9 @@ type Point struct {
 	Value     float32
 }
 
+const GUAGE_METRIC_TYPE string = "guage"
+const COUNTER_METRIC_TYPE string = "counter"
+
 func (p Point) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`[%d, %f]`, p.Timestamp.Unix(), p.Value)), nil
 }
@@ -52,7 +55,7 @@ type request struct {
 
 type Client interface {
 	PublishSeries(series Series) error
-	BuildCountMetric(metricName string, count float32, tags ...string) Metric
+	BuildMetric(metricType string, metricName string, count float32, tags ...string) Metric
 }
 
 type client struct {
@@ -67,9 +70,10 @@ func NewClient(apiKey string) *client {
 	}
 }
 
-func (c *client) BuildCountMetric(metricName string, count float32, tags ...string) Metric {
+func (c *client) BuildMetric(metricType string, metricName string, count float32, tags ...string) Metric {
 	return Metric{
 		Name: metricName,
+		Type: metricType,
 		Points: []Point{
 			{Timestamp: time.Now(), Value: count},
 		},

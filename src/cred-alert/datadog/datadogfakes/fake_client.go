@@ -15,14 +15,15 @@ type FakeClient struct {
 	publishSeriesReturns struct {
 		result1 error
 	}
-	BuildCountMetricStub        func(metricName string, count float32, tags ...string) datadog.Metric
-	buildCountMetricMutex       sync.RWMutex
-	buildCountMetricArgsForCall []struct {
+	BuildMetricStub        func(metricType string, metricName string, count float32, tags ...string) datadog.Metric
+	buildMetricMutex       sync.RWMutex
+	buildMetricArgsForCall []struct {
+		metricType string
 		metricName string
 		count      float32
 		tags       []string
 	}
-	buildCountMetricReturns struct {
+	buildMetricReturns struct {
 		result1 datadog.Metric
 	}
 	invocations      map[string][][]interface{}
@@ -62,37 +63,38 @@ func (fake *FakeClient) PublishSeriesReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) BuildCountMetric(metricName string, count float32, tags ...string) datadog.Metric {
-	fake.buildCountMetricMutex.Lock()
-	fake.buildCountMetricArgsForCall = append(fake.buildCountMetricArgsForCall, struct {
+func (fake *FakeClient) BuildMetric(metricType string, metricName string, count float32, tags ...string) datadog.Metric {
+	fake.buildMetricMutex.Lock()
+	fake.buildMetricArgsForCall = append(fake.buildMetricArgsForCall, struct {
+		metricType string
 		metricName string
 		count      float32
 		tags       []string
-	}{metricName, count, tags})
-	fake.recordInvocation("BuildCountMetric", []interface{}{metricName, count, tags})
-	fake.buildCountMetricMutex.Unlock()
-	if fake.BuildCountMetricStub != nil {
-		return fake.BuildCountMetricStub(metricName, count, tags...)
+	}{metricType, metricName, count, tags})
+	fake.recordInvocation("BuildMetric", []interface{}{metricType, metricName, count, tags})
+	fake.buildMetricMutex.Unlock()
+	if fake.BuildMetricStub != nil {
+		return fake.BuildMetricStub(metricType, metricName, count, tags...)
 	} else {
-		return fake.buildCountMetricReturns.result1
+		return fake.buildMetricReturns.result1
 	}
 }
 
-func (fake *FakeClient) BuildCountMetricCallCount() int {
-	fake.buildCountMetricMutex.RLock()
-	defer fake.buildCountMetricMutex.RUnlock()
-	return len(fake.buildCountMetricArgsForCall)
+func (fake *FakeClient) BuildMetricCallCount() int {
+	fake.buildMetricMutex.RLock()
+	defer fake.buildMetricMutex.RUnlock()
+	return len(fake.buildMetricArgsForCall)
 }
 
-func (fake *FakeClient) BuildCountMetricArgsForCall(i int) (string, float32, []string) {
-	fake.buildCountMetricMutex.RLock()
-	defer fake.buildCountMetricMutex.RUnlock()
-	return fake.buildCountMetricArgsForCall[i].metricName, fake.buildCountMetricArgsForCall[i].count, fake.buildCountMetricArgsForCall[i].tags
+func (fake *FakeClient) BuildMetricArgsForCall(i int) (string, string, float32, []string) {
+	fake.buildMetricMutex.RLock()
+	defer fake.buildMetricMutex.RUnlock()
+	return fake.buildMetricArgsForCall[i].metricType, fake.buildMetricArgsForCall[i].metricName, fake.buildMetricArgsForCall[i].count, fake.buildMetricArgsForCall[i].tags
 }
 
-func (fake *FakeClient) BuildCountMetricReturns(result1 datadog.Metric) {
-	fake.BuildCountMetricStub = nil
-	fake.buildCountMetricReturns = struct {
+func (fake *FakeClient) BuildMetricReturns(result1 datadog.Metric) {
+	fake.BuildMetricStub = nil
+	fake.buildMetricReturns = struct {
 		result1 datadog.Metric
 	}{result1}
 }
@@ -102,8 +104,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.publishSeriesMutex.RLock()
 	defer fake.publishSeriesMutex.RUnlock()
-	fake.buildCountMetricMutex.RLock()
-	defer fake.buildCountMetricMutex.RUnlock()
+	fake.buildMetricMutex.RLock()
+	defer fake.buildMetricMutex.RUnlock()
 	return fake.invocations
 }
 

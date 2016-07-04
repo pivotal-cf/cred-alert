@@ -33,7 +33,7 @@ func (c *counter) IncN(logger lager.Logger, count int) {
 		return
 	}
 
-	metric := c.emitter.client.BuildCountMetric(c.name, float32(count), c.emitter.environment)
+	metric := c.emitter.client.BuildMetric(datadog.COUNTER_METRIC_TYPE, c.name, float32(count), c.emitter.environment)
 	err := c.emitter.client.PublishSeries([]datadog.Metric{metric})
 	if err != nil {
 		logger.Error("failed", err)

@@ -1,12 +1,15 @@
 package github
 
 import (
+	"cred-alert/metrics"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/cloudfoundry/gunk/urljoiner"
+	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -19,14 +22,16 @@ type Client interface {
 }
 
 type client struct {
-	baseURL    string
-	httpClient *http.Client
+	baseURL        string
+	httpClient     *http.Client
+	rateLimitGuage metrics.Guage
 }
 
-func NewClient(baseURL string, httpClient *http.Client) *client {
+func NewClient(baseURL string, httpClient *http.Client, emitter metrics.Emitter) *client {
 	return &client{
-		baseURL:    baseURL,
-		httpClient: httpClient,
+		baseURL:        baseURL,
+		httpClient:     httpClient,
+		rateLimitGuage: emitter.Guage("cred_alert.github_remaining_requests"),
 	}
 }
 
@@ -61,5 +66,26 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 		return "", err
 	}
 
+	ratelimit := c.rateFromResponse(logger, response)
+	c.rateLimitGuage.Update(logger, float32(ratelimit.Remaining))
 	return string(body), nil
+}
+
+func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) github.Rate {
+	header := response.Header
+	timestamp := github.Timestamp{}
+	err := timestamp.UnmarshalText([]byte(header["X-Ratelimit-Reset"][0]))
+	if err != nil {
+		logger.Error("Error getting rate limit from header", err)
+	}
+
+	remain, err := strconv.Atoi(header["X-Ratelimit-Remaining"][0])
+	if err != nil {
+		logger.Error("Error getting rate limit from header.", err)
+	}
+
+	return github.Rate{
+		Remaining: remain,
+		Reset:     timestamp,
+	}
 }

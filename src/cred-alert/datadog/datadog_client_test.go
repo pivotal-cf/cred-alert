@@ -25,19 +25,19 @@ var _ = Describe("Datadog", func() {
 			})
 
 			It("sets the counter name", func() {
-				countMetric := client.BuildCountMetric("countMetricName", 0)
+				countMetric := client.BuildMetric(datadog.COUNTER_METRIC_TYPE, "countMetricName", 0)
 				Expect(countMetric.Name).To(Equal("countMetricName"))
 			})
 
 			It("sets the count as a point with current time", func() {
-				countMetric := client.BuildCountMetric("countMetricName", 123)
+				countMetric := client.BuildMetric(datadog.COUNTER_METRIC_TYPE, "countMetricName", 123)
 				Expect(countMetric.Points).To(HaveLen(1))
 				Expect(countMetric.Points[0].Timestamp).To(BeTemporally("~", time.Now(), time.Second))
 				Expect(countMetric.Points[0].Value).To(Equal(float32(123)))
 			})
 
 			It("sets tags if given", func() {
-				countMetric := client.BuildCountMetric("countMetricName", 123, "tag1", "tag2")
+				countMetric := client.BuildMetric(datadog.COUNTER_METRIC_TYPE, "countMetricName", 123, "tag1", "tag2")
 				Expect(countMetric.Tags).To(HaveLen(2))
 				Expect(countMetric.Tags[0]).To(Equal("tag1"))
 				Expect(countMetric.Tags[1]).To(Equal("tag2"))

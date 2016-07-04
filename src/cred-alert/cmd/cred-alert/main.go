@@ -55,9 +55,9 @@ func main() {
 		&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
 	)
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
-	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient)
 
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
+	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient, emitter)
 	notifier := notifications.NewSlackNotifier(logger, opts.Slack.WebhookUrl)
 	eventHandler := webhook.NewEventHandler(ghClient, sniff.Sniff, emitter, notifier, opts.Whitelist)
 

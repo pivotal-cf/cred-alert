@@ -15,6 +15,14 @@ type FakeEmitter struct {
 	counterReturns struct {
 		result1 metrics.Counter
 	}
+	GuageStub        func(name string) metrics.Guage
+	guageMutex       sync.RWMutex
+	guageArgsForCall []struct {
+		name string
+	}
+	guageReturns struct {
+		result1 metrics.Guage
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -52,11 +60,46 @@ func (fake *FakeEmitter) CounterReturns(result1 metrics.Counter) {
 	}{result1}
 }
 
+func (fake *FakeEmitter) Guage(name string) metrics.Guage {
+	fake.guageMutex.Lock()
+	fake.guageArgsForCall = append(fake.guageArgsForCall, struct {
+		name string
+	}{name})
+	fake.recordInvocation("Guage", []interface{}{name})
+	fake.guageMutex.Unlock()
+	if fake.GuageStub != nil {
+		return fake.GuageStub(name)
+	} else {
+		return fake.guageReturns.result1
+	}
+}
+
+func (fake *FakeEmitter) GuageCallCount() int {
+	fake.guageMutex.RLock()
+	defer fake.guageMutex.RUnlock()
+	return len(fake.guageArgsForCall)
+}
+
+func (fake *FakeEmitter) GuageArgsForCall(i int) string {
+	fake.guageMutex.RLock()
+	defer fake.guageMutex.RUnlock()
+	return fake.guageArgsForCall[i].name
+}
+
+func (fake *FakeEmitter) GuageReturns(result1 metrics.Guage) {
+	fake.GuageStub = nil
+	fake.guageReturns = struct {
+		result1 metrics.Guage
+	}{result1}
+}
+
 func (fake *FakeEmitter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.counterMutex.RLock()
 	defer fake.counterMutex.RUnlock()
+	fake.guageMutex.RLock()
+	defer fake.guageMutex.RUnlock()
 	return fake.invocations
 }
 

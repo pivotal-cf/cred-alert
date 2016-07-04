@@ -10,23 +10,37 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 
 	"cred-alert/github"
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
 )
 
 var _ = Describe("Client", func() {
 	var (
-		client github.Client
-		server *ghttp.Server
-
-		logger *lagertest.TestLogger
+		client              github.Client
+		server              *ghttp.Server
+		fakeEmitter         *metricsfakes.FakeEmitter
+		remainingCallsGuage *metricsfakes.FakeGuage
+		logger              *lagertest.TestLogger
+		header              http.Header
 	)
 
 	BeforeEach(func() {
 		server = ghttp.NewServer()
-
+		header = http.Header{
+			"X-RateLimit-Limit":     []string{"60"},
+			"X-RateLimit-Remaining": []string{"43"},
+			"X-RateLimit-Reset":     []string{"1467645800"},
+		}
+		fakeEmitter = new(metricsfakes.FakeEmitter)
 		httpClient := &http.Client{}
-		client = github.NewClient(server.URL(), httpClient)
 
 		logger = lagertest.NewTestLogger("client")
+
+		remainingCallsGuage = new(metricsfakes.FakeGuage)
+		fakeEmitter.GuageStub = func(name string) metrics.Guage {
+			return remainingCallsGuage
+		}
+		client = github.NewClient(server.URL(), httpClient, fakeEmitter)
 	})
 
 	AfterEach(func() {
@@ -42,7 +56,7 @@ var _ = Describe("Client", func() {
 				ghttp.VerifyHeader(http.Header{
 					"Accept": []string{"application/vnd.github.diff"},
 				}),
-				ghttp.RespondWith(http.StatusOK, `THIS IS THE DIFF`),
+				ghttp.RespondWith(http.StatusOK, `THIS IS THE DIFF`, header),
 			),
 		)
 
@@ -58,7 +72,7 @@ var _ = Describe("Client", func() {
 				ghttp.VerifyHeader(http.Header{
 					"Accept": []string{"application/vnd.github.diff"},
 				}),
-				ghttp.RespondWith(http.StatusInternalServerError, ""),
+				ghttp.RespondWith(http.StatusInternalServerError, "", header),
 			),
 		)
 
@@ -73,4 +87,22 @@ var _ = Describe("Client", func() {
 		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 		Expect(err).To(HaveOccurred())
 	})
+
+	It("logs remaining api requests", func() {
+		server.AppendHandlers(
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
+				ghttp.VerifyHeader(http.Header{
+					"Accept": []string{"application/vnd.github.diff"},
+				}),
+				ghttp.RespondWith(http.StatusOK, "", header),
+			),
+		)
+		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(remainingCallsGuage.UpdateCallCount()).To(Equal(1))
+		_, value := remainingCallsGuage.UpdateArgsForCall(0)
+		Expect(value).To(Equal(float32(43)))
+	})
+
 })

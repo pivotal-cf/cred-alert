@@ -6,6 +6,7 @@ import "cred-alert/datadog"
 
 type Emitter interface {
 	Counter(name string) Counter
+	Guage(name string) Guage
 }
 
 func BuildEmitter(apiKey string, environment string) Emitter {
@@ -39,6 +40,13 @@ func (emitter *emitter) Counter(name string) Counter {
 	}
 }
 
+func (emitter *emitter) Guage(name string) Guage {
+	return &guage{
+		name:    name,
+		emitter: emitter,
+	}
+}
+
 type nullEmitter struct {
 	name        string
 	environment string
@@ -47,6 +55,13 @@ type nullEmitter struct {
 func (e *nullEmitter) Counter(name string) Counter {
 	return &nullCounter{
 		name:        e.name,
+		environment: e.environment,
+	}
+}
+
+func (e *nullEmitter) Guage(name string) Guage {
+	return &nullGuage{
+		name:        name,
 		environment: e.environment,
 	}
 }
