@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/cloudfoundry/gunk/urljoiner"
 	"github.com/google/go-github/github"
@@ -73,11 +74,12 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 
 func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) github.Rate {
 	header := response.Header
-	timestamp := github.Timestamp{}
-	err := timestamp.UnmarshalText([]byte(header["X-Ratelimit-Reset"][0]))
+	reset, err := strconv.ParseInt(header["X-Ratelimit-Reset"][0], 10, 64)
 	if err != nil {
-		logger.Error("Error getting rate limit from header", err)
+		logger.Error("Error getting rate limit form header", err)
 	}
+
+	timestamp := github.Timestamp{Time: time.Unix(reset, 0)}
 
 	remain, err := strconv.Atoi(header["X-Ratelimit-Remaining"][0])
 	if err != nil {
