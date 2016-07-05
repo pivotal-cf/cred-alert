@@ -6,6 +6,9 @@ image_resource:
   source:
     repository: golang
 
+params:
+  ENVIRONMENT: must-set
+
 inputs:
 - name: cred-alert
 

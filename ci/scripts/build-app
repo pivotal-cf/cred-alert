@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
-set -x -e
+set -x -e -u
 
-export GOPATH=$PWD/cred-alert
-export PATH=$GOPATH/bin:$PATH
+export GOPATH=${PWD}/cred-alert
+export PATH=${GOPATH}/bin:${PATH}
 
-APP_DIR=$PWD/cred-alert-app
+APP_DIR=${PWD}/cred-alert-app
 
-GOARCH=amd64 GOOS=linux go build -o $APP_DIR/cred-alert cred-alert/cmd/cred-alert
+echo "Building for environment '${ENVIRONMENT}'..."
 
-cp cred-alert/environments/staging/Procfile $APP_DIR
+GOARCH=amd64 GOOS=linux go build -o "${APP_DIR}/cred-alert" cred-alert/cmd/cred-alert
+
+cp "cred-alert/environments/${ENVIRONMENT}/Procfile" "${APP_DIR}"
