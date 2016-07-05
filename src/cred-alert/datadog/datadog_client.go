@@ -105,11 +105,11 @@ func (c *client) PublishSeries(series Series) error {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("response: %s", err)
+		return fmt.Errorf("Error in response: %+v", err)
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("bad response (!202): %s\n", err)
+		return fmt.Errorf("Unexpected response status code: %d\n", resp.StatusCode)
 	}
 
 	return resp.Body.Close()
