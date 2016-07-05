@@ -1,7 +1,6 @@
 package file_test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -16,38 +15,36 @@ import (
 
 var _ = Describe("File", func() {
 	var (
-		myFile       *os.File
-		tempFilePath string
-		fileContent  string
-		fileScanner  sniff.Scanner
-		logger       lager.Logger
+		fileScanner sniff.Scanner
+
+		fileHandle *os.File
+		logger     lager.Logger
 	)
 
-	BeforeEach(func() {
-		fileContent = `line1
+	fileContent := `line1
 line2
 line3`
 
-		tempFilePath = fmt.Sprintf("%s/file-scanner-test-temp", os.TempDir())
-		if err := ioutil.WriteFile(tempFilePath, []byte(fileContent), 0644); err != nil {
-			fmt.Println(err)
-		}
-		var err error
-		myFile, err = os.Open(tempFilePath)
-		if err != nil {
-			fmt.Println(err)
-		}
-
+	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("file-scanner")
+
+		var err error
+		fileHandle, err = ioutil.TempFile("", "file-scanner-test-temp")
+		Expect(err).NotTo(HaveOccurred())
+
+		err = ioutil.WriteFile(fileHandle.Name(), []byte(fileContent), 0644)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		myFile.Close()
-		os.Remove(myFile.Name())
+		err := fileHandle.Close()
+		Expect(err).NotTo(HaveOccurred())
+
+		os.RemoveAll(fileHandle.Name())
 	})
 
 	JustBeforeEach(func() {
-		fileScanner = file.NewFileScanner(myFile)
+		fileScanner = file.NewFileScanner(fileHandle)
 	})
 
 	It("scans lines from a file", func() {
@@ -61,7 +58,7 @@ line3`
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
 		line := fileScanner.Line()
 
-		Expect(line.Path).To(Equal(tempFilePath))
+		Expect(line.Path).To(Equal(fileHandle.Name()))
 		Expect(line.Content).To(Equal("line1"))
 		Expect(line.LineNumber).To(Equal(1))
 	})
@@ -73,5 +70,4 @@ line3`
 		line := fileScanner.Line()
 		Expect(line.LineNumber).To(Equal(3))
 	})
-
 })
