@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -105,11 +106,16 @@ func (c *client) PublishSeries(series Series) error {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error in response: %+v", err)
+		return fmt.Errorf("error sending metric to datadog: %s", err.Error())
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("Unexpected response status code: %d\n", resp.StatusCode)
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed reading body of error: %s", err.Error())
+		}
+
+		return fmt.Errorf("bad response (!202): %d - %s", resp.StatusCode, string(body))
 	}
 
 	return resp.Body.Close()

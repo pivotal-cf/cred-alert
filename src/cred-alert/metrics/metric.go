@@ -33,7 +33,9 @@ func (m *metric) Update(logger lager.Logger, value float32) {
 		"environment": m.emitter.environment,
 		"value":       value,
 	})
+
 	ddMetric := m.emitter.client.BuildMetric(m.metricType, m.name, value, m.emitter.environment)
+
 	err := m.emitter.client.PublishSeries([]datadog.Metric{ddMetric})
 	if err != nil {
 		logger.Error("failed", err)
