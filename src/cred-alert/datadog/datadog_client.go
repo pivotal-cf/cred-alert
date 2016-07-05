@@ -27,7 +27,7 @@ type Point struct {
 	Value     float32
 }
 
-const GUAGE_METRIC_TYPE string = "guage"
+const GAUGE_METRIC_TYPE string = "gauge"
 const COUNTER_METRIC_TYPE string = "counter"
 
 func (p Point) MarshalJSON() ([]byte, error) {

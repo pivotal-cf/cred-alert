@@ -25,14 +25,14 @@ type Client interface {
 type client struct {
 	baseURL        string
 	httpClient     *http.Client
-	rateLimitGuage metrics.Guage
+	rateLimitGauge metrics.Gauge
 }
 
 func NewClient(baseURL string, httpClient *http.Client, emitter metrics.Emitter) *client {
 	return &client{
 		baseURL:        baseURL,
 		httpClient:     httpClient,
-		rateLimitGuage: emitter.Guage("cred_alert.github_remaining_requests"),
+		rateLimitGauge: emitter.Gauge("cred_alert.github_remaining_requests"),
 	}
 }
 
@@ -68,7 +68,7 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 	}
 
 	ratelimit := c.rateFromResponse(logger, response)
-	c.rateLimitGuage.Update(logger, float32(ratelimit.Remaining))
+	c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
 	return string(body), nil
 }
 

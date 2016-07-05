@@ -19,7 +19,7 @@ var _ = Describe("Client", func() {
 		client              github.Client
 		server              *ghttp.Server
 		fakeEmitter         *metricsfakes.FakeEmitter
-		remainingCallsGuage *metricsfakes.FakeGuage
+		remainingCallsGauge *metricsfakes.FakeGauge
 		logger              *lagertest.TestLogger
 		header              http.Header
 	)
@@ -36,9 +36,9 @@ var _ = Describe("Client", func() {
 
 		logger = lagertest.NewTestLogger("client")
 
-		remainingCallsGuage = new(metricsfakes.FakeGuage)
-		fakeEmitter.GuageStub = func(name string) metrics.Guage {
-			return remainingCallsGuage
+		remainingCallsGauge = new(metricsfakes.FakeGauge)
+		fakeEmitter.GaugeStub = func(name string) metrics.Gauge {
+			return remainingCallsGauge
 		}
 		client = github.NewClient(server.URL(), httpClient, fakeEmitter)
 	})
@@ -100,8 +100,8 @@ var _ = Describe("Client", func() {
 		)
 		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(remainingCallsGuage.UpdateCallCount()).To(Equal(1))
-		_, value := remainingCallsGuage.UpdateArgsForCall(0)
+		Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
+		_, value := remainingCallsGauge.UpdateArgsForCall(0)
 		Expect(value).To(Equal(float32(43)))
 	})
 

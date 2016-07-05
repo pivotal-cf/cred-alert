@@ -15,13 +15,13 @@ type FakeEmitter struct {
 	counterReturns struct {
 		result1 metrics.Counter
 	}
-	GuageStub        func(name string) metrics.Guage
-	guageMutex       sync.RWMutex
-	guageArgsForCall []struct {
+	GaugeStub        func(name string) metrics.Gauge
+	gaugeMutex       sync.RWMutex
+	gaugeArgsForCall []struct {
 		name string
 	}
-	guageReturns struct {
-		result1 metrics.Guage
+	gaugeReturns struct {
+		result1 metrics.Gauge
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -60,36 +60,36 @@ func (fake *FakeEmitter) CounterReturns(result1 metrics.Counter) {
 	}{result1}
 }
 
-func (fake *FakeEmitter) Guage(name string) metrics.Guage {
-	fake.guageMutex.Lock()
-	fake.guageArgsForCall = append(fake.guageArgsForCall, struct {
+func (fake *FakeEmitter) Gauge(name string) metrics.Gauge {
+	fake.gaugeMutex.Lock()
+	fake.gaugeArgsForCall = append(fake.gaugeArgsForCall, struct {
 		name string
 	}{name})
-	fake.recordInvocation("Guage", []interface{}{name})
-	fake.guageMutex.Unlock()
-	if fake.GuageStub != nil {
-		return fake.GuageStub(name)
+	fake.recordInvocation("Gauge", []interface{}{name})
+	fake.gaugeMutex.Unlock()
+	if fake.GaugeStub != nil {
+		return fake.GaugeStub(name)
 	} else {
-		return fake.guageReturns.result1
+		return fake.gaugeReturns.result1
 	}
 }
 
-func (fake *FakeEmitter) GuageCallCount() int {
-	fake.guageMutex.RLock()
-	defer fake.guageMutex.RUnlock()
-	return len(fake.guageArgsForCall)
+func (fake *FakeEmitter) GaugeCallCount() int {
+	fake.gaugeMutex.RLock()
+	defer fake.gaugeMutex.RUnlock()
+	return len(fake.gaugeArgsForCall)
 }
 
-func (fake *FakeEmitter) GuageArgsForCall(i int) string {
-	fake.guageMutex.RLock()
-	defer fake.guageMutex.RUnlock()
-	return fake.guageArgsForCall[i].name
+func (fake *FakeEmitter) GaugeArgsForCall(i int) string {
+	fake.gaugeMutex.RLock()
+	defer fake.gaugeMutex.RUnlock()
+	return fake.gaugeArgsForCall[i].name
 }
 
-func (fake *FakeEmitter) GuageReturns(result1 metrics.Guage) {
-	fake.GuageStub = nil
-	fake.guageReturns = struct {
-		result1 metrics.Guage
+func (fake *FakeEmitter) GaugeReturns(result1 metrics.Gauge) {
+	fake.GaugeStub = nil
+	fake.gaugeReturns = struct {
+		result1 metrics.Gauge
 	}{result1}
 }
 
@@ -98,8 +98,8 @@ func (fake *FakeEmitter) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.counterMutex.RLock()
 	defer fake.counterMutex.RUnlock()
-	fake.guageMutex.RLock()
-	defer fake.guageMutex.RUnlock()
+	fake.gaugeMutex.RLock()
+	defer fake.gaugeMutex.RUnlock()
 	return fake.invocations
 }
 

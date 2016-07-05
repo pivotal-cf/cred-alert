@@ -2,8 +2,8 @@ package metrics
 
 import "github.com/pivotal-golang/lager"
 
-//go:generate counterfeiter . Guage
+//go:generate counterfeiter . Gauge
 
-type Guage interface {
+type Gauge interface {
 	Update(lager.Logger, float32)
 }

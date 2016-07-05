@@ -6,7 +6,7 @@ import "cred-alert/datadog"
 
 type Emitter interface {
 	Counter(name string) Counter
-	Guage(name string) Guage
+	Gauge(name string) Gauge
 }
 
 func BuildEmitter(apiKey string, environment string) Emitter {
@@ -43,10 +43,10 @@ func (emitter *emitter) Counter(name string) Counter {
 	return NewCounter(metric)
 }
 
-func (emitter *emitter) Guage(name string) Guage {
+func (emitter *emitter) Gauge(name string) Gauge {
 	return &metric{
 		name:       name,
-		metricType: datadog.GUAGE_METRIC_TYPE,
+		metricType: datadog.GAUGE_METRIC_TYPE,
 		emitter:    emitter,
 	}
 }
@@ -63,9 +63,9 @@ func (e *nullEmitter) Counter(name string) Counter {
 	}
 }
 
-func (e *nullEmitter) Guage(name string) Guage {
+func (e *nullEmitter) Gauge(name string) Gauge {
 	return &nullMetric{
 		name:       name,
-		metricType: datadog.GUAGE_METRIC_TYPE,
+		metricType: datadog.GAUGE_METRIC_TYPE,
 	}
 }

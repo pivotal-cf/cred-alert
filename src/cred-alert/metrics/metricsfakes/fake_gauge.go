@@ -8,7 +8,7 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-type FakeGuage struct {
+type FakeGauge struct {
 	UpdateStub        func(lager.Logger, float32)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
@@ -19,7 +19,7 @@ type FakeGuage struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeGuage) Update(arg1 lager.Logger, arg2 float32) {
+func (fake *FakeGauge) Update(arg1 lager.Logger, arg2 float32) {
 	fake.updateMutex.Lock()
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		arg1 lager.Logger
@@ -32,19 +32,19 @@ func (fake *FakeGuage) Update(arg1 lager.Logger, arg2 float32) {
 	}
 }
 
-func (fake *FakeGuage) UpdateCallCount() int {
+func (fake *FakeGauge) UpdateCallCount() int {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeGuage) UpdateArgsForCall(i int) (lager.Logger, float32) {
+func (fake *FakeGauge) UpdateArgsForCall(i int) (lager.Logger, float32) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	return fake.updateArgsForCall[i].arg1, fake.updateArgsForCall[i].arg2
 }
 
-func (fake *FakeGuage) Invocations() map[string][][]interface{} {
+func (fake *FakeGauge) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.updateMutex.RLock()
@@ -52,7 +52,7 @@ func (fake *FakeGuage) Invocations() map[string][][]interface{} {
 	return fake.invocations
 }
 
-func (fake *FakeGuage) recordInvocation(key string, args []interface{}) {
+func (fake *FakeGauge) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -64,4 +64,4 @@ func (fake *FakeGuage) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ metrics.Guage = new(FakeGuage)
+var _ metrics.Gauge = new(FakeGauge)
