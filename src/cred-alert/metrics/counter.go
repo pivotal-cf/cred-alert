@@ -1,10 +1,6 @@
 package metrics
 
-import (
-	"cred-alert/datadog"
-
-	"github.com/pivotal-golang/lager"
-)
+import "github.com/pivotal-golang/lager"
 
 //go:generate counterfeiter . Counter
 
@@ -14,8 +10,13 @@ type Counter interface {
 }
 
 type counter struct {
-	name    string
-	emitter *emitter
+	metric Metric
+}
+
+func NewCounter(metric Metric) *counter {
+	return &counter{
+		metric: metric,
+	}
 }
 
 func (c *counter) Inc(logger lager.Logger) {
@@ -23,29 +24,20 @@ func (c *counter) Inc(logger lager.Logger) {
 }
 
 func (c *counter) IncN(logger lager.Logger, count int) {
-	logger = logger.Session("emit-count", lager.Data{
-		"name":        c.name,
-		"environment": c.emitter.environment,
-		"increment":   count,
-	})
-
 	if count <= 0 {
 		return
 	}
+	c.metric.Update(logger, float32(count))
+}
 
-	metric := c.emitter.client.BuildMetric(datadog.COUNTER_METRIC_TYPE, c.name, float32(count), c.emitter.environment)
-	err := c.emitter.client.PublishSeries([]datadog.Metric{metric})
-	if err != nil {
-		logger.Error("failed", err)
-		return
+func NewNullCounter(metric Metric) *nullCounter {
+	return &nullCounter{
+		metric: metric,
 	}
-
-	logger.Debug("emitted")
 }
 
 type nullCounter struct {
-	name        string
-	environment string
+	metric Metric
 }
 
 func (c *nullCounter) Inc(logger lager.Logger) {
@@ -53,9 +45,5 @@ func (c *nullCounter) Inc(logger lager.Logger) {
 }
 
 func (c *nullCounter) IncN(logger lager.Logger, count int) {
-	logger.Session("emit-count", lager.Data{
-		"name":        c.name,
-		"environment": c.environment,
-		"increment":   count,
-	}).Debug("emitted")
+	c.metric.Update(logger, float32(count))
 }

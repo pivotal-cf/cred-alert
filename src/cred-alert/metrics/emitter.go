@@ -21,7 +21,7 @@ func BuildEmitter(apiKey string, environment string) Emitter {
 	return NewEmitter(client, environment)
 }
 
-func NewEmitter(dataDogClient datadog.Client, environment string) Emitter {
+func NewEmitter(dataDogClient datadog.Client, environment string) *emitter {
 	return &emitter{
 		client:      dataDogClient,
 		environment: environment,
@@ -34,16 +34,20 @@ type emitter struct {
 }
 
 func (emitter *emitter) Counter(name string) Counter {
-	return &counter{
-		name:    name,
-		emitter: emitter,
+	metric := &metric{
+		name:       name,
+		metricType: datadog.COUNTER_METRIC_TYPE,
+		emitter:    emitter,
 	}
+
+	return NewCounter(metric)
 }
 
 func (emitter *emitter) Guage(name string) Guage {
-	return &guage{
-		name:    name,
-		emitter: emitter,
+	return &metric{
+		name:       name,
+		metricType: datadog.GUAGE_METRIC_TYPE,
+		emitter:    emitter,
 	}
 }
 
@@ -53,15 +57,15 @@ type nullEmitter struct {
 }
 
 func (e *nullEmitter) Counter(name string) Counter {
+	metric := &nullMetric{}
 	return &nullCounter{
-		name:        e.name,
-		environment: e.environment,
+		metric: metric,
 	}
 }
 
 func (e *nullEmitter) Guage(name string) Guage {
-	return &nullGuage{
-		name:        name,
-		environment: e.environment,
+	return &nullMetric{
+		name:       name,
+		metricType: datadog.GUAGE_METRIC_TYPE,
 	}
 }

@@ -2,7 +2,7 @@
 package githubfakes
 
 import (
-	myGithub "cred-alert/github"
+	"cred-alert/github"
 	"sync"
 
 	"github.com/pivotal-golang/lager"
@@ -84,4 +84,4 @@ func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ myGithub.Client = new(FakeClient)
+var _ github.Client = new(FakeClient)

@@ -15,95 +15,50 @@ var _ = Describe("Metrics", func() {
 	var (
 		logger *lagertest.TestLogger
 
-		client  *datadogfakes.FakeClient
-		emitter metrics.Emitter
+		client             *datadogfakes.FakeClient
+		metric             metrics.Metric
+		expectedMetricType string
+		expectedMetricName string
+		expectedEnv        string
 	)
-
-	environment := "test"
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("metrics")
 
 		client = &datadogfakes.FakeClient{}
-		emitter = metrics.NewEmitter(client, environment)
+		expectedEnv = "env"
+		emitter := metrics.NewEmitter(client, expectedEnv)
+		expectedMetricType = "name"
+		expectedMetricName = "type"
+		metric = metrics.NewMetric(expectedMetricName, expectedMetricType, emitter)
 	})
 
-	Describe("counters", func() {
-		It("does not emit anything if the count is zero", func() {
-			counter := emitter.Counter("counter")
+	It("calls BuildMetricCallCount and PublishSeries", func() {
+		expectedValue := float32(0)
+		metric.Update(logger, expectedValue)
 
-			counter.IncN(logger, 0)
+		expectedMetric := datadog.Metric{}
+		client.BuildMetricReturns(expectedMetric)
 
-			Expect(client.BuildMetricCallCount()).Should(Equal(0))
-			Expect(client.PublishSeriesCallCount()).Should(Equal(0))
-		})
-
-		It("can increment once", func() {
-			counter := emitter.Counter("counter")
-
-			counter.Inc(logger)
-
-			Expect(client.BuildMetricCallCount()).Should(Equal(1))
-
-			counterType, counterName, counterCount, counterTag := client.BuildMetricArgsForCall(0)
-			Expect(counterType).To(Equal(datadog.COUNTER_METRIC_TYPE))
-			Expect(counterName).To(Equal("counter"))
-			Expect(counterCount).To(Equal(float32(1)))
-			Expect(counterTag).To(Equal([]string{environment}))
-
-			expectedMetric := datadog.Metric{}
-			client.BuildMetricReturns(expectedMetric)
-
-			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
-		})
-
-		It("can increment many times", func() {
-			counter := emitter.Counter("counter")
-
-			counter.IncN(logger, 234)
-
-			counterType, counterName, counterCount, counterTag := client.BuildMetricArgsForCall(0)
-			Expect(counterType).To(Equal(datadog.COUNTER_METRIC_TYPE))
-			Expect(counterName).To(Equal("counter"))
-			Expect(counterCount).To(Equal(float32(234)))
-			Expect(counterTag).To(Equal([]string{environment}))
-
-			expectedMetric := datadog.Metric{}
-			client.BuildMetricReturns(expectedMetric)
-
-			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
-		})
+		Expect(client.BuildMetricCallCount()).Should(Equal(1))
+		metricType, name, value, env := client.BuildMetricArgsForCall(0)
+		Expect(metricType).To(Equal(expectedMetricType))
+		Expect(name).To(Equal(expectedMetricName))
+		Expect(value).To(Equal(expectedValue))
+		Expect(env[0]).To(Equal(expectedEnv))
+		Expect(client.PublishSeriesCallCount()).Should(Equal(1))
+		Expect(client.PublishSeriesArgsForCall(0)).To(ContainElement(expectedMetric))
 	})
 
-	Describe("guages", func() {
-		It("does emit zero values", func() {
-			guage := emitter.Guage("myGuage")
+	It("logs", func() {
+		expectedValue := 1
+		metric.Update(logger, float32(expectedValue))
 
-			guage.Update(logger, 123)
-
-			Expect(client.BuildMetricCallCount()).Should(Equal(1))
-			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-		})
-
-		It("Updates a metric value", func() {
-			guage := emitter.Guage("myGuage")
-
-			guage.Update(logger, 234)
-
-			counterType, counterName, counterCount, counterTag := client.BuildMetricArgsForCall(0)
-			Expect(counterType).To(Equal(datadog.GUAGE_METRIC_TYPE))
-			Expect(counterName).To(Equal("myGuage"))
-			Expect(counterCount).To(Equal(float32(234)))
-			Expect(counterTag).To(Equal([]string{environment}))
-
-			expectedMetric := datadog.Metric{}
-			client.BuildMetricReturns(expectedMetric)
-
-			Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-			Expect(client.PublishSeriesArgsForCall(0)).To(ConsistOf(expectedMetric))
-		})
-
+		Expect(len(logger.LogMessages())).To(Equal(1))
+		Expect(logger.LogMessages()[0]).To(ContainSubstring("emit-metric"))
+		Expect(logger.Logs()[0].Data["name"]).To(Equal(expectedMetricName))
+		Expect(logger.Logs()[0].Data["type"]).To(Equal(expectedMetricType))
+		Expect(logger.Logs()[0].Data["environment"]).To(Equal(expectedEnv))
+		Expect(logger.Logs()[0].Data["value"]).To(Equal(float64(expectedValue)))
 	})
 })
