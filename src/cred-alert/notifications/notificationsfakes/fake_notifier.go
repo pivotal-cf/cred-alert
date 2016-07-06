@@ -3,14 +3,20 @@ package notificationsfakes
 
 import (
 	"cred-alert/notifications"
+	"cred-alert/sniff"
 	"sync"
+
+	"github.com/pivotal-golang/lager"
 )
 
 type FakeNotifier struct {
-	SendNotificationStub        func(message string) error
+	SendNotificationStub        func(logger lager.Logger, repository string, sha string, line sniff.Line) error
 	sendNotificationMutex       sync.RWMutex
 	sendNotificationArgsForCall []struct {
-		message string
+		logger     lager.Logger
+		repository string
+		sha        string
+		line       sniff.Line
 	}
 	sendNotificationReturns struct {
 		result1 error
@@ -19,15 +25,18 @@ type FakeNotifier struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeNotifier) SendNotification(message string) error {
+func (fake *FakeNotifier) SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error {
 	fake.sendNotificationMutex.Lock()
 	fake.sendNotificationArgsForCall = append(fake.sendNotificationArgsForCall, struct {
-		message string
-	}{message})
-	fake.recordInvocation("SendNotification", []interface{}{message})
+		logger     lager.Logger
+		repository string
+		sha        string
+		line       sniff.Line
+	}{logger, repository, sha, line})
+	fake.recordInvocation("SendNotification", []interface{}{logger, repository, sha, line})
 	fake.sendNotificationMutex.Unlock()
 	if fake.SendNotificationStub != nil {
-		return fake.SendNotificationStub(message)
+		return fake.SendNotificationStub(logger, repository, sha, line)
 	} else {
 		return fake.sendNotificationReturns.result1
 	}
@@ -39,10 +48,10 @@ func (fake *FakeNotifier) SendNotificationCallCount() int {
 	return len(fake.sendNotificationArgsForCall)
 }
 
-func (fake *FakeNotifier) SendNotificationArgsForCall(i int) string {
+func (fake *FakeNotifier) SendNotificationArgsForCall(i int) (lager.Logger, string, string, sniff.Line) {
 	fake.sendNotificationMutex.RLock()
 	defer fake.sendNotificationMutex.RUnlock()
-	return fake.sendNotificationArgsForCall[i].message
+	return fake.sendNotificationArgsForCall[i].logger, fake.sendNotificationArgsForCall[i].repository, fake.sendNotificationArgsForCall[i].sha, fake.sendNotificationArgsForCall[i].line
 }
 
 func (fake *FakeNotifier) SendNotificationReturns(result1 error) {

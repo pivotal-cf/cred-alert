@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"bytes"
+	"cred-alert/sniff"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 //go:generate counterfeiter . Notifier
 
 type Notifier interface {
-	SendNotification(message string) error
+	SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error
 }
 
 type slackNotifier struct {
@@ -23,29 +24,32 @@ type slackNotifier struct {
 }
 
 type slackNotification struct {
-	Text string `json:"text"`
+	Attachments []slackAttachment `json:"attachments"`
 }
 
-func NewSlackNotifier(logger lager.Logger, webhookURL string) Notifier {
+type slackAttachment struct {
+	Fallback string `json:"fallback"`
+	Color    string `json:"color"`
+	Title    string `json:"title"`
+	Text     string `json:"text"`
+}
+
+func NewSlackNotifier(webhookURL string) Notifier {
 	if webhookURL == "" {
-		return &nullSlackNotifier{
-			logger: logger,
-		}
+		return &nullSlackNotifier{}
 	}
 
 	return &slackNotifier{
 		webhookURL: webhookURL,
 		client:     &http.Client{},
-		logger:     logger,
 	}
 }
 
-func (n *slackNotifier) SendNotification(message string) error {
-	logger := n.logger.Session("send-notification", lager.Data{
-		"message": message,
-	})
+func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error {
+	logger = logger.Session("send-notification")
 
-	notification := &slackNotification{Text: message}
+	notification := n.buildNotification(repository, sha, line)
+
 	body, err := json.Marshal(notification)
 	if err != nil {
 		logger.Error("unmarshal-faiiled", err)
@@ -57,6 +61,8 @@ func (n *slackNotifier) SendNotification(message string) error {
 		logger.Error("request-failed", err)
 		return err
 	}
+
+	req.Header.Set("Content-type", "application/json")
 
 	resp, err := n.client.Do(req)
 	if err != nil {
@@ -72,13 +78,27 @@ func (n *slackNotifier) SendNotification(message string) error {
 	return nil
 }
 
+func (n *slackNotifier) buildNotification(repository string, sha string, line sniff.Line) slackNotification {
+	link := fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repository, sha, line.Path, line.LineNumber)
+
+	return slackNotification{
+		Attachments: []slackAttachment{
+			{
+				Fallback: link,
+				Color:    "danger",
+				Title:    fmt.Sprintf("Credential detected in %s!", repository),
+				Text:     fmt.Sprintf("<%s|%s:%d>", link, line.Path, line.LineNumber),
+			},
+		},
+	}
+}
+
 type nullSlackNotifier struct {
 	logger lager.Logger
 }
 
-func (n *nullSlackNotifier) SendNotification(message string) error {
-	n.logger.Session("send-notification", lager.Data{
-		"message": message,
-	}).Debug("sent")
+func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error {
+	logger.Session("send-notification").Debug("sent")
+
 	return nil
 }

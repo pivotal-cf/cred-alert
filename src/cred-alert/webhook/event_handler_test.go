@@ -183,9 +183,16 @@ var _ = Describe("EventHandler", func() {
 			eventHandler.HandleEvent(logger, event)
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
-			Expect(notifier.SendNotificationArgsForCall(0)).To(ContainSubstring(repoFullName))
-			Expect(notifier.SendNotificationArgsForCall(0)).To(ContainSubstring(sha0))
-			Expect(notifier.SendNotificationArgsForCall(0)).To(ContainSubstring(filePath + ":1"))
+
+			_, repo, sha, line := notifier.SendNotificationArgsForCall(0)
+
+			Expect(repo).To(Equal(repoFullName))
+			Expect(sha).To(Equal(sha0))
+			Expect(line).To(Equal(sniff.Line{
+				Path:       "some/file/path",
+				LineNumber: 1,
+				Content:    "content",
+			}))
 		})
 	})
 

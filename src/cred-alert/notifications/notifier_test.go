@@ -2,6 +2,7 @@ package notifications_test
 
 import (
 	"cred-alert/notifications"
+	"cred-alert/sniff"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,7 +21,7 @@ var _ = Describe("Notifications", func() {
 
 	Context("nil webhookUrl", func() {
 		BeforeEach(func() {
-			slackNotifier = notifications.NewSlackNotifier(logger, "")
+			slackNotifier = notifications.NewSlackNotifier("")
 		})
 
 		It("Returns a nullNotifier", func() {
@@ -28,7 +29,7 @@ var _ = Describe("Notifications", func() {
 		})
 
 		It("handles sending notifications", func() {
-			err := slackNotifier.SendNotification("something happened")
+			err := slackNotifier.SendNotification(logger, "org/repo", "123abc", sniff.Line{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -38,17 +39,31 @@ var _ = Describe("Notifications", func() {
 
 		BeforeEach(func() {
 			server = ghttp.NewServer()
-			slackNotifier = notifications.NewSlackNotifier(logger, server.URL())
+			slackNotifier = notifications.NewSlackNotifier(server.URL())
 		})
 
 		It("POSTs a message to the fake slack webhook", func() {
+			expectedJSON := `{
+				"attachments": [
+					{
+						"title": "Credential detected in org/repo!",
+						"text": "<https://github.com/org/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt:123>",
+						"color": "danger",
+						"fallback": "https://github.com/org/repo/blob/abc123/path/to/file.txt#L123"
+					}
+				]
+			}
+			`
+
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("POST", "/"),
-					ghttp.VerifyBody([]byte(`{"text":"some message"}`)),
+					ghttp.VerifyJSON(expectedJSON),
 				),
 			)
-			slackNotifier.SendNotification("some message")
+
+			slackNotifier.SendNotification(logger, "org/repo", "abc123", sniff.Line{Path: "path/to/file.txt", LineNumber: 123})
+
 			Expect(server.ReceivedRequests()).Should(HaveLen(1))
 		})
 	})

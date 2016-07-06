@@ -6,7 +6,6 @@ import (
 	"cred-alert/scanners/git"
 	"cred-alert/sniff"
 	"errors"
-	"fmt"
 	"regexp"
 
 	gh "cred-alert/github"
@@ -103,7 +102,9 @@ func (s *eventHandler) createHandleViolation(logger lager.Logger, sha string, re
 			"line-number": line.LineNumber,
 			"sha":         sha,
 		})
-		s.notifier.SendNotification(fmt.Sprintf("Found credential in %s\n\tCommit SHA: %s\n\tFile: %s:%d\n", repoName, sha, line.Path, line.LineNumber))
+
+		s.notifier.SendNotification(logger, repoName, sha, line)
+
 		*violations++
 	}
 }
