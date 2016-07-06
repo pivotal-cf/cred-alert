@@ -16,24 +16,25 @@ type Notifier interface {
 }
 
 type slackNotifier struct {
-	webhookUrl string
+	logger lager.Logger
+
+	webhookURL string
 	client     *http.Client
-	logger     lager.Logger
 }
 
 type slackNotification struct {
 	Text string `json:"text"`
 }
 
-func NewSlackNotifier(logger lager.Logger, webhookUrl string) Notifier {
-	if webhookUrl == "" {
+func NewSlackNotifier(logger lager.Logger, webhookURL string) Notifier {
+	if webhookURL == "" {
 		return &nullSlackNotifier{
 			logger: logger,
 		}
 	}
 
 	return &slackNotifier{
-		webhookUrl: webhookUrl,
+		webhookURL: webhookURL,
 		client:     &http.Client{},
 		logger:     logger,
 	}
@@ -50,12 +51,14 @@ func (n *slackNotifier) SendNotification(message string) error {
 		logger.Error("unmarshal-faiiled", err)
 		return err
 	}
-	req, err := http.NewRequest("POST", n.webhookUrl, bytes.NewBuffer(body))
+
+	req, err := http.NewRequest("POST", n.webhookURL, bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("request-failed", err)
 		return err
 	}
-	resp, _ := n.client.Do(req)
+
+	resp, err := n.client.Do(req)
 	if err != nil {
 		logger.Error("response-error", err)
 		return err
