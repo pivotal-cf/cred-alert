@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/pivotal-golang/lager/lagertest"
 
+	"cred-alert/queue"
+	"cred-alert/queue/queuefakes"
 	"cred-alert/webhook"
 	"cred-alert/webhook/webhookfakes"
 )
@@ -26,68 +29,128 @@ var _ = Describe("Webhook", func() {
 		handler      http.Handler
 		eventHandler *webhookfakes.FakeEventHandler
 
-		recorder *httptest.ResponseRecorder
+		fakeRequest *http.Request
+		recorder    *httptest.ResponseRecorder
 
-		token string
+		token     string
+		fakeQueue *queuefakes.FakeQueue
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("webhook")
 		recorder = httptest.NewRecorder()
 		eventHandler = &webhookfakes.FakeEventHandler{}
+		fakeQueue = &queuefakes.FakeQueue{}
 		token = "example-key"
 
-		handler = webhook.Handler(logger, eventHandler, token)
+		handler = webhook.Handler(logger, eventHandler, token, fakeQueue)
 	})
 
-	It("scans the push event successfully", func() {
-		pushEvent := github.PushEvent{
-			Before: github.String("beef04"),
-			After:  github.String("af7e40"),
-		}
+	pushEvent := github.PushEvent{
+		Before: github.String("beef04"),
+		After:  github.String("af7e40"),
+	}
 
-		body := &bytes.Buffer{}
-		err := json.NewEncoder(body).Encode(pushEvent)
-		Expect(err).NotTo(HaveOccurred())
+	Context("when the request is properly formed", func() {
+		BeforeEach(func() {
+			body := &bytes.Buffer{}
+			err := json.NewEncoder(body).Encode(pushEvent)
+			Expect(err).NotTo(HaveOccurred())
 
-		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", body)
-		fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(token, body.Bytes())))
+			macHeader := fmt.Sprintf("sha1=%s", messageMAC(token, body.Bytes()))
 
-		handler.ServeHTTP(recorder, fakeRequest)
+			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", body)
+			fakeRequest.Header.Set("X-Hub-Signature", macHeader)
+		})
 
-		Eventually(eventHandler.HandleEventCallCount).Should(Equal(1))
-		Expect(recorder.Code).To(Equal(http.StatusOK))
+		It("responds with 200", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Expect(recorder.Code).To(Equal(http.StatusOK))
+		})
+
+		It("handles and scans the event directly", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Eventually(eventHandler.HandleEventCallCount).Should(Equal(1))
+		})
+
+		It("enqueues the task for asynchronous scanning", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Expect(fakeQueue.EnqueueCallCount()).To(Equal(1))
+			task := fakeQueue.EnqueueArgsForCall(0)
+			event, _ := queue.GetEvent(task)
+			Expect(event).To(Equal(pushEvent))
+		})
+
+		Context("when the task fails to enqueue", func() {
+			BeforeEach(func() {
+				fakeQueue.EnqueueReturns(errors.New("failed to enqueue"))
+			})
+
+			It("responds with 500", func() {
+				handler.ServeHTTP(recorder, fakeRequest)
+
+				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
+			})
+		})
 	})
 
-	It("responds with 403 when the signature is invalid", func() {
-		pushEvent := github.PushEvent{
-			Before: github.String("beef04"),
-			After:  github.String("af7e40"),
-		}
+	Context("when the signature is invalid", func() {
+		BeforeEach(func() {
+			body := &bytes.Buffer{}
+			err := json.NewEncoder(body).Encode(pushEvent)
+			Expect(err).NotTo(HaveOccurred())
 
-		body := &bytes.Buffer{}
-		err := json.NewEncoder(body).Encode(pushEvent)
-		Expect(err).NotTo(HaveOccurred())
+			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", body)
+			fakeRequest.Header.Set("X-Hub-Signature", "thisaintnohmacsignature")
+		})
 
-		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", body)
-		fakeRequest.Header.Set("X-Hub-Signature", "thisaintnohmacsignature")
+		It("responds with 403", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
 
-		handler.ServeHTTP(recorder, fakeRequest)
+			Expect(recorder.Code).To(Equal(http.StatusForbidden))
+		})
 
-		Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
-		Expect(recorder.Code).To(Equal(http.StatusForbidden))
+		It("does not directly handle the event", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
+		})
+
+		It("does not enqueue any tasks", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Expect(fakeQueue.EnqueueCallCount()).To(BeZero())
+		})
 	})
 
-	It("responds with 400 when the payload is not valid JSON", func() {
-		badJSON := bytes.NewBufferString("{'ooops:---")
+	Context("when the payload is not valid JSON", func() {
+		BeforeEach(func() {
+			badJSON := bytes.NewBufferString("{'ooops:---")
 
-		fakeRequest, _ := http.NewRequest("POST", "http://example.com/webhook", badJSON)
-		fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(token, badJSON.Bytes())))
+			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", badJSON)
+			fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(token, badJSON.Bytes())))
+		})
 
-		handler.ServeHTTP(recorder, fakeRequest)
+		It("responds with 400", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
 
-		Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
-		Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+			Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+		})
+
+		It("does not directly handle the event", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
+		})
+
+		It("does not enqueue any tasks", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Expect(fakeQueue.EnqueueCallCount()).To(BeZero())
+		})
 	})
 })
 

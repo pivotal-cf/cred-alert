@@ -17,6 +17,7 @@ import (
 	"cred-alert/github"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
+	"cred-alert/queue"
 	"cred-alert/sniff"
 	"cred-alert/webhook"
 )
@@ -59,10 +60,11 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
 	ghClient := github.NewClient(github.DEFAULT_GITHUB_URL, httpClient, emitter)
 	notifier := notifications.NewSlackNotifier(logger, opts.Slack.WebhookUrl)
+	queue := queue.NewNullQueue(logger)
 	eventHandler := webhook.NewEventHandler(ghClient, sniff.Sniff, emitter, notifier, opts.Whitelist)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))
+	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken, queue))
 
 	members := []grouper.Member{
 		{"api", http_server.New(

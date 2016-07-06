@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"cred-alert/queue"
 	"encoding/json"
 	"net/http"
 
@@ -14,13 +15,15 @@ type handler struct {
 	logger       lager.Logger
 	secretKey    []byte
 	eventHandler EventHandler
+	queue        queue.Queue
 }
 
-func Handler(logger lager.Logger, eventHandler EventHandler, secretKey string) *handler {
+func Handler(logger lager.Logger, eventHandler EventHandler, secretKey string, queue queue.Queue) *handler {
 	return &handler{
 		logger:       logger.Session("webhook-handler"),
 		secretKey:    []byte(secretKey),
 		eventHandler: eventHandler,
+		queue:        queue,
 	}
 }
 
@@ -62,7 +65,11 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 		"after":  *event.After,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	if err := h.queue.Enqueue(queue.NewPushEventTask(event)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	w.WriteHeader(http.StatusOK)
 	go h.eventHandler.HandleEvent(logger, event)
 }
