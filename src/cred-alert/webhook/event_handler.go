@@ -6,7 +6,6 @@ import (
 	"cred-alert/scanners/git"
 	"cred-alert/sniff"
 	"errors"
-	"regexp"
 
 	gh "cred-alert/github"
 
@@ -23,7 +22,7 @@ type EventHandler interface {
 type eventHandler struct {
 	githubClient gh.Client
 	sniff        func(lager.Logger, sniff.Scanner, func(sniff.Line))
-	whitelist    []*regexp.Regexp
+	whitelist    *Whitelist
 
 	requestCounter      metrics.Counter
 	credentialCounter   metrics.Counter
@@ -31,20 +30,15 @@ type eventHandler struct {
 	notifier            notifications.Notifier
 }
 
-func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier, whitelist []string) *eventHandler {
+func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier, whitelist *Whitelist) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	credentialCounter := emitter.Counter("cred_alert.violations")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
-	patterns := make([]*regexp.Regexp, len(whitelist))
-	for i, uncompiled := range whitelist {
-		patterns[i] = regexp.MustCompile(uncompiled)
-	}
-
 	handler := &eventHandler{
 		githubClient: githubClient,
 		sniff:        sniff,
-		whitelist:    patterns,
+		whitelist:    whitelist,
 
 		requestCounter:      requestCounter,
 		credentialCounter:   credentialCounter,
@@ -58,11 +52,13 @@ func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scan
 func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) {
 	logger = logger.Session("handle-event")
 
-	if s.isWhitelisted(event) {
+	if s.whitelist.IsIgnored(*event.Repo.Name) {
 		logger.Info("ignored-repo", lager.Data{
 			"repo": *event.Repo.Name,
 		})
+
 		s.ignoredEventCounter.Inc(logger)
+
 		return
 	}
 
@@ -107,18 +103,4 @@ func (s *eventHandler) createHandleViolation(logger lager.Logger, sha string, re
 
 		*violations++
 	}
-}
-
-func (s *eventHandler) isWhitelisted(event github.PushEvent) bool {
-	if event.Repo.Name == nil {
-		return false
-	}
-
-	for _, pattern := range s.whitelist {
-		if pattern.MatchString(*event.Repo.Name) {
-			return true
-		}
-	}
-
-	return false
 }

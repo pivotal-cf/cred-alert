@@ -36,7 +36,7 @@ var _ = Describe("EventHandler", func() {
 		credentialCounter   *metricsfakes.FakeCounter
 		ignoredEventCounter *metricsfakes.FakeCounter
 
-		whitelist []string
+		whitelist *webhook.Whitelist
 		event     github.PushEvent
 	)
 
@@ -51,6 +51,8 @@ var _ = Describe("EventHandler", func() {
 		requestCounter = &metricsfakes.FakeCounter{}
 		credentialCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
+
+		whitelist = webhook.BuildWhitelist()
 
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
@@ -136,7 +138,7 @@ var _ = Describe("EventHandler", func() {
 			sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
 				scanCount++
 			}
-			whitelist = []string{repoName}
+			whitelist = webhook.BuildWhitelist(repoName)
 			event.Repo.Name = &repoName
 		})
 

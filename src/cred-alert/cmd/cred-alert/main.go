@@ -77,7 +77,9 @@ func main() {
 		logger.Error("Could not create queue", err)
 		os.Exit(1)
 	}
-	eventHandler := webhook.NewEventHandler(ghClient, sniff.Sniff, emitter, notifier, opts.Whitelist)
+
+	repoWhitelist := webhook.BuildWhitelist(opts.Whitelist...)
+	eventHandler := webhook.NewEventHandler(ghClient, sniff.Sniff, emitter, notifier, repoWhitelist)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken, queue))
