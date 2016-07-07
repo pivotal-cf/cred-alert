@@ -7,6 +7,7 @@ const awsAccountIDPattern = `(?i)("|')?(aws)?_?(account)_?(id)?("|')?\s*(:|=>|=)
 const cryptMD5Pattern = `\$1\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{22}`
 const cryptSHA256Pattern = `\$5\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{43}`
 const cryptSHA512Pattern = `\$6\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}`
+const rsaPrivateKeyHeaderPattern = `-----BEGIN RSA PRIVATE KEY-----`
 
 const bashStringInterpolationPattern = `["]\$`
 const fakePattern = `(?i)fake`
@@ -22,6 +23,7 @@ func DefaultMatcher() *Matcher {
 			cryptMD5Pattern,
 			cryptSHA256Pattern,
 			cryptSHA512Pattern,
+			rsaPrivateKeyHeaderPattern,
 		},
 		[]string{
 			bashStringInterpolationPattern,
