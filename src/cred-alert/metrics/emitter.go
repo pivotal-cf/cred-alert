@@ -36,7 +36,7 @@ type emitter struct {
 func (emitter *emitter) Counter(name string) Counter {
 	metric := &metric{
 		name:       name,
-		metricType: datadog.COUNTER_METRIC_TYPE,
+		metricType: datadog.CounterMetricType,
 		emitter:    emitter,
 	}
 
@@ -46,7 +46,7 @@ func (emitter *emitter) Counter(name string) Counter {
 func (emitter *emitter) Gauge(name string) Gauge {
 	return &metric{
 		name:       name,
-		metricType: datadog.GAUGE_METRIC_TYPE,
+		metricType: datadog.GaugeMetricType,
 		emitter:    emitter,
 	}
 }
@@ -66,6 +66,6 @@ func (e *nullEmitter) Counter(name string) Counter {
 func (e *nullEmitter) Gauge(name string) Gauge {
 	return &nullMetric{
 		name:       name,
-		metricType: datadog.GAUGE_METRIC_TYPE,
+		metricType: datadog.GaugeMetricType,
 	}
 }

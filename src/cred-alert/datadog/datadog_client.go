@@ -28,8 +28,8 @@ type Point struct {
 	Value     float32
 }
 
-const GAUGE_METRIC_TYPE string = "gauge"
-const COUNTER_METRIC_TYPE string = "counter"
+const GaugeMetricType string = "gauge"
+const CounterMetricType string = "counter"
 
 func (p Point) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`[%d, %f]`, p.Timestamp.Unix(), p.Value)), nil

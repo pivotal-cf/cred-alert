@@ -14,7 +14,7 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-const DEFAULT_GITHUB_URL = "https://api.github.com/"
+const DefaultGitHubURL = "https://api.github.com/"
 
 //go:generate counterfeiter . Client
 
