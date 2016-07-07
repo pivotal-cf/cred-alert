@@ -12,6 +12,7 @@ type Queue interface {
 
 type Task interface {
 	Data() map[string]interface{}
+	Receipt() string
 }
 
 type EmptyQueueError struct {

@@ -23,6 +23,10 @@ func (t *pushEventTask) Data() map[string]interface{} {
 	return t.data
 }
 
+func (t *pushEventTask) Receipt() string {
+	return "TODO add receipt"
+}
+
 func GetEvent(task Task) (github.PushEvent, error) {
 	if event, ok := task.Data()["event"]; !ok {
 		return github.PushEvent{}, errors.New("No event in this task")

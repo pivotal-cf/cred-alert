@@ -22,6 +22,10 @@ func (t *dummyTask) Data() map[string]interface{} {
 	return t.data
 }
 
+func (t *dummyTask) Receipt() string {
+	return ""
+}
+
 var _ = Describe("PushEventTask", func() {
 	var (
 		task          queue.Task

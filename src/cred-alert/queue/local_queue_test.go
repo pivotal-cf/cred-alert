@@ -8,12 +8,6 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
-type TestTask struct{}
-
-func (t *TestTask) Data() map[string]interface{} {
-	return nil
-}
-
 var _ = Describe("CrappyQueue", func() {
 	var (
 		logger *lagertest.TestLogger
@@ -29,7 +23,7 @@ var _ = Describe("CrappyQueue", func() {
 	})
 
 	It("queues and dequeues properly", func() {
-		expectedTask := &TestTask{}
+		expectedTask := &dummyTask{}
 
 		var err error
 		err = localQ.Enqueue(expectedTask)

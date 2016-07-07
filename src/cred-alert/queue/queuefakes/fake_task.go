@@ -13,6 +13,12 @@ type FakeTask struct {
 	dataReturns     struct {
 		result1 map[string]interface{}
 	}
+	ReceiptStub        func() string
+	receiptMutex       sync.RWMutex
+	receiptArgsForCall []struct{}
+	receiptReturns     struct {
+		result1 string
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -42,11 +48,38 @@ func (fake *FakeTask) DataReturns(result1 map[string]interface{}) {
 	}{result1}
 }
 
+func (fake *FakeTask) Receipt() string {
+	fake.receiptMutex.Lock()
+	fake.receiptArgsForCall = append(fake.receiptArgsForCall, struct{}{})
+	fake.recordInvocation("Receipt", []interface{}{})
+	fake.receiptMutex.Unlock()
+	if fake.ReceiptStub != nil {
+		return fake.ReceiptStub()
+	} else {
+		return fake.receiptReturns.result1
+	}
+}
+
+func (fake *FakeTask) ReceiptCallCount() int {
+	fake.receiptMutex.RLock()
+	defer fake.receiptMutex.RUnlock()
+	return len(fake.receiptArgsForCall)
+}
+
+func (fake *FakeTask) ReceiptReturns(result1 string) {
+	fake.ReceiptStub = nil
+	fake.receiptReturns = struct {
+		result1 string
+	}{result1}
+}
+
 func (fake *FakeTask) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.dataMutex.RLock()
 	defer fake.dataMutex.RUnlock()
+	fake.receiptMutex.RLock()
+	defer fake.receiptMutex.RUnlock()
 	return fake.invocations
 }
 
