@@ -104,4 +104,8 @@ the needed environment variables.
 | `GITHUB_WEBHOOK_SECRET_KEY` | Shared secret configured on github webhooks                                      |
 | `PORT`                      | Port on which to listen for webhook requests for (set automatically if using CF) |
 | `IGNORED_REPOS`             | A comma-separated list of patterns for repos to ignore (eg. `.*-credentials$`)   |
-
+| `GITHUB_WEBHOOK_SECRET_KEY` | Shared secret configured on github webhooks                                      |
+| `AWS_ACCESS_KEY`            | access key for aws SQS service                                                   |
+| `AWS_SECRET_ACCESS_KEY`     | secret access key for aws SQS service                                            |
+| `AWS_REGION`                | aws region for SQS service                                                       |
+| `SQS_QUEUE_NAME`            | queue name to use with SQS                                                       |
