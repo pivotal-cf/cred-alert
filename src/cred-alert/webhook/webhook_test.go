@@ -45,8 +45,22 @@ var _ = Describe("Webhook", func() {
 	})
 
 	pushEvent := github.PushEvent{
-		Before: github.String("beef04"),
-		After:  github.String("af7e40"),
+		Before: github.String("abc123bef04e"),
+		After:  github.String("def456af4e4"),
+		Repo: &github.PushEventRepository{
+			Name:     github.String("repository-name"),
+			FullName: github.String("repository-owner/repository-name"),
+			Owner: &github.PushEventRepoOwner{
+				Name: github.String("repository-owner"),
+			},
+		},
+		Commits: []github.PushEventCommit{
+			{ID: github.String("commit-sha-1")},
+			{ID: github.String("commit-sha-2")},
+			{ID: github.String("commit-sha-3")},
+			{ID: github.String("commit-sha-4")},
+			{ID: github.String("commit-sha-5")},
+		},
 	}
 
 	Context("when the request is properly formed", func() {

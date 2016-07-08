@@ -16,7 +16,7 @@ import (
 //go:generate counterfeiter . EventHandler
 
 type EventHandler interface {
-	HandleEvent(lager.Logger, github.PushEvent)
+	HandleEvent(lager.Logger, PushScan)
 }
 
 type eventHandler struct {
@@ -49,12 +49,12 @@ func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scan
 	return handler
 }
 
-func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) {
+func (s *eventHandler) HandleEvent(logger lager.Logger, scan PushScan) {
 	logger = logger.Session("handle-event")
 
-	if s.whitelist.IsIgnored(*event.Repo.Name) {
+	if s.whitelist.IsIgnored(scan.Repository) {
 		logger.Info("ignored-repo", lager.Data{
-			"repo": *event.Repo.Name,
+			"repo": scan.Repository,
 		})
 
 		s.ignoredEventCounter.Inc(logger)
@@ -63,11 +63,6 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 	}
 
 	s.requestCounter.Inc(logger)
-
-	scan, valid := Extract(logger, event)
-	if !valid {
-		panic("what what what")
-	}
 
 	violations := 0
 
@@ -84,7 +79,6 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 
 		handleViolation := s.createHandleViolation(logger, scanDiff.Start, scan.FullRepoName(), &violations)
 		s.sniff(logger, diffScanner, handleViolation)
-
 	}
 
 	if violations > 0 {

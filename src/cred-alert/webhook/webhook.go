@@ -65,6 +65,11 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 		"after":  *event.After,
 	})
 
+	scan, valid := Extract(logger, event)
+	if !valid {
+		panic("what what what")
+	}
+
 	w.WriteHeader(http.StatusOK)
-	go h.eventHandler.HandleEvent(logger, event)
+	go h.eventHandler.HandleEvent(logger, scan)
 }

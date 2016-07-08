@@ -5,26 +5,25 @@ import (
 	"cred-alert/webhook"
 	"sync"
 
-	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager"
 )
 
 type FakeEventHandler struct {
-	HandleEventStub        func(lager.Logger, github.PushEvent)
+	HandleEventStub        func(lager.Logger, webhook.PushScan)
 	handleEventMutex       sync.RWMutex
 	handleEventArgsForCall []struct {
 		arg1 lager.Logger
-		arg2 github.PushEvent
+		arg2 webhook.PushScan
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEventHandler) HandleEvent(arg1 lager.Logger, arg2 github.PushEvent) {
+func (fake *FakeEventHandler) HandleEvent(arg1 lager.Logger, arg2 webhook.PushScan) {
 	fake.handleEventMutex.Lock()
 	fake.handleEventArgsForCall = append(fake.handleEventArgsForCall, struct {
 		arg1 lager.Logger
-		arg2 github.PushEvent
+		arg2 webhook.PushScan
 	}{arg1, arg2})
 	fake.recordInvocation("HandleEvent", []interface{}{arg1, arg2})
 	fake.handleEventMutex.Unlock()
@@ -39,7 +38,7 @@ func (fake *FakeEventHandler) HandleEventCallCount() int {
 	return len(fake.handleEventArgsForCall)
 }
 
-func (fake *FakeEventHandler) HandleEventArgsForCall(i int) (lager.Logger, github.PushEvent) {
+func (fake *FakeEventHandler) HandleEventArgsForCall(i int) (lager.Logger, webhook.PushScan) {
 	fake.handleEventMutex.RLock()
 	defer fake.handleEventMutex.RUnlock()
 	return fake.handleEventArgsForCall[i].arg1, fake.handleEventArgsForCall[i].arg2
