@@ -15,7 +15,6 @@ import (
 
 	"github.com/pivotal-golang/lager/lagertest"
 
-	"cred-alert/queue/queuefakes"
 	"cred-alert/webhook"
 	"cred-alert/webhook/webhookfakes"
 )
@@ -30,18 +29,16 @@ var _ = Describe("Webhook", func() {
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
 
-		token     string
-		fakeQueue *queuefakes.FakeQueue
+		token string
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("webhook")
 		recorder = httptest.NewRecorder()
 		eventHandler = &webhookfakes.FakeEventHandler{}
-		fakeQueue = &queuefakes.FakeQueue{}
 		token = "example-key"
 
-		handler = webhook.Handler(logger, eventHandler, token, fakeQueue)
+		handler = webhook.Handler(logger, eventHandler, token)
 	})
 
 	pushEvent := github.PushEvent{
@@ -109,12 +106,6 @@ var _ = Describe("Webhook", func() {
 
 			Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
 		})
-
-		It("does not enqueue any tasks", func() {
-			handler.ServeHTTP(recorder, fakeRequest)
-
-			Expect(fakeQueue.EnqueueCallCount()).To(BeZero())
-		})
 	})
 
 	Context("when the payload is not valid JSON", func() {
@@ -135,12 +126,6 @@ var _ = Describe("Webhook", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
 			Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
-		})
-
-		It("does not enqueue any tasks", func() {
-			handler.ServeHTTP(recorder, fakeRequest)
-
-			Expect(fakeQueue.EnqueueCallCount()).To(BeZero())
 		})
 	})
 })

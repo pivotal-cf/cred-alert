@@ -1,7 +1,6 @@
 package webhook
 
 import (
-	"cred-alert/queue"
 	"encoding/json"
 	"net/http"
 
@@ -13,15 +12,13 @@ type handler struct {
 	logger       lager.Logger
 	secretKey    []byte
 	eventHandler EventHandler
-	queue        queue.Queue
 }
 
-func Handler(logger lager.Logger, eventHandler EventHandler, secretKey string, queue queue.Queue) *handler {
+func Handler(logger lager.Logger, eventHandler EventHandler, secretKey string) *handler {
 	return &handler{
 		logger:       logger.Session("webhook-handler"),
 		secretKey:    []byte(secretKey),
 		eventHandler: eventHandler,
-		queue:        queue,
 	}
 }
 

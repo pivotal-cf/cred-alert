@@ -72,17 +72,17 @@ func main() {
 	ghClient := github.NewClient(github.DefaultGitHubURL, httpClient, emitter)
 	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl)
 
-	queue, err := createQueue(opts, logger)
-	if err != nil {
-		logger.Error("Could not create queue", err)
-		os.Exit(1)
-	}
+	// queue, err := createQueue(opts, logger)
+	// if err != nil {
+	// 	logger.Error("Could not create queue", err)
+	// 	os.Exit(1)
+	// }
 
 	repoWhitelist := webhook.BuildWhitelist(opts.Whitelist...)
 	eventHandler := webhook.NewEventHandler(ghClient, sniff.Sniff, emitter, notifier, repoWhitelist)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken, queue))
+	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))
 
 	members := []grouper.Member{
 		{"api", http_server.New(
