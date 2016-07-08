@@ -1,15 +1,38 @@
 package queue
 
 import (
+	"cred-alert/metrics"
+	"cred-alert/notifications"
+	"cred-alert/sniff"
 	"encoding/json"
 	"fmt"
+
+	gh "cred-alert/github"
+
+	"github.com/pivotal-golang/lager"
 )
 
 type Job interface {
-	Run() error
+	Run(lager.Logger) error
 }
 
-type Foreman struct{}
+type Foreman struct {
+	githubClient gh.Client
+	sniff        func(lager.Logger, sniff.Scanner, func(sniff.Line))
+	emitter      metrics.Emitter
+	notifier     notifications.Notifier
+}
+
+func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *Foreman {
+	foreman := &Foreman{
+		githubClient: githubClient,
+		sniff:        sniff,
+		emitter:      emitter,
+		notifier:     notifier,
+	}
+
+	return foreman
+}
 
 func (f *Foreman) BuildJob(task AckTask) (Job, error) {
 	switch task.Type() {
@@ -27,15 +50,11 @@ func (f *Foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
 		return nil, err
 	}
 
-	return &DiffScanJob{
-		DiffScanPlan: diffScanPlan,
-	}, nil
-}
-
-type DiffScanJob struct {
-	DiffScanPlan
-}
-
-func (t *DiffScanJob) Run() error {
-	return nil
+	return NewDiffScanJob(
+		f.githubClient,
+		f.sniff,
+		f.emitter,
+		f.notifier,
+		diffScanPlan,
+	), nil
 }

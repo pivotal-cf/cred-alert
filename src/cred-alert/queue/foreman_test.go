@@ -5,9 +5,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-golang/lager"
 
+	"cred-alert/github/githubfakes"
+	"cred-alert/metrics/metricsfakes"
+	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
+	"cred-alert/sniff"
 )
 
 var _ = Describe("Foreman", func() {
@@ -16,7 +21,12 @@ var _ = Describe("Foreman", func() {
 	)
 
 	BeforeEach(func() {
-		foreman = &queue.Foreman{}
+		foreman = queue.NewForeman(
+			&githubfakes.FakeClient{},
+			func(lager.Logger, sniff.Scanner, func(sniff.Line)) {},
+			&metricsfakes.FakeEmitter{},
+			&notificationsfakes.FakeNotifier{},
+		)
 	})
 
 	Describe("building runnable jobs from tasks", func() {
