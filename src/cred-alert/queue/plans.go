@@ -3,11 +3,11 @@ package queue
 import "encoding/json"
 
 type DiffScanPlan struct {
-	Owner      string
-	Repository string
+	Owner      string `json:"owner"`
+	Repository string `json:"repository"`
 
-	Start string
-	End   string
+	Start string `json:"start"`
+	End   string `json:"end"`
 }
 
 func (p DiffScanPlan) Task() Task {
