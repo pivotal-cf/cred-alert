@@ -11,6 +11,7 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/notifications/notificationsfakes"
+	"cred-alert/queue"
 	"cred-alert/sniff"
 	"cred-alert/webhook"
 
@@ -106,6 +107,8 @@ var _ = Describe("EventHandler", func() {
 		notifier         *notificationsfakes.FakeNotifier
 		fakeGithubClient *githubfakes.FakeClient
 
+		foreman *queue.Foreman
+
 		orgName      string
 		repoName     string
 		repoFullName string
@@ -162,7 +165,8 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		eventHandler = webhook.NewEventHandler(fakeGithubClient, sniffFunc, emitter, notifier, whitelist)
+		foreman = queue.NewForeman(fakeGithubClient, sniffFunc, emitter, notifier)
+		eventHandler = webhook.NewEventHandler(foreman, emitter, whitelist)
 	})
 
 	Context("when there are multiple commits in a single event", func() {
@@ -248,7 +252,7 @@ var _ = Describe("EventHandler", func() {
 		It("emits count of the credentials it has found", func() {
 			eventHandler.HandleEvent(logger, scan)
 
-			Expect(credentialCounter.IncNCallCount()).To(Equal(1))
+			Expect(credentialCounter.IncCallCount()).To(Equal(1))
 		})
 
 		It("sends a notification", func() {
@@ -259,7 +263,7 @@ var _ = Describe("EventHandler", func() {
 			_, repo, sha, line := notifier.SendNotificationArgsForCall(0)
 
 			Expect(repo).To(Equal(repoFullName))
-			Expect(sha).To(Equal("commit-1"))
+			Expect(sha).To(Equal("commit-2"))
 			Expect(line).To(Equal(sniff.Line{
 				Path:       "some/file/path",
 				LineNumber: 1,
@@ -285,7 +289,7 @@ var _ = Describe("EventHandler", func() {
 			eventHandler.HandleEvent(logger, scan)
 
 			Expect(wasScanned).To(BeFalse())
-			Expect(credentialCounter.IncNCallCount()).To(Equal(0))
+			Expect(credentialCounter.IncCallCount()).To(Equal(0))
 		})
 	})
 })

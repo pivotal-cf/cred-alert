@@ -2,12 +2,8 @@ package webhook
 
 import (
 	"cred-alert/metrics"
-	"cred-alert/notifications"
-	"cred-alert/scanners/git"
-	"cred-alert/sniff"
+	"cred-alert/queue"
 	"fmt"
-
-	gh "cred-alert/github"
 
 	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager"
@@ -20,30 +16,23 @@ type EventHandler interface {
 }
 
 type eventHandler struct {
-	githubClient gh.Client
-	sniff        func(lager.Logger, sniff.Scanner, func(sniff.Line))
-	whitelist    *Whitelist
+	foreman   *queue.Foreman
+	whitelist *Whitelist
 
 	requestCounter      metrics.Counter
-	credentialCounter   metrics.Counter
 	ignoredEventCounter metrics.Counter
-	notifier            notifications.Notifier
 }
 
-func NewEventHandler(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier, whitelist *Whitelist) *eventHandler {
+func NewEventHandler(foreman *queue.Foreman, emitter metrics.Emitter, whitelist *Whitelist) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
-	credentialCounter := emitter.Counter("cred_alert.violations")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
 	handler := &eventHandler{
-		githubClient: githubClient,
-		sniff:        sniff,
-		whitelist:    whitelist,
+		foreman:   foreman,
+		whitelist: whitelist,
 
 		requestCounter:      requestCounter,
-		credentialCounter:   credentialCounter,
 		ignoredEventCounter: ignoredEventCounter,
-		notifier:            notifier,
 	}
 
 	return handler
@@ -64,39 +53,21 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, scan PushScan) {
 
 	s.requestCounter.Inc(logger)
 
-	violations := 0
-
 	for _, scanDiff := range scan.Diffs {
-		diff, err := s.githubClient.CompareRefs(logger, scan.Owner, scan.Repository, scanDiff.Start, scanDiff.End)
+		task := queue.DiffScanPlan{
+			Owner:      scan.Owner,
+			Repository: scan.Repository,
+			Start:      scanDiff.Start,
+			End:        scanDiff.End,
+		}.Task()
+
+		job, err := s.foreman.BuildJob(queue.NoopAck(task))
 		if err != nil {
-			logger.Error("failed-fetch-diff", err, lager.Data{
-				"start": scanDiff.Start,
-				"end":   scanDiff.End,
-			})
-			continue
+			logger.Error("failed-building-job", err)
+			return
 		}
-		diffScanner := git.NewDiffScanner(diff)
 
-		handleViolation := s.createHandleViolation(logger, scanDiff.Start, scan.FullRepoName(), &violations)
-		s.sniff(logger, diffScanner, handleViolation)
-	}
-
-	if violations > 0 {
-		s.credentialCounter.IncN(logger, violations)
-	}
-}
-
-func (s *eventHandler) createHandleViolation(logger lager.Logger, sha string, repoName string, violations *int) func(sniff.Line) {
-	return func(line sniff.Line) {
-		logger.Info("found-credential", lager.Data{
-			"path":        line.Path,
-			"line-number": line.LineNumber,
-			"sha":         sha,
-		})
-
-		s.notifier.SendNotification(logger, repoName, sha, line)
-
-		*violations++
+		job.Run(logger)
 	}
 }
 

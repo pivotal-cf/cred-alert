@@ -78,8 +78,9 @@ func main() {
 	// 	os.Exit(1)
 	// }
 
+	foreman := queue.NewForeman(ghClient, sniff.Sniff, emitter, notifier)
 	repoWhitelist := webhook.BuildWhitelist(opts.Whitelist...)
-	eventHandler := webhook.NewEventHandler(ghClient, sniff.Sniff, emitter, notifier, repoWhitelist)
+	eventHandler := webhook.NewEventHandler(foreman, emitter, repoWhitelist)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))

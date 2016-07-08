@@ -5,7 +5,6 @@ import (
 	"cred-alert/notifications"
 	"cred-alert/scanners/git"
 	"cred-alert/sniff"
-	"errors"
 
 	gh "cred-alert/github"
 
@@ -38,10 +37,17 @@ func NewDiffScanJob(githubClient gh.Client, sniff func(lager.Logger, sniff.Scann
 func (j *DiffScanJob) Run(logger lager.Logger) error {
 	diff, err := j.githubClient.CompareRefs(logger, j.Owner, j.Repository, j.Start, j.End)
 	if err != nil {
-		logger.Error("failed-fetch-diff", errors.New("Couldn't fetch diff "+j.Start+" "+j.End))
+		logger.Error("failed-fetch-diff", err, lager.Data{
+			"diff-start": j.Start,
+			"diff-end":   j.End,
+		})
+
+		return err
 	}
+
 	diffScanner := git.NewDiffScanner(diff)
 	handleViolation := j.createHandleViolation(logger, j.End, j.Owner+"/"+j.Repository)
+
 	j.sniff(logger, diffScanner, handleViolation)
 
 	return nil
