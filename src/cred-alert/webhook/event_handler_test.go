@@ -21,15 +21,12 @@ import (
 
 var _ = Describe("Extract", func() {
 	var (
-		logger *lagertest.TestLogger
-		event  github.PushEvent
+		event github.PushEvent
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("extract")
-
 		event = github.PushEvent{
-			Before: github.String("abc123bef04e"),
+			Before: github.String("commit-sha-0"),
 			Repo: &github.PushEventRepository{
 				Name: github.String("repository-name"),
 				Owner: &github.PushEventRepoOwner{
@@ -46,14 +43,22 @@ var _ = Describe("Extract", func() {
 		}
 	})
 
+	It("can give us the first and last commit of the push", func() {
+		scan, valid := webhook.Extract(event)
+		Expect(valid).To(BeTrue())
+
+		Expect(scan.FirstCommit()).To(Equal("commit-sha-0"))
+		Expect(scan.LastCommit()).To(Equal("commit-sha-5"))
+	})
+
 	It("can extract a value object from a github push event", func() {
-		scan, valid := webhook.Extract(logger, event)
+		scan, valid := webhook.Extract(event)
 		Expect(valid).To(BeTrue())
 
 		Expect(scan.Owner).To(Equal("repository-owner"))
 		Expect(scan.Repository).To(Equal("repository-name"))
 		Expect(scan.Diffs).To(Equal([]webhook.PushScanDiff{
-			{Start: "abc123bef04e", End: "commit-sha-1"},
+			{Start: "commit-sha-0", End: "commit-sha-1"},
 			{Start: "commit-sha-1", End: "commit-sha-2"},
 			{Start: "commit-sha-2", End: "commit-sha-3"},
 			{Start: "commit-sha-3", End: "commit-sha-4"},
@@ -62,7 +67,7 @@ var _ = Describe("Extract", func() {
 	})
 
 	It("can have a full repository name", func() {
-		scan, valid := webhook.Extract(logger, event)
+		scan, valid := webhook.Extract(event)
 		Expect(valid).To(BeTrue())
 
 		Expect(scan.Owner).To(Equal("repository-owner"))
@@ -74,7 +79,21 @@ var _ = Describe("Extract", func() {
 	It("can handle if there are no commits in a push (may not even be possible)", func() {
 		event.Commits = []github.PushEventCommit{}
 
-		_, valid := webhook.Extract(logger, event)
+		_, valid := webhook.Extract(event)
+		Expect(valid).To(BeFalse())
+	})
+
+	It("is not valid if there is no before specified", func() {
+		event.Before = nil
+
+		_, valid := webhook.Extract(event)
+		Expect(valid).To(BeFalse())
+	})
+
+	It("is not valid if this is the initial push to the repository because the GitHub API doesn't allow this comparison", func() {
+		event.Before = github.String("0000000000000000000000000000000000000000")
+
+		_, valid := webhook.Extract(event)
 		Expect(valid).To(BeFalse())
 	})
 })

@@ -111,12 +111,26 @@ func (p PushScan) FullRepoName() string {
 	return fmt.Sprintf("%s/%s", p.Owner, p.Repository)
 }
 
+func (p PushScan) FirstCommit() string {
+	return p.Diffs[0].Start
+}
+
+func (p PushScan) LastCommit() string {
+	return p.Diffs[len(p.Diffs)-1].End
+}
+
 type PushScanDiff struct {
 	Start string
 	End   string
 }
 
-func Extract(logger lager.Logger, event github.PushEvent) (PushScan, bool) {
+const initalCommitParentHash = "0000000000000000000000000000000000000000"
+
+func Extract(event github.PushEvent) (PushScan, bool) {
+	if event.Before == nil || *event.Before == initalCommitParentHash {
+		return PushScan{}, false
+	}
+
 	if len(event.Commits) == 0 {
 		return PushScan{}, false
 	}

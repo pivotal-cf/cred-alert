@@ -9,8 +9,6 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-const initalCommitParentHash = "0000000000000000000000000000000000000000"
-
 type handler struct {
 	logger       lager.Logger
 	secretKey    []byte
@@ -48,28 +46,26 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, event github.PushEvent) {
 	logger = logger.Session("handling-push-event")
 
-	if event.Repo != nil {
-		logger = logger.WithData(lager.Data{
-			"repo": *event.Repo.FullName,
-		})
-	}
+	scan, valid := Extract(event)
+	if !valid {
+		if event.Repo != nil && event.Repo.FullName != nil {
+			logger = logger.WithData(lager.Data{
+				"repo": *event.Repo.FullName,
+			})
+		}
 
-	if event.Before == nil || *event.Before == initalCommitParentHash || event.After == nil {
 		logger.Debug("event-missing-data")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	logger.Info("handling-webhook-payload", lager.Data{
-		"before": *event.Before,
-		"after":  *event.After,
+		"repo":   scan.FullRepoName(),
+		"before": scan.FirstCommit(),
+		"after":  scan.LastCommit(),
 	})
 
-	scan, valid := Extract(logger, event)
-	if !valid {
-		panic("what what what")
-	}
-
 	w.WriteHeader(http.StatusOK)
+
 	go h.eventHandler.HandleEvent(logger, scan)
 }
