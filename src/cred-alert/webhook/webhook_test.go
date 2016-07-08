@@ -23,8 +23,8 @@ var _ = Describe("Webhook", func() {
 	var (
 		logger *lagertest.TestLogger
 
-		handler      http.Handler
-		eventHandler *webhookfakes.FakeEventHandler
+		handler  http.Handler
+		ingestor *webhookfakes.FakeIngestor
 
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
@@ -35,10 +35,10 @@ var _ = Describe("Webhook", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("webhook")
 		recorder = httptest.NewRecorder()
-		eventHandler = &webhookfakes.FakeEventHandler{}
+		ingestor = &webhookfakes.FakeIngestor{}
 		token = "example-key"
 
-		handler = webhook.Handler(logger, eventHandler, token)
+		handler = webhook.Handler(logger, ingestor, token)
 	})
 
 	pushEvent := github.PushEvent{
@@ -81,7 +81,7 @@ var _ = Describe("Webhook", func() {
 		It("handles and scans the event directly", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Eventually(eventHandler.HandleEventCallCount).Should(Equal(1))
+			Eventually(ingestor.IngestPushScanCallCount).Should(Equal(1))
 		})
 	})
 
@@ -104,7 +104,7 @@ var _ = Describe("Webhook", func() {
 		It("does not directly handle the event", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
+			Consistently(ingestor.IngestPushScanCallCount()).Should(BeZero())
 		})
 	})
 
@@ -125,7 +125,7 @@ var _ = Describe("Webhook", func() {
 		It("does not directly handle the event", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Consistently(eventHandler.HandleEventCallCount).Should(BeZero())
+			Consistently(ingestor.IngestPushScanCallCount).Should(BeZero())
 		})
 	})
 })

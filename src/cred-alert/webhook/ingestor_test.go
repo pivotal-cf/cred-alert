@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("EventHandler", func() {
 	var (
-		eventHandler webhook.EventHandler
+		ingestor webhook.Ingestor
 
 		foreman   *queuefakes.FakeForeman
 		emitter   *metricsfakes.FakeEmitter
@@ -78,12 +78,12 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		eventHandler = webhook.NewEventHandler(foreman, taskQueue, emitter, whitelist)
+		ingestor = webhook.NewIngestor(foreman, taskQueue, emitter, whitelist)
 	})
 
 	Describe("enqueuing tasks in the queue", func() {
 		It("enqueues tasks in the queue", func() {
-			eventHandler.HandleEvent(logger, scan)
+			ingestor.IngestPushScan(logger, scan)
 
 			Expect(taskQueue.EnqueueCallCount()).To(Equal(3))
 
@@ -121,7 +121,7 @@ var _ = Describe("EventHandler", func() {
 
 	Describe("running the jobs directly", func() {
 		It("enqueues tasks in the queue", func() {
-			eventHandler.HandleEvent(logger, scan)
+			ingestor.IngestPushScan(logger, scan)
 
 			Expect(foreman.BuildJobCallCount()).Should(Equal(3))
 			Expect(job.RunCallCount()).Should(Equal(3))
@@ -163,7 +163,7 @@ var _ = Describe("EventHandler", func() {
 			})
 
 			It("still tries to run them directly because queueing isn't prime time just yet", func() {
-				eventHandler.HandleEvent(logger, scan)
+				ingestor.IngestPushScan(logger, scan)
 
 				Expect(foreman.BuildJobCallCount()).Should(Equal(3))
 				Expect(job.RunCallCount()).Should(Equal(3))
@@ -172,7 +172,7 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	It("emits count when it is invoked", func() {
-		eventHandler.HandleEvent(logger, scan)
+		ingestor.IngestPushScan(logger, scan)
 
 		Expect(requestCounter.IncCallCount()).To(Equal(1))
 	})
@@ -183,7 +183,7 @@ var _ = Describe("EventHandler", func() {
 		})
 
 		It("ignores patterns in whitelist", func() {
-			eventHandler.HandleEvent(logger, scan)
+			ingestor.IngestPushScan(logger, scan)
 
 			Expect(taskQueue.EnqueueCallCount()).To(BeZero())
 
@@ -193,7 +193,7 @@ var _ = Describe("EventHandler", func() {
 		})
 
 		It("emits a count of ignored push events", func() {
-			eventHandler.HandleEvent(logger, scan)
+			ingestor.IngestPushScan(logger, scan)
 			Expect(ignoredEventCounter.IncCallCount()).To(Equal(1))
 		})
 	})

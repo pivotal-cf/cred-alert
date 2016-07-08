@@ -7,13 +7,13 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-//go:generate counterfeiter . EventHandler
+//go:generate counterfeiter . Ingestor
 
-type EventHandler interface {
-	HandleEvent(lager.Logger, PushScan)
+type Ingestor interface {
+	IngestPushScan(lager.Logger, PushScan)
 }
 
-type eventHandler struct {
+type ingestor struct {
 	foreman   queue.Foreman
 	whitelist *Whitelist
 	taskQueue queue.Queue
@@ -22,11 +22,11 @@ type eventHandler struct {
 	ignoredEventCounter metrics.Counter
 }
 
-func NewEventHandler(foreman queue.Foreman, taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist) *eventHandler {
+func NewIngestor(foreman queue.Foreman, taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist) *ingestor {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
-	handler := &eventHandler{
+	handler := &ingestor{
 		foreman:   foreman,
 		taskQueue: taskQueue,
 		whitelist: whitelist,
@@ -38,7 +38,7 @@ func NewEventHandler(foreman queue.Foreman, taskQueue queue.Queue, emitter metri
 	return handler
 }
 
-func (s *eventHandler) HandleEvent(logger lager.Logger, scan PushScan) {
+func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) {
 	logger = logger.Session("handle-event")
 
 	if s.whitelist.IsIgnored(scan.Repository) {

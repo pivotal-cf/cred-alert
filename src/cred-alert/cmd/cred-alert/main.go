@@ -80,10 +80,10 @@ func main() {
 
 	foreman := queue.NewForeman(ghClient, sniff.Sniff, emitter, notifier)
 	repoWhitelist := webhook.BuildWhitelist(opts.Whitelist...)
-	eventHandler := webhook.NewEventHandler(foreman, taskQueue, emitter, repoWhitelist)
+	ingestor := webhook.NewIngestor(foreman, taskQueue, emitter, repoWhitelist)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))
+	router.Handle("/webhook", webhook.Handler(logger, ingestor, opts.GitHub.WebhookToken))
 
 	members := []grouper.Member{
 		{"api", http_server.New(

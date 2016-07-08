@@ -9,16 +9,16 @@ import (
 )
 
 type handler struct {
-	logger       lager.Logger
-	secretKey    []byte
-	eventHandler EventHandler
+	logger    lager.Logger
+	secretKey []byte
+	ingestor  Ingestor
 }
 
-func Handler(logger lager.Logger, eventHandler EventHandler, secretKey string) *handler {
+func Handler(logger lager.Logger, ingestor Ingestor, secretKey string) *handler {
 	return &handler{
-		logger:       logger.Session("webhook-handler"),
-		secretKey:    []byte(secretKey),
-		eventHandler: eventHandler,
+		logger:    logger.Session("webhook-handler"),
+		secretKey: []byte(secretKey),
+		ingestor:  ingestor,
 	}
 }
 
@@ -64,5 +64,5 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 
 	w.WriteHeader(http.StatusOK)
 
-	go h.eventHandler.HandleEvent(logger, scan)
+	go h.ingestor.IngestPushScan(logger, scan)
 }
