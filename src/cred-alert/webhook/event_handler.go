@@ -5,7 +5,7 @@ import (
 	"cred-alert/notifications"
 	"cred-alert/scanners/git"
 	"cred-alert/sniff"
-	"errors"
+	"fmt"
 
 	gh "cred-alert/github"
 
@@ -64,26 +64,27 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, event github.PushEvent) 
 
 	s.requestCounter.Inc(logger)
 
-	previousSHA := *event.Before
+	scan, valid := Extract(logger, event)
+	if !valid {
+		panic("what what what")
+	}
+
 	violations := 0
 
-	for _, commit := range event.Commits {
-		if commit.ID == nil {
-			continue
-		}
-		currentSHA := *commit.ID
-
-		diff, err := s.githubClient.CompareRefs(logger, *event.Repo.Owner.Name, *event.Repo.Name, previousSHA, currentSHA)
+	for _, scanDiff := range scan.Diffs {
+		diff, err := s.githubClient.CompareRefs(logger, scan.Owner, scan.Repository, scanDiff.Start, scanDiff.End)
 		if err != nil {
-			logger.Error("failed-fetch-diff", errors.New("Couldn't fetch diff "+previousSHA+" "+currentSHA))
+			logger.Error("failed-fetch-diff", err, lager.Data{
+				"start": scanDiff.Start,
+				"end":   scanDiff.End,
+			})
 			continue
 		}
 		diffScanner := git.NewDiffScanner(diff)
 
-		handleViolation := s.createHandleViolation(logger, currentSHA, *event.Repo.FullName, &violations)
+		handleViolation := s.createHandleViolation(logger, scanDiff.Start, scan.FullRepoName(), &violations)
 		s.sniff(logger, diffScanner, handleViolation)
 
-		previousSHA = currentSHA
 	}
 
 	if violations > 0 {
@@ -103,4 +104,50 @@ func (s *eventHandler) createHandleViolation(logger lager.Logger, sha string, re
 
 		*violations++
 	}
+}
+
+type PushScan struct {
+	Owner      string
+	Repository string
+
+	Diffs []PushScanDiff
+}
+
+func (p PushScan) FullRepoName() string {
+	return fmt.Sprintf("%s/%s", p.Owner, p.Repository)
+}
+
+type PushScanDiff struct {
+	Start string
+	End   string
+}
+
+func Extract(logger lager.Logger, event github.PushEvent) (PushScan, bool) {
+	if len(event.Commits) == 0 {
+		return PushScan{}, false
+	}
+
+	diffs := []PushScanDiff{
+		{Start: *event.Before, End: *event.Commits[0].ID},
+	}
+
+	for i, _ := range event.Commits {
+		if i == len(event.Commits)-1 {
+			break
+		}
+
+		start := *event.Commits[i].ID
+		end := *event.Commits[i+1].ID
+
+		diffs = append(diffs, PushScanDiff{
+			Start: start,
+			End:   end,
+		})
+	}
+
+	return PushScan{
+		Owner:      *event.Repo.Owner.Name,
+		Repository: *event.Repo.Name,
+		Diffs:      diffs,
+	}, true
 }

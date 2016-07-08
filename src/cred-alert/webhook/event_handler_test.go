@@ -19,6 +19,66 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
+var _ = Describe("Extract", func() {
+	var (
+		logger *lagertest.TestLogger
+		event  github.PushEvent
+	)
+
+	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("extract")
+
+		event = github.PushEvent{
+			Before: github.String("abc123bef04e"),
+			Repo: &github.PushEventRepository{
+				Name: github.String("repository-name"),
+				Owner: &github.PushEventRepoOwner{
+					Name: github.String("repository-owner"),
+				},
+			},
+			Commits: []github.PushEventCommit{
+				{ID: github.String("commit-sha-1")},
+				{ID: github.String("commit-sha-2")},
+				{ID: github.String("commit-sha-3")},
+				{ID: github.String("commit-sha-4")},
+				{ID: github.String("commit-sha-5")},
+			},
+		}
+	})
+
+	It("can extract a value object from a github push event", func() {
+		scan, valid := webhook.Extract(logger, event)
+		Expect(valid).To(BeTrue())
+
+		Expect(scan.Owner).To(Equal("repository-owner"))
+		Expect(scan.Repository).To(Equal("repository-name"))
+		Expect(scan.Diffs).To(Equal([]webhook.PushScanDiff{
+			{Start: "abc123bef04e", End: "commit-sha-1"},
+			{Start: "commit-sha-1", End: "commit-sha-2"},
+			{Start: "commit-sha-2", End: "commit-sha-3"},
+			{Start: "commit-sha-3", End: "commit-sha-4"},
+			{Start: "commit-sha-4", End: "commit-sha-5"},
+		}))
+	})
+
+	It("can have a full repository name", func() {
+		scan, valid := webhook.Extract(logger, event)
+		Expect(valid).To(BeTrue())
+
+		Expect(scan.Owner).To(Equal("repository-owner"))
+		Expect(scan.Repository).To(Equal("repository-name"))
+
+		Expect(scan.FullRepoName()).To(Equal("repository-owner/repository-name"))
+	})
+
+	It("can handle if there are no commits in a push (may not even be possible)", func() {
+		event.Commits = []github.PushEventCommit{}
+
+		_, valid := webhook.Extract(logger, event)
+		Expect(valid).To(BeFalse())
+	})
+})
+
 var _ = Describe("EventHandler", func() {
 	var (
 		eventHandler     webhook.EventHandler
@@ -27,6 +87,7 @@ var _ = Describe("EventHandler", func() {
 		notifier         *notificationsfakes.FakeNotifier
 		fakeGithubClient *githubfakes.FakeClient
 
+		orgName      string
 		repoName     string
 		repoFullName string
 
@@ -41,8 +102,9 @@ var _ = Describe("EventHandler", func() {
 	)
 
 	BeforeEach(func() {
+		orgName = "rad-co"
 		repoName = "my-awesome-repo"
-		repoFullName = fmt.Sprintf("rad-co/%s", repoName)
+		repoFullName = fmt.Sprintf("%s/%s", orgName, repoName)
 
 		sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {}
 
@@ -70,19 +132,17 @@ var _ = Describe("EventHandler", func() {
 		logger = lagertest.NewTestLogger("event-handler")
 		fakeGithubClient = new(githubfakes.FakeClient)
 
-		someString := "some-string"
 		event = github.PushEvent{
 			Repo: &github.PushEventRepository{
-				FullName: &repoFullName,
-				Name:     &someString,
+				FullName: github.String(repoFullName),
+				Name:     github.String(repoName),
 				Owner: &github.PushEventRepoOwner{
-					Name: &someString,
+					Name: github.String(orgName),
 				},
 			},
-			Before: &someString,
-			After:  &someString,
+			Before: github.String("sha0"),
 			Commits: []github.PushEventCommit{
-				github.PushEventCommit{ID: &someString},
+				github.PushEventCommit{ID: github.String("def456")},
 			},
 		}
 	})
