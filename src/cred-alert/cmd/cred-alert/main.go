@@ -72,15 +72,15 @@ func main() {
 	ghClient := github.NewClient(github.DefaultGitHubURL, httpClient, emitter)
 	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl)
 
-	// queue, err := createQueue(opts, logger)
-	// if err != nil {
-	// 	logger.Error("Could not create queue", err)
-	// 	os.Exit(1)
-	// }
+	taskQueue, err := createQueue(opts, logger)
+	if err != nil {
+		logger.Error("Could not create queue", err)
+		os.Exit(1)
+	}
 
 	foreman := queue.NewForeman(ghClient, sniff.Sniff, emitter, notifier)
 	repoWhitelist := webhook.BuildWhitelist(opts.Whitelist...)
-	eventHandler := webhook.NewEventHandler(foreman, emitter, repoWhitelist)
+	eventHandler := webhook.NewEventHandler(foreman, taskQueue, emitter, repoWhitelist)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", webhook.Handler(logger, eventHandler, opts.GitHub.WebhookToken))

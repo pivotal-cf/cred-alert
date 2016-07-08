@@ -1,7 +1,7 @@
 package webhook_test
 
 import (
-	"fmt"
+	"errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,29 +18,32 @@ import (
 var _ = Describe("EventHandler", func() {
 	var (
 		eventHandler webhook.EventHandler
-		logger       *lagertest.TestLogger
-		emitter      *metricsfakes.FakeEmitter
 
-		foreman *queuefakes.FakeForeman
-		job     *queuefakes.FakeJob
+		foreman   *queuefakes.FakeForeman
+		emitter   *metricsfakes.FakeEmitter
+		taskQueue *queuefakes.FakeQueue
+		whitelist *webhook.Whitelist
 
-		orgName      string
-		repoName     string
-		repoFullName string
+		logger *lagertest.TestLogger
+
+		scan webhook.PushScan
+		job  *queuefakes.FakeJob
+
+		orgName  string
+		repoName string
 
 		requestCounter      *metricsfakes.FakeCounter
 		ignoredEventCounter *metricsfakes.FakeCounter
-
-		whitelist *webhook.Whitelist
-		scan      webhook.PushScan
 	)
 
 	BeforeEach(func() {
 		orgName = "rad-co"
 		repoName = "my-awesome-repo"
-		repoFullName = fmt.Sprintf("%s/%s", orgName, repoName)
 
+		logger = lagertest.NewTestLogger("event-handler")
 		emitter = &metricsfakes.FakeEmitter{}
+		taskQueue = &queuefakes.FakeQueue{}
+
 		requestCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
 
@@ -57,14 +60,14 @@ var _ = Describe("EventHandler", func() {
 			}
 		}
 
-		logger = lagertest.NewTestLogger("event-handler")
-
 		scan = webhook.PushScan{
 			Owner:      orgName,
 			Repository: repoName,
 
 			Diffs: []webhook.PushScanDiff{
 				{Start: "commit-1", End: "commit-2"},
+				{Start: "commit-2", End: "commit-3"},
+				{Start: "commit-3", End: "commit-4"},
 			},
 		}
 
@@ -75,55 +78,96 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		eventHandler = webhook.NewEventHandler(foreman, emitter, whitelist)
+		eventHandler = webhook.NewEventHandler(foreman, taskQueue, emitter, whitelist)
 	})
 
-	Context("when there are multiple commits in a single event", func() {
-		BeforeEach(func() {
-			diffs := []webhook.PushScanDiff{
-				{Start: "commit-1", End: "commit-2"},
-				{Start: "commit-2", End: "commit-3"},
-				{Start: "commit-3", End: "commit-4"},
-			}
-
-			scan.Diffs = diffs
-		})
-
-		It("compares each commit individually", func() {
+	Describe("enqueuing tasks in the queue", func() {
+		It("enqueues tasks in the queue", func() {
 			eventHandler.HandleEvent(logger, scan)
 
-			Expect(foreman.BuildJobCallCount()).To(Equal(3))
-			Expect(job.RunCallCount()).To(Equal(3))
+			Expect(taskQueue.EnqueueCallCount()).To(Equal(3))
 
-			expectedPlan1 := queue.DiffScanPlan{
+			expectedTask1 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
 				Start:      "commit-1",
 				End:        "commit-2",
-			}
+			}.Task()
 
-			builtTask := foreman.BuildJobArgsForCall(0)
-			Expect(builtTask).To(Equal(expectedPlan1.Task()))
+			builtTask := taskQueue.EnqueueArgsForCall(0)
+			Expect(builtTask).To(Equal(expectedTask1))
 
-			expectedPlan2 := queue.DiffScanPlan{
+			expectedTask2 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
 				Start:      "commit-2",
 				End:        "commit-3",
-			}
+			}.Task()
 
-			builtTask = foreman.BuildJobArgsForCall(1)
-			Expect(builtTask).To(Equal(expectedPlan2.Task()))
+			builtTask = taskQueue.EnqueueArgsForCall(1)
+			Expect(builtTask).To(Equal(expectedTask2))
 
-			expectedPlan3 := queue.DiffScanPlan{
+			expectedTask3 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
 				Start:      "commit-3",
 				End:        "commit-4",
-			}
+			}.Task()
+
+			builtTask = taskQueue.EnqueueArgsForCall(2)
+			Expect(builtTask).To(Equal(expectedTask3))
+		})
+	})
+
+	Describe("running the jobs directly", func() {
+		It("enqueues tasks in the queue", func() {
+			eventHandler.HandleEvent(logger, scan)
+
+			Expect(foreman.BuildJobCallCount()).Should(Equal(3))
+			Expect(job.RunCallCount()).Should(Equal(3))
+
+			expectedTask1 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-1",
+				End:        "commit-2",
+			}.Task()
+
+			builtTask := foreman.BuildJobArgsForCall(0)
+			Expect(builtTask).To(Equal(expectedTask1))
+
+			expectedTask2 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-2",
+				End:        "commit-3",
+			}.Task()
+
+			builtTask = foreman.BuildJobArgsForCall(1)
+			Expect(builtTask).To(Equal(expectedTask2))
+
+			expectedTask3 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-3",
+				End:        "commit-4",
+			}.Task()
 
 			builtTask = foreman.BuildJobArgsForCall(2)
-			Expect(builtTask).To(Equal(expectedPlan3.Task()))
+			Expect(builtTask).To(Equal(expectedTask3))
+		})
+
+		Context("when the queue fails to queue something", func() {
+			BeforeEach(func() {
+				taskQueue.EnqueueReturns(errors.New("disaster"))
+			})
+
+			It("still tries to run them directly because queueing isn't prime time just yet", func() {
+				eventHandler.HandleEvent(logger, scan)
+
+				Expect(foreman.BuildJobCallCount()).Should(Equal(3))
+				Expect(job.RunCallCount()).Should(Equal(3))
+			})
 		})
 	})
 
@@ -141,7 +185,7 @@ var _ = Describe("EventHandler", func() {
 		It("ignores patterns in whitelist", func() {
 			eventHandler.HandleEvent(logger, scan)
 
-			Expect(foreman.BuildJobCallCount()).To(BeZero())
+			Expect(taskQueue.EnqueueCallCount()).To(BeZero())
 
 			Expect(logger.LogMessages()).To(HaveLen(1))
 			Expect(logger.LogMessages()[0]).To(ContainSubstring("ignored-repo"))
