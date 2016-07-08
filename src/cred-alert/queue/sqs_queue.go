@@ -48,10 +48,6 @@ func (q *sqsQueue) Enqueue(task Task) error {
 	return nil
 }
 
-func (q *sqsQueue) EnqueuePlan(plan Plan) error {
-	return q.Enqueue(plan.Task())
-}
-
 func (q *sqsQueue) Dequeue() (AckTask, error) {
 	params := &sqs.ReceiveMessageInput{
 		QueueUrl:            q.queueUrl,

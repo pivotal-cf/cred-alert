@@ -5,8 +5,6 @@ package queue
 type Queue interface {
 	Enqueue(Task) error
 	Dequeue() (AckTask, error)
-
-	EnqueuePlan(Plan) error
 }
 
 //go:generate counterfeiter . Task

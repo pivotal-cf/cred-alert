@@ -17,11 +17,6 @@ func (q *nullQueue) Enqueue(task Task) error {
 	return nil
 }
 
-func (q *nullQueue) EnqueuePlan(plan Plan) error {
-	q.logger.Info("enqueue-plan")
-	return nil
-}
-
 func (q *nullQueue) Dequeue() (AckTask, error) {
 	q.logger.Info("dequeue-task")
 	return nil, nil

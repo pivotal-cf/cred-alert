@@ -64,25 +64,6 @@ var _ = Describe("SQS Queue", func() {
 				Expect(sentMessage.MessageAttributes).To(HaveKeyWithValue("type", &sqs.MessageAttributeValue{DataType: aws.String("string"), StringValue: aws.String("task-name")}))
 			})
 
-			It("sends the correct message to SQS", func() {
-				task := &queuefakes.FakeTask{}
-				task.TypeReturns("task-name")
-				task.PayloadReturns(`{"arg-name": "arg-value"}`)
-
-				plan := &queuefakes.FakePlan{}
-				plan.TaskReturns(task)
-
-				err := sqsQueue.EnqueuePlan(plan)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(service.SendMessageCallCount()).To(Equal(1))
-				sentMessage := service.SendMessageArgsForCall(0)
-
-				Expect(sentMessage.QueueUrl).To(Equal(aws.String(expectedQueueUrl)))
-				Expect(*sentMessage.MessageBody).To(MatchJSON(`{"arg-name": "arg-value"}`))
-				Expect(sentMessage.MessageAttributes).To(HaveKeyWithValue("type", &sqs.MessageAttributeValue{DataType: aws.String("string"), StringValue: aws.String("task-name")}))
-			})
-
 			Context("when SQS returns an error", func() {
 				BeforeEach(func() {
 					service.SendMessageReturns(nil, errors.New("disaster"))
