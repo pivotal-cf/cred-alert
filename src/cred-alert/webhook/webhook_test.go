@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/pivotal-golang/lager/lagertest"
 
-	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 	"cred-alert/webhook"
 	"cred-alert/webhook/webhookfakes"
@@ -73,27 +71,6 @@ var _ = Describe("Webhook", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
 			Eventually(eventHandler.HandleEventCallCount).Should(Equal(1))
-		})
-
-		It("enqueues the task for asynchronous scanning", func() {
-			handler.ServeHTTP(recorder, fakeRequest)
-
-			Expect(fakeQueue.EnqueueCallCount()).To(Equal(1))
-			task := fakeQueue.EnqueueArgsForCall(0)
-			event, _ := queue.GetEvent(task)
-			Expect(event).To(Equal(pushEvent))
-		})
-
-		Context("when the task fails to enqueue", func() {
-			BeforeEach(func() {
-				fakeQueue.EnqueueReturns(errors.New("failed to enqueue"))
-			})
-
-			It("responds with 500", func() {
-				handler.ServeHTTP(recorder, fakeRequest)
-
-				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
-			})
 		})
 	})
 

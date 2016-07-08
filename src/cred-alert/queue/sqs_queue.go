@@ -28,9 +28,17 @@ func BuildSQSQueue(service SQSAPI, queueName string) (*sqsQueue, error) {
 }
 
 func (q *sqsQueue) Enqueue(task Task) error {
+	args := map[string]*sqs.MessageAttributeValue{
+		"type": &sqs.MessageAttributeValue{
+			DataType:    aws.String("string"),
+			StringValue: aws.String(task.Type()),
+		},
+	}
+
 	params := &sqs.SendMessageInput{
-		MessageBody: aws.String("hello I am in the queue"), // TODO: how to encode?
-		QueueUrl:    q.queueUrl,
+		MessageBody:       aws.String(task.Payload()),
+		MessageAttributes: args,
+		QueueUrl:          q.queueUrl,
 	}
 
 	if _, err := q.service.SendMessage(params); err != nil {
@@ -40,7 +48,11 @@ func (q *sqsQueue) Enqueue(task Task) error {
 	return nil
 }
 
-func (q *sqsQueue) Dequeue() (Task, error) {
+func (q *sqsQueue) EnqueuePlan(plan Plan) error {
+	return q.Enqueue(plan.Task())
+}
+
+func (q *sqsQueue) Dequeue() (AckTask, error) {
 	params := &sqs.ReceiveMessageInput{
 		QueueUrl:            q.queueUrl,
 		MaxNumberOfMessages: aws.Int64(1),
@@ -48,20 +60,48 @@ func (q *sqsQueue) Dequeue() (Task, error) {
 		WaitTimeSeconds:     aws.Int64(20),
 	}
 
-	if _, err := q.service.ReceiveMessage(params); err != nil {
+	response, err := q.service.ReceiveMessage(params)
+	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	receiptHandle := response.Messages[0].ReceiptHandle
+	typee := *response.Messages[0].MessageAttributes["type"].StringValue
+	payload := *response.Messages[0].Body
+
+	return &sqsTask{
+		queueURL:      q.queueUrl,
+		receiptHandle: receiptHandle,
+		typee:         typee,
+		payload:       payload,
+		service:       q.service,
+	}, nil
 }
 
-func (q *sqsQueue) Remove(task Task) error {
+type sqsTask struct {
+	queueURL      *string
+	receiptHandle *string
+
+	typee   string
+	payload string
+	service SQSAPI
+}
+
+func (t *sqsTask) Type() string {
+	return t.typee
+}
+
+func (t *sqsTask) Payload() string {
+	return t.payload
+}
+
+func (t *sqsTask) Ack() error {
 	params := &sqs.DeleteMessageInput{
-		QueueUrl:      q.queueUrl,
-		ReceiptHandle: aws.String(task.Receipt()),
+		QueueUrl:      t.queueURL,
+		ReceiptHandle: t.receiptHandle,
 	}
 
-	if _, err := q.service.DeleteMessage(params); err != nil {
+	if _, err := t.service.DeleteMessage(params); err != nil {
 		return err
 	}
 

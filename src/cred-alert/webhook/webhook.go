@@ -65,11 +65,6 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 		"after":  *event.After,
 	})
 
-	if err := h.queue.Enqueue(queue.NewPushEventTask(event)); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
 	go h.eventHandler.HandleEvent(logger, event)
 }

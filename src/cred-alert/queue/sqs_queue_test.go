@@ -50,13 +50,37 @@ var _ = Describe("SQS Queue", func() {
 		Describe("sending work to the queue", func() {
 			It("sends the correct message to SQS", func() {
 				task := &queuefakes.FakeTask{}
+				task.TypeReturns("task-name")
+				task.PayloadReturns(`{"arg-name": "arg-value"}`)
+
 				err := sqsQueue.Enqueue(task)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(service.SendMessageCallCount()).To(Equal(1))
 				sentMessage := service.SendMessageArgsForCall(0)
 
-				Expect(*sentMessage.QueueUrl).To(Equal(expectedQueueUrl))
+				Expect(sentMessage.QueueUrl).To(Equal(aws.String(expectedQueueUrl)))
+				Expect(*sentMessage.MessageBody).To(MatchJSON(`{"arg-name": "arg-value"}`))
+				Expect(sentMessage.MessageAttributes).To(HaveKeyWithValue("type", &sqs.MessageAttributeValue{DataType: aws.String("string"), StringValue: aws.String("task-name")}))
+			})
+
+			It("sends the correct message to SQS", func() {
+				task := &queuefakes.FakeTask{}
+				task.TypeReturns("task-name")
+				task.PayloadReturns(`{"arg-name": "arg-value"}`)
+
+				plan := &queuefakes.FakePlan{}
+				plan.TaskReturns(task)
+
+				err := sqsQueue.EnqueuePlan(plan)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(service.SendMessageCallCount()).To(Equal(1))
+				sentMessage := service.SendMessageArgsForCall(0)
+
+				Expect(sentMessage.QueueUrl).To(Equal(aws.String(expectedQueueUrl)))
+				Expect(*sentMessage.MessageBody).To(MatchJSON(`{"arg-name": "arg-value"}`))
+				Expect(sentMessage.MessageAttributes).To(HaveKeyWithValue("type", &sqs.MessageAttributeValue{DataType: aws.String("string"), StringValue: aws.String("task-name")}))
 			})
 
 			Context("when SQS returns an error", func() {
@@ -74,11 +98,17 @@ var _ = Describe("SQS Queue", func() {
 
 		Describe("retrieving work from the queue", func() {
 			expectedHandle := "handle"
+			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{"type": &sqs.MessageAttributeValue{DataType: aws.String("string"), StringValue: aws.String("task-name")}}
+			messageBody := `{"arg-name": "arg-value"}`
 
 			BeforeEach(func() {
 				output := &sqs.ReceiveMessageOutput{
 					Messages: []*sqs.Message{
-						{ReceiptHandle: &expectedHandle},
+						{
+							ReceiptHandle:     &expectedHandle,
+							MessageAttributes: expectedMessageAttributes,
+							Body:              &messageBody,
+						},
 					},
 				}
 
@@ -86,7 +116,7 @@ var _ = Describe("SQS Queue", func() {
 			})
 
 			It("retrieval is successful", func() {
-				_, err := sqsQueue.Dequeue()
+				task, err := sqsQueue.Dequeue()
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(service.ReceiveMessageCallCount()).To(Equal(1))
@@ -95,6 +125,9 @@ var _ = Describe("SQS Queue", func() {
 				Expect(params.MaxNumberOfMessages).To(Equal(aws.Int64(1)))
 				Expect(params.VisibilityTimeout).To(Equal(aws.Int64(60)))
 				Expect(params.WaitTimeSeconds).To(Equal(aws.Int64(20)))
+
+				Expect(task.Type()).To(Equal("task-name"))
+				Expect(task.Payload()).To(Equal(`{"arg-name": "arg-value"}`))
 			})
 
 			Context("receiving a message fails", func() {
@@ -111,12 +144,28 @@ var _ = Describe("SQS Queue", func() {
 
 		Describe("removing work from the queue after we've done it", func() {
 			expectedHandle := "handle"
+			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{"type": &sqs.MessageAttributeValue{DataType: aws.String("string"), StringValue: aws.String("task-name")}}
+			messageBody := `{"arg-name": "arg-value"}`
+
+			BeforeEach(func() {
+				output := &sqs.ReceiveMessageOutput{
+					Messages: []*sqs.Message{
+						{
+							ReceiptHandle:     &expectedHandle,
+							MessageAttributes: expectedMessageAttributes,
+							Body:              &messageBody,
+						},
+					},
+				}
+
+				service.ReceiveMessageReturns(output, nil)
+			})
 
 			It("removal is successful", func() {
-				task := &queuefakes.FakeTask{}
-				task.ReceiptReturns(expectedHandle)
+				task, err := sqsQueue.Dequeue()
+				Expect(err).ToNot(HaveOccurred())
 
-				err := sqsQueue.Remove(task)
+				err = task.Ack()
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(service.DeleteMessageCallCount()).To(Equal(1))
@@ -132,8 +181,10 @@ var _ = Describe("SQS Queue", func() {
 				})
 
 				It("returns an error", func() {
-					task := &queuefakes.FakeTask{}
-					err := sqsQueue.Remove(task)
+					task, err := sqsQueue.Dequeue()
+					Expect(err).ToNot(HaveOccurred())
+
+					err = task.Ack()
 					Expect(err).To(HaveOccurred())
 				})
 			})

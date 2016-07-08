@@ -4,15 +4,30 @@ package queue
 
 type Queue interface {
 	Enqueue(Task) error
-	Dequeue() (Task, error)
-	Remove(Task) error
+	Dequeue() (AckTask, error)
+
+	EnqueuePlan(Plan) error
 }
 
 //go:generate counterfeiter . Task
 
 type Task interface {
-	Data() map[string]interface{}
-	Receipt() string
+	Type() string
+	Payload() string
+}
+
+//go:generate counterfeiter . AckTask
+
+type AckTask interface {
+	Task
+
+	Ack() error
+}
+
+//go:generate counterfeiter . Plan
+
+type Plan interface {
+	Task() Task
 }
 
 type EmptyQueueError struct {

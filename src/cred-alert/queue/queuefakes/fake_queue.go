@@ -15,19 +15,19 @@ type FakeQueue struct {
 	enqueueReturns struct {
 		result1 error
 	}
-	DequeueStub        func() (queue.Task, error)
+	DequeueStub        func() (queue.AckTask, error)
 	dequeueMutex       sync.RWMutex
 	dequeueArgsForCall []struct{}
 	dequeueReturns     struct {
-		result1 queue.Task
+		result1 queue.AckTask
 		result2 error
 	}
-	RemoveStub        func(queue.Task) error
-	removeMutex       sync.RWMutex
-	removeArgsForCall []struct {
-		arg1 queue.Task
+	EnqueuePlanStub        func(queue.Plan) error
+	enqueuePlanMutex       sync.RWMutex
+	enqueuePlanArgsForCall []struct {
+		arg1 queue.Plan
 	}
-	removeReturns struct {
+	enqueuePlanReturns struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -67,7 +67,7 @@ func (fake *FakeQueue) EnqueueReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeQueue) Dequeue() (queue.Task, error) {
+func (fake *FakeQueue) Dequeue() (queue.AckTask, error) {
 	fake.dequeueMutex.Lock()
 	fake.dequeueArgsForCall = append(fake.dequeueArgsForCall, struct{}{})
 	fake.recordInvocation("Dequeue", []interface{}{})
@@ -85,43 +85,43 @@ func (fake *FakeQueue) DequeueCallCount() int {
 	return len(fake.dequeueArgsForCall)
 }
 
-func (fake *FakeQueue) DequeueReturns(result1 queue.Task, result2 error) {
+func (fake *FakeQueue) DequeueReturns(result1 queue.AckTask, result2 error) {
 	fake.DequeueStub = nil
 	fake.dequeueReturns = struct {
-		result1 queue.Task
+		result1 queue.AckTask
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeQueue) Remove(arg1 queue.Task) error {
-	fake.removeMutex.Lock()
-	fake.removeArgsForCall = append(fake.removeArgsForCall, struct {
-		arg1 queue.Task
+func (fake *FakeQueue) EnqueuePlan(arg1 queue.Plan) error {
+	fake.enqueuePlanMutex.Lock()
+	fake.enqueuePlanArgsForCall = append(fake.enqueuePlanArgsForCall, struct {
+		arg1 queue.Plan
 	}{arg1})
-	fake.recordInvocation("Remove", []interface{}{arg1})
-	fake.removeMutex.Unlock()
-	if fake.RemoveStub != nil {
-		return fake.RemoveStub(arg1)
+	fake.recordInvocation("EnqueuePlan", []interface{}{arg1})
+	fake.enqueuePlanMutex.Unlock()
+	if fake.EnqueuePlanStub != nil {
+		return fake.EnqueuePlanStub(arg1)
 	} else {
-		return fake.removeReturns.result1
+		return fake.enqueuePlanReturns.result1
 	}
 }
 
-func (fake *FakeQueue) RemoveCallCount() int {
-	fake.removeMutex.RLock()
-	defer fake.removeMutex.RUnlock()
-	return len(fake.removeArgsForCall)
+func (fake *FakeQueue) EnqueuePlanCallCount() int {
+	fake.enqueuePlanMutex.RLock()
+	defer fake.enqueuePlanMutex.RUnlock()
+	return len(fake.enqueuePlanArgsForCall)
 }
 
-func (fake *FakeQueue) RemoveArgsForCall(i int) queue.Task {
-	fake.removeMutex.RLock()
-	defer fake.removeMutex.RUnlock()
-	return fake.removeArgsForCall[i].arg1
+func (fake *FakeQueue) EnqueuePlanArgsForCall(i int) queue.Plan {
+	fake.enqueuePlanMutex.RLock()
+	defer fake.enqueuePlanMutex.RUnlock()
+	return fake.enqueuePlanArgsForCall[i].arg1
 }
 
-func (fake *FakeQueue) RemoveReturns(result1 error) {
-	fake.RemoveStub = nil
-	fake.removeReturns = struct {
+func (fake *FakeQueue) EnqueuePlanReturns(result1 error) {
+	fake.EnqueuePlanStub = nil
+	fake.enqueuePlanReturns = struct {
 		result1 error
 	}{result1}
 }
@@ -133,8 +133,8 @@ func (fake *FakeQueue) Invocations() map[string][][]interface{} {
 	defer fake.enqueueMutex.RUnlock()
 	fake.dequeueMutex.RLock()
 	defer fake.dequeueMutex.RUnlock()
-	fake.removeMutex.RLock()
-	defer fake.removeMutex.RUnlock()
+	fake.enqueuePlanMutex.RLock()
+	defer fake.enqueuePlanMutex.RUnlock()
 	return fake.invocations
 }
 
