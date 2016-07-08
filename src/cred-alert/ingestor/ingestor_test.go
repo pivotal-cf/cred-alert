@@ -1,4 +1,4 @@
-package webhook_test
+package ingestor_test
 
 import (
 	"errors"
@@ -6,27 +6,27 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"cred-alert/ingestor"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
-	"cred-alert/webhook"
 
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("EventHandler", func() {
 	var (
-		ingestor webhook.Ingestor
+		in ingestor.Ingestor
 
 		foreman   *queuefakes.FakeForeman
 		emitter   *metricsfakes.FakeEmitter
 		taskQueue *queuefakes.FakeQueue
-		whitelist *webhook.Whitelist
+		whitelist *ingestor.Whitelist
 
 		logger *lagertest.TestLogger
 
-		scan webhook.PushScan
+		scan ingestor.PushScan
 		job  *queuefakes.FakeJob
 
 		orgName  string
@@ -47,7 +47,7 @@ var _ = Describe("EventHandler", func() {
 		requestCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
 
-		whitelist = webhook.BuildWhitelist()
+		whitelist = ingestor.BuildWhitelist()
 
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
@@ -60,11 +60,11 @@ var _ = Describe("EventHandler", func() {
 			}
 		}
 
-		scan = webhook.PushScan{
+		scan = ingestor.PushScan{
 			Owner:      orgName,
 			Repository: repoName,
 
-			Diffs: []webhook.PushScanDiff{
+			Diffs: []ingestor.PushScanDiff{
 				{Start: "commit-1", End: "commit-2"},
 				{Start: "commit-2", End: "commit-3"},
 				{Start: "commit-3", End: "commit-4"},
@@ -78,12 +78,12 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		ingestor = webhook.NewIngestor(foreman, taskQueue, emitter, whitelist)
+		in = ingestor.NewIngestor(foreman, taskQueue, emitter, whitelist)
 	})
 
 	Describe("enqueuing tasks in the queue", func() {
 		It("enqueues tasks in the queue", func() {
-			ingestor.IngestPushScan(logger, scan)
+			in.IngestPushScan(logger, scan)
 
 			Expect(taskQueue.EnqueueCallCount()).To(Equal(3))
 
@@ -121,7 +121,7 @@ var _ = Describe("EventHandler", func() {
 
 	Describe("running the jobs directly", func() {
 		It("enqueues tasks in the queue", func() {
-			ingestor.IngestPushScan(logger, scan)
+			in.IngestPushScan(logger, scan)
 
 			Expect(foreman.BuildJobCallCount()).Should(Equal(3))
 			Expect(job.RunCallCount()).Should(Equal(3))
@@ -163,7 +163,7 @@ var _ = Describe("EventHandler", func() {
 			})
 
 			It("still tries to run them directly because queueing isn't prime time just yet", func() {
-				ingestor.IngestPushScan(logger, scan)
+				in.IngestPushScan(logger, scan)
 
 				Expect(foreman.BuildJobCallCount()).Should(Equal(3))
 				Expect(job.RunCallCount()).Should(Equal(3))
@@ -172,18 +172,18 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	It("emits count when it is invoked", func() {
-		ingestor.IngestPushScan(logger, scan)
+		in.IngestPushScan(logger, scan)
 
 		Expect(requestCounter.IncCallCount()).To(Equal(1))
 	})
 
 	Context("when it has a whitelist of ignored repos", func() {
 		BeforeEach(func() {
-			whitelist = webhook.BuildWhitelist(repoName)
+			whitelist = ingestor.BuildWhitelist(repoName)
 		})
 
 		It("ignores patterns in whitelist", func() {
-			ingestor.IngestPushScan(logger, scan)
+			in.IngestPushScan(logger, scan)
 
 			Expect(taskQueue.EnqueueCallCount()).To(BeZero())
 
@@ -193,7 +193,7 @@ var _ = Describe("EventHandler", func() {
 		})
 
 		It("emits a count of ignored push events", func() {
-			ingestor.IngestPushScan(logger, scan)
+			in.IngestPushScan(logger, scan)
 			Expect(ignoredEventCounter.IncCallCount()).To(Equal(1))
 		})
 	})

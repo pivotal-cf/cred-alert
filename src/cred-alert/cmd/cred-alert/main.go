@@ -19,11 +19,11 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 
 	"cred-alert/github"
+	"cred-alert/ingestor"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/queue"
 	"cred-alert/sniff"
-	"cred-alert/webhook"
 )
 
 type Opts struct {
@@ -79,11 +79,11 @@ func main() {
 	}
 
 	foreman := queue.NewForeman(ghClient, sniff.Sniff, emitter, notifier)
-	repoWhitelist := webhook.BuildWhitelist(opts.Whitelist...)
-	ingestor := webhook.NewIngestor(foreman, taskQueue, emitter, repoWhitelist)
+	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
+	in := ingestor.NewIngestor(foreman, taskQueue, emitter, repoWhitelist)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", webhook.Handler(logger, ingestor, opts.GitHub.WebhookToken))
+	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))
 
 	members := []grouper.Member{
 		{"api", http_server.New(

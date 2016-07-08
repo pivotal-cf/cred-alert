@@ -1,15 +1,15 @@
-package webhook_test
+package ingestor_test
 
 import (
-	"cred-alert/webhook"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"cred-alert/ingestor"
 )
 
 var _ = Describe("Whitelist", func() {
 	It("determines whether or not a repository should be ignored", func() {
-		whitelist := webhook.BuildWhitelist(
+		whitelist := ingestor.BuildWhitelist(
 			".*-ci",
 			"deployments-.*",
 		)
@@ -20,7 +20,7 @@ var _ = Describe("Whitelist", func() {
 	})
 
 	It("automatically anchors the regexs", func() {
-		whitelist := webhook.BuildWhitelist(
+		whitelist := ingestor.BuildWhitelist(
 			".*-ci",
 			"deployments-.*",
 		)
@@ -30,7 +30,7 @@ var _ = Describe("Whitelist", func() {
 	})
 
 	It("doesn't break pre-anchored regexps", func() {
-		whitelist := webhook.BuildWhitelist(
+		whitelist := ingestor.BuildWhitelist(
 			"^.*-ci$",
 			"^deployments-.*$",
 		)

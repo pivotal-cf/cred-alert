@@ -1,4 +1,4 @@
-package webhook_test
+package ingestor_test
 
 import (
 	"bytes"
@@ -9,22 +9,22 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/google/go-github/github"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager/lagertest"
 
-	"cred-alert/webhook"
-	"cred-alert/webhook/webhookfakes"
+	"cred-alert/ingestor"
+	"cred-alert/ingestor/ingestorfakes"
 )
 
 var _ = Describe("Webhook", func() {
 	var (
 		logger *lagertest.TestLogger
 
-		handler  http.Handler
-		ingestor *webhookfakes.FakeIngestor
+		handler http.Handler
+		in      *ingestorfakes.FakeIngestor
 
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
@@ -33,12 +33,12 @@ var _ = Describe("Webhook", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("webhook")
+		logger = lagertest.NewTestLogger("ingestor")
 		recorder = httptest.NewRecorder()
-		ingestor = &webhookfakes.FakeIngestor{}
+		in = &ingestorfakes.FakeIngestor{}
 		token = "example-key"
 
-		handler = webhook.Handler(logger, ingestor, token)
+		handler = ingestor.Handler(logger, in, token)
 	})
 
 	pushEvent := github.PushEvent{
@@ -81,7 +81,7 @@ var _ = Describe("Webhook", func() {
 		It("handles and scans the event directly", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Eventually(ingestor.IngestPushScanCallCount).Should(Equal(1))
+			Eventually(in.IngestPushScanCallCount).Should(Equal(1))
 		})
 	})
 
@@ -104,7 +104,7 @@ var _ = Describe("Webhook", func() {
 		It("does not directly handle the event", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Consistently(ingestor.IngestPushScanCallCount()).Should(BeZero())
+			Consistently(in.IngestPushScanCallCount()).Should(BeZero())
 		})
 	})
 
@@ -125,7 +125,7 @@ var _ = Describe("Webhook", func() {
 		It("does not directly handle the event", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Consistently(ingestor.IngestPushScanCallCount).Should(BeZero())
+			Consistently(in.IngestPushScanCallCount).Should(BeZero())
 		})
 	})
 })

@@ -1,4 +1,4 @@
-package webhook
+package ingestor
 
 import (
 	"encoding/json"

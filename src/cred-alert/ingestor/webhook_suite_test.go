@@ -1,4 +1,4 @@
-package webhook_test
+package ingestor_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestWebhook(t *testing.T) {
+func TestIngestor(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Webhook Suite")
+	RunSpecs(t, "Ingestor Suite")
 }
