@@ -23,9 +23,8 @@ func (f *Foreman) BuildJob(task AckTask) (Job, error) {
 func (f *Foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
 	var diffScanPlan DiffScanPlan
 
-	err := json.Unmarshal([]byte(payload), &diffScanPlan)
-	if err != nil {
-		panic("TODO: test me")
+	if err := json.Unmarshal([]byte(payload), &diffScanPlan); err != nil {
+		return nil, err
 	}
 
 	return &DiffScanJob{

@@ -1,6 +1,8 @@
 package queue_test
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -49,6 +51,18 @@ var _ = Describe("Foreman", func() {
 
 				_, err := foreman.BuildJob(task)
 				Expect(err).To(MatchError("unknown task type: unknown-task-type"))
+			})
+		})
+
+		Context("payload is not valid json", func() {
+			It("returns an error", func() {
+				task := &queuefakes.FakeAckTask{}
+				task.TypeReturns("diff-scan")
+				task.PayloadReturns(`{broken-json":'seriously"}`)
+
+				_, err := foreman.BuildJob(task)
+				_, isJsonError := err.(*json.SyntaxError)
+				Expect(isJsonError).To(BeTrue())
 			})
 		})
 	})
