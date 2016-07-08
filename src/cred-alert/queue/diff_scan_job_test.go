@@ -56,7 +56,6 @@ var _ = Describe("Diff Scan Job", func() {
 				panic("unexpected counter name! " + name)
 			}
 		}
-
 	})
 
 	JustBeforeEach(func() {
@@ -117,24 +116,24 @@ var _ = Describe("Diff Scan Job", func() {
 		})
 	})
 
-	// Context("when we fail to fetch the diff", func() {
-	// 	var wasScanned bool
+	Context("when we fail to fetch the diff", func() {
+		var wasScanned bool
 
-	// 	BeforeEach(func() {
-	// 		wasScanned = false
+		BeforeEach(func() {
+			wasScanned = false
 
-	// 		fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
+			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
 
-	// 		sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
-	// 			wasScanned = true
-	// 		}
-	// 	})
+			sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
+				wasScanned = true
+			}
+		})
 
-	// 	It("does not try to scan the diff", func() {
-	// 		eventHandler.HandleEvent(logger, event)
+		It("does not try to scan the diff", func() {
+			job.Run(logger)
 
-	// 		Expect(wasScanned).To(BeFalse())
-	// 		Expect(credentialCounter.IncNCallCount()).To(Equal(0))
-	// 	})
-	// })
+			Expect(wasScanned).To(BeFalse())
+			Expect(credentialCounter.IncCallCount()).To(Equal(0))
+		})
+	})
 })

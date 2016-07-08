@@ -24,18 +24,6 @@ type AckTask interface {
 	Ack() error
 }
 
-type noopAcker struct {
-	Task
-}
-
-func (n *noopAcker) Ack() error {
-	return nil
-}
-
-func NoopAck(task Task) AckTask {
-	return &noopAcker{Task: task}
-}
-
 //go:generate counterfeiter . Plan
 
 type Plan interface {

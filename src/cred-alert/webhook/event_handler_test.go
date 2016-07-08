@@ -1,22 +1,18 @@
 package webhook_test
 
 import (
-	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"cred-alert/github/githubfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
-	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
-	"cred-alert/sniff"
+	"cred-alert/queue/queuefakes"
 	"cred-alert/webhook"
 
 	"github.com/google/go-github/github"
-	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
@@ -101,22 +97,18 @@ var _ = Describe("Extract", func() {
 
 var _ = Describe("EventHandler", func() {
 	var (
-		eventHandler     webhook.EventHandler
-		logger           *lagertest.TestLogger
-		emitter          *metricsfakes.FakeEmitter
-		notifier         *notificationsfakes.FakeNotifier
-		fakeGithubClient *githubfakes.FakeClient
+		eventHandler webhook.EventHandler
+		logger       *lagertest.TestLogger
+		emitter      *metricsfakes.FakeEmitter
 
-		foreman *queue.Foreman
+		foreman *queuefakes.FakeForeman
+		job     *queuefakes.FakeJob
 
 		orgName      string
 		repoName     string
 		repoFullName string
 
-		sniffFunc func(lager.Logger, sniff.Scanner, func(sniff.Line))
-
 		requestCounter      *metricsfakes.FakeCounter
-		credentialCounter   *metricsfakes.FakeCounter
 		ignoredEventCounter *metricsfakes.FakeCounter
 
 		whitelist *webhook.Whitelist
@@ -128,12 +120,8 @@ var _ = Describe("EventHandler", func() {
 		repoName = "my-awesome-repo"
 		repoFullName = fmt.Sprintf("%s/%s", orgName, repoName)
 
-		sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {}
-
 		emitter = &metricsfakes.FakeEmitter{}
-		notifier = &notificationsfakes.FakeNotifier{}
 		requestCounter = &metricsfakes.FakeCounter{}
-		credentialCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
 
 		whitelist = webhook.BuildWhitelist()
@@ -142,8 +130,6 @@ var _ = Describe("EventHandler", func() {
 			switch name {
 			case "cred_alert.webhook_requests":
 				return requestCounter
-			case "cred_alert.violations":
-				return credentialCounter
 			case "cred_alert.ignored_events":
 				return ignoredEventCounter
 			default:
@@ -152,7 +138,6 @@ var _ = Describe("EventHandler", func() {
 		}
 
 		logger = lagertest.NewTestLogger("event-handler")
-		fakeGithubClient = new(githubfakes.FakeClient)
 
 		scan = webhook.PushScan{
 			Owner:      orgName,
@@ -162,10 +147,14 @@ var _ = Describe("EventHandler", func() {
 				{Start: "commit-1", End: "commit-2"},
 			},
 		}
+
+		job = &queuefakes.FakeJob{}
+
+		foreman = &queuefakes.FakeForeman{}
+		foreman.BuildJobReturns(job, nil)
 	})
 
 	JustBeforeEach(func() {
-		foreman = queue.NewForeman(fakeGithubClient, sniffFunc, emitter, notifier)
 		eventHandler = webhook.NewEventHandler(foreman, emitter, whitelist)
 	})
 
@@ -183,20 +172,38 @@ var _ = Describe("EventHandler", func() {
 		It("compares each commit individually", func() {
 			eventHandler.HandleEvent(logger, scan)
 
-			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
-			Expect(fakeGithubClient.CompareRefsCallCount()).To(Equal(3))
+			Expect(foreman.BuildJobCallCount()).To(Equal(3))
+			Expect(job.RunCallCount()).To(Equal(3))
 
-			_, _, _, sha0, sha1 := fakeGithubClient.CompareRefsArgsForCall(0)
-			Expect(sha0).To(Equal("commit-1"))
-			Expect(sha1).To(Equal("commit-2"))
+			expectedPlan1 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-1",
+				End:        "commit-2",
+			}
 
-			_, _, _, sha0, sha1 = fakeGithubClient.CompareRefsArgsForCall(1)
-			Expect(sha0).To(Equal("commit-2"))
-			Expect(sha1).To(Equal("commit-3"))
+			builtTask := foreman.BuildJobArgsForCall(0)
+			Expect(builtTask).To(Equal(expectedPlan1.Task()))
 
-			_, _, _, sha0, sha1 = fakeGithubClient.CompareRefsArgsForCall(2)
-			Expect(sha0).To(Equal("commit-3"))
-			Expect(sha1).To(Equal("commit-4"))
+			expectedPlan2 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-2",
+				End:        "commit-3",
+			}
+
+			builtTask = foreman.BuildJobArgsForCall(1)
+			Expect(builtTask).To(Equal(expectedPlan2.Task()))
+
+			expectedPlan3 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-3",
+				End:        "commit-4",
+			}
+
+			builtTask = foreman.BuildJobArgsForCall(2)
+			Expect(builtTask).To(Equal(expectedPlan3.Task()))
 		})
 	})
 
@@ -207,21 +214,14 @@ var _ = Describe("EventHandler", func() {
 	})
 
 	Context("when it has a whitelist of ignored repos", func() {
-		var scanCount int
-
 		BeforeEach(func() {
-			scanCount = 0
-			sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
-				scanCount++
-			}
-
 			whitelist = webhook.BuildWhitelist(repoName)
 		})
 
 		It("ignores patterns in whitelist", func() {
 			eventHandler.HandleEvent(logger, scan)
 
-			Expect(scanCount).To(BeZero())
+			Expect(foreman.BuildJobCallCount()).To(BeZero())
 
 			Expect(logger.LogMessages()).To(HaveLen(1))
 			Expect(logger.LogMessages()[0]).To(ContainSubstring("ignored-repo"))
@@ -231,65 +231,6 @@ var _ = Describe("EventHandler", func() {
 		It("emits a count of ignored push events", func() {
 			eventHandler.HandleEvent(logger, scan)
 			Expect(ignoredEventCounter.IncCallCount()).To(Equal(1))
-		})
-	})
-
-	Context("when a credential is found", func() {
-		var filePath string
-
-		BeforeEach(func() {
-			filePath = "some/file/path"
-
-			sniffFunc = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(sniff.Line)) {
-				handleViolation(sniff.Line{
-					Path:       filePath,
-					LineNumber: 1,
-					Content:    "content",
-				})
-			}
-		})
-
-		It("emits count of the credentials it has found", func() {
-			eventHandler.HandleEvent(logger, scan)
-
-			Expect(credentialCounter.IncCallCount()).To(Equal(1))
-		})
-
-		It("sends a notification", func() {
-			eventHandler.HandleEvent(logger, scan)
-
-			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
-
-			_, repo, sha, line := notifier.SendNotificationArgsForCall(0)
-
-			Expect(repo).To(Equal(repoFullName))
-			Expect(sha).To(Equal("commit-2"))
-			Expect(line).To(Equal(sniff.Line{
-				Path:       "some/file/path",
-				LineNumber: 1,
-				Content:    "content",
-			}))
-		})
-	})
-
-	Context("when we fail to fetch the diff", func() {
-		var wasScanned bool
-
-		BeforeEach(func() {
-			wasScanned = false
-
-			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
-
-			sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
-				wasScanned = true
-			}
-		})
-
-		It("does not try to scan the diff", func() {
-			eventHandler.HandleEvent(logger, scan)
-
-			Expect(wasScanned).To(BeFalse())
-			Expect(credentialCounter.IncCallCount()).To(Equal(0))
 		})
 	})
 })

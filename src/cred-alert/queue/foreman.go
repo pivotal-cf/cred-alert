@@ -12,19 +12,27 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+//go:generate counterfeiter . Job
+
 type Job interface {
 	Run(lager.Logger) error
 }
 
-type Foreman struct {
+//go:generate counterfeiter . Foreman
+
+type Foreman interface {
+	BuildJob(Task) (Job, error)
+}
+
+type foreman struct {
 	githubClient gh.Client
 	sniff        func(lager.Logger, sniff.Scanner, func(sniff.Line))
 	emitter      metrics.Emitter
 	notifier     notifications.Notifier
 }
 
-func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *Foreman {
-	foreman := &Foreman{
+func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *foreman {
+	foreman := &foreman{
 		githubClient: githubClient,
 		sniff:        sniff,
 		emitter:      emitter,
@@ -34,7 +42,7 @@ func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, 
 	return foreman
 }
 
-func (f *Foreman) BuildJob(task AckTask) (Job, error) {
+func (f *foreman) BuildJob(task Task) (Job, error) {
 	switch task.Type() {
 	case "diff-scan":
 		return f.buildDiffScan(task.Payload())
@@ -43,7 +51,7 @@ func (f *Foreman) BuildJob(task AckTask) (Job, error) {
 	}
 }
 
-func (f *Foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
+func (f *foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
 	var diffScanPlan DiffScanPlan
 
 	if err := json.Unmarshal([]byte(payload), &diffScanPlan); err != nil {

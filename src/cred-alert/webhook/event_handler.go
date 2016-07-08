@@ -16,14 +16,14 @@ type EventHandler interface {
 }
 
 type eventHandler struct {
-	foreman   *queue.Foreman
+	foreman   queue.Foreman
 	whitelist *Whitelist
 
 	requestCounter      metrics.Counter
 	ignoredEventCounter metrics.Counter
 }
 
-func NewEventHandler(foreman *queue.Foreman, emitter metrics.Emitter, whitelist *Whitelist) *eventHandler {
+func NewEventHandler(foreman queue.Foreman, emitter metrics.Emitter, whitelist *Whitelist) *eventHandler {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
@@ -61,7 +61,7 @@ func (s *eventHandler) HandleEvent(logger lager.Logger, scan PushScan) {
 			End:        scanDiff.End,
 		}.Task()
 
-		job, err := s.foreman.BuildJob(queue.NoopAck(task))
+		job, err := s.foreman.BuildJob(task)
 		if err != nil {
 			logger.Error("failed-building-job", err)
 			return

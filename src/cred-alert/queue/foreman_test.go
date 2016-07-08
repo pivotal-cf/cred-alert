@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("Foreman", func() {
 	var (
-		foreman *queue.Foreman
+		foreman queue.Foreman
 	)
 
 	BeforeEach(func() {
