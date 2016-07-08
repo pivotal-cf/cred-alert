@@ -29,7 +29,3 @@ type AckTask interface {
 type Plan interface {
 	Task() Task
 }
-
-type EmptyQueueError struct {
-	error
-}
