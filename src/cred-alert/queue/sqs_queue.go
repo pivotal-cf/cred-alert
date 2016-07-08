@@ -30,7 +30,7 @@ func BuildSQSQueue(service SQSAPI, queueName string) (*sqsQueue, error) {
 func (q *sqsQueue) Enqueue(task Task) error {
 	args := map[string]*sqs.MessageAttributeValue{
 		"type": &sqs.MessageAttributeValue{
-			DataType:    aws.String("string"),
+			DataType:    aws.String("String"),
 			StringValue: aws.String(task.Type()),
 		},
 	}
