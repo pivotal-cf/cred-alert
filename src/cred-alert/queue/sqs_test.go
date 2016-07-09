@@ -79,16 +79,21 @@ var _ = Describe("SQS Queue", func() {
 
 		Describe("retrieving work from the queue", func() {
 			expectedHandle := "handle"
-			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{"type": &sqs.MessageAttributeValue{DataType: aws.String("String"), StringValue: aws.String("task-name")}}
+			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{
+				"type": &sqs.MessageAttributeValue{
+					DataType:    aws.String("String"),
+					StringValue: aws.String("task-name"),
+				},
+			}
 			messageBody := `{"arg-name": "arg-value"}`
 
 			BeforeEach(func() {
 				output := &sqs.ReceiveMessageOutput{
 					Messages: []*sqs.Message{
 						{
-							ReceiptHandle:     &expectedHandle,
+							ReceiptHandle:     aws.String(expectedHandle),
 							MessageAttributes: expectedMessageAttributes,
-							Body:              &messageBody,
+							Body:              aws.String(messageBody),
 						},
 					},
 				}
@@ -109,6 +114,36 @@ var _ = Describe("SQS Queue", func() {
 
 				Expect(task.Type()).To(Equal("task-name"))
 				Expect(task.Payload()).To(Equal(`{"arg-name": "arg-value"}`))
+			})
+
+			Context("if no messages are in the response", func() {
+				BeforeEach(func() {
+					firstCall := true
+
+					service.ReceiveMessageStub = func(input *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
+						if firstCall {
+							firstCall = false
+							return &sqs.ReceiveMessageOutput{
+								Messages: []*sqs.Message{},
+							}, nil
+						} else {
+							return &sqs.ReceiveMessageOutput{
+								Messages: []*sqs.Message{
+									{
+										ReceiptHandle:     aws.String(expectedHandle),
+										MessageAttributes: expectedMessageAttributes,
+										Body:              aws.String(messageBody),
+									},
+								},
+							}, nil
+						}
+					}
+				})
+			})
+
+			It("blocks until there is a message to process", func() {
+				_, err := sqsQueue.Dequeue()
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			Context("receiving a message fails", func() {

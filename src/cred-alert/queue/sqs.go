@@ -56,14 +56,25 @@ func (q *sqsQueue) Dequeue() (AckTask, error) {
 		WaitTimeSeconds:     aws.Int64(20),
 	}
 
-	response, err := q.service.ReceiveMessage(params)
-	if err != nil {
-		return nil, err
+	var message *sqs.Message
+
+	for {
+		response, err := q.service.ReceiveMessage(params)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(response.Messages) == 0 {
+			continue
+		}
+
+		message = response.Messages[0]
+		break
 	}
 
-	receiptHandle := response.Messages[0].ReceiptHandle
-	typee := *response.Messages[0].MessageAttributes["type"].StringValue
-	payload := *response.Messages[0].Body
+	receiptHandle := message.ReceiptHandle
+	typee := *message.MessageAttributes["type"].StringValue
+	payload := *message.Body
 
 	return &sqsTask{
 		queueURL:      q.queueUrl,
