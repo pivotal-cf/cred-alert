@@ -16,11 +16,13 @@ type worker struct {
 
 	failedJobs metrics.Counter
 	failedAcks metrics.Counter
+	taskTimer  metrics.Timer
 }
 
 func New(logger lager.Logger, foreman queue.Foreman, queue queue.Queue, emitter metrics.Emitter) *worker {
 	failedJobs := emitter.Counter("cred_alert.failed_jobs")
 	failedAcks := emitter.Counter("cred_alert.failed_acks")
+	taskTimer := emitter.Timer("cred_alert.task_duration")
 
 	return &worker{
 		logger:  logger.Session("worker"),
@@ -29,6 +31,7 @@ func New(logger lager.Logger, foreman queue.Foreman, queue queue.Queue, emitter 
 
 		failedJobs: failedJobs,
 		failedAcks: failedAcks,
+		taskTimer:  taskTimer,
 	}
 }
 
@@ -78,7 +81,10 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 		return
 	}
 
-	err = job.Run(logger)
+	w.taskTimer.Time(logger, func() {
+		err = job.Run(logger)
+	})
+
 	if err != nil {
 		logger.Error("running-job-failed", err)
 		w.failedJobs.Inc(logger)

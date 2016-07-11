@@ -23,6 +23,14 @@ type FakeEmitter struct {
 	gaugeReturns struct {
 		result1 metrics.Gauge
 	}
+	TimerStub        func(name string) metrics.Timer
+	timerMutex       sync.RWMutex
+	timerArgsForCall []struct {
+		name string
+	}
+	timerReturns struct {
+		result1 metrics.Timer
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -93,6 +101,39 @@ func (fake *FakeEmitter) GaugeReturns(result1 metrics.Gauge) {
 	}{result1}
 }
 
+func (fake *FakeEmitter) Timer(name string) metrics.Timer {
+	fake.timerMutex.Lock()
+	fake.timerArgsForCall = append(fake.timerArgsForCall, struct {
+		name string
+	}{name})
+	fake.recordInvocation("Timer", []interface{}{name})
+	fake.timerMutex.Unlock()
+	if fake.TimerStub != nil {
+		return fake.TimerStub(name)
+	} else {
+		return fake.timerReturns.result1
+	}
+}
+
+func (fake *FakeEmitter) TimerCallCount() int {
+	fake.timerMutex.RLock()
+	defer fake.timerMutex.RUnlock()
+	return len(fake.timerArgsForCall)
+}
+
+func (fake *FakeEmitter) TimerArgsForCall(i int) string {
+	fake.timerMutex.RLock()
+	defer fake.timerMutex.RUnlock()
+	return fake.timerArgsForCall[i].name
+}
+
+func (fake *FakeEmitter) TimerReturns(result1 metrics.Timer) {
+	fake.TimerStub = nil
+	fake.timerReturns = struct {
+		result1 metrics.Timer
+	}{result1}
+}
+
 func (fake *FakeEmitter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -100,6 +141,8 @@ func (fake *FakeEmitter) Invocations() map[string][][]interface{} {
 	defer fake.counterMutex.RUnlock()
 	fake.gaugeMutex.RLock()
 	defer fake.gaugeMutex.RUnlock()
+	fake.timerMutex.RLock()
+	defer fake.timerMutex.RUnlock()
 	return fake.invocations
 }
 

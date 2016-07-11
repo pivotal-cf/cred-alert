@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -26,6 +27,7 @@ var _ = Describe("Worker", func() {
 
 		failedJobs *metricsfakes.FakeCounter
 		failedAcks *metricsfakes.FakeCounter
+		fakeTimer  *metricsfakes.FakeTimer
 
 		process ifrit.Process
 		job     *queuefakes.FakeJob
@@ -38,6 +40,10 @@ var _ = Describe("Worker", func() {
 
 		failedJobs = &metricsfakes.FakeCounter{}
 		failedAcks = &metricsfakes.FakeCounter{}
+		fakeTimer = &metricsfakes.FakeTimer{}
+		fakeTimer.TimeStub = func(logger lager.Logger, fn func()) {
+			fn()
+		}
 
 		emitter = &metricsfakes.FakeEmitter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
@@ -48,6 +54,14 @@ var _ = Describe("Worker", func() {
 				return failedAcks
 			default:
 				panic("unexpected counter name! " + name)
+			}
+		}
+		emitter.TimerStub = func(name string) metrics.Timer {
+			switch name {
+			case "cred_alert.task_duration":
+				return fakeTimer
+			default:
+				panic("unexpected timer name! " + name)
 			}
 		}
 
@@ -90,6 +104,10 @@ var _ = Describe("Worker", func() {
 
 		It("acknowledges the task", func() {
 			Eventually(task.AckCallCount).Should(BeNumerically(">=", 1))
+		})
+
+		It("measures the time taken to run the job", func() {
+			Eventually(fakeTimer.TimeCallCount).Should(BeNumerically(">=", 1))
 		})
 
 		Context("when we can't build the job into something runnable", func() {
