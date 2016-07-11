@@ -2,7 +2,6 @@ package worker_test
 
 import (
 	"errors"
-	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -64,7 +63,6 @@ var _ = Describe("Worker", func() {
 		It("Acks the task", func() {
 			Eventually(task.AckCallCount).Should(Equal(1))
 		})
-
 	})
 
 	Context("Dequeue returns an error", func() {
@@ -82,25 +80,5 @@ var _ = Describe("Worker", func() {
 			Expect(logger.LogMessages()[0]).To(ContainSubstring("got-error"))
 		})
 
-	})
-
-	Context("Returns of shutdown", func() {
-		BeforeEach(func() {
-			fakeQueue.DequeueStub = func() (queue.AckTask, error) {
-				for {
-				}
-			}
-		})
-
-		It("Shuts down on receiving signal", func() {
-			signal := os.Interrupt
-			signals := make(chan os.Signal)
-			go func() {
-				signals <- signal
-			}()
-
-			ready := make(chan<- struct{})
-			Expect(runner.Run(signals, ready)).To(BeNil())
-		})
 	})
 })
