@@ -1,6 +1,8 @@
 package ingestor_test
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -13,10 +15,11 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
-var _ = Describe("Ingestor", func() {
+var _ = Describe("EventHandler", func() {
 	var (
 		in ingestor.Ingestor
 
+		foreman   *queuefakes.FakeForeman
 		emitter   *metricsfakes.FakeEmitter
 		taskQueue *queuefakes.FakeQueue
 		whitelist *ingestor.Whitelist
@@ -24,6 +27,7 @@ var _ = Describe("Ingestor", func() {
 		logger *lagertest.TestLogger
 
 		scan ingestor.PushScan
+		job  *queuefakes.FakeJob
 
 		orgName  string
 		repoName string
@@ -66,10 +70,15 @@ var _ = Describe("Ingestor", func() {
 				{Start: "commit-3", End: "commit-4"},
 			},
 		}
+
+		job = &queuefakes.FakeJob{}
+
+		foreman = &queuefakes.FakeForeman{}
+		foreman.BuildJobReturns(job, nil)
 	})
 
 	JustBeforeEach(func() {
-		in = ingestor.NewIngestor(taskQueue, emitter, whitelist)
+		in = ingestor.NewIngestor(foreman, taskQueue, emitter, whitelist)
 	})
 
 	Describe("enqueuing tasks in the queue", func() {
@@ -107,6 +116,58 @@ var _ = Describe("Ingestor", func() {
 
 			builtTask = taskQueue.EnqueueArgsForCall(2)
 			Expect(builtTask).To(Equal(expectedTask3))
+		})
+	})
+
+	Describe("running the jobs directly", func() {
+		It("enqueues tasks in the queue", func() {
+			in.IngestPushScan(logger, scan)
+
+			Expect(foreman.BuildJobCallCount()).Should(Equal(3))
+			Expect(job.RunCallCount()).Should(Equal(3))
+
+			expectedTask1 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-1",
+				End:        "commit-2",
+			}.Task()
+
+			builtTask := foreman.BuildJobArgsForCall(0)
+			Expect(builtTask).To(Equal(expectedTask1))
+
+			expectedTask2 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-2",
+				End:        "commit-3",
+			}.Task()
+
+			builtTask = foreman.BuildJobArgsForCall(1)
+			Expect(builtTask).To(Equal(expectedTask2))
+
+			expectedTask3 := queue.DiffScanPlan{
+				Owner:      orgName,
+				Repository: repoName,
+				Start:      "commit-3",
+				End:        "commit-4",
+			}.Task()
+
+			builtTask = foreman.BuildJobArgsForCall(2)
+			Expect(builtTask).To(Equal(expectedTask3))
+		})
+
+		Context("when the queue fails to queue something", func() {
+			BeforeEach(func() {
+				taskQueue.EnqueueReturns(errors.New("disaster"))
+			})
+
+			It("still tries to run them directly because queueing isn't prime time just yet", func() {
+				in.IngestPushScan(logger, scan)
+
+				Expect(foreman.BuildJobCallCount()).Should(Equal(3))
+				Expect(job.RunCallCount()).Should(Equal(3))
+			})
 		})
 	})
 

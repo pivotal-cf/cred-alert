@@ -22,11 +22,12 @@ type ingestor struct {
 	ignoredEventCounter metrics.Counter
 }
 
-func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist) *ingestor {
+func NewIngestor(foreman queue.Foreman, taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist) *ingestor {
 	requestCounter := emitter.Counter("cred_alert.webhook_requests")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
 	handler := &ingestor{
+		foreman:   foreman,
 		taskQueue: taskQueue,
 		whitelist: whitelist,
 
@@ -62,7 +63,17 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) {
 
 		err := s.taskQueue.Enqueue(task)
 		if err != nil {
+			// We don't return after this because a queuing error should not stop the
+			// scan at the moment.
 			logger.Error("enqueuing-failed", err)
 		}
+
+		job, err := s.foreman.BuildJob(task)
+		if err != nil {
+			logger.Error("failed-building-job", err)
+			return
+		}
+
+		job.Run(logger)
 	}
 }
