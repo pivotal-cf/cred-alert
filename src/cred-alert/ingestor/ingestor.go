@@ -10,7 +10,7 @@ import (
 //go:generate counterfeiter . Ingestor
 
 type Ingestor interface {
-	IngestPushScan(lager.Logger, PushScan)
+	IngestPushScan(lager.Logger, PushScan) error
 }
 
 type ingestor struct {
@@ -37,7 +37,7 @@ func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whit
 	return handler
 }
 
-func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) {
+func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 	logger = logger.Session("handle-event")
 
 	if s.whitelist.IsIgnored(scan.Repository) {
@@ -47,7 +47,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) {
 
 		s.ignoredEventCounter.Inc(logger)
 
-		return
+		return nil
 	}
 
 	s.requestCounter.Inc(logger)
@@ -63,6 +63,9 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) {
 		err := s.taskQueue.Enqueue(task)
 		if err != nil {
 			logger.Error("enqueuing-failed", err)
+			return err
 		}
 	}
+
+	return nil
 }

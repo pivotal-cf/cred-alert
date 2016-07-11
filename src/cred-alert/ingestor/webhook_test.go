@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -83,6 +84,18 @@ var _ = Describe("Webhook", func() {
 
 			Eventually(in.IngestPushScanCallCount).Should(Equal(1))
 		})
+
+		Context("when we fail to ingest the message", func() {
+			BeforeEach(func() {
+				in.IngestPushScanReturns(errors.New("disaster"))
+			})
+
+			It("returns a 500", func() {
+				handler.ServeHTTP(recorder, fakeRequest)
+
+				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
+			})
+		})
 	})
 
 	Context("when the signature is invalid", func() {
@@ -104,7 +117,7 @@ var _ = Describe("Webhook", func() {
 		It("does not directly handle the event", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Consistently(in.IngestPushScanCallCount()).Should(BeZero())
+			Expect(in.IngestPushScanCallCount()).To(BeZero())
 		})
 	})
 
@@ -125,7 +138,7 @@ var _ = Describe("Webhook", func() {
 		It("does not directly handle the event", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
-			Consistently(in.IngestPushScanCallCount).Should(BeZero())
+			Expect(in.IngestPushScanCallCount()).To(BeZero())
 		})
 	})
 })

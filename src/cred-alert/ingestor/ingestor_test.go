@@ -1,6 +1,8 @@
 package ingestor_test
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -74,7 +76,8 @@ var _ = Describe("Ingestor", func() {
 
 	Describe("enqueuing tasks in the queue", func() {
 		It("enqueues tasks in the queue", func() {
-			in.IngestPushScan(logger, scan)
+			err := in.IngestPushScan(logger, scan)
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(taskQueue.EnqueueCallCount()).To(Equal(3))
 
@@ -108,10 +111,22 @@ var _ = Describe("Ingestor", func() {
 			builtTask = taskQueue.EnqueueArgsForCall(2)
 			Expect(builtTask).To(Equal(expectedTask3))
 		})
+
+		Context("when enqueuing a task fails", func() {
+			BeforeEach(func() {
+				taskQueue.EnqueueReturns(errors.New("disaster"))
+			})
+
+			It("returns an error", func() {
+				err := in.IngestPushScan(logger, scan)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	It("emits count when it is invoked", func() {
-		in.IngestPushScan(logger, scan)
+		err := in.IngestPushScan(logger, scan)
+		Expect(err).NotTo(HaveOccurred())
 
 		Expect(requestCounter.IncCallCount()).To(Equal(1))
 	})
@@ -122,7 +137,8 @@ var _ = Describe("Ingestor", func() {
 		})
 
 		It("ignores patterns in whitelist", func() {
-			in.IngestPushScan(logger, scan)
+			err := in.IngestPushScan(logger, scan)
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(taskQueue.EnqueueCallCount()).To(BeZero())
 
@@ -132,7 +148,9 @@ var _ = Describe("Ingestor", func() {
 		})
 
 		It("emits a count of ignored push events", func() {
-			in.IngestPushScan(logger, scan)
+			err := in.IngestPushScan(logger, scan)
+			Expect(err).NotTo(HaveOccurred())
+
 			Expect(ignoredEventCounter.IncCallCount()).To(Equal(1))
 		})
 	})

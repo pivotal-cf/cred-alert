@@ -37,10 +37,16 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.handlePushEvent(h.logger, w, event)
+	err = h.handlePushEvent(h.logger, w, event)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, event github.PushEvent) {
+func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, event github.PushEvent) error {
 	logger = logger.Session("handling-push-event")
 
 	scan, valid := Extract(event)
@@ -52,8 +58,7 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 		}
 
 		logger.Debug("event-missing-data")
-		w.WriteHeader(http.StatusOK)
-		return
+		return nil
 	}
 
 	logger.Info("handling-webhook-payload", lager.Data{
@@ -62,7 +67,5 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 		"after":  scan.LastCommit(),
 	})
 
-	w.WriteHeader(http.StatusOK)
-
-	go h.ingestor.IngestPushScan(logger, scan)
+	return h.ingestor.IngestPushScan(logger, scan)
 }
