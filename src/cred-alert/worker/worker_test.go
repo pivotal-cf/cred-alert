@@ -5,21 +5,21 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 
 	"github.com/pivotal-golang/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
-	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 	"cred-alert/worker"
 )
 
 var _ = Describe("Worker", func() {
 	var (
-		logger    *lagertest.TestLogger
-		foreman   *queuefakes.FakeForeman
-		fakeQueue *queuefakes.FakeQueue
+		logger  *lagertest.TestLogger
+		foreman *queuefakes.FakeForeman
+		queue   *queuefakes.FakeQueue
 
 		process ifrit.Process
 		job     *queuefakes.FakeJob
@@ -30,15 +30,17 @@ var _ = Describe("Worker", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("worker")
 		foreman = &queuefakes.FakeForeman{}
+
 		job = &queuefakes.FakeJob{}
 		job.RunReturns(nil)
 		task = &queuefakes.FakeAckTask{}
 		foreman.BuildJobReturns(job, nil)
-		fakeQueue = &queuefakes.FakeQueue{}
+
+		queue = &queuefakes.FakeQueue{}
 	})
 
 	JustBeforeEach(func() {
-		runner = worker.New(logger, foreman, fakeQueue)
+		runner = worker.New(logger, foreman, queue)
 		process = ginkgomon.Invoke(runner)
 	})
 
@@ -46,39 +48,61 @@ var _ = Describe("Worker", func() {
 		ginkgomon.Interrupt(process)
 	})
 
-	Context("Everything's working fine", func() {
+	ItLogsAndDoesNotAckTheTask := func() {
+		It("logs an error", func() {
+			Eventually(logger).Should(gbytes.Say("disaster"))
+		})
+
+		It("does not acknowledge the task", func() {
+			Consistently(task.AckCallCount).Should(BeZero())
+		})
+	}
+
+	Context("when we can fetch work from the queue successfully", func() {
 		BeforeEach(func() {
-			fakeQueue.DequeueStub = func() (queue.AckTask, error) {
-				// comparing with 1 becase call count was already incremented by this point
-				for fakeQueue.DequeueCallCount() > 1 {
-				}
-				return task, nil
-			}
+			queue.DequeueReturns(task, nil)
 		})
 
-		It("Runs the job", func() {
-			Eventually(job.RunCallCount).Should(Equal(1))
+		It("runs the job", func() {
+			Eventually(job.RunCallCount).Should(BeNumerically(">=", 1))
 		})
 
-		It("Acks the task", func() {
-			Eventually(task.AckCallCount).Should(Equal(1))
+		It("acknowledges the task", func() {
+			Eventually(task.AckCallCount).Should(BeNumerically(">=", 1))
+		})
+
+		Context("when we can't build the job into something runnable", func() {
+			BeforeEach(func() {
+				foreman.BuildJobReturns(nil, errors.New("disaster"))
+			})
+
+			ItLogsAndDoesNotAckTheTask()
+		})
+
+		Context("when the job fails to run", func() {
+			BeforeEach(func() {
+				job.RunReturns(errors.New("disaster"))
+			})
+
+			ItLogsAndDoesNotAckTheTask()
+		})
+
+		Context("when acknowledging the job fails", func() {
+			BeforeEach(func() {
+				task.AckReturns(errors.New("disaster"))
+			})
+
+			It("logs an error", func() {
+				Eventually(logger).Should(gbytes.Say("disaster"))
+			})
 		})
 	})
 
-	Context("Dequeue returns an error", func() {
+	Context("when retrieving a task from the queue returns an error", func() {
 		BeforeEach(func() {
-			fakeQueue.DequeueStub = func() (queue.AckTask, error) {
-				// comparing with 1 becase call count was already incremented by this point
-				for fakeQueue.DequeueCallCount() > 1 {
-				}
-				return nil, errors.New("error dequeuing")
-			}
+			queue.DequeueReturns(nil, errors.New("disaster"))
 		})
 
-		It("logs an error", func() {
-			Eventually(logger.LogMessages).Should(HaveLen(1))
-			Expect(logger.LogMessages()[0]).To(ContainSubstring("got-error"))
-		})
-
+		ItLogsAndDoesNotAckTheTask()
 	})
 })

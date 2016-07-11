@@ -16,7 +16,7 @@ type worker struct {
 
 func New(logger lager.Logger, foreman queue.Foreman, queue queue.Queue) *worker {
 	return &worker{
-		logger:  logger,
+		logger:  logger.Session("worker"),
 		foreman: foreman,
 		queue:   queue,
 	}
@@ -32,7 +32,7 @@ func (w *worker) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case task := <-tasks:
 			w.processTask(w.logger, task)
 		case err := <-errs:
-			w.logger.Error("got-error", err)
+			w.logger.Error("failed-to-dequeue", err)
 		case <-signals:
 			return nil
 		}
@@ -47,6 +47,7 @@ func (w *worker) dequeue() (<-chan queue.AckTask, <-chan error) {
 		task, err := w.queue.Dequeue()
 		if err != nil {
 			eChan <- err
+			return
 		}
 
 		tChan <- task
