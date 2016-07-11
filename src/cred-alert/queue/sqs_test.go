@@ -61,7 +61,10 @@ var _ = Describe("SQS Queue", func() {
 
 				Expect(sentMessage.QueueUrl).To(Equal(aws.String(expectedQueueUrl)))
 				Expect(*sentMessage.MessageBody).To(MatchJSON(`{"arg-name": "arg-value"}`))
-				Expect(sentMessage.MessageAttributes).To(HaveKeyWithValue("type", &sqs.MessageAttributeValue{DataType: aws.String("String"), StringValue: aws.String("task-name")}))
+				Expect(sentMessage.MessageAttributes).To(HaveKeyWithValue("type", &sqs.MessageAttributeValue{
+					DataType:    aws.String("String"),
+					StringValue: aws.String("task-name"),
+				}))
 			})
 
 			Context("when SQS returns an error", func() {
@@ -111,6 +114,7 @@ var _ = Describe("SQS Queue", func() {
 				Expect(params.MaxNumberOfMessages).To(Equal(aws.Int64(1)))
 				Expect(params.VisibilityTimeout).To(Equal(aws.Int64(60)))
 				Expect(params.WaitTimeSeconds).To(Equal(aws.Int64(20)))
+				Expect(params.MessageAttributeNames).To(Equal(aws.StringSlice([]string{"type"})))
 
 				Expect(task.Type()).To(Equal("task-name"))
 				Expect(task.Payload()).To(Equal(`{"arg-name": "arg-value"}`))
@@ -160,7 +164,12 @@ var _ = Describe("SQS Queue", func() {
 
 		Describe("removing work from the queue after we've done it", func() {
 			expectedHandle := "handle"
-			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{"type": &sqs.MessageAttributeValue{DataType: aws.String("String"), StringValue: aws.String("task-name")}}
+			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{
+				"type": &sqs.MessageAttributeValue{
+					DataType:    aws.String("String"),
+					StringValue: aws.String("task-name"),
+				},
+			}
 			messageBody := `{"arg-name": "arg-value"}`
 
 			BeforeEach(func() {
@@ -225,5 +234,4 @@ var _ = Describe("SQS Queue", func() {
 			})
 		})
 	})
-
 })
