@@ -11,6 +11,8 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue/queuefakes"
 	"cred-alert/worker"
 )
@@ -20,6 +22,10 @@ var _ = Describe("Worker", func() {
 		logger  *lagertest.TestLogger
 		foreman *queuefakes.FakeForeman
 		queue   *queuefakes.FakeQueue
+		emitter *metricsfakes.FakeEmitter
+
+		failedJobs *metricsfakes.FakeCounter
+		failedAcks *metricsfakes.FakeCounter
 
 		process ifrit.Process
 		job     *queuefakes.FakeJob
@@ -29,8 +35,23 @@ var _ = Describe("Worker", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("worker")
-		foreman = &queuefakes.FakeForeman{}
 
+		failedJobs = &metricsfakes.FakeCounter{}
+		failedAcks = &metricsfakes.FakeCounter{}
+
+		emitter = &metricsfakes.FakeEmitter{}
+		emitter.CounterStub = func(name string) metrics.Counter {
+			switch name {
+			case "cred_alert.failed_jobs":
+				return failedJobs
+			case "cred_alert.failed_acks":
+				return failedAcks
+			default:
+				panic("unexpected counter name! " + name)
+			}
+		}
+
+		foreman = &queuefakes.FakeForeman{}
 		job = &queuefakes.FakeJob{}
 		job.RunReturns(nil)
 		task = &queuefakes.FakeAckTask{}
@@ -40,7 +61,7 @@ var _ = Describe("Worker", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = worker.New(logger, foreman, queue)
+		runner = worker.New(logger, foreman, queue, emitter)
 		process = ginkgomon.Invoke(runner)
 	})
 
@@ -77,6 +98,10 @@ var _ = Describe("Worker", func() {
 			})
 
 			ItLogsAndDoesNotAckTheTask()
+
+			It("emits a count metric for failed jobs", func() {
+				Eventually(failedJobs.IncCallCount).Should(BeNumerically(">", 1))
+			})
 		})
 
 		Context("when the job fails to run", func() {
@@ -85,6 +110,10 @@ var _ = Describe("Worker", func() {
 			})
 
 			ItLogsAndDoesNotAckTheTask()
+
+			It("emits a count metric for failed jobs", func() {
+				Eventually(failedJobs.IncCallCount).Should(BeNumerically(">", 1))
+			})
 		})
 
 		Context("when acknowledging the job fails", func() {
@@ -94,6 +123,10 @@ var _ = Describe("Worker", func() {
 
 			It("logs an error", func() {
 				Eventually(logger).Should(gbytes.Say("disaster"))
+			})
+
+			It("emits a count metric for failed acks", func() {
+				Eventually(failedAcks.IncCallCount).Should(BeNumerically(">", 1))
 			})
 		})
 	})
