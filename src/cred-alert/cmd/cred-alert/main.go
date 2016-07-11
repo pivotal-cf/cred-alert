@@ -24,6 +24,7 @@ import (
 	"cred-alert/notifications"
 	"cred-alert/queue"
 	"cred-alert/sniff"
+	"cred-alert/worker"
 )
 
 type Opts struct {
@@ -79,8 +80,10 @@ func main() {
 	}
 
 	foreman := queue.NewForeman(ghClient, sniff.Sniff, emitter, notifier)
+	backgroundWorker := worker.New(logger, foreman, taskQueue, emitter)
+
 	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
-	in := ingestor.NewIngestor(foreman, taskQueue, emitter, repoWhitelist)
+	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))
@@ -90,6 +93,7 @@ func main() {
 			fmt.Sprintf(":%d", opts.Port),
 			router,
 		)},
+		{"worker", backgroundWorker},
 	}
 
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
