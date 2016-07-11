@@ -101,7 +101,7 @@ var _ = Describe("Client", func() {
 		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
-		_, value := remainingCallsGauge.UpdateArgsForCall(0)
+		_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
 		Expect(value).To(Equal(float32(43)))
 	})
 

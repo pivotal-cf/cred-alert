@@ -9,7 +9,7 @@ import (
 //go:generate counterfeiter . Metric
 
 type Metric interface {
-	Update(lager.Logger, float32)
+	Update(lager.Logger, float32, ...string)
 }
 
 type metric struct {
@@ -26,7 +26,7 @@ func NewMetric(name string, metricType string, emitter *emitter) *metric {
 	}
 }
 
-func (m *metric) Update(logger lager.Logger, value float32) {
+func (m *metric) Update(logger lager.Logger, value float32, tags ...string) {
 	logger = logger.Session("emit-metric", lager.Data{
 		"name":        m.name,
 		"type":        m.metricType,
@@ -34,8 +34,8 @@ func (m *metric) Update(logger lager.Logger, value float32) {
 		"value":       value,
 	})
 
-	ddMetric := m.emitter.client.BuildMetric(m.metricType, m.name, value, m.emitter.environment)
-
+	tagsWithEnv := append(tags, m.emitter.environment)
+	ddMetric := m.emitter.client.BuildMetric(m.metricType, m.name, value, tagsWithEnv...)
 	err := m.emitter.client.PublishSeries([]datadog.Metric{ddMetric})
 	if err != nil {
 		logger.Error("failed", err)
@@ -50,11 +50,12 @@ type nullMetric struct {
 	environment string
 }
 
-func (m *nullMetric) Update(logger lager.Logger, value float32) {
+func (m *nullMetric) Update(logger lager.Logger, value float32, tags ...string) {
 	logger.Session("emit-metric", lager.Data{
 		"name":        m.name,
 		"type":        m.metricType,
 		"environment": m.environment,
 		"value":       value,
+		"tags":        tags,
 	}).Debug("emitted")
 }

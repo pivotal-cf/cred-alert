@@ -50,6 +50,14 @@ var _ = Describe("Metrics", func() {
 		Expect(client.PublishSeriesArgsForCall(0)).To(ContainElement(expectedMetric))
 	})
 
+	It("can have tags", func() {
+		metric.Update(logger, 3.52, "name:value", "othername:othervalue")
+
+		Expect(client.BuildMetricCallCount()).Should(Equal(1))
+		_, _, _, tags := client.BuildMetricArgsForCall(0)
+		Expect(tags).To(ConsistOf(expectedEnv, "name:value", "othername:othervalue"))
+	})
+
 	It("logs", func() {
 		expectedValue := 1
 		metric.Update(logger, float32(expectedValue))

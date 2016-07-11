@@ -54,9 +54,8 @@ func (emitter *emitter) Gauge(name string) Gauge {
 
 func (emitter *emitter) Timer(name string) Timer {
 	metric := &metric{
-		name:       name,
-		metricType: datadog.GaugeMetricType,
-		emitter:    emitter,
+		name:    name,
+		emitter: emitter,
 	}
 
 	return NewTimer(metric)

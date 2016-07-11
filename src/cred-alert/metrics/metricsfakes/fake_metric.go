@@ -9,26 +9,28 @@ import (
 )
 
 type FakeMetric struct {
-	UpdateStub        func(lager.Logger, float32)
+	UpdateStub        func(lager.Logger, float32, ...string)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 float32
+		arg3 []string
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetric) Update(arg1 lager.Logger, arg2 float32) {
+func (fake *FakeMetric) Update(arg1 lager.Logger, arg2 float32, arg3 ...string) {
 	fake.updateMutex.Lock()
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 float32
-	}{arg1, arg2})
-	fake.recordInvocation("Update", []interface{}{arg1, arg2})
+		arg3 []string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
-		fake.UpdateStub(arg1, arg2)
+		fake.UpdateStub(arg1, arg2, arg3...)
 	}
 }
 
@@ -38,10 +40,10 @@ func (fake *FakeMetric) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeMetric) UpdateArgsForCall(i int) (lager.Logger, float32) {
+func (fake *FakeMetric) UpdateArgsForCall(i int) (lager.Logger, float32, []string) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
-	return fake.updateArgsForCall[i].arg1, fake.updateArgsForCall[i].arg2
+	return fake.updateArgsForCall[i].arg1, fake.updateArgsForCall[i].arg2, fake.updateArgsForCall[i].arg3
 }
 
 func (fake *FakeMetric) Invocations() map[string][][]interface{} {

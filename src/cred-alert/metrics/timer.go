@@ -9,7 +9,7 @@ import (
 //go:generate counterfeiter . Timer
 
 type Timer interface {
-	Time(lager.Logger, func())
+	Time(lager.Logger, func(), ...string)
 }
 
 type timer struct {
@@ -22,27 +22,23 @@ func NewTimer(metric Metric) *timer {
 	}
 }
 
-func (t *timer) Time(logger lager.Logger, fn func()) {
+func (t *timer) Time(logger lager.Logger, work func(), tags ...string) {
+	logger = logger.Session("timing")
 	startTime := time.Now()
 
-	fn()
+	work()
+
 	duration := time.Since(startTime)
 
-	logger.Debug("stopping-timer", lager.Data{
+	logger.Debug("done", lager.Data{
 		"duration": duration.String(),
 	})
-	t.metric.Update(logger, float32(duration.Seconds()))
-}
 
-func (t *timer) Start(logger lager.Logger) {
-	startTime := time.Now()
-	logger.Debug("starting-timer", lager.Data{
-		"start-time": startTime.String(),
-	})
+	t.metric.Update(logger, float32(duration.Seconds()), tags...)
 }
 
 type nullTimer struct{}
 
-func (t *nullTimer) Time(logger lager.Logger, fn func()) {
+func (t *nullTimer) Time(logger lager.Logger, fn func(), tags ...string) {
 	fn()
 }

@@ -9,26 +9,28 @@ import (
 )
 
 type FakeTimer struct {
-	TimeStub        func(lager.Logger, func())
+	TimeStub        func(lager.Logger, func(), ...string)
 	timeMutex       sync.RWMutex
 	timeArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 func()
+		arg3 []string
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTimer) Time(arg1 lager.Logger, arg2 func()) {
+func (fake *FakeTimer) Time(arg1 lager.Logger, arg2 func(), arg3 ...string) {
 	fake.timeMutex.Lock()
 	fake.timeArgsForCall = append(fake.timeArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 func()
-	}{arg1, arg2})
-	fake.recordInvocation("Time", []interface{}{arg1, arg2})
+		arg3 []string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Time", []interface{}{arg1, arg2, arg3})
 	fake.timeMutex.Unlock()
 	if fake.TimeStub != nil {
-		fake.TimeStub(arg1, arg2)
+		fake.TimeStub(arg1, arg2, arg3...)
 	}
 }
 
@@ -38,10 +40,10 @@ func (fake *FakeTimer) TimeCallCount() int {
 	return len(fake.timeArgsForCall)
 }
 
-func (fake *FakeTimer) TimeArgsForCall(i int) (lager.Logger, func()) {
+func (fake *FakeTimer) TimeArgsForCall(i int) (lager.Logger, func(), []string) {
 	fake.timeMutex.RLock()
 	defer fake.timeMutex.RUnlock()
-	return fake.timeArgsForCall[i].arg1, fake.timeArgsForCall[i].arg2
+	return fake.timeArgsForCall[i].arg1, fake.timeArgsForCall[i].arg2, fake.timeArgsForCall[i].arg3
 }
 
 func (fake *FakeTimer) Invocations() map[string][][]interface{} {

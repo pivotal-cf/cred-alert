@@ -41,7 +41,7 @@ var _ = Describe("Worker", func() {
 		failedJobs = &metricsfakes.FakeCounter{}
 		failedAcks = &metricsfakes.FakeCounter{}
 		fakeTimer = &metricsfakes.FakeTimer{}
-		fakeTimer.TimeStub = func(logger lager.Logger, fn func()) {
+		fakeTimer.TimeStub = func(logger lager.Logger, fn func(), tags ...string) {
 			fn()
 		}
 

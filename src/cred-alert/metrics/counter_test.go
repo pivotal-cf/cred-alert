@@ -35,7 +35,7 @@ var _ = Describe("Counters", func() {
 		counter.Inc(logger)
 
 		Expect(metric.UpdateCallCount()).To(Equal(1))
-		callLogger, callValue := metric.UpdateArgsForCall(0)
+		callLogger, callValue, _ := metric.UpdateArgsForCall(0)
 		Expect(callLogger).To(Equal(logger))
 		Expect(callValue).To(Equal(float32(1)))
 	})
@@ -44,7 +44,7 @@ var _ = Describe("Counters", func() {
 		counter.IncN(logger, 2)
 
 		Expect(metric.UpdateCallCount()).To(Equal(1))
-		callLogger, callValue := metric.UpdateArgsForCall(0)
+		callLogger, callValue, _ := metric.UpdateArgsForCall(0)
 		Expect(callLogger).To(Equal(logger))
 		Expect(callValue).To(Equal(float32(2)))
 
@@ -59,7 +59,7 @@ var _ = Describe("Counters", func() {
 			counter.Inc(logger)
 
 			Expect(metric.UpdateCallCount()).To(Equal(1))
-			callLogger, callValue := metric.UpdateArgsForCall(0)
+			callLogger, callValue, _ := metric.UpdateArgsForCall(0)
 			Expect(callLogger).To(Equal(logger))
 			Expect(callValue).To(Equal(float32(1)))
 		})
@@ -69,7 +69,7 @@ var _ = Describe("Counters", func() {
 			counter.IncN(logger, passedValue)
 
 			Expect(metric.UpdateCallCount()).To(Equal(1))
-			callLogger, callValue := metric.UpdateArgsForCall(0)
+			callLogger, callValue, _ := metric.UpdateArgsForCall(0)
 			Expect(callLogger).To(Equal(logger))
 			Expect(callValue).To(Equal(float32(passedValue)))
 		})

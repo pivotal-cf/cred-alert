@@ -25,14 +25,16 @@ var _ = Describe("Timer", func() {
 
 	It("handles a closure", func() {
 		hasBeenCalled := false
-		timer.Time(logger, func() { hasBeenCalled = true })
+		timer.Time(logger, func() {
+			hasBeenCalled = true
+		}, "tag:value")
 
 		Expect(hasBeenCalled).To(BeTrue())
 		Expect(metric.UpdateCallCount()).To(Equal(1))
-		logr, dur := metric.UpdateArgsForCall(0)
-		Expect(logr).To(Equal(logger))
+		_, dur, tags := metric.UpdateArgsForCall(0)
+
 		Expect(dur).To(BeNumerically(">", 0))
+		Expect(tags).To(ConsistOf("tag:value"))
 		Expect(logger.LogMessages()).To(HaveLen(1))
 	})
-
 })
