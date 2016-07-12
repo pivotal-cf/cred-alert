@@ -30,7 +30,7 @@ var _ = Describe("PushScan", func() {
 					Name: github.String("repository-owner"),
 				},
 			},
-			Ref: github.String("refs/head/my-branch"),
+			Ref: github.String("refs/heads/my-branch"),
 			Commits: []github.PushEventCommit{
 				{ID: github.String("commit-sha-1"), Timestamp: &github.Timestamp{Time: fakeTimes[1]}},
 				{ID: github.String("commit-sha-2"), Timestamp: &github.Timestamp{Time: fakeTimes[2]}},
@@ -55,7 +55,7 @@ var _ = Describe("PushScan", func() {
 
 		Expect(scan.Owner).To(Equal("repository-owner"))
 		Expect(scan.Repository).To(Equal("repository-name"))
-		Expect(scan.Ref).To(Equal("refs/head/my-branch"))
+		Expect(scan.Ref).To(Equal("refs/heads/my-branch"))
 		Expect(scan.Diffs[0].FromTimestamp).To(Equal(time.Unix(0, 0)))
 		Expect(scan.Diffs[0].ToTimestamp).To(Equal(fakeTimes[1]))
 		Expect(scan.Diffs[1].FromTimestamp).To(Equal(fakeTimes[1]))

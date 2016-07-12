@@ -13,7 +13,7 @@ var _ = Describe("Plans", func() {
 			plan := DiffScanPlan{
 				Owner:      "owner",
 				Repository: "repository",
-				Ref:        "refs/head/my-branch",
+				Ref:        "refs/heads/my-branch",
 				From:       "abc123",
 				To:         "def456",
 			}
@@ -24,7 +24,7 @@ var _ = Describe("Plans", func() {
 				{
 					"owner": "owner",
 					"repository": "repository",
-					"ref": "refs/head/my-branch",
+					"ref": "refs/heads/my-branch",
 					"from": "abc123",
 					"to": "def456"
 				}

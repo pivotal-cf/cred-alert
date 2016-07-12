@@ -38,7 +38,7 @@ var _ = Describe("Ingestor", func() {
 	BeforeEach(func() {
 		orgName = "rad-co"
 		repoName = "my-awesome-repo"
-		commitRef = "refs/head/my-branch"
+		commitRef = "refs/heads/my-branch"
 
 		logger = lagertest.NewTestLogger("event-handler")
 		emitter = &metricsfakes.FakeEmitter{}

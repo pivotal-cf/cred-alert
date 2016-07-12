@@ -30,29 +30,43 @@ var _ = Describe("Foreman", func() {
 	})
 
 	Describe("building runnable jobs from tasks", func() {
-		Context("when the foreman does know how to build the task", func() {
-			It("builds the task", func() {
-				task := &queuefakes.FakeAckTask{}
-				task.TypeReturns("diff-scan")
-				task.PayloadReturns(`{
+		Describe("DiffScan Task", func() {
+			Context("when the foreman knows how to build the task", func() {
+				It("builds the task", func() {
+					task := &queuefakes.FakeAckTask{}
+					task.TypeReturns("diff-scan")
+					task.PayloadReturns(`{
 					"owner":      "pivotal-cf",
 					"repository": "cred-alert",
-					"ref":        "refs/head/my-branch",
+					"ref":        "refs/heads/my-branch",
 					"from":       "abc123",
 					"to":         "def456"
 				}`)
 
-				job, err := foreman.BuildJob(task)
-				Expect(err).NotTo(HaveOccurred())
+					job, err := foreman.BuildJob(task)
+					Expect(err).NotTo(HaveOccurred())
 
-				diffScan, ok := job.(*queue.DiffScanJob)
-				Expect(ok).To(BeTrue())
+					diffScan, ok := job.(*queue.DiffScanJob)
+					Expect(ok).To(BeTrue())
 
-				Expect(diffScan.Owner).To(Equal("pivotal-cf"))
-				Expect(diffScan.Repository).To(Equal("cred-alert"))
-				Expect(diffScan.Ref).To(Equal("refs/head/my-branch"))
-				Expect(diffScan.From).To(Equal("abc123"))
-				Expect(diffScan.To).To(Equal("def456"))
+					Expect(diffScan.Owner).To(Equal("pivotal-cf"))
+					Expect(diffScan.Repository).To(Equal("cred-alert"))
+					Expect(diffScan.Ref).To(Equal("refs/heads/my-branch"))
+					Expect(diffScan.From).To(Equal("abc123"))
+					Expect(diffScan.To).To(Equal("def456"))
+				})
+			})
+
+			Context("payload is not valid json", func() {
+				It("returns an error", func() {
+					task := &queuefakes.FakeAckTask{}
+					task.TypeReturns("diff-scan")
+					task.PayloadReturns(`{broken-json":'seriously"}`)
+
+					_, err := foreman.BuildJob(task)
+					_, isJsonError := err.(*json.SyntaxError)
+					Expect(isJsonError).To(BeTrue())
+				})
 			})
 		})
 
@@ -63,18 +77,6 @@ var _ = Describe("Foreman", func() {
 
 				_, err := foreman.BuildJob(task)
 				Expect(err).To(MatchError("unknown task type: unknown-task-type"))
-			})
-		})
-
-		Context("payload is not valid json", func() {
-			It("returns an error", func() {
-				task := &queuefakes.FakeAckTask{}
-				task.TypeReturns("diff-scan")
-				task.PayloadReturns(`{broken-json":'seriously"}`)
-
-				_, err := foreman.BuildJob(task)
-				_, isJsonError := err.(*json.SyntaxError)
-				Expect(isJsonError).To(BeTrue())
 			})
 		})
 	})

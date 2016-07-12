@@ -57,7 +57,7 @@ var _ = Describe("Webhook", func() {
 				Name: github.String("repository-owner"),
 			},
 		},
-		Ref: github.String("refs/head/my-branch"),
+		Ref: github.String("refs/heads/my-branch"),
 		Commits: []github.PushEventCommit{
 			{ID: github.String("commit-sha-1"), Timestamp: &github.Timestamp{Time: fakeTimes[1]}},
 			{ID: github.String("commit-sha-2"), Timestamp: &github.Timestamp{Time: fakeTimes[2]}},
