@@ -18,7 +18,7 @@ applications:
   instances: 1
   memory: 128M
   disk_quota: 1024M
-  no-hostname: true
+  no-route: true
   buildpack: binary_buildpack
   stack: cflinuxfs2
   command: ./cred-alert-worker
