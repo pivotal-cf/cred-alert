@@ -7,4 +7,7 @@ gosub list \
   -a github.com/onsi/ginkgo \
   -a github.com/onsi/gomega \
   -a github.com/golang/protobuf \
+  # the following have been added because gorm is test-only at this point -ap
+  -a github.com/jinzhu/gorm \
+  -a github.com/mattn/go-sqlite3 \
   | xargs gosub sync

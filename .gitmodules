@@ -49,3 +49,15 @@
 	path = src/github.com/aws/aws-sdk-go
 	url = https://github.com/aws/aws-sdk-go
 	branch = master
+[submodule "src/github.com/jinzhu/inflection"]
+	path = src/github.com/jinzhu/inflection
+	url = https://github.com/jinzhu/inflection
+	branch = master
+[submodule "src/github.com/jinzhu/gorm"]
+	path = src/github.com/jinzhu/gorm
+	url = https://github.com/jinzhu/gorm
+	branch = master
+[submodule "src/github.com/mattn/go-sqlite3"]
+	path = src/github.com/mattn/go-sqlite3
+	url = https://github.com/mattn/go-sqlite3
+	branch = master
