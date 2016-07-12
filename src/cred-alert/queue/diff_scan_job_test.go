@@ -31,15 +31,15 @@ var _ = Describe("Diff Scan Job", func() {
 	var repo = "my-awesome-repo"
 	var repoFullName = fmt.Sprintf("rad-co/%s", repo)
 
-	var start string = "before"
-	var end string = "after"
+	var fromGitSha string = "from-git-sha"
+	var toGitSha string = "to-git-sha"
 
 	BeforeEach(func() {
 		plan = queue.DiffScanPlan{
 			Owner:      owner,
 			Repository: repo,
-			Start:      start,
-			End:        end,
+			From:       fromGitSha,
+			To:         toGitSha,
 		}
 		sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {}
 		emitter = &metricsfakes.FakeEmitter{}
@@ -74,8 +74,8 @@ var _ = Describe("Diff Scan Job", func() {
 		fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
 		Expect(fakeGithubClient.CompareRefsCallCount()).To(Equal(1))
 		_, _, _, sha0, sha1 := fakeGithubClient.CompareRefsArgsForCall(0)
-		Expect(sha0).To(Equal(start))
-		Expect(sha1).To(Equal(end))
+		Expect(sha0).To(Equal(fromGitSha))
+		Expect(sha1).To(Equal(toGitSha))
 	})
 
 	Context("when a credential is found", func() {
@@ -107,7 +107,7 @@ var _ = Describe("Diff Scan Job", func() {
 			_, repository, sha, line := notifier.SendNotificationArgsForCall(0)
 
 			Expect(repository).To(Equal(repoFullName))
-			Expect(sha).To(Equal(end))
+			Expect(sha).To(Equal(toGitSha))
 			Expect(line).To(Equal(sniff.Line{
 				Path:       "some/file/path",
 				LineNumber: 1,

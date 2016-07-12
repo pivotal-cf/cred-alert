@@ -35,18 +35,18 @@ func NewDiffScanJob(githubClient gh.Client, sniff func(lager.Logger, sniff.Scann
 }
 
 func (j *DiffScanJob) Run(logger lager.Logger) error {
-	diff, err := j.githubClient.CompareRefs(logger, j.Owner, j.Repository, j.Start, j.End)
+	diff, err := j.githubClient.CompareRefs(logger, j.Owner, j.Repository, j.From, j.To)
 	if err != nil {
 		logger.Error("failed-fetch-diff", err, lager.Data{
-			"diff-start": j.Start,
-			"diff-end":   j.End,
+			"diff-from": j.From,
+			"diff-to":   j.To,
 		})
 
 		return err
 	}
 
 	diffScanner := git.NewDiffScanner(diff)
-	handleViolation := j.createHandleViolation(logger, j.End, j.Owner+"/"+j.Repository)
+	handleViolation := j.createHandleViolation(logger, j.To, j.Owner+"/"+j.Repository)
 
 	j.sniff(logger, diffScanner, handleViolation)
 

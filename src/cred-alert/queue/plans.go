@@ -5,9 +5,10 @@ import "encoding/json"
 type DiffScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`
+	Ref        string `json:"ref"`
 
-	Start string `json:"start"`
-	End   string `json:"end"`
+	From string `json:"from"`
+	To   string `json:"to"`
 }
 
 func (p DiffScanPlan) Task() Task {

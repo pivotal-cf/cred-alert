@@ -2,6 +2,7 @@ package ingestor
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/go-github/github"
 )
@@ -9,8 +10,8 @@ import (
 type PushScan struct {
 	Owner      string
 	Repository string
-
-	Diffs []PushScanDiff
+	Ref        string
+	Diffs      []PushScanDiff
 }
 
 func (p PushScan) FullRepoName() string {
@@ -18,16 +19,18 @@ func (p PushScan) FullRepoName() string {
 }
 
 func (p PushScan) FirstCommit() string {
-	return p.Diffs[0].Start
+	return p.Diffs[0].From
 }
 
 func (p PushScan) LastCommit() string {
-	return p.Diffs[len(p.Diffs)-1].End
+	return p.Diffs[len(p.Diffs)-1].To
 }
 
 type PushScanDiff struct {
-	Start string
-	End   string
+	From          string
+	FromTimestamp time.Time
+	To            string
+	ToTimestamp   time.Time
 }
 
 const initalCommitParentHash = "0000000000000000000000000000000000000000"
@@ -42,7 +45,12 @@ func Extract(event github.PushEvent) (PushScan, bool) {
 	}
 
 	diffs := []PushScanDiff{
-		{Start: *event.Before, End: *event.Commits[0].ID},
+		{
+			From:          *event.Before,
+			To:            *event.Commits[0].ID,
+			ToTimestamp:   (*event.Commits[0].Timestamp).Time,
+			FromTimestamp: time.Unix(0, 0),
+		},
 	}
 
 	for i, _ := range event.Commits {
@@ -50,18 +58,23 @@ func Extract(event github.PushEvent) (PushScan, bool) {
 			break
 		}
 
-		start := *event.Commits[i].ID
-		end := *event.Commits[i+1].ID
+		from := *event.Commits[i].ID
+		fromTimestamp := (*event.Commits[i].Timestamp).Time
+		to := *event.Commits[i+1].ID
+		toTimestamp := (*event.Commits[i+1].Timestamp).Time
 
 		diffs = append(diffs, PushScanDiff{
-			Start: start,
-			End:   end,
+			From:          from,
+			FromTimestamp: fromTimestamp,
+			To:            to,
+			ToTimestamp:   toTimestamp,
 		})
 	}
 
 	return PushScan{
 		Owner:      *event.Repo.Owner.Name,
 		Repository: *event.Repo.Name,
+		Ref:        *event.Ref,
 		Diffs:      diffs,
 	}, true
 }

@@ -56,8 +56,9 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 		task := queue.DiffScanPlan{
 			Owner:      scan.Owner,
 			Repository: scan.Repository,
-			Start:      scanDiff.Start,
-			End:        scanDiff.End,
+			Ref:        scan.Ref,
+			From:       scanDiff.From,
+			To:         scanDiff.To,
 		}.Task()
 
 		err := s.taskQueue.Enqueue(task)

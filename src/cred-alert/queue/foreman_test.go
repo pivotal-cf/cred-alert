@@ -37,8 +37,9 @@ var _ = Describe("Foreman", func() {
 				task.PayloadReturns(`{
 					"owner":      "pivotal-cf",
 					"repository": "cred-alert",
-					"start":      "abc123",
-					"end":        "def456"
+					"ref":        "refs/head/my-branch",
+					"from":       "abc123",
+					"to":         "def456"
 				}`)
 
 				job, err := foreman.BuildJob(task)
@@ -49,8 +50,9 @@ var _ = Describe("Foreman", func() {
 
 				Expect(diffScan.Owner).To(Equal("pivotal-cf"))
 				Expect(diffScan.Repository).To(Equal("cred-alert"))
-				Expect(diffScan.Start).To(Equal("abc123"))
-				Expect(diffScan.End).To(Equal("def456"))
+				Expect(diffScan.Ref).To(Equal("refs/head/my-branch"))
+				Expect(diffScan.From).To(Equal("abc123"))
+				Expect(diffScan.To).To(Equal("def456"))
 			})
 		})
 

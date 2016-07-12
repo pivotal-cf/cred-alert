@@ -13,8 +13,9 @@ var _ = Describe("Plans", func() {
 			plan := DiffScanPlan{
 				Owner:      "owner",
 				Repository: "repository",
-				Start:      "abc123",
-				End:        "def456",
+				Ref:        "refs/head/my-branch",
+				From:       "abc123",
+				To:         "def456",
 			}
 
 			task := plan.Task()
@@ -23,8 +24,9 @@ var _ = Describe("Plans", func() {
 				{
 					"owner": "owner",
 					"repository": "repository",
-					"start": "abc123",
-					"end": "def456"
+					"ref": "refs/head/my-branch",
+					"from": "abc123",
+					"to": "def456"
 				}
 			`))
 		})

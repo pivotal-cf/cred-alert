@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,10 +31,14 @@ var _ = Describe("Webhook", func() {
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
 
-		token string
+		token     string
+		fakeTimes [6]time.Time
 	)
 
 	BeforeEach(func() {
+		for i := 0; i < len(fakeTimes); i++ {
+			fakeTimes[i] = time.Now().AddDate(0, 0, i)
+		}
 		logger = lagertest.NewTestLogger("ingestor")
 		recorder = httptest.NewRecorder()
 		in = &ingestorfakes.FakeIngestor{}
@@ -52,12 +57,13 @@ var _ = Describe("Webhook", func() {
 				Name: github.String("repository-owner"),
 			},
 		},
+		Ref: github.String("refs/head/my-branch"),
 		Commits: []github.PushEventCommit{
-			{ID: github.String("commit-sha-1")},
-			{ID: github.String("commit-sha-2")},
-			{ID: github.String("commit-sha-3")},
-			{ID: github.String("commit-sha-4")},
-			{ID: github.String("commit-sha-5")},
+			{ID: github.String("commit-sha-1"), Timestamp: &github.Timestamp{Time: fakeTimes[1]}},
+			{ID: github.String("commit-sha-2"), Timestamp: &github.Timestamp{Time: fakeTimes[2]}},
+			{ID: github.String("commit-sha-3"), Timestamp: &github.Timestamp{Time: fakeTimes[3]}},
+			{ID: github.String("commit-sha-4"), Timestamp: &github.Timestamp{Time: fakeTimes[4]}},
+			{ID: github.String("commit-sha-5"), Timestamp: &github.Timestamp{Time: fakeTimes[5]}},
 		},
 	}
 

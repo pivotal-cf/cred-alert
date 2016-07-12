@@ -27,8 +27,9 @@ var _ = Describe("Ingestor", func() {
 
 		scan ingestor.PushScan
 
-		orgName  string
-		repoName string
+		orgName   string
+		repoName  string
+		commitRef string
 
 		requestCounter      *metricsfakes.FakeCounter
 		ignoredEventCounter *metricsfakes.FakeCounter
@@ -37,6 +38,7 @@ var _ = Describe("Ingestor", func() {
 	BeforeEach(func() {
 		orgName = "rad-co"
 		repoName = "my-awesome-repo"
+		commitRef = "refs/head/my-branch"
 
 		logger = lagertest.NewTestLogger("event-handler")
 		emitter = &metricsfakes.FakeEmitter{}
@@ -61,11 +63,12 @@ var _ = Describe("Ingestor", func() {
 		scan = ingestor.PushScan{
 			Owner:      orgName,
 			Repository: repoName,
+			Ref:        commitRef,
 
 			Diffs: []ingestor.PushScanDiff{
-				{Start: "commit-1", End: "commit-2"},
-				{Start: "commit-2", End: "commit-3"},
-				{Start: "commit-3", End: "commit-4"},
+				{From: "commit-1", To: "commit-2"},
+				{From: "commit-2", To: "commit-3"},
+				{From: "commit-3", To: "commit-4"},
 			},
 		}
 	})
@@ -84,8 +87,9 @@ var _ = Describe("Ingestor", func() {
 			expectedTask1 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
-				Start:      "commit-1",
-				End:        "commit-2",
+				Ref:        commitRef,
+				From:       "commit-1",
+				To:         "commit-2",
 			}.Task()
 
 			builtTask := taskQueue.EnqueueArgsForCall(0)
@@ -94,8 +98,9 @@ var _ = Describe("Ingestor", func() {
 			expectedTask2 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
-				Start:      "commit-2",
-				End:        "commit-3",
+				Ref:        commitRef,
+				From:       "commit-2",
+				To:         "commit-3",
 			}.Task()
 
 			builtTask = taskQueue.EnqueueArgsForCall(1)
@@ -104,8 +109,9 @@ var _ = Describe("Ingestor", func() {
 			expectedTask3 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
-				Start:      "commit-3",
-				End:        "commit-4",
+				Ref:        commitRef,
+				From:       "commit-3",
+				To:         "commit-4",
 			}.Task()
 
 			builtTask = taskQueue.EnqueueArgsForCall(2)
