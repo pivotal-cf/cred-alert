@@ -69,6 +69,7 @@ var _ = Describe("Worker", func() {
 		job = &queuefakes.FakeJob{}
 		job.RunReturns(nil)
 		task = &queuefakes.FakeAckTask{}
+		task.TypeReturns("type")
 		foreman.BuildJobReturns(job, nil)
 
 		queue = &queuefakes.FakeQueue{}
@@ -108,6 +109,9 @@ var _ = Describe("Worker", func() {
 
 		It("measures the time taken to run the job", func() {
 			Eventually(fakeTimer.TimeCallCount).Should(BeNumerically(">=", 1))
+
+			_, _, tags := fakeTimer.TimeArgsForCall(0)
+			Expect(tags).To(ConsistOf("tasktype:type"))
 		})
 
 		Context("when we can't build the job into something runnable", func() {

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/pivotal-golang/lager"
@@ -83,7 +84,7 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 
 	w.taskTimer.Time(logger, func() {
 		err = job.Run(logger)
-	})
+	}, fmt.Sprintf("tasktype:%s", task.Type()))
 
 	if err != nil {
 		logger.Error("running-job-failed", err)
