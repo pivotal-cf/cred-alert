@@ -1,7 +1,7 @@
 applications:
 - name: cred-alert-production
   instances: 2
-  memory: 128M
+  memory: 256M
   disk_quota: 1024M
   host: cred-alert
   domain: cfapps.io
