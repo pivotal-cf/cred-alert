@@ -10,15 +10,23 @@ type Model struct {
 
 type Repo struct {
 	Model
-	Org       string
+	Org  string
+	Name string
+	Refs []Ref
+}
+
+type Ref struct {
+	Model
 	Name      string
+	Repo      Repo
+	RepoID    uint
 	DiffScans []DiffScan
 }
 
 type DiffScan struct {
 	Model
-	Repo         Repo
-	RepoID       uint
+	Ref          Ref
+	RefID        uint
 	FromCommit   Commit `gorm:"ForeignKey:FromCommitID"`
 	FromCommitID uint
 	ToCommit     Commit `gorm:"ForeignKey:ToCommitID"`

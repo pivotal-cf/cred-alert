@@ -26,7 +26,7 @@ var _ = Describe("Database Connections", func() {
 
 		db, err = gorm.Open("sqlite3", dbFileHandle.Name())
 		Expect(err).NotTo(HaveOccurred())
-		db.AutoMigrate(&models.Repo{}, &models.DiffScan{}, &models.Commit{})
+		db.AutoMigrate(&models.Repo{}, &models.Ref{}, &models.DiffScan{}, &models.Commit{})
 	})
 
 	Describe("auto-migrations", func() {
@@ -36,6 +36,10 @@ var _ = Describe("Database Connections", func() {
 
 		It("creates the DiffScan table", func() {
 			Expect(db.HasTable(&models.DiffScan{})).To(BeTrue())
+		})
+
+		It("creates the Ref table", func() {
+			Expect(db.HasTable(&models.Ref{})).To(BeTrue())
 		})
 
 		It("creates the Commit table", func() {
