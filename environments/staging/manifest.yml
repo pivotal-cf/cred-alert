@@ -19,6 +19,7 @@ applications:
   memory: 128M
   disk_quota: 1024M
   no-route: true
+  health-check-type: none
   buildpack: binary_buildpack
   stack: cflinuxfs2
   command: ./cred-alert-worker
