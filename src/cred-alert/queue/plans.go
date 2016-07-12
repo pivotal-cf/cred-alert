@@ -19,6 +19,22 @@ func (p DiffScanPlan) Task() Task {
 	}
 }
 
+type RefScanPlan struct {
+	Owner      string `json:"owner"`
+	Repository string `json:"repository"`
+
+	Ref string `json:"ref"`
+}
+
+func (p RefScanPlan) Task() Task {
+	payload, _ := json.Marshal(p)
+
+	return basicTask{
+		typee:   "ref-scan",
+		payload: string(payload),
+	}
+}
+
 type basicTask struct {
 	typee   string
 	payload string
