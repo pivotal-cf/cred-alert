@@ -89,13 +89,6 @@ func main() {
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))
 
-	debugRouter := http.NewServeMux()
-	debugRouter.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-	debugRouter.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	debugRouter.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	debugRouter.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-	debugRouter.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
 	members := []grouper.Member{
 		{"api", http_server.New(
 			fmt.Sprintf(":%d", opts.Port),
@@ -103,7 +96,7 @@ func main() {
 		)},
 		{"debug", http_server.New(
 			"127.0.0.1:6060",
-			debugRouter,
+			debugHandler(),
 		)},
 		{"worker", backgroundWorker},
 	}
@@ -152,4 +145,15 @@ func createSqsQueue(opts Opts) (queue.Queue, error) {
 		return nil, err
 	}
 	return queue, nil
+}
+
+func debugHandler() http.Handler {
+	debugRouter := http.NewServeMux()
+	debugRouter.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	debugRouter.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	debugRouter.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	debugRouter.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	debugRouter.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
+	return debugRouter
 }
