@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"golang.org/x/oauth2"
@@ -88,10 +89,21 @@ func main() {
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))
 
+	debugRouter := http.NewServeMux()
+	debugRouter.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	debugRouter.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	debugRouter.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	debugRouter.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	debugRouter.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
 	members := []grouper.Member{
 		{"api", http_server.New(
 			fmt.Sprintf(":%d", opts.Port),
 			router,
+		)},
+		{"debug", http_server.New(
+			"127.0.0.1:6060",
+			debugRouter,
 		)},
 		{"worker", backgroundWorker},
 	}
