@@ -23,7 +23,7 @@ type ingestor struct {
 }
 
 func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist) *ingestor {
-	requestCounter := emitter.Counter("cred_alert.webhook_requests")
+	requestCounter := emitter.Counter("cred_alert.webhook_hits")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
 	handler := &ingestor{
