@@ -1,5 +1,5 @@
 applications:
-- name: cred-alert-staging
+- name: cred-alert-ingestor-staging
   instances: 2
   memory: 128M
   disk_quota: 1024M
@@ -7,8 +7,22 @@ applications:
   domain: cfapps.io
   buildpack: binary_buildpack
   stack: cflinuxfs2
+  command: ./cred-alert-ingestor
   services:
   - cred-alert-staging-logs
   env:
     IGNORED_REPOS: ".*-credentials$"
+    DATA_DOG_ENVIRONMENT_TAG: "staging"
+
+- name: cred-alert-worker-staging
+  instances: 1
+  memory: 128M
+  disk_quota: 1024M
+  no-hostname: true
+  buildpack: binary_buildpack
+  stack: cflinuxfs2
+  command: ./cred-alert-worker
+  services:
+  - cred-alert-staging-logs
+  env:
     DATA_DOG_ENVIRONMENT_TAG: "staging"

@@ -9,6 +9,7 @@ APP_DIR=${PWD}/cred-alert-app
 
 echo "Building for environment '${ENVIRONMENT}'..."
 
-GOARCH=amd64 GOOS=linux go build -o "${APP_DIR}/cred-alert" cred-alert/cmd/cred-alert
+GOARCH=amd64 GOOS=linux go build -o "${APP_DIR}/cred-alert-ingestor" cred-alert/cmd/cred-alert-ingestor
+GOARCH=amd64 GOOS=linux go build -o "${APP_DIR}/cred-alert-worker" cred-alert/cmd/cred-alert-worker
 
 cp "cred-alert/environments/${ENVIRONMENT}/Procfile" "${APP_DIR}"
