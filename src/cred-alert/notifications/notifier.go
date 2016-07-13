@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -41,7 +42,12 @@ func NewSlackNotifier(webhookURL string) Notifier {
 
 	return &slackNotifier{
 		webhookURL: webhookURL,
-		client:     &http.Client{},
+		client: &http.Client{
+			Timeout: 1 * time.Second,
+			Transport: &http.Transport{
+				DisableKeepAlives: true,
+			},
+		},
 	}
 }
 

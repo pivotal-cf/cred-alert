@@ -67,7 +67,12 @@ type client struct {
 func NewClient(apiKey string) *client {
 	return &client{
 		apiKey: apiKey,
-		client: &http.Client{},
+		client: &http.Client{
+			Timeout: 1 * time.Second,
+			Transport: &http.Transport{
+				DisableKeepAlives: true,
+			},
+		},
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -62,7 +63,15 @@ func main() {
 	tokenSource := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
 	)
-	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
+	httpClient := &http.Client{
+		Timeout: time.Second,
+		Transport: &oauth2.Transport{
+			Source: tokenSource,
+			Base: &http.Transport{
+				DisableKeepAlives: true,
+			},
+		},
+	}
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
 	ghClient := github.NewClient(github.DefaultGitHubURL, httpClient, emitter)
 	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl)
