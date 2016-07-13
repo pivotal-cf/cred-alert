@@ -52,6 +52,8 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 
 	j.sniff(logger, diffScanner, handleViolation)
 
+	logger.Info("done")
+
 	return nil
 }
 
