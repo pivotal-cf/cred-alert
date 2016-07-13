@@ -3,20 +3,20 @@ package notificationsfakes
 
 import (
 	"cred-alert/notifications"
-	"cred-alert/sniff"
+	"cred-alert/scanners"
 	"sync"
 
 	"github.com/pivotal-golang/lager"
 )
 
 type FakeNotifier struct {
-	SendNotificationStub        func(logger lager.Logger, repository string, sha string, line sniff.Line) error
+	SendNotificationStub        func(logger lager.Logger, repository string, sha string, line scanners.Line) error
 	sendNotificationMutex       sync.RWMutex
 	sendNotificationArgsForCall []struct {
 		logger     lager.Logger
 		repository string
 		sha        string
-		line       sniff.Line
+		line       scanners.Line
 	}
 	sendNotificationReturns struct {
 		result1 error
@@ -25,13 +25,13 @@ type FakeNotifier struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeNotifier) SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error {
+func (fake *FakeNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error {
 	fake.sendNotificationMutex.Lock()
 	fake.sendNotificationArgsForCall = append(fake.sendNotificationArgsForCall, struct {
 		logger     lager.Logger
 		repository string
 		sha        string
-		line       sniff.Line
+		line       scanners.Line
 	}{logger, repository, sha, line})
 	fake.recordInvocation("SendNotification", []interface{}{logger, repository, sha, line})
 	fake.sendNotificationMutex.Unlock()
@@ -48,7 +48,7 @@ func (fake *FakeNotifier) SendNotificationCallCount() int {
 	return len(fake.sendNotificationArgsForCall)
 }
 
-func (fake *FakeNotifier) SendNotificationArgsForCall(i int) (lager.Logger, string, string, sniff.Line) {
+func (fake *FakeNotifier) SendNotificationArgsForCall(i int) (lager.Logger, string, string, scanners.Line) {
 	fake.sendNotificationMutex.RLock()
 	defer fake.sendNotificationMutex.RUnlock()
 	return fake.sendNotificationArgsForCall[i].logger, fake.sendNotificationArgsForCall[i].repository, fake.sendNotificationArgsForCall[i].sha, fake.sendNotificationArgsForCall[i].line

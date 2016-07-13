@@ -2,7 +2,8 @@ package file
 
 import (
 	"bufio"
-	"cred-alert/sniff"
+	"cred-alert/scanners"
+	"io"
 	"os"
 
 	"github.com/pivotal-golang/lager"
@@ -23,6 +24,14 @@ func NewFileScanner(file *os.File) *fileScanner {
 	}
 }
 
+func NewReaderScanner(r io.Reader, filename string) *fileScanner {
+	bufioScanner := bufio.NewScanner(r)
+	return &fileScanner{
+		path:         filename,
+		bufioScanner: bufioScanner,
+	}
+}
+
 func (s *fileScanner) Scan(logger lager.Logger) bool {
 	logger = logger.Session("file-scanner")
 
@@ -39,8 +48,8 @@ func (s *fileScanner) Scan(logger lager.Logger) bool {
 	return success
 }
 
-func (s *fileScanner) Line() *sniff.Line {
-	return &sniff.Line{
+func (s *fileScanner) Line() *scanners.Line {
+	return &scanners.Line{
 		Content:    s.bufioScanner.Text(),
 		LineNumber: s.lineNumber,
 		Path:       s.path,

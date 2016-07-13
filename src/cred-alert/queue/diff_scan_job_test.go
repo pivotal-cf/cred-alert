@@ -6,6 +6,7 @@ import (
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
+	"cred-alert/scanners"
 	"cred-alert/sniff"
 	"errors"
 	"fmt"
@@ -23,7 +24,7 @@ var _ = Describe("Diff Scan Job", func() {
 		notifier          *notificationsfakes.FakeNotifier
 		fakeGithubClient  *githubfakes.FakeClient
 		plan              queue.DiffScanPlan
-		sniffFunc         func(lager.Logger, sniff.Scanner, func(sniff.Line))
+		sniffFunc         func(lager.Logger, sniff.Scanner, func(scanners.Line))
 		logger            lager.Logger
 		credentialCounter *metricsfakes.FakeCounter
 	)
@@ -41,7 +42,7 @@ var _ = Describe("Diff Scan Job", func() {
 			From:       fromGitSha,
 			To:         toGitSha,
 		}
-		sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {}
+		sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line)) {}
 		emitter = &metricsfakes.FakeEmitter{}
 		notifier = &notificationsfakes.FakeNotifier{}
 		fakeGithubClient = new(githubfakes.FakeClient)
@@ -84,8 +85,8 @@ var _ = Describe("Diff Scan Job", func() {
 		BeforeEach(func() {
 			filePath = "some/file/path"
 
-			sniffFunc = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(sniff.Line)) {
-				handleViolation(sniff.Line{
+			sniffFunc = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line)) {
+				handleViolation(scanners.Line{
 					Path:       filePath,
 					LineNumber: 1,
 					Content:    "content",
@@ -108,7 +109,7 @@ var _ = Describe("Diff Scan Job", func() {
 
 			Expect(repository).To(Equal(repoFullName))
 			Expect(sha).To(Equal(toGitSha))
-			Expect(line).To(Equal(sniff.Line{
+			Expect(line).To(Equal(scanners.Line{
 				Path:       "some/file/path",
 				LineNumber: 1,
 				Content:    "content",
@@ -124,7 +125,7 @@ var _ = Describe("Diff Scan Job", func() {
 
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
 
-			sniffFunc = func(lager.Logger, sniff.Scanner, func(sniff.Line)) {
+			sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line)) {
 				wasScanned = true
 			}
 		})

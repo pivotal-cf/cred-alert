@@ -3,6 +3,7 @@ package queue
 import (
 	"cred-alert/metrics"
 	"cred-alert/notifications"
+	"cred-alert/scanners"
 	"cred-alert/scanners/git"
 	"cred-alert/sniff"
 
@@ -14,12 +15,12 @@ import (
 type DiffScanJob struct {
 	DiffScanPlan
 	githubClient      gh.Client
-	sniff             func(lager.Logger, sniff.Scanner, func(sniff.Line))
+	sniff             sniff.SniffFunc
 	credentialCounter metrics.Counter
 	notifier          notifications.Notifier
 }
 
-func NewDiffScanJob(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier, plan DiffScanPlan) *DiffScanJob {
+func NewDiffScanJob(githubClient gh.Client, sniff sniff.SniffFunc, emitter metrics.Emitter, notifier notifications.Notifier, plan DiffScanPlan) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{
@@ -57,8 +58,8 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 	return nil
 }
 
-func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, repoName string) func(sniff.Line) {
-	return func(line sniff.Line) {
+func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, repoName string) func(scanners.Line) {
+	return func(line scanners.Line) {
 		logger.Info("found-credential", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,

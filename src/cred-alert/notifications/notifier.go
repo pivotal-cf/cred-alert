@@ -2,7 +2,7 @@ package notifications
 
 import (
 	"bytes"
-	"cred-alert/sniff"
+	"cred-alert/scanners"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +14,7 @@ import (
 //go:generate counterfeiter . Notifier
 
 type Notifier interface {
-	SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error
+	SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error
 }
 
 type slackNotifier struct {
@@ -51,7 +51,7 @@ func NewSlackNotifier(webhookURL string) Notifier {
 	}
 }
 
-func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error {
+func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error {
 	logger = logger.Session("send-notification")
 
 	notification := n.buildNotification(repository, sha, line)
@@ -84,7 +84,7 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, repository string,
 	return nil
 }
 
-func (n *slackNotifier) buildNotification(repository string, sha string, line sniff.Line) slackNotification {
+func (n *slackNotifier) buildNotification(repository string, sha string, line scanners.Line) slackNotification {
 	link := fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repository, sha, line.Path, line.LineNumber)
 
 	return slackNotification{
@@ -103,7 +103,7 @@ type nullSlackNotifier struct {
 	logger lager.Logger
 }
 
-func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line sniff.Line) error {
+func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error {
 	logger.Session("send-notification").Debug("sent")
 
 	return nil

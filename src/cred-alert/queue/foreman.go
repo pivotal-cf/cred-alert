@@ -3,6 +3,7 @@ package queue
 import (
 	"cred-alert/metrics"
 	"cred-alert/notifications"
+	"cred-alert/scanners"
 	"cred-alert/sniff"
 	"encoding/json"
 	"fmt"
@@ -26,12 +27,12 @@ type Foreman interface {
 
 type foreman struct {
 	githubClient gh.Client
-	sniff        func(lager.Logger, sniff.Scanner, func(sniff.Line))
+	sniff        sniff.SniffFunc
 	emitter      metrics.Emitter
 	notifier     notifications.Notifier
 }
 
-func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *foreman {
+func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(scanners.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *foreman {
 	foreman := &foreman{
 		githubClient: githubClient,
 		sniff:        sniff,
@@ -79,5 +80,7 @@ func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
 	return NewRefScanJob(
 		refScanPlan,
 		f.githubClient,
+		f.sniff,
+		f.notifier,
 	), nil
 }

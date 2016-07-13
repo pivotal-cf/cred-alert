@@ -1,25 +1,20 @@
 package sniff
 
 import (
+	"cred-alert/scanners"
 	"cred-alert/sniff/patterns"
 
 	"github.com/pivotal-golang/lager"
 )
 
-type Line struct {
-	Path       string
-	LineNumber int
-	Content    string
-
-	action string
-}
-
 type Scanner interface {
 	Scan(lager.Logger) bool
-	Line() *Line
+	Line() *scanners.Line
 }
 
-func Sniff(logger lager.Logger, scanner Scanner, handleViolation func(Line)) {
+type SniffFunc func(lager.Logger, Scanner, func(scanners.Line))
+
+func Sniff(logger lager.Logger, scanner Scanner, handleViolation func(scanners.Line)) {
 	logger = logger.Session("sniff")
 
 	matcher := patterns.DefaultMatcher()

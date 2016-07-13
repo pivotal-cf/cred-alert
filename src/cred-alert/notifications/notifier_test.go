@@ -2,7 +2,7 @@ package notifications_test
 
 import (
 	"cred-alert/notifications"
-	"cred-alert/sniff"
+	"cred-alert/scanners"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,7 +29,7 @@ var _ = Describe("Notifications", func() {
 		})
 
 		It("handles sending notifications", func() {
-			err := slackNotifier.SendNotification(logger, "org/repo", "123abc", sniff.Line{})
+			err := slackNotifier.SendNotification(logger, "org/repo", "123abc", scanners.Line{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -62,7 +62,7 @@ var _ = Describe("Notifications", func() {
 				),
 			)
 
-			slackNotifier.SendNotification(logger, "org/repo", "abc123", sniff.Line{Path: "path/to/file.txt", LineNumber: 123})
+			slackNotifier.SendNotification(logger, "org/repo", "abc123", scanners.Line{Path: "path/to/file.txt", LineNumber: 123})
 
 			Expect(server.ReceivedRequests()).Should(HaveLen(1))
 		})

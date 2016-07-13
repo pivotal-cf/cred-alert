@@ -1,11 +1,13 @@
 package sniff_test
 
 import (
+	"cred-alert/scanners"
 	"cred-alert/scanners/git"
 	"cred-alert/sniff"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
@@ -27,14 +29,20 @@ index 940393e..fa5a232 100644
 +private_key: "ExAmPlE_should_not_match"
 `
 
-	It("scans a diff and return Lines", func() {
-		logger := lagertest.NewTestLogger("scanner")
-		scanner := git.NewDiffScanner(shortDiff)
-		called := 0
-		handleViolation := func(sniff.Line) {
-			called++
-		}
-		sniff.Sniff(logger, scanner, handleViolation)
-		Expect(called).To(Equal(2))
+	var (
+		logger lager.Logger
+	)
+	Describe("Sniff", func() {
+		It("scans a diff and return Lines", func() {
+			logger = lagertest.NewTestLogger("scanner")
+			scanner := git.NewDiffScanner(shortDiff)
+			called := 0
+			handleViolation := func(scanners.Line) {
+				called++
+			}
+			sniff.Sniff(logger, scanner, handleViolation)
+			Expect(called).To(Equal(2))
+		})
 	})
+
 })

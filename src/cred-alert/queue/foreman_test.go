@@ -12,6 +12,7 @@ import (
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
+	"cred-alert/scanners"
 	"cred-alert/sniff"
 )
 
@@ -23,7 +24,7 @@ var _ = Describe("Foreman", func() {
 	BeforeEach(func() {
 		foreman = queue.NewForeman(
 			&githubfakes.FakeClient{},
-			func(lager.Logger, sniff.Scanner, func(sniff.Line)) {},
+			func(lager.Logger, sniff.Scanner, func(scanners.Line)) {},
 			&metricsfakes.FakeEmitter{},
 			&notificationsfakes.FakeNotifier{},
 		)
