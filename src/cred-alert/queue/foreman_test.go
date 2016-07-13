@@ -70,6 +70,28 @@ var _ = Describe("Foreman", func() {
 			})
 		})
 
+		Describe("RefScan Task", func() {
+			It("builds a ref-scan task", func() {
+				task := &queuefakes.FakeAckTask{}
+				task.TypeReturns("ref-scan")
+				task.PayloadReturns(`{
+					"owner":      "pivotal-cf",
+					"repository": "cred-alert",
+					"ref":        "abc124"
+				}`)
+
+				job, err := foreman.BuildJob(task)
+				Expect(err).NotTo(HaveOccurred())
+
+				diffScan, ok := job.(*queue.RefScanJob)
+				Expect(ok).To(BeTrue())
+
+				Expect(diffScan.Owner).To(Equal("pivotal-cf"))
+				Expect(diffScan.Repository).To(Equal("cred-alert"))
+				Expect(diffScan.Ref).To(Equal("abc124"))
+			})
+		})
+
 		Context("when the foreman doesn't know how to build the task", func() {
 			It("returns an error", func() {
 				task := &queuefakes.FakeAckTask{}

@@ -31,7 +31,7 @@ type foreman struct {
 	notifier     notifications.Notifier
 }
 
-func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *foreman {
+func NewForeman(githubClient gh.Client, officialGitHubClient github.Client, sniff func(lager.Logger, sniff.Scanner, func(sniff.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *foreman {
 	foreman := &foreman{
 		githubClient: githubClient,
 		sniff:        sniff,
@@ -46,6 +46,8 @@ func (f *foreman) BuildJob(task Task) (Job, error) {
 	switch task.Type() {
 	case "diff-scan":
 		return f.buildDiffScan(task.Payload())
+	case "ref-scan":
+		return f.buildRefScan(task.Payload())
 	default:
 		return nil, fmt.Errorf("unknown task type: %s", task.Type())
 	}
@@ -64,5 +66,17 @@ func (f *foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
 		f.emitter,
 		f.notifier,
 		diffScanPlan,
+	), nil
+}
+
+func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
+	var refScanPlan RefScanPlan
+
+	if err := json.Unmarshal([]byte(payload), &refScanPlan); err != nil {
+		return nil, err
+	}
+
+	return NewRefScanJob(
+		refScanPlan,
 	), nil
 }
