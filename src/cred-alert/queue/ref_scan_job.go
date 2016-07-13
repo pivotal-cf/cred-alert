@@ -1,29 +1,22 @@
 package queue
 
 import (
-	"net/url"
+	"cred-alert/github"
 
-	"github.com/google/go-github/github"
 	"github.com/pivotal-golang/lager"
 )
 
 type RefScanJob struct {
 	RefScanPlan
 
-	archiver Archiver
+	client github.Client
 }
 
-//go:generate counterfeiter . Archiver
-
-type Archiver interface {
-	GetArchiveLink(owner, repo, archiveFormat string, opt *github.RepositoryContentGetOptions) (*url.URL, *github.Response, error)
-}
-
-func NewRefScanJob(plan RefScanPlan, archiver Archiver) *RefScanJob {
+func NewRefScanJob(plan RefScanPlan, client github.Client) *RefScanJob {
 	job := &RefScanJob{
 		RefScanPlan: plan,
 
-		archiver: archiver,
+		client: client,
 	}
 
 	return job
@@ -31,9 +24,7 @@ func NewRefScanJob(plan RefScanPlan, archiver Archiver) *RefScanJob {
 
 func (j *RefScanJob) Run(logger lager.Logger) error {
 	// Get a link to an archive
-	j.archiver.GetArchiveLink(j.Owner, j.Repository, "tarball", &github.RepositoryContentGetOptions{
-		Ref: j.Ref,
-	})
+	j.client.ArchiveLink(logger, j.Owner, j.Repository)
 
 	// Download that archive into a temporary directory
 

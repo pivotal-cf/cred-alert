@@ -2,6 +2,7 @@ package github_test
 
 import (
 	"net/http"
+	"strconv"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,11 +25,13 @@ var _ = Describe("Client", func() {
 		header              http.Header
 	)
 
+	var remainingApiBudget = 43
+
 	BeforeEach(func() {
 		server = ghttp.NewServer()
 		header = http.Header{
 			"X-RateLimit-Limit":     []string{"60"},
-			"X-RateLimit-Remaining": []string{"43"},
+			"X-RateLimit-Remaining": []string{strconv.Itoa(remainingApiBudget)},
 			"X-RateLimit-Reset":     []string{"1467645800"},
 		}
 		fakeEmitter = new(metricsfakes.FakeEmitter)
@@ -49,60 +52,119 @@ var _ = Describe("Client", func() {
 		}
 	})
 
-	It("sets vnd.github.diff as the accept content-type header, and recieves a diff", func() {
-		server.AppendHandlers(
-			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
-				ghttp.VerifyHeader(http.Header{
-					"Accept": []string{"application/vnd.github.diff"},
-				}),
-				ghttp.RespondWith(http.StatusOK, `THIS IS THE DIFF`, header),
-			),
-		)
+	Describe("CompareRefs", func() {
+		It("sets vnd.github.diff as the accept content-type header, and recieves a diff", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
+					ghttp.VerifyHeader(http.Header{
+						"Accept": []string{"application/vnd.github.diff"},
+					}),
+					ghttp.RespondWith(http.StatusOK, `THIS IS THE DIFF`, header),
+				),
+			)
 
-		diff, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(diff).To(Equal("THIS IS THE DIFF"))
+			diff, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(diff).To(Equal("THIS IS THE DIFF"))
+		})
+
+		It("returns an error if the API returns an error", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
+					ghttp.VerifyHeader(http.Header{
+						"Accept": []string{"application/vnd.github.diff"},
+					}),
+					ghttp.RespondWith(http.StatusInternalServerError, "", header),
+				),
+			)
+
+			_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("returns an error if the API does not respond", func() {
+			server.Close()
+			server = nil
+
+			_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("logs remaining api requests", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
+					ghttp.VerifyHeader(http.Header{
+						"Accept": []string{"application/vnd.github.diff"},
+					}),
+					ghttp.RespondWith(http.StatusOK, "", header),
+				),
+			)
+			_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
+			_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
+			Expect(value).To(Equal(float32(remainingApiBudget)))
+		})
 	})
 
-	It("returns an error if the API returns an error", func() {
-		server.AppendHandlers(
-			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
-				ghttp.VerifyHeader(http.Header{
-					"Accept": []string{"application/vnd.github.diff"},
-				}),
-				ghttp.RespondWith(http.StatusInternalServerError, "", header),
-			),
-		)
+	Describe("GetArchriveLink", func() {
+		BeforeEach(func() {
+			header["Location"] = []string{"archive-url"}
+		})
 
-		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
-		Expect(err).To(HaveOccurred())
-	})
+		It("Fetches a download link for a zip from the github api", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball"),
+					ghttp.RespondWith(http.StatusOK, ``, header),
+				),
+			)
 
-	It("returns an error if the API does not respond", func() {
-		server.Close()
-		server = nil
+			url, err := client.ArchiveLink(logger, "owner", "repo")
 
-		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
-		Expect(err).To(HaveOccurred())
-	})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(url.String()).To(Equal("archive-url"))
+		})
 
-	It("logs remaining api requests", func() {
-		server.AppendHandlers(
-			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
-				ghttp.VerifyHeader(http.Header{
-					"Accept": []string{"application/vnd.github.diff"},
-				}),
-				ghttp.RespondWith(http.StatusOK, "", header),
-			),
-		)
-		_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
-		_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
-		Expect(value).To(Equal(float32(43)))
+		It("returns an error if the API returns an error", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball"),
+					ghttp.RespondWith(http.StatusInternalServerError, ``, header),
+				),
+			)
+			_, err := client.ArchiveLink(logger, "owner", "repo")
+
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("returns an error if the API does not respond", func() {
+			server.Close()
+			server = nil
+
+			_, err := client.ArchiveLink(logger, "owner", "repo")
+
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("logs remaining api requests", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball"),
+					ghttp.RespondWith(http.StatusOK, ``, header),
+				),
+			)
+
+			_, err := client.ArchiveLink(logger, "owner", "repo")
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
+			_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
+			Expect(value).To(Equal(float32(remainingApiBudget)))
+		})
 	})
 
 })

@@ -3,6 +3,7 @@ package githubfakes
 
 import (
 	"cred-alert/github"
+	"net/url"
 	"sync"
 
 	"github.com/pivotal-golang/lager"
@@ -20,6 +21,17 @@ type FakeClient struct {
 	}
 	compareRefsReturns struct {
 		result1 string
+		result2 error
+	}
+	ArchiveLinkStub        func(logger lager.Logger, owner, repo string) (*url.URL, error)
+	archiveLinkMutex       sync.RWMutex
+	archiveLinkArgsForCall []struct {
+		logger lager.Logger
+		owner  string
+		repo   string
+	}
+	archiveLinkReturns struct {
+		result1 *url.URL
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -64,11 +76,49 @@ func (fake *FakeClient) CompareRefsReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeClient) ArchiveLink(logger lager.Logger, owner string, repo string) (*url.URL, error) {
+	fake.archiveLinkMutex.Lock()
+	fake.archiveLinkArgsForCall = append(fake.archiveLinkArgsForCall, struct {
+		logger lager.Logger
+		owner  string
+		repo   string
+	}{logger, owner, repo})
+	fake.recordInvocation("ArchiveLink", []interface{}{logger, owner, repo})
+	fake.archiveLinkMutex.Unlock()
+	if fake.ArchiveLinkStub != nil {
+		return fake.ArchiveLinkStub(logger, owner, repo)
+	} else {
+		return fake.archiveLinkReturns.result1, fake.archiveLinkReturns.result2
+	}
+}
+
+func (fake *FakeClient) ArchiveLinkCallCount() int {
+	fake.archiveLinkMutex.RLock()
+	defer fake.archiveLinkMutex.RUnlock()
+	return len(fake.archiveLinkArgsForCall)
+}
+
+func (fake *FakeClient) ArchiveLinkArgsForCall(i int) (lager.Logger, string, string) {
+	fake.archiveLinkMutex.RLock()
+	defer fake.archiveLinkMutex.RUnlock()
+	return fake.archiveLinkArgsForCall[i].logger, fake.archiveLinkArgsForCall[i].owner, fake.archiveLinkArgsForCall[i].repo
+}
+
+func (fake *FakeClient) ArchiveLinkReturns(result1 *url.URL, result2 error) {
+	fake.ArchiveLinkStub = nil
+	fake.archiveLinkReturns = struct {
+		result1 *url.URL
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.compareRefsMutex.RLock()
 	defer fake.compareRefsMutex.RUnlock()
+	fake.archiveLinkMutex.RLock()
+	defer fake.archiveLinkMutex.RUnlock()
 	return fake.invocations
 }
 
