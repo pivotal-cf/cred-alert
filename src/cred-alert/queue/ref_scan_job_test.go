@@ -1,6 +1,8 @@
 package queue_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -10,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -52,7 +55,7 @@ var _ = Describe("RefScan Job", func() {
 		}
 
 		client = &githubfakes.FakeClient{}
-		logger = lagertest.NewTestLogger("ref-scan-job")
+		logger = lagertest.NewTestLogger("ref-scan")
 		notifier = &notificationsfakes.FakeNotifier{}
 		emitter = &metricsfakes.FakeEmitter{}
 		credentialCounter = &metricsfakes.FakeCounter{}
@@ -74,6 +77,7 @@ var _ = Describe("RefScan Job", func() {
 		wasSniffed := false
 		filePath := "some/file/path"
 		fileContent := "content"
+		lineNumber := 2
 
 		BeforeEach(func() {
 			serverUrl, _ := url.Parse(server.URL())
@@ -87,10 +91,9 @@ var _ = Describe("RefScan Job", func() {
 			)
 			sniffFunc = func(lgr lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line)) {
 				wasSniffed = true
-				Expect(lgr).To(Equal(logger))
 				handleViolation(scanners.Line{
 					Path:       filePath,
-					LineNumber: 1,
+					LineNumber: lineNumber,
 					Content:    fileContent,
 				})
 			}
@@ -101,16 +104,13 @@ var _ = Describe("RefScan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(client.ArchiveLinkCallCount()).To(Equal(1))
-			lgr, owner, repo := client.ArchiveLinkArgsForCall(0)
-			Expect(lgr).To(Equal(logger))
+			_, owner, repo := client.ArchiveLinkArgsForCall(0)
 			Expect(owner).To(Equal("repo-owner"))
 			Expect(repo).To(Equal("repo-name"))
 		})
 
 		It("Scans the archive", func() {
-
 			err := job.Run(logger)
-
 			Expect(err).NotTo(HaveOccurred())
 			Expect(wasSniffed).To(BeTrue())
 		})
@@ -120,22 +120,32 @@ var _ = Describe("RefScan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(len(files)))
-			lgr, repository, sha, line := notifier.SendNotificationArgsForCall(0)
+			_, repository, sha, line := notifier.SendNotificationArgsForCall(0)
 
-			Expect(lgr).To(Equal(logger))
 			Expect(repository).To(Equal(repoFullName))
 			Expect(sha).To(Equal(ref))
 			Expect(line).To(Equal(scanners.Line{
 				Path:       filePath,
-				LineNumber: 1,
+				LineNumber: lineNumber,
 				Content:    fileContent,
 			}))
 		})
 
 		It("emits violations", func() {
-			err := job.Run(logger)
-			Expect(err).ToNot(HaveOccurred())
+			job.Run(logger)
 			Expect(credentialCounter.IncCallCount()).To(Equal(len(files)))
+		})
+
+		It("logs when credential is found", func() {
+			job.Run(logger)
+			Expect(logger).To(gbytes.Say("found-credential"))
+			Expect(logger).To(gbytes.Say("found-credential"))
+			Expect(logger).To(gbytes.Say("found-credential"))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"line-number":%d`, lineNumber)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"ref":"%s"`, ref)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
 		})
 	})
 })

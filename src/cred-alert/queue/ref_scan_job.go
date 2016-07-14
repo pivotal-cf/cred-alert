@@ -9,6 +9,7 @@ import (
 	"cred-alert/scanners/file"
 	"cred-alert/sniff"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,84 +42,79 @@ func NewRefScanJob(plan RefScanPlan, client github.Client, sniff sniff.SniffFunc
 }
 
 func (j *RefScanJob) Run(logger lager.Logger) error {
-	logger.Session("running-ref-scan-job")
+	logger = logger.Session("ref-scan", lager.Data{
+		"owner":      j.Owner,
+		"repository": j.Repository,
+		"ref":        j.Ref,
+	})
 
 	downloadURL, err := j.client.ArchiveLink(logger, j.Owner, j.Repository)
 	if err != nil {
 		logger.Error("Error getting download url", err)
 	}
 
-	filepath := "ref-archive.zip"
-	archiveFile, err := downloadArchive(logger, downloadURL, filepath)
+	archiveFile, err := downloadArchive(logger, downloadURL)
 	if err != nil {
 		logger.Error("Error downloading archive", err)
 		return err
 	}
+	defer os.Remove(archiveFile.Name())
+	defer archiveFile.Close()
 
 	archiveReader, err := zip.OpenReader(archiveFile.Name())
-	defer archiveReader.Close()
 	if err != nil {
 		logger.Error("Error unzipping archive", err)
 		return err
 	}
+	defer archiveReader.Close()
 
 	for _, f := range archiveReader.File {
 		unzippedReader, err := f.Open()
 		if err != nil {
 			logger.Error("Error reading archive", err)
+			continue
 		}
+		defer unzippedReader.Close()
+
 		bufioScanner := file.NewReaderScanner(unzippedReader, f.Name)
 		handleViolation := j.createHandleViolation(logger, j.Ref, j.Owner+"/"+j.Repository)
 
 		j.sniff(logger, bufioScanner, handleViolation)
 	}
 
-	os.Remove(filepath)
-
 	return nil
 }
 
-func downloadArchive(logger lager.Logger, link *url.URL, filepath string) (*os.File, error) {
-	out, err := os.Create(filepath)
+func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
+	tempFile, err := ioutil.TempFile("", "downloaded-git-archive")
 	if err != nil {
+		logger.Error("Error creating archive temp file", err)
 		return nil, err
 	}
 
-	defer out.Close()
 	resp, err := http.Get(link.String())
 	defer resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = io.Copy(out, resp.Body)
+	_, err = io.Copy(tempFile, resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return out, nil
+	return tempFile, nil
 }
 
-func unzip(archive *os.File) (io.Reader, error) {
-	r, err := zip.OpenReader(archive.Name())
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	readCloser, err := r.File[0].Open()
-
-	return readCloser, err
-}
-
-func (j *RefScanJob) createHandleViolation(logger lager.Logger, sha string, repoName string) func(scanners.Line) {
+func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repoName string) func(scanners.Line) {
 	return func(line scanners.Line) {
 		logger.Info("found-credential", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
-			"sha":         sha,
+			"ref":         ref,
 		})
 
-		j.notifier.SendNotification(logger, repoName, sha, line)
+		j.notifier.SendNotification(logger, repoName, ref, line)
 
 		j.credentialCounter.Inc(logger)
 	}
