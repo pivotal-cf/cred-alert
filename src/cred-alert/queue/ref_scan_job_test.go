@@ -15,6 +15,8 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 
 	"cred-alert/github/githubfakes"
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
 	"cred-alert/scanners"
@@ -27,11 +29,13 @@ var _ = Describe("RefScan Job", func() {
 
 		logger *lagertest.TestLogger
 
-		job       *queue.RefScanJob
-		server    *ghttp.Server
-		sniffFunc sniff.SniffFunc
-		plan      queue.RefScanPlan
-		notifier  *notificationsfakes.FakeNotifier
+		job               *queue.RefScanJob
+		server            *ghttp.Server
+		sniffFunc         sniff.SniffFunc
+		plan              queue.RefScanPlan
+		notifier          *notificationsfakes.FakeNotifier
+		emitter           *metricsfakes.FakeEmitter
+		credentialCounter *metricsfakes.FakeCounter
 	)
 
 	owner := "repo-owner"
@@ -50,10 +54,20 @@ var _ = Describe("RefScan Job", func() {
 		client = &githubfakes.FakeClient{}
 		logger = lagertest.NewTestLogger("ref-scan-job")
 		notifier = &notificationsfakes.FakeNotifier{}
+		emitter = &metricsfakes.FakeEmitter{}
+		credentialCounter = &metricsfakes.FakeCounter{}
+		emitter.CounterStub = func(name string) metrics.Counter {
+			switch name {
+			case "cred_alert.violations":
+				return credentialCounter
+			default:
+				panic("unexpected counter name! " + name)
+			}
+		}
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewRefScanJob(plan, client, sniffFunc, notifier)
+		job = queue.NewRefScanJob(plan, client, sniffFunc, notifier, emitter)
 	})
 
 	Describe("Run", func() {
@@ -105,7 +119,7 @@ var _ = Describe("RefScan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(notifier.SendNotificationCallCount()).To(Equal(3))
+			Expect(notifier.SendNotificationCallCount()).To(Equal(len(files)))
 			lgr, repository, sha, line := notifier.SendNotificationArgsForCall(0)
 
 			Expect(lgr).To(Equal(logger))
@@ -119,10 +133,20 @@ var _ = Describe("RefScan Job", func() {
 		})
 
 		It("emits violations", func() {
-			// TODO: finish him!
+			err := job.Run(logger)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(credentialCounter.IncCallCount()).To(Equal(len(files)))
 		})
 	})
 })
+
+var files = []struct {
+	Name, Body string
+}{
+	{"readme.txt", `lolz`},
+	{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
+	{"todo.txt", "Get animal handling licence.\nWrite more examples."},
+}
 
 func createZip() *bytes.Buffer {
 	// Create a buffer to write our archive to.
@@ -132,13 +156,6 @@ func createZip() *bytes.Buffer {
 	w := zip.NewWriter(buf)
 
 	// Add some files to the archive.
-	var files = []struct {
-		Name, Body string
-	}{
-		{"readme.txt", `lolz`},
-		{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-		{"todo.txt", "Get animal handling licence.\nWrite more examples."},
-	}
 	for _, file := range files {
 		f, err := w.Create(file.Name)
 		if err != nil {

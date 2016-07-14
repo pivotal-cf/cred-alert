@@ -82,5 +82,6 @@ func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
 		f.githubClient,
 		f.sniff,
 		f.notifier,
+		f.emitter,
 	), nil
 }

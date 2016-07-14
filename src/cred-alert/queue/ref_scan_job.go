@@ -3,6 +3,7 @@ package queue
 import (
 	"archive/zip"
 	"cred-alert/github"
+	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"cred-alert/scanners/file"
@@ -17,17 +18,23 @@ import (
 
 type RefScanJob struct {
 	RefScanPlan
-	client   github.Client
-	sniff    sniff.SniffFunc
-	notifier notifications.Notifier
+	client            github.Client
+	sniff             sniff.SniffFunc
+	notifier          notifications.Notifier
+	emitter           metrics.Emitter
+	credentialCounter metrics.Counter
 }
 
-func NewRefScanJob(plan RefScanPlan, client github.Client, sniff sniff.SniffFunc, notifier notifications.Notifier) *RefScanJob {
+func NewRefScanJob(plan RefScanPlan, client github.Client, sniff sniff.SniffFunc, notifier notifications.Notifier, emitter metrics.Emitter) *RefScanJob {
+	credentialCounter := emitter.Counter("cred_alert.violations")
+
 	job := &RefScanJob{
-		RefScanPlan: plan,
-		client:      client,
-		sniff:       sniff,
-		notifier:    notifier,
+		RefScanPlan:       plan,
+		client:            client,
+		sniff:             sniff,
+		notifier:          notifier,
+		emitter:           emitter,
+		credentialCounter: credentialCounter,
 	}
 
 	return job
@@ -113,6 +120,6 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, sha string, repo
 
 		j.notifier.SendNotification(logger, repoName, sha, line)
 
-		// j.credentialCounter.Inc(logger)
+		j.credentialCounter.Inc(logger)
 	}
 }
