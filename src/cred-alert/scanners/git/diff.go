@@ -45,7 +45,6 @@ func readFileHeader(line string) (string, error) {
 func contextOrAddedLine(rawLine string) bool {
 	matches := contextAddedLinePattern.FindStringSubmatch(rawLine)
 	if len(matches) < 2 {
-		// fmt.Printf("NOT a context or added line: <<<%s>>>\n", rawLine)
 		return false
 	}
 

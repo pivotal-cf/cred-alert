@@ -79,7 +79,10 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		bufioScanner := file.NewReaderScanner(unzippedReader, f.Name)
 		handleViolation := j.createHandleViolation(logger, j.Ref, j.Owner+"/"+j.Repository)
 
-		j.sniff(logger, bufioScanner, handleViolation)
+		err = j.sniff(logger, bufioScanner, handleViolation)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -106,16 +109,21 @@ func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
 	return tempFile, nil
 }
 
-func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repoName string) func(scanners.Line) {
-	return func(line scanners.Line) {
+func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repoName string) func(scanners.Line) error {
+	return func(line scanners.Line) error {
 		logger.Info("found-credential", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
 			"ref":         ref,
 		})
 
-		j.notifier.SendNotification(logger, repoName, ref, line)
+		err := j.notifier.SendNotification(logger, repoName, ref, line)
+		if err != nil {
+			return err
+		}
 
 		j.credentialCounter.Inc(logger)
+
+		return nil
 	}
 }

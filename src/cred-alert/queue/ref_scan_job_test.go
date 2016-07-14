@@ -1,6 +1,7 @@
 package queue_test
 
 import (
+	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
@@ -89,9 +90,9 @@ var _ = Describe("RefScan Job", func() {
 					ghttp.RespondWith(http.StatusOK, someZip.Bytes(), http.Header{}),
 				),
 			)
-			sniffFunc = func(lgr lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line)) {
+			sniffFunc = func(lgr lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
 				wasSniffed = true
-				handleViolation(scanners.Line{
+				return handleViolation(scanners.Line{
 					Path:       filePath,
 					LineNumber: lineNumber,
 					Content:    fileContent,
@@ -131,13 +132,28 @@ var _ = Describe("RefScan Job", func() {
 			}))
 		})
 
+		Context("when the notification fails to send", func() {
+			BeforeEach(func() {
+				notifier.SendNotificationReturns(errors.New("disaster"))
+			})
+
+			It("fails the job", func() {
+				err := job.Run(logger)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
 		It("emits violations", func() {
-			job.Run(logger)
+			err := job.Run(logger)
+			Expect(err).NotTo(HaveOccurred())
+
 			Expect(credentialCounter.IncCallCount()).To(Equal(len(files)))
 		})
 
 		It("logs when credential is found", func() {
-			job.Run(logger)
+			err := job.Run(logger)
+			Expect(err).NotTo(HaveOccurred())
+
 			Expect(logger).To(gbytes.Say("found-credential"))
 			Expect(logger).To(gbytes.Say("found-credential"))
 			Expect(logger).To(gbytes.Say("found-credential"))

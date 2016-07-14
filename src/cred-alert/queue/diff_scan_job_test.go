@@ -24,13 +24,14 @@ var _ = Describe("Diff Scan Job", func() {
 		notifier          *notificationsfakes.FakeNotifier
 		fakeGithubClient  *githubfakes.FakeClient
 		plan              queue.DiffScanPlan
-		sniffFunc         func(lager.Logger, sniff.Scanner, func(scanners.Line))
+		sniffFunc         sniff.SniffFunc
 		logger            lager.Logger
 		credentialCounter *metricsfakes.FakeCounter
 	)
-	var owner string = "rad-co"
+
+	var owner = "rad-co"
 	var repo = "my-awesome-repo"
-	var repoFullName = fmt.Sprintf("rad-co/%s", repo)
+	var repoFullName = fmt.Sprintf("%s/%s", owner, repo)
 
 	var fromGitSha string = "from-git-sha"
 	var toGitSha string = "to-git-sha"
@@ -42,7 +43,7 @@ var _ = Describe("Diff Scan Job", func() {
 			From:       fromGitSha,
 			To:         toGitSha,
 		}
-		sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line)) {}
+		sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line) error) error { return nil }
 		emitter = &metricsfakes.FakeEmitter{}
 		notifier = &notificationsfakes.FakeNotifier{}
 		fakeGithubClient = new(githubfakes.FakeClient)
@@ -85,8 +86,8 @@ var _ = Describe("Diff Scan Job", func() {
 		BeforeEach(func() {
 			filePath = "some/file/path"
 
-			sniffFunc = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line)) {
-				handleViolation(scanners.Line{
+			sniffFunc = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
+				return handleViolation(scanners.Line{
 					Path:       filePath,
 					LineNumber: 1,
 					Content:    "content",
@@ -95,13 +96,15 @@ var _ = Describe("Diff Scan Job", func() {
 		})
 
 		It("emits count of the credentials it has found", func() {
-			job.Run(logger)
+			err := job.Run(logger)
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(credentialCounter.IncCallCount()).To(Equal(1))
 		})
 
 		It("sends a notification", func() {
-			job.Run(logger)
+			err := job.Run(logger)
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
 
@@ -115,6 +118,17 @@ var _ = Describe("Diff Scan Job", func() {
 				Content:    "content",
 			}))
 		})
+
+		Context("when the notification fails to send", func() {
+			BeforeEach(func() {
+				notifier.SendNotificationReturns(errors.New("disaster"))
+			})
+
+			It("fails the job", func() {
+				err := job.Run(logger)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Context("when we fail to fetch the diff", func() {
@@ -125,13 +139,16 @@ var _ = Describe("Diff Scan Job", func() {
 
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
 
-			sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line)) {
+			sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line) error) error {
 				wasScanned = true
+
+				return nil
 			}
 		})
 
 		It("does not try to scan the diff", func() {
-			job.Run(logger)
+			err := job.Run(logger)
+			Expect(err).To(HaveOccurred())
 
 			Expect(wasScanned).To(BeFalse())
 			Expect(credentialCounter.IncCallCount()).To(Equal(0))

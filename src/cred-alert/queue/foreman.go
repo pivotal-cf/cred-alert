@@ -27,15 +27,15 @@ type Foreman interface {
 
 type foreman struct {
 	githubClient gh.Client
-	sniff        sniff.SniffFunc
+	sniffer      sniff.SniffFunc
 	emitter      metrics.Emitter
 	notifier     notifications.Notifier
 }
 
-func NewForeman(githubClient gh.Client, sniff func(lager.Logger, sniff.Scanner, func(scanners.Line)), emitter metrics.Emitter, notifier notifications.Notifier) *foreman {
+func NewForeman(githubClient gh.Client, sniffer func(lager.Logger, sniff.Scanner, func(scanners.Line) error) error, emitter metrics.Emitter, notifier notifications.Notifier) *foreman {
 	foreman := &foreman{
 		githubClient: githubClient,
-		sniff:        sniff,
+		sniffer:      sniffer,
 		emitter:      emitter,
 		notifier:     notifier,
 	}
@@ -63,7 +63,7 @@ func (f *foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
 
 	return NewDiffScanJob(
 		f.githubClient,
-		f.sniff,
+		f.sniffer,
 		f.emitter,
 		f.notifier,
 		diffScanPlan,
@@ -80,7 +80,7 @@ func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
 	return NewRefScanJob(
 		refScanPlan,
 		f.githubClient,
-		f.sniff,
+		f.sniffer,
 		f.notifier,
 		f.emitter,
 	), nil

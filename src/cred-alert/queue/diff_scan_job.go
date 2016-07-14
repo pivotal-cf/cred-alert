@@ -15,18 +15,18 @@ import (
 type DiffScanJob struct {
 	DiffScanPlan
 	githubClient      gh.Client
-	sniff             sniff.SniffFunc
+	sniffer           sniff.SniffFunc
 	credentialCounter metrics.Counter
 	notifier          notifications.Notifier
 }
 
-func NewDiffScanJob(githubClient gh.Client, sniff sniff.SniffFunc, emitter metrics.Emitter, notifier notifications.Notifier, plan DiffScanPlan) *DiffScanJob {
+func NewDiffScanJob(githubClient gh.Client, sniffer sniff.SniffFunc, emitter metrics.Emitter, notifier notifications.Notifier, plan DiffScanPlan) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{
 		DiffScanPlan: plan,
 		githubClient: githubClient,
-		sniff:        sniff,
+		sniffer:      sniffer,
 
 		credentialCounter: credentialCounter,
 		notifier:          notifier,
@@ -51,23 +51,32 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 	diffScanner := git.NewDiffScanner(diff)
 	handleViolation := j.createHandleViolation(logger, j.To, j.Owner+"/"+j.Repository)
 
-	j.sniff(logger, diffScanner, handleViolation)
+	err = j.sniffer(logger, diffScanner, handleViolation)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
 
 	logger.Info("done")
 
 	return nil
 }
 
-func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, repoName string) func(scanners.Line) {
-	return func(line scanners.Line) {
+func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, repoName string) func(scanners.Line) error {
+	return func(line scanners.Line) error {
 		logger.Info("found-credential", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
 			"sha":         sha,
 		})
 
-		j.notifier.SendNotification(logger, repoName, sha, line)
+		err := j.notifier.SendNotification(logger, repoName, sha, line)
+		if err != nil {
+			return err
+		}
 
 		j.credentialCounter.Inc(logger)
+
+		return nil
 	}
 }

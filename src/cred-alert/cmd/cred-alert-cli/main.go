@@ -34,8 +34,10 @@ func main() {
 	}
 }
 
-func handleViolation(line scanners.Line) {
+func handleViolation(line scanners.Line) error {
 	fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
+
+	return nil
 }
 
 func scanFile(logger lager.Logger, fileHandle *os.File) {

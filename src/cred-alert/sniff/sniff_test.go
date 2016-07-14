@@ -4,10 +4,10 @@ import (
 	"cred-alert/scanners"
 	"cred-alert/scanners/git"
 	"cred-alert/sniff"
+	"errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
@@ -28,21 +28,41 @@ index 940393e..fa5a232 100644
 +private_key: "FaKe_should_not_match"
 +private_key: "ExAmPlE_should_not_match"
 `
-
 	var (
-		logger lager.Logger
+		logger  *lagertest.TestLogger
+		scanner *git.DiffScanner
 	)
+
+	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("scanner")
+		scanner = git.NewDiffScanner(shortDiff)
+	})
+
 	Describe("Sniff", func() {
 		It("scans a diff and return Lines", func() {
-			logger = lagertest.NewTestLogger("scanner")
-			scanner := git.NewDiffScanner(shortDiff)
 			called := 0
-			handleViolation := func(scanners.Line) {
+			handleViolation := func(scanners.Line) error {
 				called++
+
+				return nil
 			}
-			sniff.Sniff(logger, scanner, handleViolation)
+
+			err := sniff.Sniff(logger, scanner, handleViolation)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(called).To(Equal(2))
+		})
+
+		It("returns an error if handleViolation returns an error but doesn't stop scanning", func() {
+			called := 0
+
+			handleViolation := func(scanners.Line) error {
+				called++
+				return errors.New("disaster")
+			}
+
+			err := sniff.Sniff(logger, scanner, handleViolation)
+			Expect(err).To(HaveOccurred())
 			Expect(called).To(Equal(2))
 		})
 	})
-
 })

@@ -24,7 +24,7 @@ var _ = Describe("Foreman", func() {
 	BeforeEach(func() {
 		foreman = queue.NewForeman(
 			&githubfakes.FakeClient{},
-			func(lager.Logger, sniff.Scanner, func(scanners.Line)) {},
+			func(lager.Logger, sniff.Scanner, func(scanners.Line) error) error { return nil },
 			&metricsfakes.FakeEmitter{},
 			&notificationsfakes.FakeNotifier{},
 		)
