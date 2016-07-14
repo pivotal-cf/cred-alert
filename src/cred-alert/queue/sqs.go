@@ -10,6 +10,7 @@ type sqsQueue struct {
 	queueUrl *string
 }
 
+const TaskIDAttributeName = "id"
 const TaskTypeAttributeName = "type"
 
 func BuildSQSQueue(service SQSAPI, queueName string) (*sqsQueue, error) {
@@ -31,6 +32,10 @@ func BuildSQSQueue(service SQSAPI, queueName string) (*sqsQueue, error) {
 
 func (q *sqsQueue) Enqueue(task Task) error {
 	args := map[string]*sqs.MessageAttributeValue{
+		TaskIDAttributeName: &sqs.MessageAttributeValue{
+			DataType:    aws.String("String"),
+			StringValue: aws.String(task.ID()),
+		},
 		TaskTypeAttributeName: &sqs.MessageAttributeValue{
 			DataType:    aws.String("String"),
 			StringValue: aws.String(task.Type()),
@@ -56,7 +61,7 @@ func (q *sqsQueue) Dequeue() (AckTask, error) {
 		MaxNumberOfMessages:   aws.Int64(1),
 		VisibilityTimeout:     aws.Int64(60),
 		WaitTimeSeconds:       aws.Int64(20),
-		MessageAttributeNames: aws.StringSlice([]string{TaskTypeAttributeName}),
+		MessageAttributeNames: aws.StringSlice([]string{TaskIDAttributeName, TaskTypeAttributeName}),
 	}
 
 	var message *sqs.Message
@@ -76,12 +81,14 @@ func (q *sqsQueue) Dequeue() (AckTask, error) {
 	}
 
 	receiptHandle := message.ReceiptHandle
+	id := *message.MessageAttributes[TaskIDAttributeName].StringValue
 	typee := *message.MessageAttributes[TaskTypeAttributeName].StringValue
 	payload := *message.Body
 
 	return &sqsTask{
 		queueURL:      q.queueUrl,
 		receiptHandle: receiptHandle,
+		id:            id,
 		typee:         typee,
 		payload:       payload,
 		service:       q.service,
@@ -92,9 +99,14 @@ type sqsTask struct {
 	queueURL      *string
 	receiptHandle *string
 
+	id      string
 	typee   string
 	payload string
 	service SQSAPI
+}
+
+func (t *sqsTask) ID() string {
+	return t.id
 }
 
 func (t *sqsTask) Type() string {

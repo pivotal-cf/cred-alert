@@ -72,6 +72,7 @@ func (w *worker) dequeue() (<-chan queue.AckTask, <-chan error) {
 
 func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 	logger = logger.Session("processing-task", lager.Data{
+		"task-id":   task.ID(),
 		"task-type": task.Type(),
 	})
 

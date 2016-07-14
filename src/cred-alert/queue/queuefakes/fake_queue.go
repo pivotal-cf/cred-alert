@@ -22,14 +22,6 @@ type FakeQueue struct {
 		result1 queue.AckTask
 		result2 error
 	}
-	EnqueuePlanStub        func(queue.Plan) error
-	enqueuePlanMutex       sync.RWMutex
-	enqueuePlanArgsForCall []struct {
-		arg1 queue.Plan
-	}
-	enqueuePlanReturns struct {
-		result1 error
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -93,39 +85,6 @@ func (fake *FakeQueue) DequeueReturns(result1 queue.AckTask, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeQueue) EnqueuePlan(arg1 queue.Plan) error {
-	fake.enqueuePlanMutex.Lock()
-	fake.enqueuePlanArgsForCall = append(fake.enqueuePlanArgsForCall, struct {
-		arg1 queue.Plan
-	}{arg1})
-	fake.recordInvocation("EnqueuePlan", []interface{}{arg1})
-	fake.enqueuePlanMutex.Unlock()
-	if fake.EnqueuePlanStub != nil {
-		return fake.EnqueuePlanStub(arg1)
-	} else {
-		return fake.enqueuePlanReturns.result1
-	}
-}
-
-func (fake *FakeQueue) EnqueuePlanCallCount() int {
-	fake.enqueuePlanMutex.RLock()
-	defer fake.enqueuePlanMutex.RUnlock()
-	return len(fake.enqueuePlanArgsForCall)
-}
-
-func (fake *FakeQueue) EnqueuePlanArgsForCall(i int) queue.Plan {
-	fake.enqueuePlanMutex.RLock()
-	defer fake.enqueuePlanMutex.RUnlock()
-	return fake.enqueuePlanArgsForCall[i].arg1
-}
-
-func (fake *FakeQueue) EnqueuePlanReturns(result1 error) {
-	fake.EnqueuePlanStub = nil
-	fake.enqueuePlanReturns = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeQueue) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -133,8 +92,6 @@ func (fake *FakeQueue) Invocations() map[string][][]interface{} {
 	defer fake.enqueueMutex.RUnlock()
 	fake.dequeueMutex.RLock()
 	defer fake.dequeueMutex.RUnlock()
-	fake.enqueuePlanMutex.RLock()
-	defer fake.enqueuePlanMutex.RUnlock()
 	return fake.invocations
 }
 

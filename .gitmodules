@@ -61,3 +61,7 @@
 	path = src/github.com/mattn/go-sqlite3
 	url = https://github.com/mattn/go-sqlite3
 	branch = master
+[submodule "src/github.com/satori/go.uuid"]
+	path = src/github.com/satori/go.uuid
+	url = https://github.com/satori/go.uuid
+	branch = master

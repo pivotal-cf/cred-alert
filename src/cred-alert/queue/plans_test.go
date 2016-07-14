@@ -1,16 +1,16 @@
 package queue_test
 
 import (
-	. "cred-alert/queue"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"cred-alert/queue"
 )
 
 var _ = Describe("Plans", func() {
 	Describe("DiffScanPlan", func() {
 		It("can be encoded into a task", func() {
-			plan := DiffScanPlan{
+			plan := queue.DiffScanPlan{
 				Owner:      "owner",
 				Repository: "repository",
 				Ref:        "refs/heads/my-branch",
@@ -18,7 +18,8 @@ var _ = Describe("Plans", func() {
 				To:         "def456",
 			}
 
-			task := plan.Task()
+			task := plan.Task("an-id")
+			Expect(task.ID()).To(Equal("an-id"))
 			Expect(task.Type()).To(Equal("diff-scan"))
 			Expect(task.Payload()).To(MatchJSON(`
 				{
@@ -30,17 +31,22 @@ var _ = Describe("Plans", func() {
 				}
 			`))
 		})
+
+		It("is a queueable plan", func() {
+			var _ queue.Plan = queue.DiffScanPlan{}
+		})
 	})
 
 	Describe("RefScanPlan", func() {
 		It("can be encoded into a task", func() {
-			plan := RefScanPlan{
+			plan := queue.RefScanPlan{
 				Owner:      "owner",
 				Repository: "repository",
 				Ref:        "abc123",
 			}
 
-			task := plan.Task()
+			task := plan.Task("an-id")
+			Expect(task.ID()).To(Equal("an-id"))
 			Expect(task.Type()).To(Equal("ref-scan"))
 			Expect(task.Payload()).To(MatchJSON(`
 				{
@@ -49,6 +55,10 @@ var _ = Describe("Plans", func() {
 					"ref": "abc123"
 				}
 			`))
+		})
+
+		It("is a queueable plan", func() {
+			var _ queue.Plan = queue.RefScanPlan{}
 		})
 	})
 })

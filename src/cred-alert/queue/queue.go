@@ -10,6 +10,7 @@ type Queue interface {
 //go:generate counterfeiter . Task
 
 type Task interface {
+	ID() string
 	Type() string
 	Payload() string
 }
@@ -25,5 +26,5 @@ type AckTask interface {
 //go:generate counterfeiter . Plan
 
 type Plan interface {
-	Task() Task
+	Task(string) Task
 }

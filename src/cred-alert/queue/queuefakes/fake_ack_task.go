@@ -7,6 +7,12 @@ import (
 )
 
 type FakeAckTask struct {
+	IDStub        func() string
+	iDMutex       sync.RWMutex
+	iDArgsForCall []struct{}
+	iDReturns     struct {
+		result1 string
+	}
 	TypeStub        func() string
 	typeMutex       sync.RWMutex
 	typeArgsForCall []struct{}
@@ -27,6 +33,31 @@ type FakeAckTask struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeAckTask) ID() string {
+	fake.iDMutex.Lock()
+	fake.iDArgsForCall = append(fake.iDArgsForCall, struct{}{})
+	fake.recordInvocation("ID", []interface{}{})
+	fake.iDMutex.Unlock()
+	if fake.IDStub != nil {
+		return fake.IDStub()
+	} else {
+		return fake.iDReturns.result1
+	}
+}
+
+func (fake *FakeAckTask) IDCallCount() int {
+	fake.iDMutex.RLock()
+	defer fake.iDMutex.RUnlock()
+	return len(fake.iDArgsForCall)
+}
+
+func (fake *FakeAckTask) IDReturns(result1 string) {
+	fake.IDStub = nil
+	fake.iDReturns = struct {
+		result1 string
+	}{result1}
 }
 
 func (fake *FakeAckTask) Type() string {
@@ -107,6 +138,8 @@ func (fake *FakeAckTask) AckReturns(result1 error) {
 func (fake *FakeAckTask) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.iDMutex.RLock()
+	defer fake.iDMutex.RUnlock()
 	fake.typeMutex.RLock()
 	defer fake.typeMutex.RUnlock()
 	fake.payloadMutex.RLock()

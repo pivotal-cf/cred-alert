@@ -7,23 +7,27 @@ import (
 )
 
 type FakePlan struct {
-	TaskStub        func() queue.Task
+	TaskStub        func(string) queue.Task
 	taskMutex       sync.RWMutex
-	taskArgsForCall []struct{}
-	taskReturns     struct {
+	taskArgsForCall []struct {
+		arg1 string
+	}
+	taskReturns struct {
 		result1 queue.Task
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePlan) Task() queue.Task {
+func (fake *FakePlan) Task(arg1 string) queue.Task {
 	fake.taskMutex.Lock()
-	fake.taskArgsForCall = append(fake.taskArgsForCall, struct{}{})
-	fake.recordInvocation("Task", []interface{}{})
+	fake.taskArgsForCall = append(fake.taskArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("Task", []interface{}{arg1})
 	fake.taskMutex.Unlock()
 	if fake.TaskStub != nil {
-		return fake.TaskStub()
+		return fake.TaskStub(arg1)
 	} else {
 		return fake.taskReturns.result1
 	}
@@ -33,6 +37,12 @@ func (fake *FakePlan) TaskCallCount() int {
 	fake.taskMutex.RLock()
 	defer fake.taskMutex.RUnlock()
 	return len(fake.taskArgsForCall)
+}
+
+func (fake *FakePlan) TaskArgsForCall(i int) string {
+	fake.taskMutex.RLock()
+	defer fake.taskMutex.RUnlock()
+	return fake.taskArgsForCall[i].arg1
 }
 
 func (fake *FakePlan) TaskReturns(result1 queue.Task) {

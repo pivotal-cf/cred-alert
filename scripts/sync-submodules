@@ -3,11 +3,11 @@
 
 gosub list \
   -a cred-alert/cmd/cred-alert-cli \
-  -a cred-alert/cmd/cred-alert \
+  -a cred-alert/cmd/cred-alert-ingestor \
+  -a cred-alert/cmd/cred-alert-worker \
   -a github.com/onsi/ginkgo \
   -a github.com/onsi/gomega \
   -a github.com/golang/protobuf \
-  # the following have been added because gorm is test-only at this point -ap
   -a github.com/jinzhu/gorm \
   -a github.com/mattn/go-sqlite3 \
   | xargs gosub sync

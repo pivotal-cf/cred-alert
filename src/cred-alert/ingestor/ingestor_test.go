@@ -2,11 +2,13 @@ package ingestor_test
 
 import (
 	"errors"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"cred-alert/ingestor"
+	"cred-alert/ingestor/ingestorfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
@@ -22,6 +24,7 @@ var _ = Describe("Ingestor", func() {
 		emitter   *metricsfakes.FakeEmitter
 		taskQueue *queuefakes.FakeQueue
 		whitelist *ingestor.Whitelist
+		generator *ingestorfakes.FakeUUIDGenerator
 
 		logger *lagertest.TestLogger
 
@@ -43,6 +46,7 @@ var _ = Describe("Ingestor", func() {
 		logger = lagertest.NewTestLogger("event-handler")
 		emitter = &metricsfakes.FakeEmitter{}
 		taskQueue = &queuefakes.FakeQueue{}
+		generator = &ingestorfakes.FakeUUIDGenerator{}
 
 		requestCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
@@ -71,10 +75,16 @@ var _ = Describe("Ingestor", func() {
 				{From: "commit-3", To: "commit-4"},
 			},
 		}
+
+		callCount := 0
+		generator.GenerateStub = func() string {
+			callCount++
+			return fmt.Sprintf("id-%d", callCount)
+		}
 	})
 
 	JustBeforeEach(func() {
-		in = ingestor.NewIngestor(taskQueue, emitter, whitelist)
+		in = ingestor.NewIngestor(taskQueue, emitter, whitelist, generator)
 	})
 
 	Describe("enqueuing tasks in the queue", func() {
@@ -90,7 +100,7 @@ var _ = Describe("Ingestor", func() {
 				Ref:        commitRef,
 				From:       "commit-1",
 				To:         "commit-2",
-			}.Task()
+			}.Task("id-1")
 
 			builtTask := taskQueue.EnqueueArgsForCall(0)
 			Expect(builtTask).To(Equal(expectedTask1))
@@ -101,7 +111,7 @@ var _ = Describe("Ingestor", func() {
 				Ref:        commitRef,
 				From:       "commit-2",
 				To:         "commit-3",
-			}.Task()
+			}.Task("id-2")
 
 			builtTask = taskQueue.EnqueueArgsForCall(1)
 			Expect(builtTask).To(Equal(expectedTask2))
@@ -112,7 +122,7 @@ var _ = Describe("Ingestor", func() {
 				Ref:        commitRef,
 				From:       "commit-3",
 				To:         "commit-4",
-			}.Task()
+			}.Task("id-3")
 
 			builtTask = taskQueue.EnqueueArgsForCall(2)
 			Expect(builtTask).To(Equal(expectedTask3))
