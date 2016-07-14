@@ -3,6 +3,7 @@ package metrics_test
 import (
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
+	"time"
 
 	"github.com/pivotal-golang/lager/lagertest"
 
@@ -27,6 +28,7 @@ var _ = Describe("Timer", func() {
 		hasBeenCalled := false
 		timer.Time(logger, func() {
 			hasBeenCalled = true
+			time.Sleep(1 * time.Millisecond)
 		}, "tag:value")
 
 		Expect(hasBeenCalled).To(BeTrue())
