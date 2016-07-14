@@ -43,7 +43,7 @@ func NewSlackNotifier(webhookURL string) Notifier {
 	return &slackNotifier{
 		webhookURL: webhookURL,
 		client: &http.Client{
-			Timeout: 1 * time.Second,
+			Timeout: 3 * time.Second,
 			Transport: &http.Transport{
 				DisableKeepAlives: true,
 			},
