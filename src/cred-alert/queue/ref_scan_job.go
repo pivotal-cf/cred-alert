@@ -48,9 +48,10 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"ref":        j.Ref,
 	})
 
-	downloadURL, err := j.client.ArchiveLink(logger, j.Owner, j.Repository)
+	downloadURL, err := j.client.ArchiveLink(j.Owner, j.Repository)
 	if err != nil {
 		logger.Error("Error getting download url", err)
+		return err
 	}
 
 	archiveFile, err := downloadArchive(logger, downloadURL)

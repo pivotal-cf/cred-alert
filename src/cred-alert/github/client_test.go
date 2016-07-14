@@ -110,61 +110,15 @@ var _ = Describe("Client", func() {
 		})
 	})
 
-	Describe("GetArchriveLink", func() {
+	Describe("GetArchiveLink", func() {
 		BeforeEach(func() {
-			header["Location"] = []string{"archive-url"}
+			header.Set("Location", server.URL()+"/zipBall")
 		})
 
-		It("Fetches a download link for a zip from the github api", func() {
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball"),
-					ghttp.RespondWith(http.StatusOK, ``, header),
-				),
-			)
-
-			url, err := client.ArchiveLink(logger, "owner", "repo")
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(url.String()).To(Equal("archive-url"))
-		})
-
-		It("returns an error if the API returns an error", func() {
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball"),
-					ghttp.RespondWith(http.StatusInternalServerError, ``, header),
-				),
-			)
-			_, err := client.ArchiveLink(logger, "owner", "repo")
-
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("returns an error if the API does not respond", func() {
-			server.Close()
-			server = nil
-
-			_, err := client.ArchiveLink(logger, "owner", "repo")
-
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("logs remaining api requests", func() {
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball"),
-					ghttp.RespondWith(http.StatusOK, ``, header),
-				),
-			)
-
-			_, err := client.ArchiveLink(logger, "owner", "repo")
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
-			_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
-			Expect(value).To(Equal(float32(remainingApiBudget)))
+		It("returns a download link", func() {
+			url, err := client.ArchiveLink("owner", "repo")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(url.String()).To(Equal(server.URL() + "/repos/owner/repo/zipball"))
 		})
 	})
-
 })

@@ -21,7 +21,7 @@ const DefaultGitHubURL = "https://api.github.com/"
 
 type Client interface {
 	CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error)
-	ArchiveLink(logger lager.Logger, owner, repo string) (*url.URL, error)
+	ArchiveLink(owner, repo string) (*url.URL, error)
 }
 
 type client struct {
@@ -44,7 +44,6 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
 	request, _ := http.NewRequest("GET", url, nil)
 	request.Header.Set("Accept", "application/vnd.github.diff")
-
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		logger.Error("failed", err)
@@ -69,58 +68,34 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 		return "", err
 	}
 
-	ratelimit := c.rateFromResponse(logger, response)
-	c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
+	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
+		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
+	}
 	return string(body), nil
 }
 
-func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) github.Rate {
+func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) (github.Rate, error) {
 	header := response.Header
-	reset, err := strconv.ParseInt(header["X-Ratelimit-Reset"][0], 10, 64)
+	reset, err := strconv.ParseInt(header.Get("X-Ratelimit-Reset"), 10, 64)
 	if err != nil {
 		logger.Error("Error getting rate limit form header", err)
+		return github.Rate{}, err
 	}
 
 	timestamp := github.Timestamp{Time: time.Unix(reset, 0)}
 
-	remain, err := strconv.Atoi(header["X-Ratelimit-Remaining"][0])
+	remain, err := strconv.Atoi(header.Get("X-Ratelimit-Remaining"))
 	if err != nil {
 		logger.Error("Error getting rate limit from header.", err)
+		return github.Rate{}, err
 	}
 
 	return github.Rate{
 		Remaining: remain,
 		Reset:     timestamp,
-	}
+	}, nil
 }
 
-func (c *client) ArchiveLink(logger lager.Logger, owner, repo string) (*url.URL, error) {
-	logger = logger.Session("getting-archive-link")
-
-	requestUrl := urljoiner.Join(c.baseURL, "repos", owner, repo, "zipball")
-	request, _ := http.NewRequest("GET", requestUrl, nil)
-	request.Header.Set("Accept", "application/vnd.github.diff")
-
-	response, err := c.httpClient.Do(request)
-	if err != nil {
-		logger.Error("failed", err)
-		return nil, err
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		err := errors.New("status code not 200")
-		logger.Error("unexpected-status-code", err, lager.Data{
-			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
-		})
-
-		return nil, err
-	}
-
-	ratelimit := c.rateFromResponse(logger, response)
-	c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
-
-	location := response.Header["Location"][0]
-	return url.Parse(location)
+func (c *client) ArchiveLink(owner, repo string) (*url.URL, error) {
+	return url.Parse(urljoiner.Join(c.baseURL, "repos", owner, repo, "zipball"))
 }
