@@ -6,14 +6,11 @@ image_resource:
   source:
     repository: golang
 
-params:
-  ENVIRONMENT: must-set
-
 inputs:
 - name: cred-alert
 
 outputs:
-- name: cred-alert-app
+- name: cred-alert-components
 
 run:
-  path: cred-alert/ci/scripts/build-app
+  path: cred-alert/ci/scripts/compile-components

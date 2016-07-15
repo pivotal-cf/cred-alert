@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -e -u
+
+export GOPATH="${PWD}/cred-alert"
+export PATH="${GOPATH}/bin:${PATH}"
+
+OUTPUT="${PWD}/cred-alert-components"
+
+for component in ingestor worker; do
+  echo "Building ${component}..."
+  GOARCH=amd64 GOOS=linux go build -o "${OUTPUT}/cred-alert-${component}" "cred-alert/cmd/cred-alert-${component}"
+done
+

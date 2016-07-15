@@ -1,0 +1,16 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+
+inputs:
+- name: cred-alert-components
+
+outputs:
+- name: cred-alert-bundle
+
+run:
+  path: cred-alert/ci/scripts/bundle-components

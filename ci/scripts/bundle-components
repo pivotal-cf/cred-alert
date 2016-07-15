@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -e -u
+
+INPUT="${PWD}/cred-alert-components"
+OUTPUT="${PWD}/cred-alert-bundle"
+
+tar czvf "${OUTPUT}/cred-alert-bundle.tgz" "${INPUT}/cred-alert-*"
