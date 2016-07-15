@@ -7,6 +7,7 @@ image_resource:
     repository: golang
 
 inputs:
+- name: cred-alert
 - name: cred-alert-components
 
 outputs:
