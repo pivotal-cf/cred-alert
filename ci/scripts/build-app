@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 
-set -x -e -u
+set -e -u
 
 export GOPATH=${PWD}/cred-alert
 export PATH=${GOPATH}/bin:${PATH}
 
 APP_DIR=${PWD}/cred-alert-app
 
-echo "Building for environment '${ENVIRONMENT}'..."
-
+echo "Building ingestor for environment '${ENVIRONMENT}'..."
 GOARCH=amd64 GOOS=linux go build -o "${APP_DIR}/cred-alert-ingestor" cred-alert/cmd/cred-alert-ingestor
+echo "Building worker for environment '${ENVIRONMENT}'..."
 GOARCH=amd64 GOOS=linux go build -o "${APP_DIR}/cred-alert-worker" cred-alert/cmd/cred-alert-worker
-
