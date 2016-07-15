@@ -11,7 +11,7 @@ applications:
   services:
   - cred-alert-production-logs
   env:
-    IGNORED_REPOS: ".*-credentials$"
+    IGNORED_REPOS: ".*-credentials,.*-resource-pool,.*-locks,.*-envs,deployments-.*"
     DATA_DOG_ENVIRONMENT_TAG: "production"
 
 - name: cred-alert-worker-production
