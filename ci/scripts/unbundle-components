@@ -5,4 +5,6 @@ set -e -u
 INPUT="${PWD}/cred-alert-bundle"
 OUTPUT="${PWD}/cred-alert-components"
 
-tar xzvf "${INPUT}/*.tgz" -C "${OUTPUT}"
+pushd "${INPUT}"
+  tar xzvf *.tgz -C "${OUTPUT}"
+popd
