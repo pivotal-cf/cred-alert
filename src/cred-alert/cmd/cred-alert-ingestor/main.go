@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
@@ -10,7 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/jessevdk/go-flags"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -19,6 +23,7 @@ import (
 
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
+	"cred-alert/models"
 	"cred-alert/queue"
 )
 
@@ -41,6 +46,14 @@ type Opts struct {
 		AwsRegion          string `long:"aws-region" description:"aws region for SQS service" env:"AWS_REGION" value-name:"REGION"`
 		SqsQueueName       string `long:"sqs-queue-name" description:"queue name to use with SQS" env:"SQS_QUEUE_NAME" value-name:"QUEUE_NAME"`
 	} `group:"AWS Options"`
+
+	MySQL struct {
+		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME"`
+		Password string `long:"mysql-password" description:"MySQL password" value-name:"PASSWORD"`
+		Hostname string `long:"mysql-hostname" description:"MySQL hostname" value-name:"HOSTNAME"`
+		Port     uint16 `long:"mysql-port" description:"MySQL port" value-name:"PORT"`
+		DBName   string `long:"mysql-dbname" description:"MySQL database name" value-name:"DBNAME"`
+	}
 }
 
 func main() {
@@ -63,6 +76,15 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
 	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
 	generator := ingestor.NewGenerator()
+
+	db, err := createDB(logger, opts)
+	if err != nil {
+		logger.Error("Fatal Error: Could not connect to db", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+	_ = models.NewCommitRepository(db)
+
 	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist, generator)
 
 	router := http.NewServeMux()
@@ -134,4 +156,39 @@ func debugHandler() http.Handler {
 	debugRouter.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	return debugRouter
+}
+
+func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
+	appEnv, err := cfenv.Current()
+	if err == nil {
+		mySQLService, err := appEnv.Services.WithName("cred-alert-mysql")
+		if err == nil {
+			return createDBFromVCAP(logger, mySQLService)
+		}
+	}
+	logger.Error("Could not connect to mysql via VCAP_SERVICES, falling back to command line args", err)
+	return createDBFromOpts(logger, opts)
+}
+
+func createDBFromVCAP(logger lager.Logger, service *cfenv.Service) (*gorm.DB, error) {
+	username := service.Credentials["username"]
+	password := service.Credentials["password"]
+	hostname := service.Credentials["hostname"]
+	portF, ok := service.Credentials["port"].(float64)
+	if !ok {
+		return nil, errors.New("Could not read port")
+	}
+	port := int(portF)
+	name := service.Credentials["name"]
+
+	uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
+		username, password, hostname, port, name)
+	logger.Info("Connecting to mysql db from VCAP_SERVICES")
+	return gorm.Open("mysql", uri)
+}
+
+func createDBFromOpts(logger lager.Logger, opts Opts) (*gorm.DB, error) {
+	uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
+		opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.Hostname, opts.MySQL.Port, opts.MySQL.DBName)
+	return gorm.Open("mysql", uri)
 }
