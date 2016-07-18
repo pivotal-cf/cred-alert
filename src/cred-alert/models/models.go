@@ -75,7 +75,7 @@ func (d *diffScanRepository) SaveDiffScan(logger lager.Logger, diffScan *DiffSca
 		"repo":             diffScan.Repo,
 		"from-commit":      diffScan.FromCommit,
 		"to-commit":        diffScan.ToCommit,
-		"timestamp":        diffScan.Timestamp.String(),
+		"scan-timestamp":   diffScan.Timestamp.Unix(),
 		"task-id":          diffScan.TaskID,
 		"credential-found": diffScan.CredentialFound,
 	})

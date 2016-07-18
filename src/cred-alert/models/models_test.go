@@ -166,8 +166,8 @@ var _ = Describe("Database Connections", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from-commit":"%s"`, fakeDiffScan.FromCommit)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"org":"%s"`, fakeDiffScan.Org)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repo":"%s"`, fakeDiffScan.Repo)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"scan-timestamp":%d`, fakeDiffScan.Timestamp.Unix())))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, fakeDiffScan.TaskID)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"timestamp":"%s"`, fakeDiffScan.Timestamp.String())))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"to-commit":"%s"`, fakeDiffScan.ToCommit)))
 		})
 
