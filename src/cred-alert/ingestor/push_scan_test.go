@@ -93,11 +93,4 @@ var _ = Describe("PushScan", func() {
 		_, valid := ingestor.Extract(event)
 		Expect(valid).To(BeFalse())
 	})
-
-	It("is not valid if this is the initial push to the repository because the GitHub API doesn't allow this comparison", func() {
-		event.Before = github.String("0000000000000000000000000000000000000000")
-
-		_, valid := ingestor.Extract(event)
-		Expect(valid).To(BeFalse())
-	})
 })

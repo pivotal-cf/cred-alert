@@ -36,7 +36,7 @@ type PushScanDiff struct {
 const initialCommitParentHash = "0000000000000000000000000000000000000000"
 
 func Extract(event github.PushEvent) (PushScan, bool) {
-	if event.Before == nil || *event.Before == initialCommitParentHash {
+	if event.Before == nil {
 		return PushScan{}, false
 	}
 
