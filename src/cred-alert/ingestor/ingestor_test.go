@@ -11,6 +11,7 @@ import (
 	"cred-alert/ingestor/ingestorfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
+	"cred-alert/models/modelsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 
@@ -21,10 +22,11 @@ var _ = Describe("Ingestor", func() {
 	var (
 		in ingestor.Ingestor
 
-		emitter   *metricsfakes.FakeEmitter
-		taskQueue *queuefakes.FakeQueue
-		whitelist *ingestor.Whitelist
-		generator *ingestorfakes.FakeUUIDGenerator
+		emitter          *metricsfakes.FakeEmitter
+		taskQueue        *queuefakes.FakeQueue
+		whitelist        *ingestor.Whitelist
+		generator        *ingestorfakes.FakeUUIDGenerator
+		commitRepository *modelsfakes.FakeCommitRepository
 
 		logger *lagertest.TestLogger
 
@@ -47,6 +49,7 @@ var _ = Describe("Ingestor", func() {
 		emitter = &metricsfakes.FakeEmitter{}
 		taskQueue = &queuefakes.FakeQueue{}
 		generator = &ingestorfakes.FakeUUIDGenerator{}
+		commitRepository = &modelsfakes.FakeCommitRepository{}
 
 		requestCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
@@ -84,7 +87,7 @@ var _ = Describe("Ingestor", func() {
 	})
 
 	JustBeforeEach(func() {
-		in = ingestor.NewIngestor(taskQueue, emitter, whitelist, generator)
+		in = ingestor.NewIngestor(taskQueue, emitter, whitelist, generator, commitRepository)
 	})
 
 	Describe("enqueuing tasks in the queue", func() {
@@ -128,6 +131,27 @@ var _ = Describe("Ingestor", func() {
 			Expect(builtTask).To(Equal(expectedTask3))
 		})
 
+		It("saves queued commits to the database", func() {
+			err := in.IngestPushScan(logger, scan)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(commitRepository.RegisterCommitCallCount()).To(Equal(3))
+
+			_, commit1 := commitRepository.RegisterCommitArgsForCall(0)
+			Expect(commit1.SHA).To(Equal("commit-2"))
+			Expect(commit1.Repo).To(Equal(repoName))
+			Expect(commit1.Org).To(Equal(orgName))
+
+			_, commit2 := commitRepository.RegisterCommitArgsForCall(1)
+			Expect(commit2.SHA).To(Equal("commit-3"))
+			Expect(commit2.Repo).To(Equal(repoName))
+			Expect(commit2.Org).To(Equal(orgName))
+
+			_, commit3 := commitRepository.RegisterCommitArgsForCall(2)
+			Expect(commit3.SHA).To(Equal("commit-4"))
+			Expect(commit3.Repo).To(Equal(repoName))
+			Expect(commit3.Org).To(Equal(orgName))
+		})
+
 		Context("when enqueuing a task fails", func() {
 			BeforeEach(func() {
 				taskQueue.EnqueueReturns(errors.New("disaster"))
@@ -136,6 +160,11 @@ var _ = Describe("Ingestor", func() {
 			It("returns an error", func() {
 				err := in.IngestPushScan(logger, scan)
 				Expect(err).To(HaveOccurred())
+			})
+
+			It("should not save commits to db", func() {
+				in.IngestPushScan(logger, scan)
+				Expect(commitRepository.RegisterCommitCallCount()).To(Equal(0))
 			})
 		})
 	})

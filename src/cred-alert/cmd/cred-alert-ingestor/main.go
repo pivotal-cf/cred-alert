@@ -83,9 +83,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-	_ = models.NewCommitRepository(db)
+	commitRepository := models.NewCommitRepository(db)
 
-	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist, generator)
+	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist, generator, commitRepository)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))

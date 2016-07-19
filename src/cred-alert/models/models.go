@@ -32,6 +32,8 @@ type Commit struct {
 	Repo      string
 }
 
+//go:generate counterfeiter . CommitRepository
+
 type CommitRepository interface {
 	RegisterCommit(logger lager.Logger, commit *Commit) error
 	IsCommitRegistered(logger lager.Logger, sha string) (bool, error)
@@ -56,6 +58,8 @@ func (c *commitRepository) IsCommitRegistered(logger lager.Logger, sha string) (
 	err := c.db.Where("SHA = ?", sha).First(&commits).Error
 	return len(commits) == 1, err
 }
+
+//go:generate counterfeiter . DiffScanRepository
 
 type DiffScanRepository interface {
 	SaveDiffScan(lager.Logger, *DiffScan) error
