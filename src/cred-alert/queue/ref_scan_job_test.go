@@ -163,6 +163,27 @@ var _ = Describe("RefScan Job", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"ref":"%s"`, ref)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
 		})
+
+		Context("when the ref is the nil ref (initial empty repo)", func() {
+			BeforeEach(func() {
+				plan = queue.RefScanPlan{
+					Owner:      owner,
+					Repository: repo,
+					Ref:        "0000000000000000000000000000000000000000",
+				}
+			})
+
+			It("should not perform a scan", func() {
+				err := job.Run(logger)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.ArchiveLinkCallCount()).To(Equal(0))
+			})
+
+			It("should log that scanning was skipped", func() {
+				job.Run(logger)
+				Expect(logger).To(gbytes.Say("skipped-initial-nil-ref"))
+			})
+		})
 	})
 })
 

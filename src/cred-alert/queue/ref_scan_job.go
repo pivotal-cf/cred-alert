@@ -17,6 +17,8 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+const initialCommitParentHash = "0000000000000000000000000000000000000000"
+
 type RefScanJob struct {
 	RefScanPlan
 	client            github.Client
@@ -53,6 +55,11 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"repository": j.Repository,
 		"ref":        j.Ref,
 	})
+
+	if j.Ref == initialCommitParentHash {
+		logger.Info("skipped-initial-nil-ref")
+		return nil
+	}
 
 	downloadURL, err := j.client.ArchiveLink(j.Owner, j.Repository)
 	if err != nil {
