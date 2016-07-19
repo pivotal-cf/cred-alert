@@ -162,6 +162,29 @@ var _ = Describe("Ingestor", func() {
 			Expect(commit3.Org).To(Equal(orgName))
 		})
 
+		Context("when the from commit is the initial nil commit", func() {
+			BeforeEach(func() {
+				initialCommitParentHash := "0000000000000000000000000000000000000000"
+				scan.Diffs[0].From = initialCommitParentHash
+			})
+
+			It("queues a ref-scan", func() {
+				err := in.IngestPushScan(logger, scan)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(taskQueue.EnqueueCallCount()).To(Equal(3))
+
+				expectedTask := queue.RefScanPlan{
+					Owner:      orgName,
+					Repository: repoName,
+					Ref:        "commit-2",
+				}.Task("id-1")
+
+				builtTask := taskQueue.EnqueueArgsForCall(0)
+				Expect(builtTask).To(Equal(expectedTask))
+			})
+		})
+
 		Context("when enqueuing a task fails", func() {
 			BeforeEach(func() {
 				taskQueue.EnqueueReturns(errors.New("disaster"))

@@ -74,38 +74,52 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 			Ref:        scan.Diffs[0].From,
 		}.Task(id)
 
-		logger = logger.Session("enqueuing-ref-scan")
+		sessionName := "enqueuing-ref-scan-for-new-repo"
 
 		err := s.taskQueue.Enqueue(task)
 		if err != nil {
-			logger.Error("enqueue-ref-scan-failed", err)
+			logger.Session(sessionName).Error("enqueue-ref-scan-failed", err)
 			return err
 		}
 
-		logger.Info("enqueue-ref-scan-succeeded")
+		logger.Session(sessionName).Info("enqueue-ref-scan-succeeded")
 	}
 
 	s.requestCounter.Inc(logger)
 
 	for _, scanDiff := range scan.Diffs {
 		id := s.generator.Generate()
-		logger = logger.Session("enqueuing", lager.Data{
-			"task-id": id,
-		})
+
+		var task queue.Task
+		if scanDiff.From == initialCommitParentHash {
+			logger = logger.Session("enqueuing-ref-scan", lager.Data{
+				"task-id": id,
+			})
+
+			task = queue.RefScanPlan{
+				Owner:      scan.Owner,
+				Repository: scan.Repository,
+				Ref:        scanDiff.To,
+			}.Task(id)
+		} else {
+			logger = logger.Session("enqueuing-diff-scan", lager.Data{
+				"task-id": id,
+			})
+
+			task = queue.DiffScanPlan{
+				Owner:      scan.Owner,
+				Repository: scan.Repository,
+				Ref:        scan.Ref,
+				From:       scanDiff.From,
+				To:         scanDiff.To,
+			}.Task(id)
+		}
 
 		logger.Debug("starting")
 
-		task := queue.DiffScanPlan{
-			Owner:      scan.Owner,
-			Repository: scan.Repository,
-			Ref:        scan.Ref,
-			From:       scanDiff.From,
-			To:         scanDiff.To,
-		}.Task(id)
-
 		err := s.taskQueue.Enqueue(task)
 		if err != nil {
-			logger.Error("failed to enqueue diff-scan", err)
+			logger.Error("failed to enqueue scan", err)
 			return err
 		}
 
