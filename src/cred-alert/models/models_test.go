@@ -26,6 +26,8 @@ var _ = Describe("Database Connections", func() {
 	)
 
 	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("commit-repository")
+
 		var err error
 		dbFileHandle, err = ioutil.TempFile("", "test.db")
 		Expect(err).NotTo(HaveOccurred())
@@ -36,7 +38,7 @@ var _ = Describe("Database Connections", func() {
 		db, err = gorm.Open("sqlite3", dbFileHandle.Name())
 		Expect(err).NotTo(HaveOccurred())
 		db.AutoMigrate(&models.DiffScan{}, &models.Commit{})
-		logger = lagertest.NewTestLogger("commit-repository")
+		db.LogMode(false)
 	})
 
 	AfterEach(func() {
