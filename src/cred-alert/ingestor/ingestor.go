@@ -84,9 +84,10 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 		}
 
 		s.commitRepository.RegisterCommit(logger, &models.Commit{
-			Repo: scan.Repository,
-			Org:  scan.Owner,
-			SHA:  scanDiff.To,
+			Repo:      scan.Repository,
+			Org:       scan.Owner,
+			SHA:       scanDiff.To,
+			Timestamp: scanDiff.ToTimestamp,
 		})
 
 		logger.Info("done")

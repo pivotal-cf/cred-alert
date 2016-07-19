@@ -76,8 +76,6 @@ var _ = Describe("Database Connections", func() {
 		Describe("RegisterCommit", func() {
 			It("Saves a commit to the db", func() {
 				commitRepository.RegisterCommit(logger, fakeCommit)
-				// Expect(fakeDB.SaveCallCount()).To(Equal(1))
-				// savedCommit := fakeDB.SaveArgsForCall(0)
 				var savedCommit *models.Commit
 				savedCommit = &models.Commit{}
 				db.Last(&savedCommit)
@@ -88,11 +86,28 @@ var _ = Describe("Database Connections", func() {
 			})
 
 			It("returns any error", func() {
-				saveError := errors.New("save error")
+				saveError := errors.New("saving commit error")
 				db.AddError(saveError)
 				err := commitRepository.RegisterCommit(logger, fakeCommit)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(saveError))
+			})
+
+			It("should log when successfully registering", func() {
+				commitRepository.RegisterCommit(logger, fakeCommit)
+				Expect(logger).To(gbytes.Say("registering-commit"))
+				Expect(logger).To(gbytes.Say("successfully-registered-commit"))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"commit-timestamp":%d`, fakeCommit.Timestamp.Unix())))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"org":"%s"`, fakeCommit.Org)))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repo":"%s"`, fakeCommit.Repo)))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"sha":"%s"`, fakeCommit.SHA)))
+			})
+
+			It("should log error registering", func() {
+				saveError := errors.New("saving commit error")
+				db.AddError(saveError)
+				commitRepository.RegisterCommit(logger, fakeCommit)
+				Expect(logger).To(gbytes.Say("error-registering-commit"))
 			})
 		})
 
@@ -117,6 +132,15 @@ var _ = Describe("Database Connections", func() {
 				_, err := commitRepository.IsCommitRegistered(logger, "abc123")
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(findError))
+			})
+
+			It("should log error registering", func() {
+				saveError := errors.New("find commit error")
+				db.AddError(saveError)
+				commitRepository.IsCommitRegistered(logger, "abc123")
+				Expect(logger).To(gbytes.Say("finding-commit"))
+				Expect(logger).To(gbytes.Say("error-finding-commit"))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"sha":"%s"`, "abc123")))
 			})
 		})
 	})

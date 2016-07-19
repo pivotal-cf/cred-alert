@@ -3,6 +3,7 @@ package ingestor_test
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,9 +33,10 @@ var _ = Describe("Ingestor", func() {
 
 		scan ingestor.PushScan
 
-		orgName   string
-		repoName  string
-		commitRef string
+		orgName             string
+		repoName            string
+		commitRef           string
+		time2, time3, time4 time.Time
 
 		requestCounter      *metricsfakes.FakeCounter
 		ignoredEventCounter *metricsfakes.FakeCounter
@@ -44,6 +46,9 @@ var _ = Describe("Ingestor", func() {
 		orgName = "rad-co"
 		repoName = "my-awesome-repo"
 		commitRef = "refs/heads/my-branch"
+		time2 = time.Now()
+		time3 = time2.Add(time.Minute)
+		time4 = time3.Add(time.Minute)
 
 		logger = lagertest.NewTestLogger("event-handler")
 		emitter = &metricsfakes.FakeEmitter{}
@@ -73,9 +78,9 @@ var _ = Describe("Ingestor", func() {
 			Ref:        commitRef,
 
 			Diffs: []ingestor.PushScanDiff{
-				{From: "commit-1", To: "commit-2"},
-				{From: "commit-2", To: "commit-3"},
-				{From: "commit-3", To: "commit-4"},
+				{From: "commit-1", To: "commit-2", ToTimestamp: time2},
+				{From: "commit-2", To: "commit-3", ToTimestamp: time3},
+				{From: "commit-3", To: "commit-4", ToTimestamp: time4},
 			},
 		}
 
@@ -138,16 +143,19 @@ var _ = Describe("Ingestor", func() {
 
 			_, commit1 := commitRepository.RegisterCommitArgsForCall(0)
 			Expect(commit1.SHA).To(Equal("commit-2"))
+			Expect(commit1.Timestamp).To(Equal(time2))
 			Expect(commit1.Repo).To(Equal(repoName))
 			Expect(commit1.Org).To(Equal(orgName))
 
 			_, commit2 := commitRepository.RegisterCommitArgsForCall(1)
 			Expect(commit2.SHA).To(Equal("commit-3"))
+			Expect(commit2.Timestamp).To(Equal(time3))
 			Expect(commit2.Repo).To(Equal(repoName))
 			Expect(commit2.Org).To(Equal(orgName))
 
 			_, commit3 := commitRepository.RegisterCommitArgsForCall(2)
 			Expect(commit3.SHA).To(Equal("commit-4"))
+			Expect(commit3.Timestamp).To(Equal(time4))
 			Expect(commit3.Repo).To(Equal(repoName))
 			Expect(commit3.Org).To(Equal(orgName))
 		})

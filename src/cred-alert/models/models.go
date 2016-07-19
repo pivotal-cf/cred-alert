@@ -50,12 +50,34 @@ func NewCommitRepository(db *gorm.DB) *commitRepository {
 }
 
 func (c *commitRepository) RegisterCommit(logger lager.Logger, commit *Commit) error {
-	return c.db.Save(commit).Error
+	logger = logger.Session("registering-commit", lager.Data{
+		"commit-timestamp": commit.Timestamp.Unix(),
+		"org":              commit.Org,
+		"repo":             commit.Repo,
+		"sha":              commit.SHA,
+	})
+
+	err := c.db.Save(commit).Error
+	if err != nil {
+		logger.Error("error-registering-commit", err)
+	} else {
+		logger.Info("successfully-registered-commit")
+	}
+
+	return err
 }
 
 func (c *commitRepository) IsCommitRegistered(logger lager.Logger, sha string) (bool, error) {
+	logger = logger.Session("finding-commit", lager.Data{
+		"sha": sha,
+	})
+
 	var commits []Commit
 	err := c.db.Where("SHA = ?", sha).First(&commits).Error
+	if err != nil {
+		logger.Error("error-finding-commit", err)
+	}
+
 	return len(commits) == 1, err
 }
 
@@ -88,7 +110,7 @@ func (d *diffScanRepository) SaveDiffScan(logger lager.Logger, diffScan *DiffSca
 	if err != nil {
 		logger.Error("error-saving-diffscan", err)
 	} else {
-		logger.Debug("successfully-saved-diffscan")
+		logger.Info("successfully-saved-diffscan")
 	}
 
 	return err
