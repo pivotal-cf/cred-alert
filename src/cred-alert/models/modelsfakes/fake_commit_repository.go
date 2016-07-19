@@ -28,6 +28,16 @@ type FakeCommitRepository struct {
 		result1 bool
 		result2 error
 	}
+	IsRepoRegisteredStub        func(logger lager.Logger, repo string) (bool, error)
+	isRepoRegisteredMutex       sync.RWMutex
+	isRepoRegisteredArgsForCall []struct {
+		logger lager.Logger
+		repo   string
+	}
+	isRepoRegisteredReturns struct {
+		result1 bool
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -101,6 +111,41 @@ func (fake *FakeCommitRepository) IsCommitRegisteredReturns(result1 bool, result
 	}{result1, result2}
 }
 
+func (fake *FakeCommitRepository) IsRepoRegistered(logger lager.Logger, repo string) (bool, error) {
+	fake.isRepoRegisteredMutex.Lock()
+	fake.isRepoRegisteredArgsForCall = append(fake.isRepoRegisteredArgsForCall, struct {
+		logger lager.Logger
+		repo   string
+	}{logger, repo})
+	fake.recordInvocation("IsRepoRegistered", []interface{}{logger, repo})
+	fake.isRepoRegisteredMutex.Unlock()
+	if fake.IsRepoRegisteredStub != nil {
+		return fake.IsRepoRegisteredStub(logger, repo)
+	} else {
+		return fake.isRepoRegisteredReturns.result1, fake.isRepoRegisteredReturns.result2
+	}
+}
+
+func (fake *FakeCommitRepository) IsRepoRegisteredCallCount() int {
+	fake.isRepoRegisteredMutex.RLock()
+	defer fake.isRepoRegisteredMutex.RUnlock()
+	return len(fake.isRepoRegisteredArgsForCall)
+}
+
+func (fake *FakeCommitRepository) IsRepoRegisteredArgsForCall(i int) (lager.Logger, string) {
+	fake.isRepoRegisteredMutex.RLock()
+	defer fake.isRepoRegisteredMutex.RUnlock()
+	return fake.isRepoRegisteredArgsForCall[i].logger, fake.isRepoRegisteredArgsForCall[i].repo
+}
+
+func (fake *FakeCommitRepository) IsRepoRegisteredReturns(result1 bool, result2 error) {
+	fake.IsRepoRegisteredStub = nil
+	fake.isRepoRegisteredReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCommitRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -108,6 +153,8 @@ func (fake *FakeCommitRepository) Invocations() map[string][][]interface{} {
 	defer fake.registerCommitMutex.RUnlock()
 	fake.isCommitRegisteredMutex.RLock()
 	defer fake.isCommitRegisteredMutex.RUnlock()
+	fake.isRepoRegisteredMutex.RLock()
+	defer fake.isRepoRegisteredMutex.RUnlock()
 	return fake.invocations
 }
 

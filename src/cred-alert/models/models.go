@@ -37,6 +37,7 @@ type Commit struct {
 type CommitRepository interface {
 	RegisterCommit(logger lager.Logger, commit *Commit) error
 	IsCommitRegistered(logger lager.Logger, sha string) (bool, error)
+	IsRepoRegistered(logger lager.Logger, repo string) (bool, error)
 }
 
 type commitRepository struct {
@@ -76,6 +77,20 @@ func (c *commitRepository) IsCommitRegistered(logger lager.Logger, sha string) (
 	err := c.db.Where("SHA = ?", sha).First(&commits).Error
 	if err != nil {
 		logger.Error("error-finding-commit", err)
+	}
+
+	return len(commits) == 1, err
+}
+
+func (c *commitRepository) IsRepoRegistered(logger lager.Logger, repo string) (bool, error) {
+	logger = logger.Session("finding-repo", lager.Data{
+		"repo": repo,
+	})
+
+	var commits []Commit
+	err := c.db.Where("Repo = ?", repo).First(&commits).Error
+	if err != nil {
+		logger.Error("error-finding-repo", err)
 	}
 
 	return len(commits) == 1, err
