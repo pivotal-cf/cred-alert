@@ -59,6 +59,32 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 		return nil
 	}
 
+	// Check if from commit is registered, if not queue ref-scan
+	repoIsRegistered, err := s.commitRepository.IsRepoRegistered(logger, scan.Owner, scan.Repository)
+	if err != nil {
+		logger.Error("Error checking database for repo: ", err)
+		return err
+	}
+
+	if repoIsRegistered != true {
+		id := s.generator.Generate()
+		task := queue.RefScanPlan{
+			Owner:      scan.Owner,
+			Repository: scan.Repository,
+			Ref:        scan.Diffs[0].From,
+		}.Task(id)
+
+		logger = logger.Session("enqueuing-ref-scan")
+
+		err := s.taskQueue.Enqueue(task)
+		if err != nil {
+			logger.Error("enqueue-ref-scan-failed", err)
+			return err
+		}
+
+		logger.Info("enqueue-ref-scan-succeeded")
+	}
+
 	s.requestCounter.Inc(logger)
 
 	for _, scanDiff := range scan.Diffs {
@@ -79,7 +105,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 
 		err := s.taskQueue.Enqueue(task)
 		if err != nil {
-			logger.Error("failed", err)
+			logger.Error("failed to enqueue diff-scan", err)
 			return err
 		}
 

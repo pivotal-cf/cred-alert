@@ -61,17 +61,19 @@ var _ = Describe("Database Connections", func() {
 			commitRepository models.CommitRepository
 			fakeCommit       *models.Commit
 			repoName         string
+			repoOwner        string
 		)
 
 		BeforeEach(func() {
 			// commitRepository = models.NewCommitRepository(fakeDB)
 			repoName = "my-repo"
+			repoOwner = "my-org"
 
 			commitRepository = models.NewCommitRepository(db)
 			fakeCommit = &models.Commit{
 				SHA:       "abc123",
 				Timestamp: time.Now(),
-				Org:       "my-org",
+				Org:       repoOwner,
 				Repo:      repoName,
 			}
 
@@ -151,14 +153,18 @@ var _ = Describe("Database Connections", func() {
 		Describe("IsRepoRegistered", func() {
 			It("Returns true if a repo has been registered", func() {
 				commitRepository.RegisterCommit(logger, fakeCommit)
-				isRegistered, err := commitRepository.IsRepoRegistered(logger, repoName)
+				isRegistered, err := commitRepository.IsRepoRegistered(logger, repoOwner, repoName)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(isRegistered).To(BeTrue())
 			})
 
 			It("Returns false if a repo has not been registered", func() {
 				commitRepository.RegisterCommit(logger, fakeCommit)
-				isRegistered, err := commitRepository.IsRepoRegistered(logger, "wrong-repo")
+				isRegistered, err := commitRepository.IsRepoRegistered(logger, repoOwner, "wrong-repo")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(isRegistered).To(BeFalse())
+
+				isRegistered, err = commitRepository.IsRepoRegistered(logger, "wrong-org", repoName)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(isRegistered).To(BeFalse())
 			})
@@ -166,7 +172,7 @@ var _ = Describe("Database Connections", func() {
 			It("Returns and logs any errors", func() {
 				findError := errors.New("find repo error")
 				db.AddError(findError)
-				_, err := commitRepository.IsRepoRegistered(logger, repoName)
+				_, err := commitRepository.IsRepoRegistered(logger, repoOwner, repoName)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(findError))
 

@@ -28,10 +28,11 @@ type FakeCommitRepository struct {
 		result1 bool
 		result2 error
 	}
-	IsRepoRegisteredStub        func(logger lager.Logger, repo string) (bool, error)
+	IsRepoRegisteredStub        func(logger lager.Logger, owner, repo string) (bool, error)
 	isRepoRegisteredMutex       sync.RWMutex
 	isRepoRegisteredArgsForCall []struct {
 		logger lager.Logger
+		owner  string
 		repo   string
 	}
 	isRepoRegisteredReturns struct {
@@ -111,16 +112,17 @@ func (fake *FakeCommitRepository) IsCommitRegisteredReturns(result1 bool, result
 	}{result1, result2}
 }
 
-func (fake *FakeCommitRepository) IsRepoRegistered(logger lager.Logger, repo string) (bool, error) {
+func (fake *FakeCommitRepository) IsRepoRegistered(logger lager.Logger, owner string, repo string) (bool, error) {
 	fake.isRepoRegisteredMutex.Lock()
 	fake.isRepoRegisteredArgsForCall = append(fake.isRepoRegisteredArgsForCall, struct {
 		logger lager.Logger
+		owner  string
 		repo   string
-	}{logger, repo})
-	fake.recordInvocation("IsRepoRegistered", []interface{}{logger, repo})
+	}{logger, owner, repo})
+	fake.recordInvocation("IsRepoRegistered", []interface{}{logger, owner, repo})
 	fake.isRepoRegisteredMutex.Unlock()
 	if fake.IsRepoRegisteredStub != nil {
-		return fake.IsRepoRegisteredStub(logger, repo)
+		return fake.IsRepoRegisteredStub(logger, owner, repo)
 	} else {
 		return fake.isRepoRegisteredReturns.result1, fake.isRepoRegisteredReturns.result2
 	}
@@ -132,10 +134,10 @@ func (fake *FakeCommitRepository) IsRepoRegisteredCallCount() int {
 	return len(fake.isRepoRegisteredArgsForCall)
 }
 
-func (fake *FakeCommitRepository) IsRepoRegisteredArgsForCall(i int) (lager.Logger, string) {
+func (fake *FakeCommitRepository) IsRepoRegisteredArgsForCall(i int) (lager.Logger, string, string) {
 	fake.isRepoRegisteredMutex.RLock()
 	defer fake.isRepoRegisteredMutex.RUnlock()
-	return fake.isRepoRegisteredArgsForCall[i].logger, fake.isRepoRegisteredArgsForCall[i].repo
+	return fake.isRepoRegisteredArgsForCall[i].logger, fake.isRepoRegisteredArgsForCall[i].owner, fake.isRepoRegisteredArgsForCall[i].repo
 }
 
 func (fake *FakeCommitRepository) IsRepoRegisteredReturns(result1 bool, result2 error) {

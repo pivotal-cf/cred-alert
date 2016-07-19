@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 
 	"cred-alert/ingestor"
 	"cred-alert/ingestor/ingestorfakes"
@@ -55,6 +56,7 @@ var _ = Describe("Ingestor", func() {
 		taskQueue = &queuefakes.FakeQueue{}
 		generator = &ingestorfakes.FakeUUIDGenerator{}
 		commitRepository = &modelsfakes.FakeCommitRepository{}
+		commitRepository.IsRepoRegisteredReturns(true, nil)
 
 		requestCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
@@ -173,6 +175,64 @@ var _ = Describe("Ingestor", func() {
 			It("should not save commits to db", func() {
 				in.IngestPushScan(logger, scan)
 				Expect(commitRepository.RegisterCommitCallCount()).To(Equal(0))
+			})
+		})
+
+		Context("when the repo hasn't been registered", func() {
+			BeforeEach(func() {
+				commitRepository.IsRepoRegisteredReturns(false, nil)
+			})
+
+			It("queues a ref scan", func() {
+				err := in.IngestPushScan(logger, scan)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(taskQueue.EnqueueCallCount()).To(Equal(4))
+
+				expectedTask1 := queue.RefScanPlan{
+					Owner:      orgName,
+					Repository: repoName,
+					Ref:        "commit-1",
+				}.Task("id-1")
+
+				builtTask := taskQueue.EnqueueArgsForCall(0)
+				Expect(builtTask).To(Equal(expectedTask1))
+			})
+
+			It("log when queuing ref scan happens", func() {
+				in.IngestPushScan(logger, scan)
+				Expect(logger).To(gbytes.Say("enqueue-ref-scan-succeeded"))
+			})
+
+			Context("When queuing a ref-scan fails", func() {
+				var expectedError error
+
+				BeforeEach(func() {
+					expectedError = errors.New("some-error")
+					taskQueue.EnqueueReturns(expectedError)
+				})
+
+				It("logs on error", func() {
+					err := in.IngestPushScan(logger, scan)
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(Equal(expectedError))
+					Expect(logger).To(gbytes.Say("enqueue-ref-scan-failed"))
+				})
+			})
+		})
+
+		Context("when checking for repo existence fails", func() {
+			var findError error
+
+			BeforeEach(func() {
+				findError = errors.New("some-error")
+				commitRepository.IsRepoRegisteredReturns(true, findError)
+			})
+
+			It("returns any errors", func() {
+				err := in.IngestPushScan(logger, scan)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(findError))
 			})
 		})
 	})

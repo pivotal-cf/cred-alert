@@ -33,10 +33,10 @@ type PushScanDiff struct {
 	ToTimestamp   time.Time
 }
 
-const initalCommitParentHash = "0000000000000000000000000000000000000000"
+const initialCommitParentHash = "0000000000000000000000000000000000000000"
 
 func Extract(event github.PushEvent) (PushScan, bool) {
-	if event.Before == nil || *event.Before == initalCommitParentHash {
+	if event.Before == nil || *event.Before == initialCommitParentHash {
 		return PushScan{}, false
 	}
 
