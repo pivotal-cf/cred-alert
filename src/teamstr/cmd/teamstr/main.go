@@ -52,17 +52,17 @@ func fetchTeamID(client *github.Client, orgName string, teamName string) (int, e
 	for {
 		teams, resp, err := client.Organizations.ListTeams(orgName, opts)
 		if err != nil {
-			log.Fatalln(err)
-		}
-
-		if resp.NextPage == 0 {
-			break
+			return 0, err
 		}
 
 		for _, team := range teams {
 			if *team.Name == teamName {
 				return *team.ID, nil
 			}
+		}
+
+		if resp.NextPage == 0 {
+			break
 		}
 
 		opts.Page = resp.NextPage
