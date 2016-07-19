@@ -22,6 +22,7 @@ const DefaultGitHubURL = "https://api.github.com/"
 type Client interface {
 	CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error)
 	ArchiveLink(owner, repo string) (*url.URL, error)
+	Parents(owner, repo, sha string) ([]string, error)
 }
 
 type client struct {
@@ -98,4 +99,8 @@ func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) 
 
 func (c *client) ArchiveLink(owner, repo string) (*url.URL, error) {
 	return url.Parse(urljoiner.Join(c.baseURL, "repos", owner, repo, "zipball"))
+}
+
+func (c *client) Parents(owner, repo, sha string) ([]string, error) {
+	return []string{}, nil
 }

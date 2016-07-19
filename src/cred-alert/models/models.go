@@ -26,10 +26,10 @@ type DiffScan struct {
 
 type Commit struct {
 	Model
-	SHA       string
-	Timestamp time.Time
-	Org       string
-	Repo      string
+	Owner      string
+	Repository string
+	SHA        string
+	Timestamp  time.Time
 }
 
 //go:generate counterfeiter . CommitRepository
@@ -53,19 +53,19 @@ func NewCommitRepository(db *gorm.DB) *commitRepository {
 func (c *commitRepository) RegisterCommit(logger lager.Logger, commit *Commit) error {
 	logger = logger.Session("registering-commit", lager.Data{
 		"commit-timestamp": commit.Timestamp.Unix(),
-		"org":              commit.Org,
-		"repo":             commit.Repo,
+		"owner":            commit.Owner,
+		"repository":       commit.Repository,
 		"sha":              commit.SHA,
 	})
 
 	err := c.db.Save(commit).Error
 	if err != nil {
-		logger.Error("error-registering-commit", err)
-	} else {
-		logger.Info("successfully-registered-commit")
+		logger.Error("failed", err)
+		return err
 	}
 
-	return err
+	logger.Info("done")
+	return nil
 }
 
 func (c *commitRepository) IsCommitRegistered(logger lager.Logger, sha string) (bool, error) {
@@ -76,19 +76,19 @@ func (c *commitRepository) IsCommitRegistered(logger lager.Logger, sha string) (
 	var commits []Commit
 	err := c.db.Where("SHA = ?", sha).First(&commits).Error
 	if err != nil {
-		logger.Error("error-finding-commit", err)
+		logger.Error("failed", err)
 	}
 
 	return len(commits) == 1, err
 }
 
-func (c *commitRepository) IsRepoRegistered(logger lager.Logger, org, repo string) (bool, error) {
+func (c *commitRepository) IsRepoRegistered(logger lager.Logger, owner, repository string) (bool, error) {
 	logger = logger.Session("finding-repo", lager.Data{
-		"repo": repo,
+		"repository": repository,
 	})
 
 	var commits []Commit
-	err := c.db.Where(&Commit{Org: org, Repo: repo}).First(&commits).Error
+	err := c.db.Where(&Commit{Owner: owner, Repository: repository}).First(&commits).Error
 	if err != nil {
 		logger.Error("error-finding-repo", err)
 	}

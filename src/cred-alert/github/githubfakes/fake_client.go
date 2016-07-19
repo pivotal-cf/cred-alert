@@ -33,6 +33,17 @@ type FakeClient struct {
 		result1 *url.URL
 		result2 error
 	}
+	ParentsStub        func(owner, repo, sha string) ([]string, error)
+	parentsMutex       sync.RWMutex
+	parentsArgsForCall []struct {
+		owner string
+		repo  string
+		sha   string
+	}
+	parentsReturns struct {
+		result1 []string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -110,6 +121,42 @@ func (fake *FakeClient) ArchiveLinkReturns(result1 *url.URL, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeClient) Parents(owner string, repo string, sha string) ([]string, error) {
+	fake.parentsMutex.Lock()
+	fake.parentsArgsForCall = append(fake.parentsArgsForCall, struct {
+		owner string
+		repo  string
+		sha   string
+	}{owner, repo, sha})
+	fake.recordInvocation("Parents", []interface{}{owner, repo, sha})
+	fake.parentsMutex.Unlock()
+	if fake.ParentsStub != nil {
+		return fake.ParentsStub(owner, repo, sha)
+	} else {
+		return fake.parentsReturns.result1, fake.parentsReturns.result2
+	}
+}
+
+func (fake *FakeClient) ParentsCallCount() int {
+	fake.parentsMutex.RLock()
+	defer fake.parentsMutex.RUnlock()
+	return len(fake.parentsArgsForCall)
+}
+
+func (fake *FakeClient) ParentsArgsForCall(i int) (string, string, string) {
+	fake.parentsMutex.RLock()
+	defer fake.parentsMutex.RUnlock()
+	return fake.parentsArgsForCall[i].owner, fake.parentsArgsForCall[i].repo, fake.parentsArgsForCall[i].sha
+}
+
+func (fake *FakeClient) ParentsReturns(result1 []string, result2 error) {
+	fake.ParentsStub = nil
+	fake.parentsReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -117,6 +164,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.compareRefsMutex.RUnlock()
 	fake.archiveLinkMutex.RLock()
 	defer fake.archiveLinkMutex.RUnlock()
+	fake.parentsMutex.RLock()
+	defer fake.parentsMutex.RUnlock()
 	return fake.invocations
 }
 

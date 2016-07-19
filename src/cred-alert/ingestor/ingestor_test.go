@@ -107,7 +107,6 @@ var _ = Describe("Ingestor", func() {
 			expectedTask1 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
-				Ref:        commitRef,
 				From:       "commit-1",
 				To:         "commit-2",
 			}.Task("id-1")
@@ -118,7 +117,6 @@ var _ = Describe("Ingestor", func() {
 			expectedTask2 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
-				Ref:        commitRef,
 				From:       "commit-2",
 				To:         "commit-3",
 			}.Task("id-2")
@@ -129,7 +127,6 @@ var _ = Describe("Ingestor", func() {
 			expectedTask3 := queue.DiffScanPlan{
 				Owner:      orgName,
 				Repository: repoName,
-				Ref:        commitRef,
 				From:       "commit-3",
 				To:         "commit-4",
 			}.Task("id-3")
@@ -146,20 +143,20 @@ var _ = Describe("Ingestor", func() {
 			_, commit1 := commitRepository.RegisterCommitArgsForCall(0)
 			Expect(commit1.SHA).To(Equal("commit-2"))
 			Expect(commit1.Timestamp).To(Equal(time2))
-			Expect(commit1.Repo).To(Equal(repoName))
-			Expect(commit1.Org).To(Equal(orgName))
+			Expect(commit1.Repository).To(Equal(repoName))
+			Expect(commit1.Owner).To(Equal(orgName))
 
 			_, commit2 := commitRepository.RegisterCommitArgsForCall(1)
 			Expect(commit2.SHA).To(Equal("commit-3"))
 			Expect(commit2.Timestamp).To(Equal(time3))
-			Expect(commit2.Repo).To(Equal(repoName))
-			Expect(commit2.Org).To(Equal(orgName))
+			Expect(commit2.Repository).To(Equal(repoName))
+			Expect(commit2.Owner).To(Equal(orgName))
 
 			_, commit3 := commitRepository.RegisterCommitArgsForCall(2)
 			Expect(commit3.SHA).To(Equal("commit-4"))
 			Expect(commit3.Timestamp).To(Equal(time4))
-			Expect(commit3.Repo).To(Equal(repoName))
-			Expect(commit3.Org).To(Equal(orgName))
+			Expect(commit3.Repository).To(Equal(repoName))
+			Expect(commit3.Owner).To(Equal(orgName))
 		})
 
 		Context("when the from commit is the initial nil commit", func() {

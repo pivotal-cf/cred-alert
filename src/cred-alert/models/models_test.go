@@ -65,18 +65,16 @@ var _ = Describe("Database Connections", func() {
 		)
 
 		BeforeEach(func() {
-			// commitRepository = models.NewCommitRepository(fakeDB)
 			repoName = "my-repo"
 			repoOwner = "my-org"
 
 			commitRepository = models.NewCommitRepository(db)
 			fakeCommit = &models.Commit{
-				SHA:       "abc123",
-				Timestamp: time.Now(),
-				Org:       repoOwner,
-				Repo:      repoName,
+				SHA:        "abc123",
+				Timestamp:  time.Now(),
+				Owner:      repoOwner,
+				Repository: repoName,
 			}
-
 		})
 
 		Describe("RegisterCommit", func() {
@@ -86,8 +84,8 @@ var _ = Describe("Database Connections", func() {
 				savedCommit = &models.Commit{}
 				db.Last(&savedCommit)
 				Expect(savedCommit.SHA).To(Equal(fakeCommit.SHA))
-				Expect(savedCommit.Org).To(Equal(fakeCommit.Org))
-				Expect(savedCommit.Repo).To(Equal(fakeCommit.Repo))
+				Expect(savedCommit.Owner).To(Equal(fakeCommit.Owner))
+				Expect(savedCommit.Repository).To(Equal(fakeCommit.Repository))
 				Expect(savedCommit.Timestamp.Unix()).To(Equal(fakeCommit.Timestamp.Unix()))
 			})
 
@@ -101,11 +99,10 @@ var _ = Describe("Database Connections", func() {
 
 			It("should log when successfully registering", func() {
 				commitRepository.RegisterCommit(logger, fakeCommit)
-				Expect(logger).To(gbytes.Say("registering-commit"))
-				Expect(logger).To(gbytes.Say("successfully-registered-commit"))
+				Expect(logger).To(gbytes.Say("registering-commit.done"))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"commit-timestamp":%d`, fakeCommit.Timestamp.Unix())))
-				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"org":"%s"`, fakeCommit.Org)))
-				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repo":"%s"`, fakeCommit.Repo)))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, fakeCommit.Owner)))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, fakeCommit.Repository)))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"sha":"%s"`, fakeCommit.SHA)))
 			})
 
@@ -113,7 +110,7 @@ var _ = Describe("Database Connections", func() {
 				saveError := errors.New("saving commit error")
 				db.AddError(saveError)
 				commitRepository.RegisterCommit(logger, fakeCommit)
-				Expect(logger).To(gbytes.Say("error-registering-commit"))
+				Expect(logger).To(gbytes.Say("registering-commit.failed"))
 			})
 		})
 
@@ -144,8 +141,7 @@ var _ = Describe("Database Connections", func() {
 				saveError := errors.New("find commit error")
 				db.AddError(saveError)
 				commitRepository.IsCommitRegistered(logger, "abc123")
-				Expect(logger).To(gbytes.Say("finding-commit"))
-				Expect(logger).To(gbytes.Say("error-finding-commit"))
+				Expect(logger).To(gbytes.Say("finding-commit.failed"))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"sha":"%s"`, "abc123")))
 			})
 		})
@@ -178,7 +174,7 @@ var _ = Describe("Database Connections", func() {
 
 				Expect(logger).To(gbytes.Say("finding-repo"))
 				Expect(logger).To(gbytes.Say("error-finding-repo"))
-				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repo":"%s"`, repoName)))
+				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repoName)))
 			})
 		})
 	})

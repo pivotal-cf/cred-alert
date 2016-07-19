@@ -35,12 +35,11 @@ var _ = Describe("Foreman", func() {
 					task := &queuefakes.FakeAckTask{}
 					task.TypeReturns("diff-scan")
 					task.PayloadReturns(`{
-					"owner":      "pivotal-cf",
-					"repository": "cred-alert",
-					"ref":        "refs/heads/my-branch",
-					"from":       "abc123",
-					"to":         "def456"
-				}`)
+						"owner":      "pivotal-cf",
+						"repository": "cred-alert",
+						"from":       "abc123",
+						"to":         "def456"
+					}`)
 
 					job, err := foreman.BuildJob(task)
 					Expect(err).NotTo(HaveOccurred())
@@ -50,7 +49,6 @@ var _ = Describe("Foreman", func() {
 
 					Expect(diffScan.Owner).To(Equal("pivotal-cf"))
 					Expect(diffScan.Repository).To(Equal("cred-alert"))
-					Expect(diffScan.Ref).To(Equal("refs/heads/my-branch"))
 					Expect(diffScan.From).To(Equal("abc123"))
 					Expect(diffScan.To).To(Equal("def456"))
 				})

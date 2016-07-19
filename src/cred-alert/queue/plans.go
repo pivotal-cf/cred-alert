@@ -5,7 +5,6 @@ import "encoding/json"
 type DiffScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`
-	Ref        string `json:"ref"`
 
 	From string `json:"from"`
 	To   string `json:"to"`

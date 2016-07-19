@@ -109,7 +109,6 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 			task = queue.DiffScanPlan{
 				Owner:      scan.Owner,
 				Repository: scan.Repository,
-				Ref:        scan.Ref,
 				From:       scanDiff.From,
 				To:         scanDiff.To,
 			}.Task(id)
@@ -124,10 +123,10 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 		}
 
 		s.commitRepository.RegisterCommit(logger, &models.Commit{
-			Repo:      scan.Repository,
-			Org:       scan.Owner,
-			SHA:       scanDiff.To,
-			Timestamp: scanDiff.ToTimestamp,
+			Repository: scan.Repository,
+			Owner:      scan.Owner,
+			SHA:        scanDiff.To,
+			Timestamp:  scanDiff.ToTimestamp,
 		})
 
 		logger.Info("done")
