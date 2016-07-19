@@ -38,6 +38,24 @@ func (p RefScanPlan) Task(id string) Task {
 	}
 }
 
+type AncestryScanPlan struct {
+	Owner           string `json:"owner"`
+	Repository      string `json:"repository"`
+	SHA             string `json:"sha"`
+	CommitTimestamp int64  `json:"commit-timestamp"`
+	Depth           int    `json:"depth"`
+}
+
+func (a AncestryScanPlan) Task(id string) Task {
+	payload, _ := json.Marshal(a)
+
+	return basicTask{
+		id:      id,
+		typee:   "ancestry-scan",
+		payload: string(payload),
+	}
+}
+
 type basicTask struct {
 	id      string
 	typee   string
