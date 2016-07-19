@@ -55,7 +55,7 @@ var _ = Describe("Ingestor", func() {
 
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
-			case "cred_alert.webhook_hits":
+			case "cred_alert.ingestor_requests":
 				return requestCounter
 			case "cred_alert.ignored_events":
 				return ignoredEventCounter
