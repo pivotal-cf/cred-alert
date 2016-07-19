@@ -1,0 +1,18 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+
+inputs:
+- name: cred-alert
+
+params:
+  ORG_NAME:
+  TEAM_NAME:
+  TOKEN:
+
+run:
+  path: cred-alert/ci/scripts/teamstr-sync
