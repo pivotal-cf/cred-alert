@@ -27,7 +27,7 @@ func main() {
 	logger := lager.NewLogger("cred-alert-cli")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
-	sniffer := sniff.NewSnifferWithDefaultMatchers()
+	sniffer := sniff.NewDefaultSniffer()
 
 	if opts.Directory != "" {
 		scanDirectory(logger, sniffer, opts.Directory)

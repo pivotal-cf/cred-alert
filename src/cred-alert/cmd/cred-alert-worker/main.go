@@ -75,7 +75,7 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
 	ghClient := github.NewClient(github.DefaultGitHubURL, httpClient, emitter)
 	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl)
-	sniffer := sniff.NewSnifferWithDefaultMatchers()
+	sniffer := sniff.NewDefaultSniffer()
 	foreman := queue.NewForeman(ghClient, sniffer, emitter, notifier)
 
 	taskQueue, err := createQueue(opts, logger)

@@ -47,7 +47,7 @@ func NewSniffer(matcher, exclusionMatcher matchers.Matcher) Sniffer {
 	}
 }
 
-func NewSnifferWithDefaultMatchers() Sniffer {
+func NewDefaultSniffer() Sniffer {
 	return &sniffer{
 		matcher: matchers.Multi(
 			matchers.KnownFormat(awsAccessKeyIDPattern),
