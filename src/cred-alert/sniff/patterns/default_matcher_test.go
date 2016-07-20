@@ -19,10 +19,10 @@ var _ = Describe("Default patterns", func() {
 
 	It("matches all positive examples", func() {
 		for _, line := range lines {
-			should_match := strings.Contains(line, "should_match")
+			shouldMatch := strings.Contains(line, "should_match")
 			found := matcher.Match(line)
 
-			Expect(found).To(Equal(should_match))
+			Expect(found).To(Equal(shouldMatch), line)
 		}
 	})
 })

@@ -32,16 +32,16 @@ func NewMatcher(patterns []string, exclusions []string) Matcher {
 	return m
 }
 
-func (m *matcher) Match(to_search string) bool {
+func (m *matcher) Match(line string) bool {
 	for _, exclusion := range m.exclusions {
-		excluded := exclusion.MatchString(to_search)
+		excluded := exclusion.MatchString(line)
 		if excluded {
 			return false
 		}
 	}
 
 	for _, pattern := range m.patterns {
-		found := pattern.MatchString(to_search)
+		found := pattern.MatchString(line)
 		if found {
 			return true
 		}
