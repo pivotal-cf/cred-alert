@@ -15,7 +15,7 @@ var _ = Describe("Known Matcher", func() {
 	})
 
 	It("returns true when the line matches", func() {
-		line := "aws_access_key_id: AKIAIOSFODNN7DSOTPWI"
+		line := "aws_access_key_id: AKIAIOSFOEXAMPLETPWI"
 		Expect(matcher.Match(line)).To(BeTrue())
 	})
 
