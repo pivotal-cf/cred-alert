@@ -2,67 +2,126 @@ package sniff_test
 
 import (
 	"cred-alert/scanners"
-	"cred-alert/scanners/git"
 	"cred-alert/sniff"
+	"cred-alert/sniff/matchers/matchersfakes"
+	"cred-alert/sniff/snifffakes"
 	"errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
-var _ = Describe("Scan", func() {
-
-	shortDiff := `diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests.txt
-index 940393e..fa5a232 100644
---- a/spec/integration/git-secrets-pattern-tests.txt
-+++ b/spec/integration/git-secrets-pattern-tests.txt
-@@ -28,3 +28,3 @@ private_key = "should_match" # TODO: comments shouldn't have an effect
- private_key '$should_match'
- # Should Not Match
-+
-@@ -67,6 +75,5 @@ private_key: "should not match"
- private_key: "too-short" # should_not_match
- private_key: "fake_should_not_match"
-+private_key: "should_match"
-+private_key: "FaKe_should_not_match"
-+private_key: "ExAmPlE_should_not_match"
-`
+var _ = Describe("Sniffer", func() {
 	var (
-		logger  *lagertest.TestLogger
-		scanner *git.DiffScanner
+		logger           *lagertest.TestLogger
+		matcher          *matchersfakes.FakeMatcher
+		exclusionMatcher *matchersfakes.FakeMatcher
+		scanner          *snifffakes.FakeScanner
+		expectedLine     *scanners.Line
+
+		sniffer sniff.Sniffer
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("scanner")
-		scanner = git.NewDiffScanner(shortDiff)
+		matcher = new(matchersfakes.FakeMatcher)
+		exclusionMatcher = new(matchersfakes.FakeMatcher)
+		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
+
+		scanner = new(snifffakes.FakeScanner)
+		scanner.ScanStub = func(lager.Logger) bool {
+			return scanner.ScanCallCount() < 4
+		}
+		expectedLine = &scanners.Line{
+			Path:       "some-path",
+			LineNumber: 42,
+			Content:    "some-content",
+		}
+		scanner.LineReturns(expectedLine)
 	})
 
 	Describe("Sniff", func() {
-		It("scans a diff and return Lines", func() {
-			called := 0
-			handleViolation := func(scanners.Line) error {
-				called++
-
+		It("calls the exclusion matcher with each line", func() {
+			sniffer.Sniff(logger, scanner, func(scanners.Line) error {
 				return nil
-			}
-
-			err := sniff.Sniff(logger, scanner, handleViolation)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(called).To(Equal(2))
+			})
+			Expect(exclusionMatcher.MatchCallCount()).To(Equal(3))
 		})
 
-		It("returns an error if handleViolation returns an error but doesn't stop scanning", func() {
-			called := 0
+		It("calls the regular matcher with each line", func() {
+			sniffer.Sniff(logger, scanner, func(scanners.Line) error {
+				return nil
+			})
+			Expect(matcher.MatchCallCount()).To(Equal(3))
+		})
 
-			handleViolation := func(scanners.Line) error {
-				called++
-				return errors.New("disaster")
-			}
+		Context("when the exclusion matcher returns true", func() {
+			BeforeEach(func() {
+				exclusionMatcher.MatchReturns(true)
+			})
 
-			err := sniff.Sniff(logger, scanner, handleViolation)
-			Expect(err).To(HaveOccurred())
-			Expect(called).To(Equal(2))
+			It("does not call the regular matcher", func() {
+				sniffer.Sniff(logger, scanner, func(scanners.Line) error {
+					return nil
+				})
+				Expect(matcher.MatchCallCount()).To(BeZero())
+			})
+		})
+
+		Context("when the regular matcher returns true", func() {
+			BeforeEach(func() {
+				matcher.MatchStub = func(string) bool {
+					return matcher.MatchCallCount() != 1 // 2 should match
+				}
+			})
+
+			It("calls the callback with the line", func() {
+				var actualLine *scanners.Line
+				callback := func(line scanners.Line) error {
+					actualLine = &line
+					return nil
+				}
+				sniffer.Sniff(logger, scanner, callback)
+				Expect(actualLine).To(Equal(expectedLine))
+			})
+
+			Context("when the callback returns an error", func() {
+				var (
+					callCount int
+					callback  func(scanners.Line) error
+				)
+
+				BeforeEach(func() {
+					callCount = 0
+
+					callback = func(line scanners.Line) error {
+						callCount++
+						return errors.New("tragedy")
+					}
+				})
+
+				It("returns an error", func() {
+					err := sniffer.Sniff(logger, scanner, callback)
+					Expect(err).To(HaveOccurred())
+				})
+
+				It("calls the exclusion matcher with each line", func() {
+					sniffer.Sniff(logger, scanner, callback)
+					Expect(exclusionMatcher.MatchCallCount()).To(Equal(3))
+				})
+
+				It("calls the regular matcher with each line", func() {
+					sniffer.Sniff(logger, scanner, callback)
+					Expect(matcher.MatchCallCount()).To(Equal(3))
+				})
+
+				It("calls the callback for each line that matches", func() {
+					sniffer.Sniff(logger, scanner, callback)
+					Expect(callCount).To(Equal(2))
+				})
+			})
 		})
 	})
 })

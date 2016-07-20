@@ -27,10 +27,12 @@ func main() {
 	logger := lager.NewLogger("cred-alert-cli")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
+	sniffer := sniff.NewSnifferWithDefaultMatchers()
+
 	if opts.Directory != "" {
-		scanDirectory(logger, opts.Directory)
+		scanDirectory(logger, sniffer, opts.Directory)
 	} else {
-		scanFile(logger, os.Stdin)
+		scanFile(logger, sniffer, os.Stdin)
 	}
 }
 
@@ -40,25 +42,12 @@ func handleViolation(line scanners.Line) error {
 	return nil
 }
 
-func scanFile(logger lager.Logger, fileHandle *os.File) {
+func scanFile(logger lager.Logger, sniffer sniff.Sniffer, fileHandle *os.File) {
 	scanner := file.NewFileScanner(fileHandle)
-	sniff.Sniff(logger, scanner, handleViolation)
+	sniffer.Sniff(logger, scanner, handleViolation)
 }
 
-func createWalkFunc(logger lager.Logger) filepath.WalkFunc {
-	return func(path string, info os.FileInfo, err error) error {
-		fh, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			scanFile(logger, fh)
-		}
-		return nil
-	}
-}
-
-func scanDirectory(logger lager.Logger, directoryPath string) {
+func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath string) {
 	if stat, err := os.Stat(directoryPath); err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot read directory %s\n", directoryPath)
 		os.Exit(1)
@@ -67,7 +56,18 @@ func scanDirectory(logger lager.Logger, directoryPath string) {
 		os.Exit(1)
 	}
 
-	if err := filepath.Walk(directoryPath, createWalkFunc(logger)); err != nil {
+	walkFunc := func(path string, info os.FileInfo, err error) error {
+		fh, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			scanFile(logger, sniffer, fh)
+		}
+		return nil
+	}
+
+	if err := filepath.Walk(directoryPath, walkFunc); err != nil {
 		fmt.Fprintln(os.Stderr, "Error traversing directory: %v", err)
 		os.Exit(1)
 	}

@@ -20,19 +20,25 @@ import (
 type RefScanJob struct {
 	RefScanPlan
 	client            github.Client
-	sniff             sniff.SniffFunc
+	sniffer           sniff.Sniffer
 	notifier          notifications.Notifier
 	emitter           metrics.Emitter
 	credentialCounter metrics.Counter
 }
 
-func NewRefScanJob(plan RefScanPlan, client github.Client, sniff sniff.SniffFunc, notifier notifications.Notifier, emitter metrics.Emitter) *RefScanJob {
+func NewRefScanJob(
+	plan RefScanPlan,
+	client github.Client,
+	sniffer sniff.Sniffer,
+	notifier notifications.Notifier,
+	emitter metrics.Emitter,
+) *RefScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &RefScanJob{
 		RefScanPlan:       plan,
 		client:            client,
-		sniff:             sniff,
+		sniffer:           sniffer,
 		notifier:          notifier,
 		emitter:           emitter,
 		credentialCounter: credentialCounter,
@@ -80,7 +86,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		bufioScanner := file.NewReaderScanner(unzippedReader, f.Name)
 		handleViolation := j.createHandleViolation(logger, j.Ref, j.Owner+"/"+j.Repository)
 
-		err = j.sniff(logger, bufioScanner, handleViolation)
+		err = j.sniffer.Sniff(logger, bufioScanner, handleViolation)
 		if err != nil {
 			return err
 		}

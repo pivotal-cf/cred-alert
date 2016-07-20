@@ -25,6 +25,7 @@ import (
 	"cred-alert/queue"
 	"cred-alert/scanners"
 	"cred-alert/sniff"
+	"cred-alert/sniff/snifffakes"
 )
 
 var _ = Describe("RefScan Job", func() {
@@ -35,7 +36,7 @@ var _ = Describe("RefScan Job", func() {
 
 		job               *queue.RefScanJob
 		server            *ghttp.Server
-		sniffFunc         sniff.SniffFunc
+		sniffer           *snifffakes.FakeSniffer
 		plan              queue.RefScanPlan
 		notifier          *notificationsfakes.FakeNotifier
 		emitter           *metricsfakes.FakeEmitter
@@ -55,6 +56,7 @@ var _ = Describe("RefScan Job", func() {
 			Ref:        ref,
 		}
 
+		sniffer = new(snifffakes.FakeSniffer)
 		client = &githubfakes.FakeClient{}
 		logger = lagertest.NewTestLogger("ref-scan")
 		notifier = &notificationsfakes.FakeNotifier{}
@@ -71,11 +73,10 @@ var _ = Describe("RefScan Job", func() {
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewRefScanJob(plan, client, sniffFunc, notifier, emitter)
+		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter)
 	})
 
 	Describe("Run", func() {
-		wasSniffed := false
 		filePath := "some/file/path"
 		fileContent := "content"
 		lineNumber := 2
@@ -90,8 +91,7 @@ var _ = Describe("RefScan Job", func() {
 					ghttp.RespondWith(http.StatusOK, someZip.Bytes(), http.Header{}),
 				),
 			)
-			sniffFunc = func(lgr lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
-				wasSniffed = true
+			sniffer.SniffStub = func(lgr lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
 				return handleViolation(scanners.Line{
 					Path:       filePath,
 					LineNumber: lineNumber,
@@ -113,7 +113,7 @@ var _ = Describe("RefScan Job", func() {
 		It("Scans the archive", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(wasSniffed).To(BeTrue())
+			Expect(sniffer.SniffCallCount()).To(BeNumerically(">", 0))
 		})
 
 		It("sends a notification when it finds a match", func() {

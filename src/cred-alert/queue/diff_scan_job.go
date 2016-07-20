@@ -15,12 +15,12 @@ import (
 type DiffScanJob struct {
 	DiffScanPlan
 	githubClient      gh.Client
-	sniffer           sniff.SniffFunc
+	sniffer           sniff.Sniffer
 	credentialCounter metrics.Counter
 	notifier          notifications.Notifier
 }
 
-func NewDiffScanJob(githubClient gh.Client, sniffer sniff.SniffFunc, emitter metrics.Emitter, notifier notifications.Notifier, plan DiffScanPlan) *DiffScanJob {
+func NewDiffScanJob(githubClient gh.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, plan DiffScanPlan) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{
@@ -51,7 +51,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 	diffScanner := git.NewDiffScanner(diff)
 	handleViolation := j.createHandleViolation(logger, j.To, j.Owner+"/"+j.Repository)
 
-	err = j.sniffer(logger, diffScanner, handleViolation)
+	err = j.sniffer.Sniff(logger, diffScanner, handleViolation)
 	if err != nil {
 		logger.Error("failed", err)
 		return err

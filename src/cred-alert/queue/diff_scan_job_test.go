@@ -8,6 +8,7 @@ import (
 	"cred-alert/queue"
 	"cred-alert/scanners"
 	"cred-alert/sniff"
+	"cred-alert/sniff/snifffakes"
 	"errors"
 	"fmt"
 
@@ -24,7 +25,7 @@ var _ = Describe("Diff Scan Job", func() {
 		notifier          *notificationsfakes.FakeNotifier
 		fakeGithubClient  *githubfakes.FakeClient
 		plan              queue.DiffScanPlan
-		sniffFunc         sniff.SniffFunc
+		sniffer           *snifffakes.FakeSniffer
 		logger            lager.Logger
 		credentialCounter *metricsfakes.FakeCounter
 	)
@@ -43,7 +44,7 @@ var _ = Describe("Diff Scan Job", func() {
 			From:       fromGitSha,
 			To:         toGitSha,
 		}
-		sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line) error) error { return nil }
+		sniffer = new(snifffakes.FakeSniffer)
 		emitter = &metricsfakes.FakeEmitter{}
 		notifier = &notificationsfakes.FakeNotifier{}
 		fakeGithubClient = new(githubfakes.FakeClient)
@@ -63,7 +64,7 @@ var _ = Describe("Diff Scan Job", func() {
 	JustBeforeEach(func() {
 		job = queue.NewDiffScanJob(
 			fakeGithubClient,
-			sniffFunc,
+			sniffer,
 			emitter,
 			notifier,
 			plan,
@@ -86,7 +87,7 @@ var _ = Describe("Diff Scan Job", func() {
 		BeforeEach(func() {
 			filePath = "some/file/path"
 
-			sniffFunc = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
+			sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
 				return handleViolation(scanners.Line{
 					Path:       filePath,
 					LineNumber: 1,
@@ -132,26 +133,16 @@ var _ = Describe("Diff Scan Job", func() {
 	})
 
 	Context("when we fail to fetch the diff", func() {
-		var wasScanned bool
-
 		BeforeEach(func() {
-			wasScanned = false
-
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
-
-			sniffFunc = func(lager.Logger, sniff.Scanner, func(scanners.Line) error) error {
-				wasScanned = true
-
-				return nil
-			}
 		})
 
 		It("does not try to scan the diff", func() {
 			err := job.Run(logger)
 			Expect(err).To(HaveOccurred())
 
-			Expect(wasScanned).To(BeFalse())
-			Expect(credentialCounter.IncCallCount()).To(Equal(0))
+			Expect(sniffer.SniffCallCount()).To(BeZero())
+			Expect(credentialCounter.IncCallCount()).To(BeZero())
 		})
 	})
 })
