@@ -2,7 +2,6 @@ package queue_test
 
 import (
 	"errors"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,6 +10,8 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 
 	"cred-alert/github/githubfakes"
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
 	"cred-alert/models"
 	"cred-alert/models/modelsfakes"
 	"cred-alert/queue"
@@ -21,9 +22,12 @@ var _ = Describe("Ancestry Scan Job", func() {
 	var (
 		logger *lagertest.TestLogger
 
-		taskQueue        *queuefakes.FakeQueue
-		client           *githubfakes.FakeClient
-		commitRepository *modelsfakes.FakeCommitRepository
+		taskQueue            *queuefakes.FakeQueue
+		client               *githubfakes.FakeClient
+		commitRepository     *modelsfakes.FakeCommitRepository
+		maxDepthCounter      *metricsfakes.FakeCounter
+		initialCommitCounter *metricsfakes.FakeCounter
+		emitter              *metricsfakes.FakeEmitter
 
 		plan queue.AncestryScanPlan
 		job  *queue.AncestryScanJob
@@ -39,11 +43,23 @@ var _ = Describe("Ancestry Scan Job", func() {
 		taskQueue = &queuefakes.FakeQueue{}
 		client = &githubfakes.FakeClient{}
 		commitRepository = &modelsfakes.FakeCommitRepository{}
+		emitter = &metricsfakes.FakeEmitter{}
+		maxDepthCounter = &metricsfakes.FakeCounter{}
+		initialCommitCounter = &metricsfakes.FakeCounter{}
 		logger = lagertest.NewTestLogger("ancestry-scan")
+		emitter.CounterReturns(maxDepthCounter)
+
+		emitter.CounterStub = func(name string) metrics.Counter {
+			if name == "cred_alert.max-depth-reached" {
+				return maxDepthCounter
+			} else {
+				return initialCommitCounter
+			}
+		}
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewAncestryScanJob(plan, commitRepository, client, taskQueue)
+		job = queue.NewAncestryScanJob(plan, commitRepository, client, emitter, taskQueue)
 	})
 
 	var ItMarksTheCommitAsSeen = func() {
@@ -256,13 +272,42 @@ var _ = Describe("Ancestry Scan Job", func() {
 					ItMarksTheCommitAsSeen()
 				})
 
-				// Does initialCommit.parents() return 0000000? or empty list
-				XContext("when the current commit is the initial commit", func() {
+				Context("when the current commit is the initial commit", func() {
 					BeforeEach(func() {
-						plan.SHA = strings.Repeat("0", 40)
+						client.ParentsReturns([]string{}, nil)
 					})
 
-					ItStopsAndDoesNotEnqueueAnyMoreWork()
+					It("Enqueues a ref scan", func() {
+						err := job.Run(logger)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
+
+						task := taskQueue.EnqueueArgsForCall(0)
+						Expect(task.Type()).To(Equal("ref-scan"))
+						Expect(task.Payload()).To(MatchJSON(`
+							{
+								"owner": "owner",
+								"repository": "repo",
+								"ref": "sha"
+							}
+						`))
+					})
+
+					It("increments the initial commit counter", func() {
+						job.Run(logger)
+						Expect(initialCommitCounter.IncCallCount()).To(Equal(1))
+					})
+
+					Context("when there's an error enqueuing the ref scan", func() {
+						expectedError := errors.New("enqueue error")
+
+						BeforeEach(func() {
+							taskQueue.EnqueueReturns(expectedError)
+						})
+
+						ItReturnsAndLogsAnError(expectedError)
+						ItDoesNotRegisterCommit()
+					})
 				})
 			})
 
@@ -295,7 +340,14 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 				ItMarksTheCommitAsSeen()
 
-				XIt("sends a notification saying that it ran out of depth", func() {
+				It("emits a counter saying that it ran out of depth", func() {
+					job.Run(logger)
+					Expect(maxDepthCounter.IncCallCount()).To(Equal(1))
+				})
+
+				It("logs that max depth was reached", func() {
+					job.Run(logger)
+					Expect(logger).To(gbytes.Say(`scanning-ancestry.max-depth-reached`))
 				})
 
 				It("does not look for any more parents", func() {
