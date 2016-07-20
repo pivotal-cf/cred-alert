@@ -6,29 +6,33 @@ import (
 
 var myRegex = regexp.MustCompile(`password`)
 
-type Matcher struct {
+type Matcher interface {
+	Match(string) bool
+}
+
+type matcher struct {
 	patterns   []*regexp.Regexp
 	exclusions []*regexp.Regexp
 }
 
-func NewMatcher(patterns []string, exclusions []string) *Matcher {
-	matcher := new(Matcher)
+func NewMatcher(patterns []string, exclusions []string) Matcher {
+	m := new(matcher)
 
-	matcher.patterns = make([]*regexp.Regexp, len(patterns))
-	matcher.exclusions = make([]*regexp.Regexp, len(exclusions))
+	m.patterns = make([]*regexp.Regexp, len(patterns))
+	m.exclusions = make([]*regexp.Regexp, len(exclusions))
 
 	for i, pattern := range patterns {
-		matcher.patterns[i] = regexp.MustCompile(pattern)
+		m.patterns[i] = regexp.MustCompile(pattern)
 	}
 
 	for i, exclusion := range exclusions {
-		matcher.exclusions[i] = regexp.MustCompile(exclusion)
+		m.exclusions[i] = regexp.MustCompile(exclusion)
 	}
 
-	return matcher
+	return m
 }
 
-func (m Matcher) Match(to_search string) bool {
+func (m *matcher) Match(to_search string) bool {
 	for _, exclusion := range m.exclusions {
 		excluded := exclusion.MatchString(to_search)
 		if excluded {

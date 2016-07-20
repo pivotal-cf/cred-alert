@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("Default patterns", func() {
 	var lines []string
-	var matcher *patterns.Matcher
+	var matcher patterns.Matcher
 
 	BeforeEach(func() {
 		lines = strings.Split(sample_strings, "\n")

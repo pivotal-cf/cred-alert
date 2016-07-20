@@ -13,7 +13,7 @@ const bashStringInterpolationPattern = `["]\$`
 const fakePattern = `(?i)fake`
 const examplePattern = `(?i)example`
 
-func DefaultMatcher() *Matcher {
+func DefaultMatcher() Matcher {
 	return NewMatcher(
 		[]string{
 			generalPattern,
