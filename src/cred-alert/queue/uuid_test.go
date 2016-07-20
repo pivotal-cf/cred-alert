@@ -1,15 +1,15 @@
-package ingestor_test
+package queue_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"cred-alert/ingestor"
+	"cred-alert/queue"
 )
 
 var _ = Describe("UUID", func() {
 	It("generates different UUIDs each time", func() {
-		generator := ingestor.NewGenerator()
+		generator := queue.NewGenerator()
 
 		first := generator.Generate()
 		second := generator.Generate()

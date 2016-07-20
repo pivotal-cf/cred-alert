@@ -1,6 +1,12 @@
-package ingestor
+package queue
 
 import "github.com/satori/go.uuid"
+
+//go:generate counterfeiter . UUIDGenerator
+
+type UUIDGenerator interface {
+	Generate() string
+}
 
 type uuidGenerator struct{}
 

@@ -75,7 +75,7 @@ func main() {
 
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
 	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
-	generator := ingestor.NewGenerator()
+	generator := queue.NewGenerator()
 
 	db, err := createDB(logger, opts)
 	if err != nil {

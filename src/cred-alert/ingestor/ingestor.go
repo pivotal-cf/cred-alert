@@ -14,23 +14,17 @@ type Ingestor interface {
 	IngestPushScan(lager.Logger, PushScan) error
 }
 
-//go:generate counterfeiter . UUIDGenerator
-
-type UUIDGenerator interface {
-	Generate() string
-}
-
 type ingestor struct {
 	whitelist        *Whitelist
 	taskQueue        queue.Queue
-	generator        UUIDGenerator
+	generator        queue.UUIDGenerator
 	commitRepository models.CommitRepository
 
 	requestCounter      metrics.Counter
 	ignoredEventCounter metrics.Counter
 }
 
-func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist, generator UUIDGenerator, commitRepository models.CommitRepository) *ingestor {
+func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist, generator queue.UUIDGenerator, commitRepository models.CommitRepository) *ingestor {
 	requestCounter := emitter.Counter("cred_alert.ingestor_requests")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 

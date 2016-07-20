@@ -2,6 +2,7 @@ package queue_test
 
 import (
 	"errors"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,6 +29,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 		maxDepthCounter      *metricsfakes.FakeCounter
 		initialCommitCounter *metricsfakes.FakeCounter
 		emitter              *metricsfakes.FakeEmitter
+		generator            *queuefakes.FakeUUIDGenerator
 
 		plan queue.AncestryScanPlan
 		job  *queue.AncestryScanJob
@@ -47,6 +49,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 		maxDepthCounter = &metricsfakes.FakeCounter{}
 		initialCommitCounter = &metricsfakes.FakeCounter{}
 		logger = lagertest.NewTestLogger("ancestry-scan")
+		generator = &queuefakes.FakeUUIDGenerator{}
 		emitter.CounterReturns(maxDepthCounter)
 
 		emitter.CounterStub = func(name string) metrics.Counter {
@@ -56,10 +59,16 @@ var _ = Describe("Ancestry Scan Job", func() {
 				return initialCommitCounter
 			}
 		}
+
+		callCount := -1
+		generator.GenerateStub = func() string {
+			callCount++
+			return fmt.Sprintf("id-%d", callCount)
+		}
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewAncestryScanJob(plan, commitRepository, client, emitter, taskQueue)
+		job = queue.NewAncestryScanJob(plan, commitRepository, client, emitter, taskQueue, generator)
 	})
 
 	var ItMarksTheCommitAsSeen = func() {
@@ -138,12 +147,14 @@ var _ = Describe("Ancestry Scan Job", func() {
 				})
 
 				Context("when the commit has parents", func() {
+					expectedParents := []string{
+						"abcdef",
+						"123456",
+						"789aee",
+					}
+
 					BeforeEach(func() {
-						client.ParentsReturns([]string{
-							"abcdef",
-							"123456",
-							"789aee",
-						}, nil)
+						client.ParentsReturns(expectedParents, nil)
 					})
 
 					Context("when the task queue returns an error enqueueing diffs", func() {
@@ -168,38 +179,16 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 						Expect(taskQueue.EnqueueCallCount()).To(Equal(6))
 
-						task := taskQueue.EnqueueArgsForCall(0)
-						Expect(task.Type()).To(Equal("diff-scan"))
-						Expect(task.Payload()).To(MatchJSON(`
-							{
-								"owner": "owner",
-								"repository": "repo",
-								"from": "abcdef",
-								"to": "sha"
-							}
-						`))
-
-						task = taskQueue.EnqueueArgsForCall(2)
-						Expect(task.Type()).To(Equal("diff-scan"))
-						Expect(task.Payload()).To(MatchJSON(`
-							{
-								"owner": "owner",
-								"repository": "repo",
-								"from": "123456",
-								"to": "sha"
-							}
-						`))
-
-						task = taskQueue.EnqueueArgsForCall(4)
-						Expect(task.Type()).To(Equal("diff-scan"))
-						Expect(task.Payload()).To(MatchJSON(`
-							{
-								"owner": "owner",
-								"repository": "repo",
-								"from": "789aee",
-								"to": "sha"
-							}
-						`))
+						for i, parent := range expectedParents {
+							expectedTask := queue.DiffScanPlan{
+								Owner:      plan.Owner,
+								Repository: plan.Repository,
+								From:       parent,
+								To:         plan.SHA,
+							}.Task(fmt.Sprintf("id-%d", 2*i))
+							task := taskQueue.EnqueueArgsForCall(2 * i)
+							Expect(task).To(Equal(expectedTask))
+						}
 					})
 
 					Context("when the task queue returns an error enqueueing ancestry scans", func() {
@@ -232,41 +221,17 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 						Expect(taskQueue.EnqueueCallCount()).To(Equal(6))
 
-						task := taskQueue.EnqueueArgsForCall(1)
-						Expect(task.Type()).To(Equal("ancestry-scan"))
-						Expect(task.Payload()).To(MatchJSON(`
-							{
-								"owner": "owner",
-								"repository": "repo",
-								"commit-timestamp": 0,
-								"sha": "abcdef",
-								"depth": 4
-							}
-						`))
-
-						task = taskQueue.EnqueueArgsForCall(3)
-						Expect(task.Type()).To(Equal("ancestry-scan"))
-						Expect(task.Payload()).To(MatchJSON(`
-							{
-								"owner": "owner",
-								"repository": "repo",
-								"commit-timestamp": 0,
-								"sha": "123456",
-								"depth": 4
-							}
-						`))
-
-						task = taskQueue.EnqueueArgsForCall(5)
-						Expect(task.Type()).To(Equal("ancestry-scan"))
-						Expect(task.Payload()).To(MatchJSON(`
-							{
-								"owner": "owner",
-								"repository": "repo",
-								"commit-timestamp": 0,
-								"sha": "789aee",
-								"depth": 4
-							}
-						`))
+						for i, parent := range expectedParents {
+							expectedTask := queue.AncestryScanPlan{
+								Owner:           plan.Owner,
+								Repository:      plan.Repository,
+								CommitTimestamp: plan.CommitTimestamp,
+								SHA:             parent,
+								Depth:           plan.Depth - 1,
+							}.Task(fmt.Sprintf("id-%d", 2*i+1))
+							task := taskQueue.EnqueueArgsForCall(2*i + 1)
+							Expect(task).To(Equal(expectedTask))
+						}
 					})
 
 					ItMarksTheCommitAsSeen()
