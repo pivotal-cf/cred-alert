@@ -1,6 +1,7 @@
 package patterns_test
 
 import (
+	"cred-alert/sniff/matchers"
 	"cred-alert/sniff/patterns"
 	"strings"
 
@@ -19,6 +20,10 @@ var _ = Describe("Default patterns", func() {
 
 	It("matches all positive examples", func() {
 		for _, line := range lines {
+			if exclusionMatcher.Match(line) {
+				continue
+			}
+
 			shouldMatch := strings.Contains(line, "should_match")
 			found := matcher.Match(line)
 
@@ -26,3 +31,13 @@ var _ = Describe("Default patterns", func() {
 		}
 	})
 })
+
+const bashStringInterpolationPattern = `["]\$`
+const fakePattern = `(?i)fake`
+const examplePattern = `(?i)example`
+
+var exclusionMatcher = matchers.Multi(
+	matchers.KnownFormat(bashStringInterpolationPattern),
+	matchers.KnownFormat(fakePattern),
+	matchers.KnownFormat(examplePattern),
+)
