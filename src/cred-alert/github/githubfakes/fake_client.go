@@ -33,12 +33,13 @@ type FakeClient struct {
 		result1 *url.URL
 		result2 error
 	}
-	ParentsStub        func(owner, repo, sha string) ([]string, error)
+	ParentsStub        func(logger lager.Logger, owner, repo, sha string) ([]string, error)
 	parentsMutex       sync.RWMutex
 	parentsArgsForCall []struct {
-		owner string
-		repo  string
-		sha   string
+		logger lager.Logger
+		owner  string
+		repo   string
+		sha    string
 	}
 	parentsReturns struct {
 		result1 []string
@@ -121,17 +122,18 @@ func (fake *FakeClient) ArchiveLinkReturns(result1 *url.URL, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Parents(owner string, repo string, sha string) ([]string, error) {
+func (fake *FakeClient) Parents(logger lager.Logger, owner string, repo string, sha string) ([]string, error) {
 	fake.parentsMutex.Lock()
 	fake.parentsArgsForCall = append(fake.parentsArgsForCall, struct {
-		owner string
-		repo  string
-		sha   string
-	}{owner, repo, sha})
-	fake.recordInvocation("Parents", []interface{}{owner, repo, sha})
+		logger lager.Logger
+		owner  string
+		repo   string
+		sha    string
+	}{logger, owner, repo, sha})
+	fake.recordInvocation("Parents", []interface{}{logger, owner, repo, sha})
 	fake.parentsMutex.Unlock()
 	if fake.ParentsStub != nil {
-		return fake.ParentsStub(owner, repo, sha)
+		return fake.ParentsStub(logger, owner, repo, sha)
 	} else {
 		return fake.parentsReturns.result1, fake.parentsReturns.result2
 	}
@@ -143,10 +145,10 @@ func (fake *FakeClient) ParentsCallCount() int {
 	return len(fake.parentsArgsForCall)
 }
 
-func (fake *FakeClient) ParentsArgsForCall(i int) (string, string, string) {
+func (fake *FakeClient) ParentsArgsForCall(i int) (lager.Logger, string, string, string) {
 	fake.parentsMutex.RLock()
 	defer fake.parentsMutex.RUnlock()
-	return fake.parentsArgsForCall[i].owner, fake.parentsArgsForCall[i].repo, fake.parentsArgsForCall[i].sha
+	return fake.parentsArgsForCall[i].logger, fake.parentsArgsForCall[i].owner, fake.parentsArgsForCall[i].repo, fake.parentsArgsForCall[i].sha
 }
 
 func (fake *FakeClient) ParentsReturns(result1 []string, result2 error) {

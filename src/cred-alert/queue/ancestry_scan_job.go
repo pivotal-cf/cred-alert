@@ -71,7 +71,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		return nil
 	}
 
-	parents, err := j.client.Parents(j.Owner, j.Repository, j.SHA)
+	parents, err := j.client.Parents(logger, j.Owner, j.Repository, j.SHA)
 	if err != nil {
 		logger.Error("failed", err)
 		return err

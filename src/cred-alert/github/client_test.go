@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/pivotal-golang/lager/lagertest"
 
@@ -50,6 +51,101 @@ var _ = Describe("Client", func() {
 		if server != nil {
 			server.Close()
 		}
+	})
+	Describe("Parents", func() {
+		var parentsJson string
+
+		BeforeEach(func() {
+			parentsJson = `
+			{
+				"parents": [
+					{
+						"sha": "parent1",
+						"url": "https://api.github.com/repos/owner/repo/commits/dea714291b6a45b03db90f96674ea15dbb0c341c",
+						"html_url": "https://github.com/owner/repo/commit/dea714291b6a45b03db90f96674ea15dbb0c341c"
+					},
+					{
+						"sha": "parent2",
+						"url": "https://api.github.com/repos/owner/repo/commits/b99749ac0f3744eed8c534afa5bc46b52c280b7b",
+						"html_url": "https://github.com/owner/repo/commit/b99749ac0f3744eed8c534afa5bc46b52c280b7b"
+					}
+				]
+			}`
+		})
+
+		It("returns a list of parent shas", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
+					ghttp.RespondWith(http.StatusOK, parentsJson, header),
+				),
+			)
+			parents, err := client.Parents(logger, "owner", "repo", "someSha")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(parents)).To(Equal(2))
+			Expect(parents).To(ContainElement("parent1"))
+			Expect(parents).To(ContainElement("parent2"))
+		})
+
+		It("updates the remaining api calls gauge", func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
+					ghttp.RespondWith(http.StatusOK, parentsJson, header),
+				),
+			)
+			client.Parents(logger, "owner", "repo", "someSha")
+			Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
+			_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
+			Expect(value).To(Equal(float32(remainingApiBudget)))
+		})
+
+		Context("the api request to github fails", func() {
+			It("returns and logs an error", func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
+						ghttp.RespondWith(http.StatusInternalServerError, parentsJson, header),
+					),
+				)
+
+				_, err := client.Parents(logger, "owner", "repo", "someSha")
+				Expect(err).To(HaveOccurred())
+				Expect(logger).To(gbytes.Say("fetching-parents.unexpected-status-code"))
+			})
+		})
+
+		Context("The http client returns an error", func() {
+			It("returns and logs an error", func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
+						ghttp.RespondWith(http.StatusOK, parentsJson, header),
+					),
+				)
+				server.Close()
+				server = nil
+				_, err := client.Parents(logger, "owner", "repo", "someSha")
+				Expect(err).To(HaveOccurred())
+				Expect(logger).To(gbytes.Say("fetching-parents.failed"))
+			})
+		})
+
+		Context("the response is not valid json", func() {
+			It("returns and logs an error", func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
+						ghttp.RespondWith(http.StatusOK, `badjson: [unbalanced: parens}`, header),
+					),
+				)
+
+				_, err := client.Parents(logger, "owner", "repo", "someSha")
+				Expect(err).To(HaveOccurred())
+				Expect(logger).To(gbytes.Say("fetching-parents.failed"))
+			})
+		})
+
 	})
 
 	Describe("CompareRefs", func() {
