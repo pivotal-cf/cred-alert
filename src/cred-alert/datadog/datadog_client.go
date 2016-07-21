@@ -29,7 +29,7 @@ type Point struct {
 }
 
 const GaugeMetricType string = "gauge"
-const CounterMetricType string = "counter"
+const CounterMetricType string = "count"
 
 func (p Point) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`[%d, %f]`, p.Timestamp.Unix(), p.Value)), nil
