@@ -10,6 +10,7 @@ applications:
   command: ./cred-alert-ingestor
   services:
   - cred-alert-production-logs
+  - cred-alert-mysql
   env:
     IGNORED_REPOS: ".*-credentials,.*-resource-pool,.*-locks,.*-envs,deployments-.*"
     DATA_DOG_ENVIRONMENT_TAG: "production"

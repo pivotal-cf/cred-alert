@@ -159,36 +159,73 @@ func debugHandler() http.Handler {
 }
 
 func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
-	appEnv, err := cfenv.Current()
-	if err == nil {
-		mySQLService, err := appEnv.Services.WithName("cred-alert-mysql")
-		if err == nil {
-			return createDBFromVCAP(logger, mySQLService)
-		}
+	var uri string
+	var err error
+	if os.Getenv("VCAP_SERVICES") != "" {
+		uri, err = createDbUriFromVCAP(logger)
+	} else {
+		uri, err = createDbUriFromOpts(logger, opts)
 	}
-	logger.Error("Could not connect to mysql via VCAP_SERVICES, falling back to command line args", err)
-	return createDBFromOpts(logger, opts)
+
+	if err != nil {
+		logger.Error("Error getting db uri string: ", err)
+		return nil, err
+	}
+
+	return gorm.Open("mysql", uri)
 }
 
-func createDBFromVCAP(logger lager.Logger, service *cfenv.Service) (*gorm.DB, error) {
-	username := service.Credentials["username"]
-	password := service.Credentials["password"]
-	hostname := service.Credentials["hostname"]
+func createDbUriFromVCAP(logger lager.Logger) (string, error) {
+	logger = logger.Session("creating-db-from-vcap")
+
+	appEnv, err := cfenv.Current()
+	if err != nil {
+		logger.Error("Error getting CF environment", err)
+		return "", err
+	}
+
+	service, err := appEnv.Services.WithName("cred-alert-mysql")
+	if err != nil {
+		logger.Error("Error getting cred-alert-mysql instance", err)
+	}
+
+	username, ok := service.Credentials["username"].(string)
+	if !ok {
+		return "", errors.New("Could not read username")
+	}
+	password, ok := service.Credentials["password"].(string)
+	if !ok {
+		return "", errors.New("Could not read password")
+	}
+	hostname, ok := service.Credentials["hostname"].(string)
+	if !ok {
+		return "", errors.New("Could not read hostname")
+	}
 	portF, ok := service.Credentials["port"].(float64)
 	if !ok {
-		return nil, errors.New("Could not read port")
+		return "", errors.New("Could not read port")
 	}
 	port := int(portF)
 	name := service.Credentials["name"]
 
+	if len(username) == 0 || len(password) == 0 {
+		err := errors.New("Empty mysql username or password")
+		logger.Error("MySQL parameters are incorrect", err)
+		return "", err
+	}
+
 	uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
 		username, password, hostname, port, name)
-	logger.Info("Connecting to mysql db from VCAP_SERVICES")
-	return gorm.Open("mysql", uri)
+
+	logger.Info("vcap-services.success")
+	return uri, nil
 }
 
-func createDBFromOpts(logger lager.Logger, opts Opts) (*gorm.DB, error) {
+func createDbUriFromOpts(logger lager.Logger, opts Opts) (string, error) {
+	logger = logger.Session("creating-db-from-opts")
+
 	uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
 		opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.Hostname, opts.MySQL.Port, opts.MySQL.DBName)
-	return gorm.Open("mysql", uri)
+	logger.Info("command-line.success")
+	return uri, nil
 }
