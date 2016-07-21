@@ -56,8 +56,8 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 	// Check if from commit is registered, if not queue ref-scan
 	repoIsRegistered, err := s.commitRepository.IsRepoRegistered(logger, scan.Owner, scan.Repository)
 	if err != nil {
-		logger.Error("Error checking database for repo: ", err)
-		return err
+		logger.Error("Error checking for repo: ", err)
+		repoIsRegistered = false
 	}
 
 	if repoIsRegistered != true {

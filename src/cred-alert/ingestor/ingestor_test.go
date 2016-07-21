@@ -248,10 +248,27 @@ var _ = Describe("Ingestor", func() {
 				commitRepository.IsRepoRegisteredReturns(true, findError)
 			})
 
-			It("returns any errors", func() {
+			It("logs an error", func() {
 				err := in.IngestPushScan(logger, scan)
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(findError))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(logger).To(gbytes.Say("Error checking for repo"))
+			})
+
+			It("queues a ref scan", func() {
+				err := in.IngestPushScan(logger, scan)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(taskQueue.EnqueueCallCount()).To(Equal(4))
+
+				expectedTask1 := queue.RefScanPlan{
+					Owner:      orgName,
+					Repository: repoName,
+					Ref:        "commit-1",
+				}.Task("id-1")
+
+				builtTask := taskQueue.EnqueueArgsForCall(0)
+				Expect(builtTask).To(Equal(expectedTask1))
 			})
 		})
 	})
