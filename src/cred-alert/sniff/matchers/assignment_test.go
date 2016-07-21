@@ -22,6 +22,7 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("not an assignment", "package not_an_assignment"),
 		Entry("RHS is too short", "password too-short"),
 		Entry("no quotes with equals sign", "password = should_match"),
+		Entry("YAML assignment with a GUID", "v5_private_key: 6392b811-01d8-5c72-a68c-6d85f2a4b02b"),
 	)
 
 	DescribeTable("matching secret assignments",
