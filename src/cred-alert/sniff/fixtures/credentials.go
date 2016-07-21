@@ -1,6 +1,6 @@
-package patterns_test
+package fixtures
 
-var sample_strings = `
+var Credentials = `
 # Git secrets extra patterns test file
 
 # Should Match

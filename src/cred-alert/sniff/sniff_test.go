@@ -1,16 +1,20 @@
 package sniff_test
 
 import (
-	"cred-alert/scanners"
-	"cred-alert/sniff"
-	"cred-alert/sniff/matchers/matchersfakes"
-	"cred-alert/sniff/snifffakes"
 	"errors"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
+
+	"cred-alert/scanners"
+	"cred-alert/sniff"
+	"cred-alert/sniff/fixtures"
+	"cred-alert/sniff/matchers/matchersfakes"
+	"cred-alert/sniff/snifffakes"
 )
 
 var _ = Describe("Sniffer", func() {
@@ -122,6 +126,46 @@ var _ = Describe("Sniffer", func() {
 					Expect(callCount).To(Equal(2))
 				})
 			})
+		})
+	})
+
+	Describe("DefaultSniffer", func() {
+		var lines []string
+		var sniffer sniff.Sniffer
+
+		BeforeEach(func() {
+			lines = strings.Split(fixtures.Credentials, "\n")
+			sniffer = sniff.NewDefaultSniffer()
+		})
+
+		It("matches all positive examples", func() {
+			var expectations []string
+			var actuals []string
+
+			for _, line := range lines {
+				scanner.ScanReturns(true)
+
+				if strings.Contains(line, "should_match") {
+					expectations = append(expectations, line)
+				}
+
+				scanner.LineStub = func() *scanners.Line {
+					scanner.ScanReturns(false)
+
+					return &scanners.Line{
+						Content: line,
+					}
+				}
+
+				sniffer.Sniff(logger, scanner, func(line scanners.Line) error {
+					actuals = append(actuals, line.Content)
+					return nil
+				})
+			}
+
+			for _, expectation := range expectations {
+				Expect(actuals).To(ContainElement(expectation))
+			}
 		})
 	})
 })
