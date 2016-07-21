@@ -12,8 +12,6 @@ const bashStringInterpolationPattern = `["]\$`
 const fakePattern = `(?i)fake`
 const examplePattern = `(?i)example`
 
-const generalPattern = `(?i)["']?[A-Za-z0-9_-]*(secret|private[-_]?key|password|salt)["']?\s*(=|:|:=|=>)?\s*["'][A-Za-z0-9.$+=&\/_\\-]{12,}["']`
-
 const awsAccessKeyIDPattern = `AKIA[A-Z0-9]{16}`
 const awsSecretAccessKeyPattern = `(?i)("|')?(aws)?_?(secret)?_?(access)?_?(key)("|')?\s*(:|=>|=)\s*("|')?[A-Za-z0-9/\+=]{40}("|')?`
 const awsAccountIDPattern = `(?i)("|')?(aws)?_?(account)_?(id)?("|')?\s*(:|=>|=)\s*("|')?[0-9]{4}\-?[0-9]{4}\-?[0-9]{4}("|')?`
@@ -57,7 +55,7 @@ func NewDefaultSniffer() Sniffer {
 			matchers.KnownFormat(cryptSHA256Pattern),
 			matchers.KnownFormat(cryptSHA512Pattern),
 			matchers.KnownFormat(rsaPrivateKeyHeaderPattern),
-			matchers.KnownFormat(generalPattern),
+			matchers.Assignment(),
 		),
 		exclusionMatcher: matchers.Multi(
 			matchers.KnownFormat(bashStringInterpolationPattern),
