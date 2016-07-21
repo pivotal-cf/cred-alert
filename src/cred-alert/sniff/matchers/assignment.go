@@ -1,9 +1,6 @@
 package matchers
 
-import (
-	"regexp"
-	"strings"
-)
+import "regexp"
 
 const generalPattern = `(?i)["']?[A-Za-z0-9_-]*(secret|private[-_]?key|password|salt)["']?\s*(=|:|:=|=>)?\s*["']?[A-Za-z0-9.$+=&\/_\\-]{12,}["']?`
 
@@ -26,18 +23,18 @@ type assignmentMatcher struct {
 }
 
 func (m *assignmentMatcher) Match(line string) bool {
-	if !m.pattern.MatchString(line) {
+	result := m.pattern.FindStringSubmatch(line)
+	if result == nil {
 		return false
 	}
 
-	if isYAML(line) {
+	if isYAMLAssignment(result) {
 		return m.yamlPattern.MatchString(line)
 	}
 
 	return m.assignmentPattern.MatchString(line)
 }
 
-func isYAML(line string) bool {
-	idx := strings.IndexAny(line, ":")
-	return idx != -1 && line[idx+1] != '='
+func isYAMLAssignment(result []string) bool {
+	return result[2] == ":"
 }

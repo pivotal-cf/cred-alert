@@ -138,7 +138,7 @@ var _ = Describe("Sniffer", func() {
 			sniffer = sniff.NewDefaultSniffer()
 		})
 
-		XIt("matches all positive examples", func() {
+		It("matches all positive examples", func() {
 			var expectations []string
 			var actuals []string
 
