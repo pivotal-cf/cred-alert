@@ -86,7 +86,7 @@ func NewDiffScanRepository(db *gorm.DB) *diffScanRepository {
 func (d *diffScanRepository) SaveDiffScan(logger lager.Logger, diffScan *DiffScan) error {
 	logger = logger.Session("saving-diffscan", lager.Data{
 		"owner":            diffScan.Owner,
-		"repo":             diffScan.Repo,
+		"repository":       diffScan.Repository,
 		"from-commit":      diffScan.FromCommit,
 		"to-commit":        diffScan.ToCommit,
 		"credential-found": diffScan.CredentialFound,

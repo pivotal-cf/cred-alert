@@ -187,8 +187,8 @@ var _ = Describe("Database Connections", func() {
 		BeforeEach(func() {
 			diffScanRepository = db.NewDiffScanRepository(database)
 			fakeDiffScan = &db.DiffScan{
-				Owner:           "my-owner",
-				Repo:            "my-repo",
+				Owner:           "my-org",
+				Repository:      "my-repo",
 				FromCommit:      "sha-1",
 				ToCommit:        "sha-2",
 				CredentialFound: false,
@@ -203,7 +203,7 @@ var _ = Describe("Database Connections", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(diffs).To(HaveLen(1))
 			Expect(diffs[0].Owner).To(Equal(fakeDiffScan.Owner))
-			Expect(diffs[0].Repo).To(Equal(fakeDiffScan.Repo))
+			Expect(diffs[0].Repository).To(Equal(fakeDiffScan.Repository))
 			Expect(diffs[0].ToCommit).To(Equal(fakeDiffScan.ToCommit))
 			Expect(diffs[0].FromCommit).To(Equal(fakeDiffScan.FromCommit))
 		})
@@ -223,7 +223,7 @@ var _ = Describe("Database Connections", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"credential-found":%v`, fakeDiffScan.CredentialFound)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from-commit":"%s"`, fakeDiffScan.FromCommit)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, fakeDiffScan.Owner)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repo":"%s"`, fakeDiffScan.Repo)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, fakeDiffScan.Repository)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"to-commit":"%s"`, fakeDiffScan.ToCommit)))
 		})
 

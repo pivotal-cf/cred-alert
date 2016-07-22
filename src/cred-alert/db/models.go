@@ -11,7 +11,7 @@ type Model struct {
 type DiffScan struct {
 	Model
 	Owner           string
-	Repo            string
+	Repository      string
 	FromCommit      string
 	ToCommit        string
 	CredentialFound bool

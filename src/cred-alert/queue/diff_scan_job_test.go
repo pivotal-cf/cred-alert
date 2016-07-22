@@ -91,7 +91,7 @@ var _ = Describe("Diff Scan Job", func() {
 
 		_, diffScan := diffScanRepository.SaveDiffScanArgsForCall(0)
 		Expect(diffScan.Owner).To(Equal(plan.Owner))
-		Expect(diffScan.Repo).To(Equal(plan.Repository))
+		Expect(diffScan.Repository).To(Equal(plan.Repository))
 		Expect(diffScan.FromCommit).To(Equal(plan.From))
 		Expect(diffScan.ToCommit).To(Equal(plan.To))
 		Expect(diffScan.CredentialFound).To(BeFalse())
@@ -142,7 +142,7 @@ var _ = Describe("Diff Scan Job", func() {
 
 			_, diffScan := diffScanRepository.SaveDiffScanArgsForCall(0)
 			Expect(diffScan.Owner).To(Equal(plan.Owner))
-			Expect(diffScan.Repo).To(Equal(plan.Repository))
+			Expect(diffScan.Repository).To(Equal(plan.Repository))
 			Expect(diffScan.FromCommit).To(Equal(plan.From))
 			Expect(diffScan.ToCommit).To(Equal(plan.To))
 			Expect(diffScan.CredentialFound).To(BeTrue())
