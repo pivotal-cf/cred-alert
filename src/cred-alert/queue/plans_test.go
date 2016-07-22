@@ -22,7 +22,7 @@ var _ = Describe("Plans", func() {
 
 			task := plan.Task("an-id")
 			Expect(task.ID()).To(Equal("an-id"))
-			Expect(task.Type()).To(Equal("diff-scan"))
+			Expect(task.Type()).To(Equal(queue.TaskTypeDiffScan))
 			Expect(task.Payload()).To(MatchJSON(`
 				{
 					"owner": "owner",
@@ -48,7 +48,7 @@ var _ = Describe("Plans", func() {
 
 			task := plan.Task("an-id")
 			Expect(task.ID()).To(Equal("an-id"))
-			Expect(task.Type()).To(Equal("ref-scan"))
+			Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
 			Expect(task.Payload()).To(MatchJSON(`
 				{
 					"owner": "owner",
@@ -75,7 +75,7 @@ var _ = Describe("Plans", func() {
 			}
 			task := plan.Task("id-1")
 			Expect(task.ID()).To(Equal("id-1"))
-			Expect(task.Type()).To(Equal("ancestry-scan"))
+			Expect(task.Type()).To(Equal(queue.TaskTypeAncestryScan))
 			Expect(task.Payload()).To(MatchJSON(fmt.Sprintf(`
 				{
 						"owner": "owner",

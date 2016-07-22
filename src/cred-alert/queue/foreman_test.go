@@ -35,7 +35,7 @@ var _ = Describe("Foreman", func() {
 			Context("when the foreman knows how to build the task", func() {
 				It("builds the task", func() {
 					task := &queuefakes.FakeAckTask{}
-					task.TypeReturns("diff-scan")
+					task.TypeReturns(queue.TaskTypeDiffScan)
 					task.PayloadReturns(`{
 						"owner":      "pivotal-cf",
 						"repository": "cred-alert",
@@ -59,7 +59,7 @@ var _ = Describe("Foreman", func() {
 			Context("payload is not valid json", func() {
 				It("returns an error", func() {
 					task := &queuefakes.FakeAckTask{}
-					task.TypeReturns("diff-scan")
+					task.TypeReturns(queue.TaskTypeDiffScan)
 					task.PayloadReturns(`{broken-json":'seriously"}`)
 
 					_, err := foreman.BuildJob(task)
@@ -72,7 +72,7 @@ var _ = Describe("Foreman", func() {
 		Describe("RefScan Task", func() {
 			It("builds a ref-scan task", func() {
 				task := &queuefakes.FakeAckTask{}
-				task.TypeReturns("ref-scan")
+				task.TypeReturns(queue.TaskTypeRefScan)
 				task.PayloadReturns(`{
 					"owner":      "pivotal-cf",
 					"repository": "cred-alert",

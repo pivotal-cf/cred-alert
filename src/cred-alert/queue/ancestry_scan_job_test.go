@@ -162,7 +162,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 						BeforeEach(func() {
 							taskQueue.EnqueueStub = func(task queue.Task) error {
-								if task.Type() == "diff-scan" {
+								if task.Type() == queue.TaskTypeDiffScan {
 									return expectedError
 								}
 								return nil
@@ -195,7 +195,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 						expectedError := errors.New("disaster")
 						BeforeEach(func() {
 							taskQueue.EnqueueStub = func(task queue.Task) error {
-								if task.Type() == "ancestry-scan" {
+								if task.Type() == queue.TaskTypeAncestryScan {
 									return expectedError
 								}
 								return nil
@@ -248,7 +248,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 						Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
 
 						task := taskQueue.EnqueueArgsForCall(0)
-						Expect(task.Type()).To(Equal("ref-scan"))
+						Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
 						Expect(task.Payload()).To(MatchJSON(`
 							{
 								"owner": "owner",
@@ -281,7 +281,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 					plan.Depth = 0
 					// Fail if it tries to enqueue more tasks
 					taskQueue.EnqueueStub = func(task queue.Task) error {
-						Expect(task.Type()).To(Equal("ref-scan"))
+						Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
 						return nil
 					}
 				})
@@ -293,7 +293,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 					Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
 
 					task := taskQueue.EnqueueArgsForCall(0)
-					Expect(task.Type()).To(Equal("ref-scan"))
+					Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
 					Expect(task.Payload()).To(MatchJSON(`
 							{
 								"owner": "owner",
@@ -333,7 +333,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 					BeforeEach(func() {
 						taskQueue.EnqueueStub = func(task queue.Task) error {
-							Expect(task.Type()).To(Equal("ref-scan"))
+							Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
 							return expectedError
 						}
 					})

@@ -15,7 +15,7 @@ func (p DiffScanPlan) Task(id string) Task {
 
 	return basicTask{
 		id:      id,
-		typee:   "diff-scan",
+		typee:   TaskTypeDiffScan,
 		payload: string(payload),
 	}
 }
@@ -32,7 +32,7 @@ func (p RefScanPlan) Task(id string) Task {
 
 	return basicTask{
 		id:      id,
-		typee:   "ref-scan",
+		typee:   TaskTypeRefScan,
 		payload: string(payload),
 	}
 }
@@ -50,7 +50,7 @@ func (a AncestryScanPlan) Task(id string) Task {
 
 	return basicTask{
 		id:      id,
-		typee:   "ancestry-scan",
+		typee:   TaskTypeAncestryScan,
 		payload: string(payload),
 	}
 }

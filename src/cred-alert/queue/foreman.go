@@ -53,9 +53,9 @@ func NewForeman(
 
 func (f *foreman) BuildJob(task Task) (Job, error) {
 	switch task.Type() {
-	case "diff-scan":
+	case TaskTypeDiffScan:
 		return f.buildDiffScan(task.Payload())
-	case "ref-scan":
+	case TaskTypeRefScan:
 		return f.buildRefScan(task.Payload())
 	default:
 		return nil, fmt.Errorf("unknown task type: %s", task.Type())
