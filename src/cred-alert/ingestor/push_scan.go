@@ -47,9 +47,9 @@ func Extract(event github.PushEvent) (PushScan, bool) {
 	diffs := []PushScanDiff{
 		{
 			From:          *event.Before,
+			FromTimestamp: time.Unix(0, 0),
 			To:            *event.Commits[0].ID,
 			ToTimestamp:   (*event.Commits[0].Timestamp).Time,
-			FromTimestamp: time.Unix(0, 0),
 		},
 	}
 
@@ -58,16 +58,11 @@ func Extract(event github.PushEvent) (PushScan, bool) {
 			break
 		}
 
-		from := *event.Commits[i].ID
-		fromTimestamp := (*event.Commits[i].Timestamp).Time
-		to := *event.Commits[i+1].ID
-		toTimestamp := (*event.Commits[i+1].Timestamp).Time
-
 		diffs = append(diffs, PushScanDiff{
-			From:          from,
-			FromTimestamp: fromTimestamp,
-			To:            to,
-			ToTimestamp:   toTimestamp,
+			From:          *event.Commits[i].ID,
+			FromTimestamp: (*event.Commits[i].Timestamp).Time,
+			To:            *event.Commits[i+1].ID,
+			ToTimestamp:   (*event.Commits[i+1].Timestamp).Time,
 		})
 	}
 
