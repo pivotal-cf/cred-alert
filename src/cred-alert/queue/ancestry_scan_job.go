@@ -55,7 +55,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		return nil
 	}
 
-	if j.Depth == 0 { // TODO: < 0
+	if j.Depth <= 0 {
 		if err := j.enqueueRefScan(); err != nil {
 			logger.Error("failed", err)
 			return err

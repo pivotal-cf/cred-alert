@@ -276,70 +276,89 @@ var _ = Describe("Ancestry Scan Job", func() {
 				})
 			})
 
-			Context("when we have reached the maximum scan depth", func() {
-				BeforeEach(func() {
-					plan.Depth = 0
-					// Fail if it tries to enqueue more tasks
-					taskQueue.EnqueueStub = func(task queue.Task) error {
+			Describe("reaching the maximum scan depth", func() {
+				var ItHandlesHittingTheMaximumScanDepth = func() {
+					It("enqueues a ref scan of the commit", func() {
+						err := job.Run(logger)
+						Expect(err).NotTo(HaveOccurred())
+
+						Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
+
+						task := taskQueue.EnqueueArgsForCall(0)
 						Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
-						return nil
-					}
-				})
-
-				It("enqueues a ref scan of the commit", func() {
-					err := job.Run(logger)
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
-
-					task := taskQueue.EnqueueArgsForCall(0)
-					Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
-					Expect(task.Payload()).To(MatchJSON(`
+						Expect(task.Payload()).To(MatchJSON(`
 							{
 								"owner": "owner",
 								"repository": "repo",
 								"ref": "sha"
 							}
 						`))
-				})
-
-				ItMarksTheCommitAsSeen()
-
-				It("emits a counter saying that it ran out of depth", func() {
-					job.Run(logger)
-					Expect(maxDepthCounter.IncCallCount()).To(Equal(1))
-				})
-
-				It("logs that max depth was reached", func() {
-					job.Run(logger)
-					Expect(logger).To(gbytes.Say(`scanning-ancestry.max-depth-reached`))
-				})
-
-				It("does not look for any more parents", func() {
-					Expect(client.ParentsCallCount()).To(Equal(0))
-				})
-
-				Context("When there is an error registering a commit", func() {
-					expectedError := errors.New("disaster")
-					BeforeEach(func() {
-						commitRepository.RegisterCommitReturns(expectedError)
 					})
 
-					ItReturnsAndLogsAnError(expectedError)
-				})
+					ItMarksTheCommitAsSeen()
 
-				Context("when there is an error enqueuing a ref scan", func() {
-					expectedError := errors.New("disaster")
+					It("emits a counter saying that it ran out of depth", func() {
+						job.Run(logger)
+						Expect(maxDepthCounter.IncCallCount()).To(Equal(1))
+					})
 
+					It("logs that max depth was reached", func() {
+						job.Run(logger)
+						Expect(logger).To(gbytes.Say(`scanning-ancestry.max-depth-reached`))
+					})
+
+					It("does not look for any more parents", func() {
+						Expect(client.ParentsCallCount()).To(Equal(0))
+					})
+
+					Context("When there is an error registering a commit", func() {
+						expectedError := errors.New("disaster")
+						BeforeEach(func() {
+							commitRepository.RegisterCommitReturns(expectedError)
+						})
+
+						ItReturnsAndLogsAnError(expectedError)
+					})
+
+					Context("when there is an error enqueuing a ref scan", func() {
+						expectedError := errors.New("disaster")
+
+						BeforeEach(func() {
+							taskQueue.EnqueueStub = func(task queue.Task) error {
+								Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
+								return expectedError
+							}
+						})
+
+						ItReturnsAndLogsAnError(expectedError)
+						ItDoesNotRegisterCommit()
+					})
+				}
+
+				Context("when we have reached the maximum scan depth", func() {
 					BeforeEach(func() {
+						plan.Depth = 0
+						// Fail if it tries to enqueue more tasks
 						taskQueue.EnqueueStub = func(task queue.Task) error {
 							Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
-							return expectedError
+							return nil
 						}
 					})
 
-					ItReturnsAndLogsAnError(expectedError)
-					ItDoesNotRegisterCommit()
+					ItHandlesHittingTheMaximumScanDepth()
+				})
+
+				Context("when we have somehow(?!) gone beyond the maximum scan depth", func() {
+					BeforeEach(func() {
+						plan.Depth = -5
+						// Fail if it tries to enqueue more tasks
+						taskQueue.EnqueueStub = func(task queue.Task) error {
+							Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
+							return nil
+						}
+					})
+
+					ItHandlesHittingTheMaximumScanDepth()
 				})
 			})
 		})
