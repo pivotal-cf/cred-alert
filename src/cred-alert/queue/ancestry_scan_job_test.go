@@ -82,7 +82,6 @@ var _ = Describe("Ancestry Scan Job", func() {
 				Owner:      "owner",
 				Repository: "repo",
 				SHA:        "sha",
-				// TODO: timestamp
 			}))
 		})
 	}
@@ -223,11 +222,10 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 						for i, parent := range expectedParents {
 							expectedTask := queue.AncestryScanPlan{
-								Owner:           plan.Owner,
-								Repository:      plan.Repository,
-								CommitTimestamp: plan.CommitTimestamp,
-								SHA:             parent,
-								Depth:           plan.Depth - 1,
+								Owner:      plan.Owner,
+								Repository: plan.Repository,
+								SHA:        parent,
+								Depth:      plan.Depth - 1,
 							}.Task(fmt.Sprintf("id-%d", 2*i+1))
 							task := taskQueue.EnqueueArgsForCall(2*i + 1)
 							Expect(task).To(Equal(expectedTask))

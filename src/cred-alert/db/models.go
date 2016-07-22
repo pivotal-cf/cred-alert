@@ -22,5 +22,4 @@ type Commit struct {
 	Owner      string
 	Repository string
 	SHA        string
-	Timestamp  time.Time
 }

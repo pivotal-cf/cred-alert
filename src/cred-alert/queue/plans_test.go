@@ -1,9 +1,6 @@
 package queue_test
 
 import (
-	"fmt"
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -65,25 +62,22 @@ var _ = Describe("Plans", func() {
 
 	Describe("AncestryScanPlan", func() {
 		It("can be encoded into a task", func() {
-			expectedTime := time.Now()
 			plan := queue.AncestryScanPlan{
-				Owner:           "owner",
-				Repository:      "repository",
-				SHA:             "sha-1",
-				CommitTimestamp: expectedTime.Unix(),
-				Depth:           1,
+				Owner:      "owner",
+				Repository: "repository",
+				SHA:        "sha-1",
+				Depth:      1,
 			}
 			task := plan.Task("id-1")
 			Expect(task.ID()).To(Equal("id-1"))
 			Expect(task.Type()).To(Equal(queue.TaskTypeAncestryScan))
-			Expect(task.Payload()).To(MatchJSON(fmt.Sprintf(`
+			Expect(task.Payload()).To(MatchJSON(`
 				{
 						"owner": "owner",
 						"repository": "repository",
 						"sha": "sha-1",
-						"commit-timestamp": %d,
 						"depth": 1
-				}`, expectedTime.Unix())))
+				}`))
 		})
 
 		It("is a queueable plan", func() {

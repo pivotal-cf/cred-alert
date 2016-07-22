@@ -25,10 +25,9 @@ func NewCommitRepository(db *gorm.DB) *commitRepository {
 
 func (c *commitRepository) RegisterCommit(logger lager.Logger, commit *Commit) error {
 	logger = logger.Session("registering-commit", lager.Data{
-		"commit-timestamp": commit.Timestamp.Unix(),
-		"owner":            commit.Owner,
-		"repository":       commit.Repository,
-		"sha":              commit.SHA,
+		"owner":      commit.Owner,
+		"repository": commit.Repository,
+		"sha":        commit.SHA,
 	})
 
 	err := c.db.Save(commit).Error

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -70,7 +69,6 @@ var _ = Describe("Database Connections", func() {
 			commitRepository = db.NewCommitRepository(database)
 			fakeCommit = &db.Commit{
 				SHA:        "abc123",
-				Timestamp:  time.Now(),
 				Owner:      repoOwner,
 				Repository: repoName,
 			}
@@ -85,7 +83,6 @@ var _ = Describe("Database Connections", func() {
 				Expect(savedCommit.SHA).To(Equal(fakeCommit.SHA))
 				Expect(savedCommit.Owner).To(Equal(fakeCommit.Owner))
 				Expect(savedCommit.Repository).To(Equal(fakeCommit.Repository))
-				Expect(savedCommit.Timestamp.Unix()).To(Equal(fakeCommit.Timestamp.Unix()))
 			})
 
 			It("returns any error", func() {
@@ -99,7 +96,6 @@ var _ = Describe("Database Connections", func() {
 			It("should log when successfully registering", func() {
 				commitRepository.RegisterCommit(logger, fakeCommit)
 				Expect(logger).To(gbytes.Say("registering-commit.done"))
-				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"commit-timestamp":%d`, fakeCommit.Timestamp.Unix())))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, fakeCommit.Owner)))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, fakeCommit.Repository)))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"sha":"%s"`, fakeCommit.SHA)))

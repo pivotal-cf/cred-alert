@@ -120,7 +120,6 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 			Repository: scan.Repository,
 			Owner:      scan.Owner,
 			SHA:        scanDiff.To,
-			Timestamp:  scanDiff.ToTimestamp,
 		})
 
 		logger.Info("done")

@@ -38,10 +38,9 @@ func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitReposit
 
 func (j *AncestryScanJob) Run(logger lager.Logger) error {
 	logger = logger.Session("scanning-ancestry", lager.Data{
-		"sha":              j.SHA,
-		"owner":            j.Owner,
-		"repo":             j.Repository,
-		"commit-timestamp": j.CommitTimestamp,
+		"sha":   j.SHA,
+		"owner": j.Owner,
+		"repo":  j.Repository,
 	})
 
 	isRegistered, err := j.commitRepository.IsCommitRegistered(logger, j.SHA)

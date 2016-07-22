@@ -38,11 +38,10 @@ func (p RefScanPlan) Task(id string) Task {
 }
 
 type AncestryScanPlan struct {
-	Owner           string `json:"owner"`
-	Repository      string `json:"repository"`
-	SHA             string `json:"sha"`
-	CommitTimestamp int64  `json:"commit-timestamp"`
-	Depth           int    `json:"depth"`
+	Owner      string `json:"owner"`
+	Repository string `json:"repository"`
+	SHA        string `json:"sha"`
+	Depth      int    `json:"depth"`
 }
 
 func (a AncestryScanPlan) Task(id string) Task {
