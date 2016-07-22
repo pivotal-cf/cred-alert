@@ -2,7 +2,6 @@ package queue_test
 
 import (
 	"errors"
-	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,7 +28,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 		maxDepthCounter      *metricsfakes.FakeCounter
 		initialCommitCounter *metricsfakes.FakeCounter
 		emitter              *metricsfakes.FakeEmitter
-		generator            *queuefakes.FakeUUIDGenerator
+		id                   string
 
 		plan queue.AncestryScanPlan
 		job  *queue.AncestryScanJob
@@ -49,8 +48,8 @@ var _ = Describe("Ancestry Scan Job", func() {
 		maxDepthCounter = &metricsfakes.FakeCounter{}
 		initialCommitCounter = &metricsfakes.FakeCounter{}
 		logger = lagertest.NewTestLogger("ancestry-scan")
-		generator = &queuefakes.FakeUUIDGenerator{}
 		emitter.CounterReturns(maxDepthCounter)
+		id = "test-id"
 
 		emitter.CounterStub = func(name string) metrics.Counter {
 			if name == "cred_alert.max-depth-reached" {
@@ -59,16 +58,10 @@ var _ = Describe("Ancestry Scan Job", func() {
 				return initialCommitCounter
 			}
 		}
-
-		callCount := -1
-		generator.GenerateStub = func() string {
-			callCount++
-			return fmt.Sprintf("id-%d", callCount)
-		}
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewAncestryScanJob(plan, commitRepository, client, emitter, taskQueue, generator)
+		job = queue.NewAncestryScanJob(plan, commitRepository, client, emitter, taskQueue, id)
 	})
 
 	var ItMarksTheCommitAsSeen = func() {
@@ -184,7 +177,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 								Repository: plan.Repository,
 								From:       parent,
 								To:         plan.SHA,
-							}.Task(fmt.Sprintf("id-%d", 2*i))
+							}.Task(id)
 							task := taskQueue.EnqueueArgsForCall(2 * i)
 							Expect(task).To(Equal(expectedTask))
 						}
@@ -226,7 +219,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 								Repository: plan.Repository,
 								SHA:        parent,
 								Depth:      plan.Depth - 1,
-							}.Task(fmt.Sprintf("id-%d", 2*i+1))
+							}.Task(id)
 							task := taskQueue.EnqueueArgsForCall(2*i + 1)
 							Expect(task).To(Equal(expectedTask))
 						}
@@ -324,6 +317,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 						BeforeEach(func() {
 							taskQueue.EnqueueStub = func(task queue.Task) error {
 								Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
+								Expect(task.ID()).To(Equal(id))
 								return expectedError
 							}
 						})
@@ -339,6 +333,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 						// Fail if it tries to enqueue more tasks
 						taskQueue.EnqueueStub = func(task queue.Task) error {
 							Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
+							Expect(task.ID()).To(Equal(id))
 							return nil
 						}
 					})
@@ -352,6 +347,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 						// Fail if it tries to enqueue more tasks
 						taskQueue.EnqueueStub = func(task queue.Task) error {
 							Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))
+							Expect(task.ID()).To(Equal(id))
 							return nil
 						}
 					})

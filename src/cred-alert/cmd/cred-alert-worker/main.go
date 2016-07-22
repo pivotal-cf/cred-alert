@@ -99,14 +99,23 @@ func main() {
 	defer database.Close()
 
 	diffScanRepository := db.NewDiffScanRepository(database)
-
-	foreman := queue.NewForeman(ghClient, sniffer, emitter, notifier, diffScanRepository)
+	commitRepository := db.NewCommitRepository(database)
 
 	taskQueue, err := createQueue(opts, logger)
 	if err != nil {
 		logger.Error("Could not create queue", err)
 		os.Exit(1)
 	}
+
+	foreman := queue.NewForeman(
+		ghClient,
+		sniffer,
+		emitter,
+		notifier,
+		diffScanRepository,
+		commitRepository,
+		taskQueue,
+	)
 
 	backgroundWorker := worker.New(logger, foreman, taskQueue, emitter)
 

@@ -97,85 +97,21 @@ var _ = Describe("Ingestor", func() {
 	})
 
 	Describe("enqueuing tasks in the queue", func() {
-		It("enqueues tasks in the queue", func() {
+		It("enqueues an ancestry scan at the end commit", func() {
 			err := in.IngestPushScan(logger, scan)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(taskQueue.EnqueueCallCount()).To(Equal(3))
+			Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
 
-			expectedTask1 := queue.DiffScanPlan{
+			expectedTask1 := queue.AncestryScanPlan{
 				Owner:      ownerName,
 				Repository: repoName,
-				From:       "commit-1",
-				To:         "commit-2",
+				SHA:        "commit-4",
+				Depth:      queue.DefaultScanDepth,
 			}.Task("id-1")
 
 			builtTask := taskQueue.EnqueueArgsForCall(0)
 			Expect(builtTask).To(Equal(expectedTask1))
-
-			expectedTask2 := queue.DiffScanPlan{
-				Owner:      ownerName,
-				Repository: repoName,
-				From:       "commit-2",
-				To:         "commit-3",
-			}.Task("id-2")
-
-			builtTask = taskQueue.EnqueueArgsForCall(1)
-			Expect(builtTask).To(Equal(expectedTask2))
-
-			expectedTask3 := queue.DiffScanPlan{
-				Owner:      ownerName,
-				Repository: repoName,
-				From:       "commit-3",
-				To:         "commit-4",
-			}.Task("id-3")
-
-			builtTask = taskQueue.EnqueueArgsForCall(2)
-			Expect(builtTask).To(Equal(expectedTask3))
-		})
-
-		It("saves queued commits to the database", func() {
-			err := in.IngestPushScan(logger, scan)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(commitRepository.RegisterCommitCallCount()).To(Equal(3))
-
-			_, commit1 := commitRepository.RegisterCommitArgsForCall(0)
-			Expect(commit1.SHA).To(Equal("commit-2"))
-			Expect(commit1.Repository).To(Equal(repoName))
-			Expect(commit1.Owner).To(Equal(ownerName))
-
-			_, commit2 := commitRepository.RegisterCommitArgsForCall(1)
-			Expect(commit2.SHA).To(Equal("commit-3"))
-			Expect(commit2.Repository).To(Equal(repoName))
-			Expect(commit2.Owner).To(Equal(ownerName))
-
-			_, commit3 := commitRepository.RegisterCommitArgsForCall(2)
-			Expect(commit3.SHA).To(Equal("commit-4"))
-			Expect(commit3.Repository).To(Equal(repoName))
-			Expect(commit3.Owner).To(Equal(ownerName))
-		})
-
-		Context("when the from commit is the initial nil commit", func() {
-			BeforeEach(func() {
-				initialCommitParentHash := "0000000000000000000000000000000000000000"
-				scan.Diffs[0].From = initialCommitParentHash
-			})
-
-			It("queues a ref-scan", func() {
-				err := in.IngestPushScan(logger, scan)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(taskQueue.EnqueueCallCount()).To(Equal(3))
-
-				expectedTask := queue.RefScanPlan{
-					Owner:      ownerName,
-					Repository: repoName,
-					Ref:        "commit-2",
-				}.Task("id-1")
-
-				builtTask := taskQueue.EnqueueArgsForCall(0)
-				Expect(builtTask).To(Equal(expectedTask))
-			})
 		})
 
 		Context("when enqueuing a task fails", func() {
@@ -203,7 +139,7 @@ var _ = Describe("Ingestor", func() {
 				err := in.IngestPushScan(logger, scan)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(taskQueue.EnqueueCallCount()).To(Equal(4))
+				Expect(taskQueue.EnqueueCallCount()).To(Equal(2))
 
 				expectedTask1 := queue.RefScanPlan{
 					Owner:      ownerName,
@@ -213,6 +149,16 @@ var _ = Describe("Ingestor", func() {
 
 				builtTask := taskQueue.EnqueueArgsForCall(0)
 				Expect(builtTask).To(Equal(expectedTask1))
+			})
+
+			It("Saves the commit to the db", func() {
+				in.IngestPushScan(logger, scan)
+
+				Expect(commitRepository.RegisterCommitCallCount()).To(Equal(1))
+				_, commit := commitRepository.RegisterCommitArgsForCall(0)
+				Expect(commit.SHA).To(Equal("commit-1"))
+				Expect(commit.Repository).To(Equal(repoName))
+				Expect(commit.Owner).To(Equal(ownerName))
 			})
 
 			It("log when queuing ref scan happens", func() {
@@ -233,6 +179,11 @@ var _ = Describe("Ingestor", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err).To(Equal(expectedError))
 					Expect(logger).To(gbytes.Say("enqueue-ref-scan-failed"))
+				})
+
+				It("Does not save the commit to the db", func() {
+					in.IngestPushScan(logger, scan)
+					Expect(commitRepository.RegisterCommitCallCount()).To(Equal(0))
 				})
 			})
 		})
@@ -256,7 +207,7 @@ var _ = Describe("Ingestor", func() {
 				err := in.IngestPushScan(logger, scan)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(taskQueue.EnqueueCallCount()).To(Equal(4))
+				Expect(taskQueue.EnqueueCallCount()).To(Equal(2))
 
 				expectedTask1 := queue.RefScanPlan{
 					Owner:      ownerName,
@@ -266,6 +217,16 @@ var _ = Describe("Ingestor", func() {
 
 				builtTask := taskQueue.EnqueueArgsForCall(0)
 				Expect(builtTask).To(Equal(expectedTask1))
+			})
+
+			It("Saves the commit to the db", func() {
+				in.IngestPushScan(logger, scan)
+
+				Expect(commitRepository.RegisterCommitCallCount()).To(Equal(1))
+				_, commit := commitRepository.RegisterCommitArgsForCall(0)
+				Expect(commit.SHA).To(Equal("commit-1"))
+				Expect(commit.Repository).To(Equal(repoName))
+				Expect(commit.Owner).To(Equal(ownerName))
 			})
 		})
 	})

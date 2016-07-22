@@ -31,6 +31,8 @@ type foreman struct {
 	emitter            metrics.Emitter
 	notifier           notifications.Notifier
 	diffScanRepository db.DiffScanRepository
+	commitRepository   db.CommitRepository
+	taskQueue          Queue
 }
 
 func NewForeman(
@@ -39,6 +41,8 @@ func NewForeman(
 	emitter metrics.Emitter,
 	notifier notifications.Notifier,
 	diffScanRepository db.DiffScanRepository,
+	commitRepository db.CommitRepository,
+	taskQueue Queue,
 ) *foreman {
 	foreman := &foreman{
 		githubClient:       githubClient,
@@ -46,6 +50,8 @@ func NewForeman(
 		emitter:            emitter,
 		notifier:           notifier,
 		diffScanRepository: diffScanRepository,
+		commitRepository:   commitRepository,
+		taskQueue:          taskQueue,
 	}
 
 	return foreman
@@ -57,6 +63,8 @@ func (f *foreman) BuildJob(task Task) (Job, error) {
 		return f.buildDiffScan(task.Payload())
 	case TaskTypeRefScan:
 		return f.buildRefScan(task.Payload())
+	case TaskTypeAncestryScan:
+		return f.buildAncestryScan(task.ID(), task.Payload())
 	default:
 		return nil, fmt.Errorf("unknown task type: %s", task.Type())
 	}
@@ -92,5 +100,22 @@ func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
 		f.sniffer,
 		f.notifier,
 		f.emitter,
+	), nil
+}
+
+func (f *foreman) buildAncestryScan(id, payload string) (*AncestryScanJob, error) {
+	var ancestryScanPlan AncestryScanPlan
+
+	if err := json.Unmarshal([]byte(payload), &ancestryScanPlan); err != nil {
+		return nil, err
+	}
+
+	return NewAncestryScanJob(
+		ancestryScanPlan,
+		f.commitRepository,
+		f.githubClient,
+		f.emitter,
+		f.taskQueue,
+		id,
 	), nil
 }

@@ -2,6 +2,8 @@ package queue
 
 import "encoding/json"
 
+const DefaultScanDepth = 10
+
 type DiffScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`

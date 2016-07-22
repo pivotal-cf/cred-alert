@@ -76,54 +76,32 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 			return err
 		}
 
+		s.commitRepository.RegisterCommit(logger, &db.Commit{
+			Repository: scan.Repository,
+			Owner:      scan.Owner,
+			SHA:        scan.Diffs[0].From,
+		})
+
 		logger.Session(sessionName).Info("enqueue-ref-scan-succeeded")
 	}
 
 	s.requestCounter.Inc(logger)
 
-	for _, scanDiff := range scan.Diffs {
-		id := s.generator.Generate()
+	id := s.generator.Generate()
+	task := queue.AncestryScanPlan{
+		Owner:      scan.Owner,
+		Repository: scan.Repository,
+		SHA:        scan.Diffs[len(scan.Diffs)-1].To,
+		Depth:      queue.DefaultScanDepth,
+	}.Task(id)
 
-		var task queue.Task
-		if scanDiff.From == initialCommitParentHash {
-			logger = logger.Session("enqueuing-ref-scan", lager.Data{
-				"task-id": id,
-			})
-
-			task = queue.RefScanPlan{
-				Owner:      scan.Owner,
-				Repository: scan.Repository,
-				Ref:        scanDiff.To,
-			}.Task(id)
-		} else {
-			logger = logger.Session("enqueuing-diff-scan", lager.Data{
-				"task-id": id,
-			})
-
-			task = queue.DiffScanPlan{
-				Owner:      scan.Owner,
-				Repository: scan.Repository,
-				From:       scanDiff.From,
-				To:         scanDiff.To,
-			}.Task(id)
-		}
-
-		logger.Debug("starting")
-
-		err := s.taskQueue.Enqueue(task)
-		if err != nil {
-			logger.Error("failed to enqueue scan", err)
-			return err
-		}
-
-		s.commitRepository.RegisterCommit(logger, &db.Commit{
-			Repository: scan.Repository,
-			Owner:      scan.Owner,
-			SHA:        scanDiff.To,
-		})
-
-		logger.Info("done")
+	err = s.taskQueue.Enqueue(task)
+	if err != nil {
+		logger.Error("failed to enqueue scan", err)
+		return err
 	}
+
+	logger.Info("done")
 
 	return nil
 }

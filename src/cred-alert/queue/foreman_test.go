@@ -27,6 +27,8 @@ var _ = Describe("Foreman", func() {
 			&metricsfakes.FakeEmitter{},
 			&notificationsfakes.FakeNotifier{},
 			&dbfakes.FakeDiffScanRepository{},
+			&dbfakes.FakeCommitRepository{},
+			&queuefakes.FakeQueue{},
 		)
 	})
 
@@ -88,6 +90,30 @@ var _ = Describe("Foreman", func() {
 				Expect(diffScan.Owner).To(Equal("pivotal-cf"))
 				Expect(diffScan.Repository).To(Equal("cred-alert"))
 				Expect(diffScan.Ref).To(Equal("abc124"))
+			})
+		})
+
+		Describe("AncestryScan Task", func() {
+			It("builds an ancestry-scan task", func() {
+				task := &queuefakes.FakeAckTask{}
+				task.TypeReturns(queue.TaskTypeAncestryScan)
+				task.PayloadReturns(`{
+					"owner":      "pivotal-cf",
+					"repository": "cred-alert",
+					"sha":        "abc124",
+					"depth": 10
+				}`)
+
+				job, err := foreman.BuildJob(task)
+				Expect(err).NotTo(HaveOccurred())
+
+				ancestryScan, ok := job.(*queue.AncestryScanJob)
+				Expect(ok).To(BeTrue())
+
+				Expect(ancestryScan.Owner).To(Equal("pivotal-cf"))
+				Expect(ancestryScan.Repository).To(Equal("cred-alert"))
+				Expect(ancestryScan.SHA).To(Equal("abc124"))
+				Expect(ancestryScan.Depth).To(Equal(10))
 			})
 		})
 

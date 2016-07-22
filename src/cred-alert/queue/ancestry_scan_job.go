@@ -16,10 +16,10 @@ type AncestryScanJob struct {
 	initialCommitCounter metrics.Counter
 	client               github.Client
 	taskQueue            Queue
-	generator            UUIDGenerator
+	id                   string
 }
 
-func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitRepository, client github.Client, emitter metrics.Emitter, taskQueue Queue, generator UUIDGenerator) *AncestryScanJob {
+func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitRepository, client github.Client, emitter metrics.Emitter, taskQueue Queue, id string) *AncestryScanJob {
 	depthReachedCounter := emitter.Counter("cred_alert.max-depth-reached")
 	initialCommitCounter := emitter.Counter("cred_alert.initial-commit-scanned")
 	job := &AncestryScanJob{
@@ -30,7 +30,7 @@ func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitReposit
 		depthReachedCounter:  depthReachedCounter,
 		initialCommitCounter: initialCommitCounter,
 		taskQueue:            taskQueue,
-		generator:            generator,
+		id:                   id,
 	}
 
 	return job
@@ -113,7 +113,7 @@ func (j *AncestryScanJob) enqueueRefScan() error {
 		Owner:      j.Owner,
 		Repository: j.Repository,
 		Ref:        j.SHA,
-	}.Task(j.generator.Generate())
+	}.Task(j.id)
 
 	return j.taskQueue.Enqueue(task)
 }
@@ -124,7 +124,7 @@ func (j *AncestryScanJob) enqueueAncestryScan(sha string) error {
 		Repository: j.Repository,
 		SHA:        sha,
 		Depth:      j.Depth - 1,
-	}.Task(j.generator.Generate())
+	}.Task(j.id)
 
 	return j.taskQueue.Enqueue(ancestryScan)
 }
@@ -135,7 +135,7 @@ func (j *AncestryScanJob) enqueueDiffScan(from string, to string) error {
 		Repository: j.Repository,
 		From:       from,
 		To:         to,
-	}.Task(j.generator.Generate())
+	}.Task(j.id)
 
 	return j.taskQueue.Enqueue(diffScan)
 }
