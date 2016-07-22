@@ -1,8 +1,8 @@
 package ingestor
 
 import (
+	"cred-alert/db"
 	"cred-alert/metrics"
-	"cred-alert/models"
 	"cred-alert/queue"
 
 	"github.com/pivotal-golang/lager"
@@ -18,13 +18,13 @@ type ingestor struct {
 	whitelist        *Whitelist
 	taskQueue        queue.Queue
 	generator        queue.UUIDGenerator
-	commitRepository models.CommitRepository
+	commitRepository db.CommitRepository
 
 	requestCounter      metrics.Counter
 	ignoredEventCounter metrics.Counter
 }
 
-func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist, generator queue.UUIDGenerator, commitRepository models.CommitRepository) *ingestor {
+func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist, generator queue.UUIDGenerator, commitRepository db.CommitRepository) *ingestor {
 	requestCounter := emitter.Counter("cred_alert.ingestor_requests")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
@@ -116,7 +116,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 			return err
 		}
 
-		s.commitRepository.RegisterCommit(logger, &models.Commit{
+		s.commitRepository.RegisterCommit(logger, &db.Commit{
 			Repository: scan.Repository,
 			Owner:      scan.Owner,
 			SHA:        scanDiff.To,

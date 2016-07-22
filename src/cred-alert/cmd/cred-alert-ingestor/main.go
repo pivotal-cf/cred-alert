@@ -21,9 +21,9 @@ import (
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 
+	"cred-alert/db"
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
-	"cred-alert/models"
 	"cred-alert/queue"
 )
 
@@ -77,13 +77,13 @@ func main() {
 	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
 	generator := queue.NewGenerator()
 
-	db, err := createDB(logger, opts)
+	database, err := createDB(logger, opts)
 	if err != nil {
 		logger.Error("Fatal Error: Could not connect to db", err)
 		os.Exit(1)
 	}
-	defer db.Close()
-	commitRepository := models.NewCommitRepository(db)
+	defer database.Close()
+	commitRepository := db.NewCommitRepository(database)
 
 	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist, generator, commitRepository)
 

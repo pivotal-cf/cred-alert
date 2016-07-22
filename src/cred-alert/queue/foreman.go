@@ -1,8 +1,8 @@
 package queue
 
 import (
+	"cred-alert/db"
 	"cred-alert/metrics"
-	"cred-alert/models"
 	"cred-alert/notifications"
 	"cred-alert/sniff"
 	"encoding/json"
@@ -30,7 +30,7 @@ type foreman struct {
 	sniffer            sniff.Sniffer
 	emitter            metrics.Emitter
 	notifier           notifications.Notifier
-	diffScanRepository models.DiffScanRepository
+	diffScanRepository db.DiffScanRepository
 }
 
 func NewForeman(
@@ -38,7 +38,7 @@ func NewForeman(
 	sniffer sniff.Sniffer,
 	emitter metrics.Emitter,
 	notifier notifications.Notifier,
-	diffScanRepository models.DiffScanRepository,
+	diffScanRepository db.DiffScanRepository,
 ) *foreman {
 	foreman := &foreman{
 		githubClient:       githubClient,

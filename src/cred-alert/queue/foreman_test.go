@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"cred-alert/db/dbfakes"
 	"cred-alert/github/githubfakes"
 	"cred-alert/metrics/metricsfakes"
-	"cred-alert/models/modelsfakes"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
@@ -26,7 +26,7 @@ var _ = Describe("Foreman", func() {
 			&snifffakes.FakeSniffer{},
 			&metricsfakes.FakeEmitter{},
 			&notificationsfakes.FakeNotifier{},
-			&modelsfakes.FakeDiffScanRepository{},
+			&dbfakes.FakeDiffScanRepository{},
 		)
 	})
 

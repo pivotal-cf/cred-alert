@@ -24,9 +24,9 @@ import (
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 
+	"cred-alert/db"
 	"cred-alert/github"
 	"cred-alert/metrics"
-	"cred-alert/models"
 	"cred-alert/notifications"
 	"cred-alert/queue"
 	"cred-alert/sniff"
@@ -91,14 +91,14 @@ func main() {
 	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl)
 	sniffer := sniff.NewDefaultSniffer()
 
-	db, err := createDB(logger, opts)
+	database, err := createDB(logger, opts)
 	if err != nil {
 		logger.Error("Fatal Error: Could not connect to db", err)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	diffScanRepository := models.NewDiffScanRepository(db)
+	diffScanRepository := db.NewDiffScanRepository(database)
 
 	foreman := queue.NewForeman(ghClient, sniffer, emitter, notifier, diffScanRepository)
 

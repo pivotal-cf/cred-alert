@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	"cred-alert/db/dbfakes"
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
-	"cred-alert/models/modelsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 
@@ -27,7 +27,7 @@ var _ = Describe("Ingestor", func() {
 		taskQueue        *queuefakes.FakeQueue
 		whitelist        *ingestor.Whitelist
 		generator        *queuefakes.FakeUUIDGenerator
-		commitRepository *modelsfakes.FakeCommitRepository
+		commitRepository *dbfakes.FakeCommitRepository
 
 		logger *lagertest.TestLogger
 
@@ -54,7 +54,7 @@ var _ = Describe("Ingestor", func() {
 		emitter = &metricsfakes.FakeEmitter{}
 		taskQueue = &queuefakes.FakeQueue{}
 		generator = &queuefakes.FakeUUIDGenerator{}
-		commitRepository = &modelsfakes.FakeCommitRepository{}
+		commitRepository = &dbfakes.FakeCommitRepository{}
 		commitRepository.IsRepoRegisteredReturns(true, nil)
 
 		requestCounter = &metricsfakes.FakeCounter{}

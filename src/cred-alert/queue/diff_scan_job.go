@@ -1,8 +1,8 @@
 package queue
 
 import (
+	"cred-alert/db"
 	"cred-alert/metrics"
-	"cred-alert/models"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"cred-alert/scanners/git"
@@ -16,14 +16,14 @@ import (
 type DiffScanJob struct {
 	DiffScanPlan
 
-	diffScanRepository models.DiffScanRepository
+	diffScanRepository db.DiffScanRepository
 	githubClient       gh.Client
 	sniffer            sniff.Sniffer
 	credentialCounter  metrics.Counter
 	notifier           notifications.Notifier
 }
 
-func NewDiffScanJob(githubClient gh.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, diffScanRepository models.DiffScanRepository, plan DiffScanPlan) *DiffScanJob {
+func NewDiffScanJob(githubClient gh.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, diffScanRepository db.DiffScanRepository, plan DiffScanPlan) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{
@@ -62,7 +62,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	err = j.diffScanRepository.SaveDiffScan(logger, &models.DiffScan{
+	err = j.diffScanRepository.SaveDiffScan(logger, &db.DiffScan{
 		Owner:           j.Owner,
 		Repo:            j.Repository,
 		FromCommit:      j.From,

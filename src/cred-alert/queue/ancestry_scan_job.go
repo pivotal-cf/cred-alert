@@ -3,15 +3,15 @@ package queue
 import (
 	"github.com/pivotal-golang/lager"
 
+	"cred-alert/db"
 	"cred-alert/github"
 	"cred-alert/metrics"
-	"cred-alert/models"
 )
 
 type AncestryScanJob struct {
 	AncestryScanPlan
 
-	commitRepository     models.CommitRepository
+	commitRepository     db.CommitRepository
 	depthReachedCounter  metrics.Counter
 	initialCommitCounter metrics.Counter
 	client               github.Client
@@ -19,7 +19,7 @@ type AncestryScanJob struct {
 	generator            UUIDGenerator
 }
 
-func NewAncestryScanJob(plan AncestryScanPlan, commitRepository models.CommitRepository, client github.Client, emitter metrics.Emitter, taskQueue Queue, generator UUIDGenerator) *AncestryScanJob {
+func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitRepository, client github.Client, emitter metrics.Emitter, taskQueue Queue, generator UUIDGenerator) *AncestryScanJob {
 	depthReachedCounter := emitter.Counter("cred_alert.max-depth-reached")
 	initialCommitCounter := emitter.Counter("cred_alert.initial-commit-scanned")
 	job := &AncestryScanJob{
@@ -142,7 +142,7 @@ func (j *AncestryScanJob) enqueueDiffScan(from string, to string) error {
 }
 
 func (j *AncestryScanJob) registerCommit(logger lager.Logger) error {
-	return j.commitRepository.RegisterCommit(logger, &models.Commit{
+	return j.commitRepository.RegisterCommit(logger, &db.Commit{
 		Owner:      j.Owner,
 		Repository: j.Repository,
 		SHA:        j.SHA,

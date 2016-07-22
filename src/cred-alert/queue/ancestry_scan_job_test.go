@@ -10,11 +10,11 @@ import (
 
 	"github.com/pivotal-golang/lager/lagertest"
 
+	"cred-alert/db"
+	"cred-alert/db/dbfakes"
 	"cred-alert/github/githubfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
-	"cred-alert/models"
-	"cred-alert/models/modelsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 )
@@ -25,7 +25,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 		taskQueue            *queuefakes.FakeQueue
 		client               *githubfakes.FakeClient
-		commitRepository     *modelsfakes.FakeCommitRepository
+		commitRepository     *dbfakes.FakeCommitRepository
 		maxDepthCounter      *metricsfakes.FakeCounter
 		initialCommitCounter *metricsfakes.FakeCounter
 		emitter              *metricsfakes.FakeEmitter
@@ -44,7 +44,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 		taskQueue = &queuefakes.FakeQueue{}
 		client = &githubfakes.FakeClient{}
-		commitRepository = &modelsfakes.FakeCommitRepository{}
+		commitRepository = &dbfakes.FakeCommitRepository{}
 		emitter = &metricsfakes.FakeEmitter{}
 		maxDepthCounter = &metricsfakes.FakeCounter{}
 		initialCommitCounter = &metricsfakes.FakeCounter{}
@@ -78,7 +78,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 			Expect(commitRepository.RegisterCommitCallCount()).To(Equal(1))
 			_, registeredCommit := commitRepository.RegisterCommitArgsForCall(0)
-			Expect(registeredCommit).To(Equal(&models.Commit{
+			Expect(registeredCommit).To(Equal(&db.Commit{
 				Owner:      "owner",
 				Repository: "repo",
 				SHA:        "sha",
