@@ -183,19 +183,15 @@ var _ = Describe("Database Connections", func() {
 		var (
 			diffScanRepository models.DiffScanRepository
 			fakeDiffScan       *models.DiffScan
-			taskID             string
 		)
 
 		BeforeEach(func() {
 			diffScanRepository = models.NewDiffScanRepository(db)
-			taskID = "some-guid"
 			fakeDiffScan = &models.DiffScan{
 				Owner:           "my-owner",
 				Repo:            "my-repo",
 				FromCommit:      "sha-1",
 				ToCommit:        "sha-2",
-				Timestamp:       time.Now(),
-				TaskID:          taskID,
 				CredentialFound: false,
 			}
 		})
@@ -204,10 +200,13 @@ var _ = Describe("Database Connections", func() {
 			err := diffScanRepository.SaveDiffScan(logger, fakeDiffScan)
 			Expect(err).ToNot(HaveOccurred())
 			var diffs []models.DiffScan
-			err = db.Where(&models.DiffScan{TaskID: taskID}).First(&diffs).Error
+			err = db.Last(&diffs).Error
 			Expect(err).ToNot(HaveOccurred())
 			Expect(diffs).To(HaveLen(1))
-			Expect(diffs[0].TaskID).To(Equal(taskID))
+			Expect(diffs[0].Owner).To(Equal(fakeDiffScan.Owner))
+			Expect(diffs[0].Repo).To(Equal(fakeDiffScan.Repo))
+			Expect(diffs[0].ToCommit).To(Equal(fakeDiffScan.ToCommit))
+			Expect(diffs[0].FromCommit).To(Equal(fakeDiffScan.FromCommit))
 		})
 
 		It("Returns any error", func() {
@@ -226,8 +225,6 @@ var _ = Describe("Database Connections", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from-commit":"%s"`, fakeDiffScan.FromCommit)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, fakeDiffScan.Owner)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repo":"%s"`, fakeDiffScan.Repo)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"scan-timestamp":%d`, fakeDiffScan.Timestamp.Unix())))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, fakeDiffScan.TaskID)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"to-commit":"%s"`, fakeDiffScan.ToCommit)))
 		})
 

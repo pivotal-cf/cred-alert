@@ -19,8 +19,6 @@ type DiffScan struct {
 	Repo            string
 	FromCommit      string
 	ToCommit        string
-	Timestamp       time.Time
-	TaskID          string
 	CredentialFound bool
 }
 
@@ -116,8 +114,6 @@ func (d *diffScanRepository) SaveDiffScan(logger lager.Logger, diffScan *DiffSca
 		"repo":             diffScan.Repo,
 		"from-commit":      diffScan.FromCommit,
 		"to-commit":        diffScan.ToCommit,
-		"scan-timestamp":   diffScan.Timestamp.Unix(),
-		"task-id":          diffScan.TaskID,
 		"credential-found": diffScan.CredentialFound,
 	})
 	err := d.db.Save(diffScan).Error
