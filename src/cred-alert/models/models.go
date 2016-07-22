@@ -15,7 +15,7 @@ type Model struct {
 
 type DiffScan struct {
 	Model
-	Org             string
+	Owner           string
 	Repo            string
 	FromCommit      string
 	ToCommit        string
@@ -37,7 +37,7 @@ type Commit struct {
 type CommitRepository interface {
 	RegisterCommit(logger lager.Logger, commit *Commit) error
 	IsCommitRegistered(logger lager.Logger, sha string) (bool, error)
-	IsRepoRegistered(logger lager.Logger, org, repo string) (bool, error)
+	IsRepoRegistered(logger lager.Logger, owner, repo string) (bool, error)
 }
 
 type commitRepository struct {
@@ -112,7 +112,7 @@ func NewDiffScanRepository(db *gorm.DB) *diffScanRepository {
 
 func (d *diffScanRepository) SaveDiffScan(logger lager.Logger, diffScan *DiffScan) error {
 	logger = logger.Session("saving-diffscan", lager.Data{
-		"org":              diffScan.Org,
+		"owner":            diffScan.Owner,
 		"repo":             diffScan.Repo,
 		"from-commit":      diffScan.FromCommit,
 		"to-commit":        diffScan.ToCommit,

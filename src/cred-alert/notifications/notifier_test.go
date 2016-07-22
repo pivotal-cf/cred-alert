@@ -29,7 +29,7 @@ var _ = Describe("Notifications", func() {
 		})
 
 		It("handles sending notifications", func() {
-			err := slackNotifier.SendNotification(logger, "org/repo", "123abc", scanners.Line{})
+			err := slackNotifier.SendNotification(logger, "owner/repo", "123abc", scanners.Line{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -46,10 +46,10 @@ var _ = Describe("Notifications", func() {
 			expectedJSON := `{
 				"attachments": [
 					{
-						"title": "Credential detected in org/repo!",
-						"text": "<https://github.com/org/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt:123>",
+						"title": "Credential detected in owner/repo!",
+						"text": "<https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt:123>",
 						"color": "danger",
-						"fallback": "https://github.com/org/repo/blob/abc123/path/to/file.txt#L123"
+						"fallback": "https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123"
 					}
 				]
 			}
@@ -62,7 +62,7 @@ var _ = Describe("Notifications", func() {
 				),
 			)
 
-			slackNotifier.SendNotification(logger, "org/repo", "abc123", scanners.Line{Path: "path/to/file.txt", LineNumber: 123})
+			slackNotifier.SendNotification(logger, "owner/repo", "abc123", scanners.Line{Path: "path/to/file.txt", LineNumber: 123})
 
 			Expect(server.ReceivedRequests()).Should(HaveLen(1))
 		})

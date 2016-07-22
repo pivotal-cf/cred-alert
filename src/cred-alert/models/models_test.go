@@ -66,7 +66,7 @@ var _ = Describe("Database Connections", func() {
 
 		BeforeEach(func() {
 			repoName = "my-repo"
-			repoOwner = "my-org"
+			repoOwner = "my-owner"
 
 			commitRepository = models.NewCommitRepository(db)
 			fakeCommit = &models.Commit{
@@ -160,7 +160,7 @@ var _ = Describe("Database Connections", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(isRegistered).To(BeFalse())
 
-				isRegistered, err = commitRepository.IsRepoRegistered(logger, "wrong-org", repoName)
+				isRegistered, err = commitRepository.IsRepoRegistered(logger, "wrong-owner", repoName)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(isRegistered).To(BeFalse())
 			})
@@ -190,7 +190,7 @@ var _ = Describe("Database Connections", func() {
 			diffScanRepository = models.NewDiffScanRepository(db)
 			taskID = "some-guid"
 			fakeDiffScan = &models.DiffScan{
-				Org:             "my-org",
+				Owner:           "my-owner",
 				Repo:            "my-repo",
 				FromCommit:      "sha-1",
 				ToCommit:        "sha-2",
@@ -224,7 +224,7 @@ var _ = Describe("Database Connections", func() {
 			Expect(logger).To(gbytes.Say("successfully-saved-diffscan"))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"credential-found":%v`, fakeDiffScan.CredentialFound)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from-commit":"%s"`, fakeDiffScan.FromCommit)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"org":"%s"`, fakeDiffScan.Org)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, fakeDiffScan.Owner)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repo":"%s"`, fakeDiffScan.Repo)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"scan-timestamp":%d`, fakeDiffScan.Timestamp.Unix())))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, fakeDiffScan.TaskID)))
