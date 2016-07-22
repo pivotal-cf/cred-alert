@@ -26,5 +26,6 @@ applications:
   command: ./cred-alert-worker
   services:
   - cred-alert-staging-logs
+  - cred-alert-mysql
   env:
     DATA_DOG_ENVIRONMENT_TAG: "staging"
