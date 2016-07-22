@@ -27,7 +27,7 @@ private_key: 'should_match'
 var privateKey = 'should_match'
 private static String PrivateKey = 'should_match'
   private_key = "should_match"
-private_key = "should_match" # TODO: comments shouldn't have an effect
+private_key = "should_match" # COMMENT: comments shouldn't have an effect
 private_key '$should_match'
 
 ## Suspicious Variable Names

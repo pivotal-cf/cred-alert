@@ -42,7 +42,7 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("simple assignment with different variable names (salt)", "salt = 'should_match'"),
 		Entry("simple assignment with a prefixed variable names", "hello_password = 'should_match'"),
 		Entry("simple assignment with a strange cased variable names", "PaSSwoRD = 'should_match'"),
-		Entry("simple assignment with a comment", `private_key = "should_match" # TODO: comments shouldn't have an effect`),
+		Entry("simple assignment with a comment", `private_key = "should_match" # COMMENT: comments shouldn't have an effect`),
 		Entry("simple assignment with strange characters", `password = '.$+=&/\\should_match' # comment`),
 		Entry("YAML assignment", "password: should_match"),
 	)
