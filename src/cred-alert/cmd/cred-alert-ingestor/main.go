@@ -64,7 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := lager.NewLogger("cred-alert")
+	logger := lager.NewLogger("cred-alert-ingestor")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
 	taskQueue, err := createQueue(opts, logger)

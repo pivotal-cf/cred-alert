@@ -71,7 +71,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := lager.NewLogger("cred-alert")
+	logger := lager.NewLogger("cred-alert-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
 	tokenSource := oauth2.StaticTokenSource(
