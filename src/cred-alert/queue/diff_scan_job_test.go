@@ -160,6 +160,16 @@ var _ = Describe("Diff Scan Job", func() {
 		})
 	})
 
+	Context("When the diffScanRepository returns an error", func() {
+		BeforeEach(func() {
+			diffScanRepository.SaveDiffScanReturns(errors.New("Disaster"))
+		})
+		It("fails the job", func() {
+			err := job.Run(logger)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
 	Context("when we fail to fetch the diff", func() {
 		BeforeEach(func() {
 			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))

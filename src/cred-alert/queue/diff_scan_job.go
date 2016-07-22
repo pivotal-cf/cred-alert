@@ -62,13 +62,16 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	j.diffScanRepository.SaveDiffScan(logger, &models.DiffScan{
+	err = j.diffScanRepository.SaveDiffScan(logger, &models.DiffScan{
 		Owner:           j.Owner,
 		Repo:            j.Repository,
 		FromCommit:      j.From,
 		ToCommit:        j.To,
 		CredentialFound: credentialsFound,
 	})
+	if err != nil {
+		return err
+	}
 
 	logger.Info("done")
 
