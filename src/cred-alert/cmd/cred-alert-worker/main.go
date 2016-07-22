@@ -17,6 +17,7 @@ import (
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/jessevdk/go-flags"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
