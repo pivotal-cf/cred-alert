@@ -22,6 +22,7 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 
 	"cred-alert/db"
+	"cred-alert/db/migrations"
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
 	"cred-alert/queue"
@@ -172,7 +173,7 @@ func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	return gorm.Open("mysql", uri)
+	return migrations.LockDBAndMigrate(logger, "mysql", uri)
 }
 
 func createDbUriFromVCAP(logger lager.Logger) (string, error) {

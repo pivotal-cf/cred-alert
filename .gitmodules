@@ -88,3 +88,7 @@
 	path = src/github.com/cloudfoundry-community/go-cfenv
 	url = https://github.com/cloudfoundry-community/go-cfenv
 	branch = master
+[submodule "src/github.com/BurntSushi/migration"]
+	path = src/github.com/BurntSushi/migration
+	url = https://github.com/BurntSushi/migration
+	branch = master

@@ -5,6 +5,10 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+func CreateDB(logger lager.Logger, uri string) (*gorm.DB, error) {
+	return gorm.Open("mysql", uri)
+}
+
 //go:generate counterfeiter . CommitRepository
 
 type CommitRepository interface {

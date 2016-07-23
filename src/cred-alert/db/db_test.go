@@ -4,8 +4,6 @@ import (
 	"cred-alert/db"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,30 +16,16 @@ import (
 
 var _ = Describe("Database Connections", func() {
 	var (
-		database           *gorm.DB
-		databaseFileHandle *os.File
-		logger             *lagertest.TestLogger
+		database *gorm.DB
+		logger   *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("commit-repository")
-
+		dbRunner.Truncate()
 		var err error
-		databaseFileHandle, err = ioutil.TempFile("", "test.database")
+		database, err = dbRunner.GormDB()
 		Expect(err).NotTo(HaveOccurred())
-
-		err = databaseFileHandle.Close()
-		Expect(err).NotTo(HaveOccurred())
-
-		database, err = gorm.Open("sqlite3", databaseFileHandle.Name())
-		Expect(err).NotTo(HaveOccurred())
-		database.AutoMigrate(&db.DiffScan{}, &db.Commit{})
-		database.LogMode(false)
-	})
-
-	AfterEach(func() {
-		database.Close()
-		os.Remove(databaseFileHandle.Name())
 	})
 
 	Describe("auto-migrations", func() {
