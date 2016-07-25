@@ -21,6 +21,7 @@ import (
 	"cred-alert/github/githubfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
+	"cred-alert/mimetype/mimetypefakes"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
 	"cred-alert/scanners"
@@ -41,6 +42,7 @@ var _ = Describe("RefScan Job", func() {
 		notifier          *notificationsfakes.FakeNotifier
 		emitter           *metricsfakes.FakeEmitter
 		credentialCounter *metricsfakes.FakeCounter
+		mimetype          *mimetypefakes.FakeMimetype
 	)
 
 	owner := "repo-owner"
@@ -70,10 +72,12 @@ var _ = Describe("RefScan Job", func() {
 				panic("unexpected counter name! " + name)
 			}
 		}
+		mimetype = &mimetypefakes.FakeMimetype{}
+		mimetype.TypeByBufferReturns("text/some-text", nil)
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter)
+		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, mimetype)
 	})
 
 	Describe("Run", func() {
@@ -182,6 +186,28 @@ var _ = Describe("RefScan Job", func() {
 			It("should log that scanning was skipped", func() {
 				job.Run(logger)
 				Expect(logger).To(gbytes.Say("skipped-initial-nil-ref"))
+			})
+		})
+
+		Context("when file is not text", func() {
+			BeforeEach(func() {
+				mimetype.TypeByBufferReturns("application/octet-stream", nil)
+			})
+
+			It("should not perform a scan", func() {
+				job.Run(logger)
+				Expect(sniffer.SniffCallCount()).To(Equal(0))
+			})
+
+			Context("when there is an error getting the type", func() {
+				BeforeEach(func() {
+					mimetype.TypeByBufferReturns("unknown", errors.New("disaster"))
+				})
+
+				It("logs an error", func() {
+					job.Run(logger)
+					Expect(logger).To(gbytes.Say("mimetype-error"))
+				})
 			})
 		})
 	})

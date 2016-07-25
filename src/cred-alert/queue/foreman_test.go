@@ -9,6 +9,7 @@ import (
 	"cred-alert/db/dbfakes"
 	"cred-alert/github/githubfakes"
 	"cred-alert/metrics/metricsfakes"
+	"cred-alert/mimetype/mimetypefakes"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
@@ -29,6 +30,7 @@ var _ = Describe("Foreman", func() {
 			&dbfakes.FakeDiffScanRepository{},
 			&dbfakes.FakeCommitRepository{},
 			&queuefakes.FakeQueue{},
+			&mimetypefakes.FakeMimetype{},
 		)
 	})
 

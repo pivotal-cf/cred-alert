@@ -3,6 +3,7 @@ package queue
 import (
 	"cred-alert/db"
 	"cred-alert/metrics"
+	"cred-alert/mimetype"
 	"cred-alert/notifications"
 	"cred-alert/sniff"
 	"encoding/json"
@@ -33,6 +34,7 @@ type foreman struct {
 	diffScanRepository db.DiffScanRepository
 	commitRepository   db.CommitRepository
 	taskQueue          Queue
+	mimetype           mimetype.Mimetype
 }
 
 func NewForeman(
@@ -43,6 +45,7 @@ func NewForeman(
 	diffScanRepository db.DiffScanRepository,
 	commitRepository db.CommitRepository,
 	taskQueue Queue,
+	mimetype mimetype.Mimetype,
 ) *foreman {
 	foreman := &foreman{
 		githubClient:       githubClient,
@@ -52,6 +55,7 @@ func NewForeman(
 		diffScanRepository: diffScanRepository,
 		commitRepository:   commitRepository,
 		taskQueue:          taskQueue,
+		mimetype:           mimetype,
 	}
 
 	return foreman
@@ -100,6 +104,7 @@ func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
 		f.sniffer,
 		f.notifier,
 		f.emitter,
+		f.mimetype,
 	), nil
 }
 

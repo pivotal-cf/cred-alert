@@ -2,8 +2,10 @@ package queue
 
 import (
 	"archive/zip"
+	"bytes"
 	"cred-alert/github"
 	"cred-alert/metrics"
+	"cred-alert/mimetype"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"cred-alert/scanners/file"
@@ -13,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -26,6 +29,7 @@ type RefScanJob struct {
 	notifier          notifications.Notifier
 	emitter           metrics.Emitter
 	credentialCounter metrics.Counter
+	mimetype          mimetype.Mimetype
 }
 
 func NewRefScanJob(
@@ -34,6 +38,7 @@ func NewRefScanJob(
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
 	emitter metrics.Emitter,
+	mimetype mimetype.Mimetype,
 ) *RefScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
@@ -44,6 +49,7 @@ func NewRefScanJob(
 		notifier:          notifier,
 		emitter:           emitter,
 		credentialCounter: credentialCounter,
+		mimetype:          mimetype,
 	}
 
 	return job
@@ -83,9 +89,19 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	defer archiveReader.Close()
 
 	for _, f := range archiveReader.File {
+		isText, err := j.isText(f)
+		if err != nil {
+			logger.Error("mimetype-error", err)
+			continue
+		}
+		if !isText {
+			logger.Info("skipped-non-text-file", lager.Data{"filename": f.Name})
+			continue
+		}
+
 		unzippedReader, err := f.Open()
 		if err != nil {
-			logger.Error("Error reading archive", err)
+			logger.Error("error-reading-archive", err)
 			continue
 		}
 		defer unzippedReader.Close()
@@ -140,4 +156,27 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repo
 
 		return nil
 	}
+}
+
+func (j *RefScanJob) isText(f *zip.File) (bool, error) {
+	unzippedReader, err := f.Open()
+	if err != nil {
+		return false, err
+	}
+	defer unzippedReader.Close()
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(unzippedReader)
+	bytes := buf.Bytes()
+
+	mime, err := j.mimetype.TypeByBuffer(bytes)
+	if err != nil {
+		return false, err
+	}
+
+	if strings.HasPrefix(mime, "text") {
+		return true, nil
+	}
+
+	return false, nil
 }

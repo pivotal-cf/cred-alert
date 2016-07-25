@@ -92,3 +92,7 @@
 	path = src/github.com/BurntSushi/migration
 	url = https://github.com/BurntSushi/migration
 	branch = master
+[submodule "src/github.com/rakyll/magicmime"]
+	path = src/github.com/rakyll/magicmime
+	url = https://github.com/rakyll/magicmime
+	branch = master
