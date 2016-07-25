@@ -1,12 +1,31 @@
 package db
 
 import (
+	"fmt"
+
+	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"github.com/pivotal-golang/lager"
 )
 
 func CreateDB(logger lager.Logger, uri string) (*gorm.DB, error) {
 	return gorm.Open("mysql", uri)
+}
+
+func NewDSN(username, password, dbName, hostname string, port int) string {
+	dbConfig := &mysql.Config{
+		User:            username,
+		Passwd:          password,
+		Net:             "tcp",
+		DBName:          dbName,
+		Addr:            fmt.Sprintf("%s:%d", hostname, port),
+		MultiStatements: true,
+		Params: map[string]string{
+			"charset":   "utf8",
+			"parseTime": "True",
+		},
+	}
+	return dbConfig.FormatDSN()
 }
 
 //go:generate counterfeiter . CommitRepository

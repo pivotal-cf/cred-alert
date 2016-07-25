@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -187,16 +186,15 @@ func debugHandler() http.Handler {
 
 func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
 	var uri string
-	var err error
 	if os.Getenv("VCAP_SERVICES") != "" {
+		var err error
 		uri, err = createDbUriFromVCAP(logger)
+		if err != nil {
+			logger.Error("Error getting db uri string: ", err)
+			return nil, err
+		}
 	} else {
-		uri, err = createDbUriFromOpts(logger, opts)
-	}
-
-	if err != nil {
-		logger.Error("Error getting db uri string: ", err)
-		return nil, err
+		uri = db.NewDSN(opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.DBName, opts.MySQL.Hostname, int(opts.MySQL.Port))
 	}
 
 	return migrations.LockDBAndMigrate(logger, "mysql", uri)
@@ -241,18 +239,11 @@ func createDbUriFromVCAP(logger lager.Logger) (string, error) {
 		return "", err
 	}
 
-	uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
-		username, password, hostname, port, name)
+	database, ok := name.(string)
+	if !ok {
+		return "", errors.New("non-string database name given")
+	}
 
 	logger.Info("vcap-services.success")
-	return uri, nil
-}
-
-func createDbUriFromOpts(logger lager.Logger, opts Opts) (string, error) {
-	logger = logger.Session("creating-db-from-opts")
-
-	uri := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
-		opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.Hostname, opts.MySQL.Port, opts.MySQL.DBName)
-	logger.Info("command-line.success")
-	return uri, nil
+	return db.NewDSN(username, password, database, hostname, port), nil
 }
