@@ -80,10 +80,10 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 	logger.Info("fetching-parents-succeeded", lager.Data{"parents": parents})
 
 	if len(parents) == 0 {
+		logger.Info("reached-initial-commit")
 		if err := j.enqueueRefScan(logger); err != nil {
 			return err
 		}
-		logger.Info("reached-initial-commit")
 		j.initialCommitCounter.Inc(logger)
 	}
 
@@ -112,6 +112,7 @@ func (j *AncestryScanJob) enqueueRefScan(logger lager.Logger) error {
 		Owner:      j.Owner,
 		Repository: j.Repository,
 		Ref:        j.SHA,
+		Private:    j.Private,
 	}.Task(j.id)
 
 	logger.Info("enqueuing-ref-scan")
@@ -131,6 +132,7 @@ func (j *AncestryScanJob) enqueueAncestryScan(logger lager.Logger, sha string) e
 		Repository: j.Repository,
 		SHA:        sha,
 		Depth:      j.Depth - 1,
+		Private:    j.Private,
 	}.Task(j.id)
 
 	logger.Info("enqueuing-ancestry-scan")
@@ -150,6 +152,7 @@ func (j *AncestryScanJob) enqueueDiffScan(logger lager.Logger, from string, to s
 		Repository: j.Repository,
 		From:       from,
 		To:         to,
+		Private:    j.Private,
 	}.Task(j.id)
 
 	logger.Info("enqueuing-diff-scan")

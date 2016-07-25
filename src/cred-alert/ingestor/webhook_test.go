@@ -51,6 +51,7 @@ var _ = Describe("Webhook", func() {
 		Before: github.String("abc123bef04e"),
 		After:  github.String("def456af4e4"),
 		Repo: &github.PushEventRepository{
+			Private:  github.Bool(true),
 			Name:     github.String("repository-name"),
 			FullName: github.String("repository-owner/repository-name"),
 			Owner: &github.PushEventRepoOwner{

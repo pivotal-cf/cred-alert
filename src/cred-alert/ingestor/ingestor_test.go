@@ -61,6 +61,7 @@ var _ = Describe("Ingestor", func() {
 			Repository: "repo",
 			To:         "to",
 			From:       "from",
+			Private:    true,
 		}
 
 		generator.GenerateReturns("id-1")

@@ -7,9 +7,9 @@ const DefaultScanDepth = 10
 type DiffScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`
-
-	From string `json:"from"`
-	To   string `json:"to"`
+	Private    bool   `json:"private"`
+	From       string `json:"from"`
+	To         string `json:"to"`
 }
 
 func (p DiffScanPlan) Task(id string) Task {
@@ -25,8 +25,8 @@ func (p DiffScanPlan) Task(id string) Task {
 type RefScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`
-
-	Ref string `json:"ref"`
+	Private    bool   `json:"private"`
+	Ref        string `json:"ref"`
 }
 
 func (p RefScanPlan) Task(id string) Task {
@@ -59,6 +59,7 @@ func (p PushEventPlan) Task(id string) Task {
 type AncestryScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`
+	Private    bool   `json:"private"`
 	SHA        string `json:"sha"`
 	Depth      int    `json:"depth"`
 }

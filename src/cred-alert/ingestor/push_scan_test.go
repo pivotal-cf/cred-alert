@@ -19,7 +19,8 @@ var _ = Describe("PushScan", func() {
 			After:  github.String("commit-sha-5"),
 			Before: github.String("commit-sha-0"),
 			Repo: &github.PushEventRepository{
-				Name: github.String("repository-name"),
+				Private: github.Bool(true),
+				Name:    github.String("repository-name"),
 				Owner: &github.PushEventRepoOwner{
 					Name: github.String("repository-owner"),
 				},
@@ -66,5 +67,22 @@ var _ = Describe("PushScan", func() {
 
 		_, valid := ingestor.Extract(event)
 		Expect(valid).To(BeFalse())
+	})
+
+	It("Keeps track of the repo's public/private status", func() {
+		scan, valid := ingestor.Extract(event)
+		Expect(valid).To(BeTrue())
+		Expect(scan.Private).To(BeTrue())
+	})
+
+	Context("Public repo", func() {
+		BeforeEach(func() {
+			event.Repo.Private = github.Bool(false)
+		})
+		It("Keeps track of the repo's public status", func() {
+			scan, valid := ingestor.Extract(event)
+			Expect(valid).To(BeTrue())
+			Expect(scan.Private).To(BeFalse())
+		})
 	})
 })

@@ -11,6 +11,7 @@ type PushScan struct {
 	Repository string
 	From       string
 	To         string
+	Private    bool
 }
 
 func (p PushScan) FullRepoName() string {
@@ -27,5 +28,6 @@ func Extract(event github.PushEvent) (PushScan, bool) {
 		Repository: *event.Repo.Name,
 		From:       *event.Before,
 		To:         *event.After,
+		Private:    *event.Repo.Private,
 	}, true
 }

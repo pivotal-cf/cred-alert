@@ -32,22 +32,23 @@ var _ = Describe("Counters", func() {
 	})
 
 	It("can increment once", func() {
-		counter.Inc(logger)
+		counter.Inc(logger, "tag1", "tag2")
 
 		Expect(metric.UpdateCallCount()).To(Equal(1))
-		callLogger, callValue, _ := metric.UpdateArgsForCall(0)
+		callLogger, callValue, tags := metric.UpdateArgsForCall(0)
 		Expect(callLogger).To(Equal(logger))
 		Expect(callValue).To(Equal(float32(1)))
+		Expect(tags).To(ConsistOf("tag1", "tag2"))
 	})
 
 	It("can increment many times", func() {
-		counter.IncN(logger, 2)
+		counter.IncN(logger, 2, "tag1", "tag2")
 
 		Expect(metric.UpdateCallCount()).To(Equal(1))
-		callLogger, callValue, _ := metric.UpdateArgsForCall(0)
+		callLogger, callValue, tags := metric.UpdateArgsForCall(0)
 		Expect(callLogger).To(Equal(logger))
 		Expect(callValue).To(Equal(float32(2)))
-
+		Expect(tags).To(ConsistOf("tag1", "tag2"))
 	})
 
 	Context("nullCounter", func() {
@@ -56,22 +57,26 @@ var _ = Describe("Counters", func() {
 		})
 
 		It("calls update when Inc is called", func() {
-			counter.Inc(logger)
+			counter.Inc(logger, "tag1", "tag2")
 
 			Expect(metric.UpdateCallCount()).To(Equal(1))
-			callLogger, callValue, _ := metric.UpdateArgsForCall(0)
+			callLogger, callValue, tags := metric.UpdateArgsForCall(0)
 			Expect(callLogger).To(Equal(logger))
 			Expect(callValue).To(Equal(float32(1)))
+			Expect(len(tags)).To(Equal(2))
+			Expect(tags).To(ConsistOf("tag1", "tag2"))
 		})
 
 		It("calls update when IncN is called", func() {
 			passedValue := 3
-			counter.IncN(logger, passedValue)
+			counter.IncN(logger, passedValue, "tag1", "tag2")
 
 			Expect(metric.UpdateCallCount()).To(Equal(1))
-			callLogger, callValue, _ := metric.UpdateArgsForCall(0)
+			callLogger, callValue, tags := metric.UpdateArgsForCall(0)
 			Expect(callLogger).To(Equal(logger))
 			Expect(callValue).To(Equal(float32(passedValue)))
+			Expect(len(tags)).To(Equal(2))
+			Expect(tags).To(ConsistOf("tag1", "tag2"))
 		})
 	})
 })

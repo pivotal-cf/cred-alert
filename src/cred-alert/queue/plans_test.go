@@ -13,6 +13,7 @@ var _ = Describe("Plans", func() {
 			plan := queue.DiffScanPlan{
 				Owner:      "owner",
 				Repository: "repository",
+				Private:    true,
 				From:       "abc123",
 				To:         "def456",
 			}
@@ -24,6 +25,7 @@ var _ = Describe("Plans", func() {
 				{
 					"owner": "owner",
 					"repository": "repository",
+					"private": true,
 					"from": "abc123",
 					"to": "def456"
 				}
@@ -40,6 +42,7 @@ var _ = Describe("Plans", func() {
 			plan := queue.RefScanPlan{
 				Owner:      "owner",
 				Repository: "repository",
+				Private:    true,
 				Ref:        "abc123",
 			}
 
@@ -50,6 +53,7 @@ var _ = Describe("Plans", func() {
 				{
 					"owner": "owner",
 					"repository": "repository",
+					"private": true,
 					"ref": "abc123"
 				}
 			`))
@@ -65,6 +69,7 @@ var _ = Describe("Plans", func() {
 			plan := queue.AncestryScanPlan{
 				Owner:      "owner",
 				Repository: "repository",
+				Private:    true,
 				SHA:        "sha-1",
 				Depth:      1,
 			}
@@ -75,6 +80,7 @@ var _ = Describe("Plans", func() {
 				{
 						"owner": "owner",
 						"repository": "repository",
+						"private": true,
 						"sha": "sha-1",
 						"depth": 1
 				}`))

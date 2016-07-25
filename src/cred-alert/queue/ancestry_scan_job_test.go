@@ -40,6 +40,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 			Owner:      "owner",
 			Repository: "repo",
 			SHA:        "sha",
+			Private:    true,
 		}
 
 		taskQueue = &queuefakes.FakeQueue{}
@@ -184,6 +185,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 								Repository: plan.Repository,
 								From:       parent,
 								To:         plan.SHA,
+								Private:    true,
 							}.Task(id)
 							task := taskQueue.EnqueueArgsForCall(2 * i)
 							Expect(task).To(Equal(expectedTask))
@@ -226,6 +228,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 								Repository: plan.Repository,
 								SHA:        parent,
 								Depth:      plan.Depth - 1,
+								Private:    true,
 							}.Task(id)
 							task := taskQueue.EnqueueArgsForCall(2*i + 1)
 							Expect(task).To(Equal(expectedTask))
@@ -251,6 +254,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 							{
 								"owner": "owner",
 								"repository": "repo",
+								"private": true,
 								"ref": "sha"
 							}
 						`))
@@ -288,6 +292,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 							{
 								"owner": "owner",
 								"repository": "repo",
+								"private": true,
 								"ref": "sha"
 							}
 						`))

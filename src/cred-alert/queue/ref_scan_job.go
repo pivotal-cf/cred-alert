@@ -64,6 +64,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"repository": j.Repository,
 		"ref":        j.Ref,
 		"task-id":    j.id,
+		"private":    j.Private,
 	})
 
 	if j.Ref == initialCommitParentHash {
@@ -168,7 +169,12 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repo
 			return err
 		}
 
-		j.credentialCounter.Inc(logger)
+		tag := "public"
+		if j.Private {
+			tag = "private"
+		}
+
+		j.credentialCounter.Inc(logger, tag)
 
 		return nil
 	}

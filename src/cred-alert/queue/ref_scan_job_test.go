@@ -57,6 +57,7 @@ var _ = Describe("RefScan Job", func() {
 			Owner:      owner,
 			Repository: repo,
 			Ref:        ref,
+			Private:    true,
 		}
 
 		sniffer = new(snifffakes.FakeSniffer)
@@ -154,6 +155,9 @@ var _ = Describe("RefScan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(credentialCounter.IncCallCount()).To(Equal(len(files)))
+			_, tags := credentialCounter.IncArgsForCall(0)
+			Expect(tags).To(HaveLen(1))
+			Expect(tags).To(ConsistOf("private"))
 		})
 
 		It("logs when credential is found", func() {
@@ -166,9 +170,25 @@ var _ = Describe("RefScan Job", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"line-number":%d`, lineNumber)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"private":%v`, plan.Private)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"ref":"%s"`, ref)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, id)))
+		})
+
+		Context("when the repo is public", func() {
+			BeforeEach(func() {
+				plan.Private = false
+			})
+
+			It("emits count with the public tag", func() {
+				job.Run(logger)
+
+				Expect(credentialCounter.IncCallCount()).To(Equal(len(files)))
+				_, tags := credentialCounter.IncArgsForCall(0)
+				Expect(tags).To(HaveLen(1))
+				Expect(tags).To(ConsistOf("public"))
+			})
 		})
 
 		Context("when the ref is the nil ref (initial empty repo)", func() {

@@ -48,6 +48,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		"from":       j.From,
 		"to":         j.To,
 		"task-id":    j.id,
+		"private":    j.Private,
 	})
 
 	logger.Info("starting")
@@ -97,7 +98,11 @@ func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, rep
 		}
 
 		*credentialsFound = true
-		j.credentialCounter.Inc(logger)
+		tag := "public"
+		if j.Private {
+			tag = "private"
+		}
+		j.credentialCounter.Inc(logger, tag)
 
 		return nil
 	}

@@ -49,6 +49,7 @@ var _ = Describe("Diff Scan Job", func() {
 			Repository: repo,
 			From:       fromGitSha,
 			To:         toGitSha,
+			Private:    true,
 		}
 		sniffer = new(snifffakes.FakeSniffer)
 		emitter = &metricsfakes.FakeEmitter{}
@@ -122,6 +123,9 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(credentialCounter.IncCallCount()).To(Equal(1))
+			_, tags := credentialCounter.IncArgsForCall(0)
+			Expect(tags).To(HaveLen(1))
+			Expect(tags).To(ConsistOf("private"))
 		})
 
 		It("sends a notification", func() {
@@ -162,6 +166,7 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from":"%s"`, fromGitSha)))
+			Expect(logger).To(gbytes.Say(`"private":true`))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, id)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"to":"%s"`, toGitSha)))
@@ -175,6 +180,23 @@ var _ = Describe("Diff Scan Job", func() {
 			It("fails the job", func() {
 				err := job.Run(logger)
 				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("When scanning a public repo", func() {
+			BeforeEach(func() {
+				plan.Private = false
+			})
+
+			It("It emits count with the public tag", func() {
+				err := job.Run(logger)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(credentialCounter.IncCallCount()).To(Equal(1))
+				_, tags := credentialCounter.IncArgsForCall(0)
+				Expect(tags).To(HaveLen(1))
+				Expect(tags).To(ConsistOf("public"))
+				Expect(logger).To(gbytes.Say(`"private":false`))
 			})
 		})
 	})

@@ -62,9 +62,10 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 	}
 
 	logger.Info("handling-webhook-payload", lager.Data{
-		"repo":   scan.FullRepoName(),
-		"before": scan.From,
-		"after":  scan.To,
+		"before":  scan.From,
+		"after":   scan.To,
+		"repo":    scan.FullRepoName(),
+		"private": scan.Private,
 	})
 
 	return h.ingestor.IngestPushScan(logger, scan)

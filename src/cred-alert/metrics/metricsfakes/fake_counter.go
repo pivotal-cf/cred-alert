@@ -9,30 +9,33 @@ import (
 )
 
 type FakeCounter struct {
-	IncStub        func(lager.Logger)
+	IncStub        func(lager.Logger, ...string)
 	incMutex       sync.RWMutex
 	incArgsForCall []struct {
 		arg1 lager.Logger
+		arg2 []string
 	}
-	IncNStub        func(lager.Logger, int)
+	IncNStub        func(lager.Logger, int, ...string)
 	incNMutex       sync.RWMutex
 	incNArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 int
+		arg3 []string
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCounter) Inc(arg1 lager.Logger) {
+func (fake *FakeCounter) Inc(arg1 lager.Logger, arg2 ...string) {
 	fake.incMutex.Lock()
 	fake.incArgsForCall = append(fake.incArgsForCall, struct {
 		arg1 lager.Logger
-	}{arg1})
-	fake.recordInvocation("Inc", []interface{}{arg1})
+		arg2 []string
+	}{arg1, arg2})
+	fake.recordInvocation("Inc", []interface{}{arg1, arg2})
 	fake.incMutex.Unlock()
 	if fake.IncStub != nil {
-		fake.IncStub(arg1)
+		fake.IncStub(arg1, arg2...)
 	}
 }
 
@@ -42,22 +45,23 @@ func (fake *FakeCounter) IncCallCount() int {
 	return len(fake.incArgsForCall)
 }
 
-func (fake *FakeCounter) IncArgsForCall(i int) lager.Logger {
+func (fake *FakeCounter) IncArgsForCall(i int) (lager.Logger, []string) {
 	fake.incMutex.RLock()
 	defer fake.incMutex.RUnlock()
-	return fake.incArgsForCall[i].arg1
+	return fake.incArgsForCall[i].arg1, fake.incArgsForCall[i].arg2
 }
 
-func (fake *FakeCounter) IncN(arg1 lager.Logger, arg2 int) {
+func (fake *FakeCounter) IncN(arg1 lager.Logger, arg2 int, arg3 ...string) {
 	fake.incNMutex.Lock()
 	fake.incNArgsForCall = append(fake.incNArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 int
-	}{arg1, arg2})
-	fake.recordInvocation("IncN", []interface{}{arg1, arg2})
+		arg3 []string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("IncN", []interface{}{arg1, arg2, arg3})
 	fake.incNMutex.Unlock()
 	if fake.IncNStub != nil {
-		fake.IncNStub(arg1, arg2)
+		fake.IncNStub(arg1, arg2, arg3...)
 	}
 }
 
@@ -67,10 +71,10 @@ func (fake *FakeCounter) IncNCallCount() int {
 	return len(fake.incNArgsForCall)
 }
 
-func (fake *FakeCounter) IncNArgsForCall(i int) (lager.Logger, int) {
+func (fake *FakeCounter) IncNArgsForCall(i int) (lager.Logger, int, []string) {
 	fake.incNMutex.RLock()
 	defer fake.incNMutex.RUnlock()
-	return fake.incNArgsForCall[i].arg1, fake.incNArgsForCall[i].arg2
+	return fake.incNArgsForCall[i].arg1, fake.incNArgsForCall[i].arg2, fake.incNArgsForCall[i].arg3
 }
 
 func (fake *FakeCounter) Invocations() map[string][][]interface{} {
