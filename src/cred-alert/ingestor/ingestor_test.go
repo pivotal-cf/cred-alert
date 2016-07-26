@@ -130,5 +130,14 @@ var _ = Describe("Ingestor", func() {
 		It("does not return an error", func() {
 			Expect(ingestErr).NotTo(HaveOccurred())
 		})
+
+		Context("when the repo is public", func() {
+			BeforeEach(func() {
+				scan.Private = false
+			})
+			It("does enqueue a task", func() {
+				Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
+			})
+		})
 	})
 })
