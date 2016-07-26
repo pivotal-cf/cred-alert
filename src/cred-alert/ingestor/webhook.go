@@ -37,41 +37,28 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.handlePushEvent(h.logger, w, event, r.Header.Get("X-GitHub-Delivery"))
+	scan, valid := Extract(event)
+	if !valid {
+		h.logger.Debug("event-missing-data", lager.Data{
+			"repo": *event.Repo.FullName,
+		})
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	h.logger.Info("handling-webhook-payload", lager.Data{
+		"before":  scan.From,
+		"after":   scan.To,
+		"owner":   scan.Owner,
+		"repo":    scan.Repository,
+		"private": scan.Private,
+	})
+
+	err = h.ingestor.IngestPushScan(h.logger, scan, r.Header.Get("X-GitHub-Delivery"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-func (h *handler) handlePushEvent(
-	logger lager.Logger,
-	w http.ResponseWriter,
-	event github.PushEvent,
-	gitHubID string,
-) error {
-	logger = logger.Session("handling-push-event")
-
-	scan, valid := Extract(event)
-	if !valid {
-		if event.Repo != nil && event.Repo.FullName != nil {
-			logger = logger.WithData(lager.Data{
-				"repo": *event.Repo.FullName,
-			})
-		}
-
-		logger.Debug("event-missing-data")
-		return nil
-	}
-
-	logger.Info("handling-webhook-payload", lager.Data{
-		"before":  scan.From,
-		"after":   scan.To,
-		"repo":    scan.FullRepoName(),
-		"private": scan.Private,
-	})
-
-	return h.ingestor.IngestPushScan(logger, scan, gitHubID)
 }
