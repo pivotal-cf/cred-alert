@@ -66,21 +66,23 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"task-id":    j.id,
 		"private":    j.Private,
 	})
+	logger.Info("start")
 
 	if j.Ref == initialCommitParentHash {
 		logger.Info("skipped-initial-nil-ref")
+		logger.Info("done")
 		return nil
 	}
 
 	downloadURL, err := j.client.ArchiveLink(j.Owner, j.Repository, j.Ref)
 	if err != nil {
-		logger.Error("error-creating-archive-link", err)
+		logger.Session("archive-link").Error("failed", err)
 		return err
 	}
 
 	archiveFile, err := downloadArchive(logger, downloadURL)
 	if err != nil {
-		logger.Error("error-downloading-archive", err)
+		logger.Error("failed", err)
 		return err
 	}
 	defer os.Remove(archiveFile.Name())
@@ -88,7 +90,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 
 	archiveReader, err := zip.OpenReader(archiveFile.Name())
 	if err != nil {
-		logger.Error("error-unzipping-archive", err)
+		logger.Session("zip-open-reader").Error("failed", err)
 		return err
 	}
 	defer archiveReader.Close()
@@ -100,19 +102,16 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	logger.Info("scanning-unzipped-files")
 
 	for _, f := range archiveReader.File {
-		isText, err := j.isText(f)
-		if err != nil {
-			logger.Error("mimetype-error", err)
-		}
+		logger = logger.Session("archive-reader-file", lager.Data{"filename": f.Name})
 
-		if !isText {
-			logger.Info("skipped-non-text-file", lager.Data{"filename": f.Name})
+		if !j.isText(logger, f) {
+			logger.Info("skipped")
 			continue
 		}
 
 		unzippedReader, err := f.Open()
 		if err != nil {
-			logger.Error("error-reading-archive", err)
+			logger.Error("failed", err)
 			continue
 		}
 		defer unzippedReader.Close()
@@ -122,50 +121,56 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 
 		err = j.sniffer.Sniff(logger, bufioScanner, handleViolation)
 		if err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 	}
 
 	logger.Info("done")
-
 	return nil
 }
 
 func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
-	logger.Info("downloading-archive", lager.Data{
+	logger.Info("download-archive", lager.Data{
 		"url": link.String(),
 	})
+	logger.Info("starting")
 
 	tempFile, err := ioutil.TempFile("", "downloaded-git-archive")
 	if err != nil {
-		logger.Error("error-creating-archive-temp-file", err)
+		logger.Error("failed", err)
 		return nil, err
 	}
 
 	resp, err := http.Get(link.String())
 	defer resp.Body.Close()
 	if err != nil {
+		logger.Error("failed", err)
 		return nil, err
 	}
 
 	_, err = io.Copy(tempFile, resp.Body)
 	if err != nil {
+		logger.Error("failed", err)
 		return nil, err
 	}
 
+	logger.Info("done")
 	return tempFile, nil
 }
 
 func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repoName string) func(scanners.Line) error {
 	return func(line scanners.Line) error {
-		logger.Info("found-credential", lager.Data{
+		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
 			"ref":         ref,
 		})
+		logger.Info("starting")
 
 		err := j.notifier.SendNotification(logger, repoName, ref, line, j.Private)
 		if err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 
@@ -176,35 +181,44 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repo
 
 		j.credentialCounter.Inc(logger, tag)
 
+		logger.Info("done")
 		return nil
 	}
 }
 
-func (j *RefScanJob) isText(f *zip.File) (bool, error) {
+func (j *RefScanJob) isText(logger lager.Logger, f *zip.File) bool {
+	logger = logger.Session("is-text")
+
 	unzippedReader, err := f.Open()
 	if err != nil {
-		return false, err
+		logger.Error("failed", err)
+		return false
 	}
 	defer unzippedReader.Close()
 
 	buf := new(bytes.Buffer)
 	numBytes, err := buf.ReadFrom(unzippedReader)
 	if err != nil {
-		return false, err
+		logger.Error("failed", err)
+		return false
 	}
 	if numBytes <= 0 {
-		return false, nil
+		logger.Info("done")
+		return false
 	}
 	bytes := buf.Bytes()
 
 	mime, err := j.mimetype.TypeByBuffer(bytes)
 	if err != nil {
-		return false, err
+		logger.Error("failed", err)
+		return false
 	}
 
 	if strings.HasPrefix(mime, "text") {
-		return true, nil
+		logger.Info("done")
+		return true
 	}
 
-	return false, nil
+	logger.Info("done")
+	return false
 }

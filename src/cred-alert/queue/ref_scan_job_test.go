@@ -62,7 +62,7 @@ var _ = Describe("RefScan Job", func() {
 
 		sniffer = new(snifffakes.FakeSniffer)
 		client = &githubfakes.FakeClient{}
-		logger = lagertest.NewTestLogger("ref-scan")
+		logger = lagertest.NewTestLogger("ref-scan-test")
 		notifier = &notificationsfakes.FakeNotifier{}
 		emitter = &metricsfakes.FakeEmitter{}
 		credentialCounter = &metricsfakes.FakeCounter{}
@@ -165,9 +165,9 @@ var _ = Describe("RefScan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(logger).To(gbytes.Say("found-credential"))
-			Expect(logger).To(gbytes.Say("found-credential"))
-			Expect(logger).To(gbytes.Say("found-credential"))
+			Expect(logger).To(gbytes.Say("handle-violation"))
+			Expect(logger).To(gbytes.Say("handle-violation"))
+			Expect(logger).To(gbytes.Say("handle-violation"))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"line-number":%d`, lineNumber)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
@@ -238,7 +238,7 @@ var _ = Describe("RefScan Job", func() {
 
 				It("logs an error", func() {
 					job.Run(logger)
-					Expect(logger).To(gbytes.Say("mimetype-error"))
+					Expect(logger).To(gbytes.Say("is-text.failed"))
 				})
 			})
 		})
