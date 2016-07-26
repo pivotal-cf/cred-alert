@@ -76,11 +76,14 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 			return err
 		}
 
-		s.commitRepository.RegisterCommit(logger, &db.Commit{
+		err = s.commitRepository.RegisterCommit(logger, &db.Commit{
 			Repository: scan.Repository,
 			Owner:      scan.Owner,
 			SHA:        scan.Diffs[0].From,
 		})
+		if err != nil {
+			return err
+		}
 
 		logger.Session(sessionName).Info("enqueue-ref-scan-succeeded")
 	}

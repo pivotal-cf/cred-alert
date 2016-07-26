@@ -186,6 +186,17 @@ var _ = Describe("Ingestor", func() {
 					Expect(commitRepository.RegisterCommitCallCount()).To(Equal(0))
 				})
 			})
+
+			Context("when registering the commit fails", func() {
+				BeforeEach(func() {
+					commitRepository.RegisterCommitReturns(errors.New("an-error"))
+				})
+
+				It("returns an error", func() {
+					err := in.IngestPushScan(logger, scan)
+					Expect(err).To(HaveOccurred())
+				})
+			})
 		})
 
 		Context("when checking for repo existence fails", func() {
