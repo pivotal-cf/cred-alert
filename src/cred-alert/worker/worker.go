@@ -75,10 +75,11 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 		"task-id":   task.ID(),
 		"task-type": task.Type(),
 	})
+	logger.Info("started")
 
 	job, err := w.foreman.BuildJob(task)
 	if err != nil {
-		logger.Error("building-job-failed", err)
+		logger.Session("building-job").Error("failed", err)
 		w.failedJobs.Inc(logger)
 		return
 	}
@@ -88,14 +89,14 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 	}, fmt.Sprintf("tasktype:%s", task.Type()))
 
 	if err != nil {
-		logger.Error("running-job-failed", err)
+		logger.Error("failed", err)
 		w.failedJobs.Inc(logger)
 		return
 	}
 
 	err = task.Ack()
 	if err != nil {
-		logger.Error("acking-task-failed", err)
+		logger.Session("acking-task").Error("failed", err)
 		w.failedAcks.Inc(logger)
 		return
 	}
