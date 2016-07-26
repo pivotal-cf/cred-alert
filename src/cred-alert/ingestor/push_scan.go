@@ -1,10 +1,6 @@
 package ingestor
 
-import (
-	"fmt"
-
-	"github.com/google/go-github/github"
-)
+import "github.com/google/go-github/github"
 
 type PushScan struct {
 	Owner      string
@@ -12,10 +8,6 @@ type PushScan struct {
 	From       string
 	To         string
 	Private    bool
-}
-
-func (p PushScan) FullRepoName() string {
-	return fmt.Sprintf("%s/%s", p.Owner, p.Repository)
 }
 
 func Extract(event github.PushEvent) (PushScan, bool) {

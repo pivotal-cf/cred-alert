@@ -38,16 +38,6 @@ var _ = Describe("PushScan", func() {
 		Expect(scan.To).To(Equal("commit-sha-5"))
 	})
 
-	It("can have a full repository name", func() {
-		scan, valid := ingestor.Extract(event)
-		Expect(valid).To(BeTrue())
-
-		Expect(scan.Owner).To(Equal("repository-owner"))
-		Expect(scan.Repository).To(Equal("repository-name"))
-
-		Expect(scan.FullRepoName()).To(Equal("repository-owner/repository-name"))
-	})
-
 	It("is not valid if there is no before specified", func() {
 		event.Before = nil
 
