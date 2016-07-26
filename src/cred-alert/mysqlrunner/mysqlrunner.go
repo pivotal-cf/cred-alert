@@ -17,8 +17,6 @@ type Runner struct {
 	dbConfig *mysql.Config
 }
 
-const mysqlUserName = "mysql"
-
 func (runner *Runner) Setup() {
 	runner.dbConfig = &mysql.Config{
 		User:            "root",
