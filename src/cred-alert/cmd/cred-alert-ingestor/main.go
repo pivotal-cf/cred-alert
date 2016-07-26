@@ -189,15 +189,15 @@ func createDbUriFromVCAP(logger lager.Logger) (string, error) {
 		logger.Error("Error getting cred-alert-mysql instance", err)
 	}
 
-	username, ok := service.Credentials["username"].(string)
+	username, ok := service.CredentialString("username")
 	if !ok {
 		return "", errors.New("Could not read username")
 	}
-	password, ok := service.Credentials["password"].(string)
+	password, ok := service.CredentialString("password")
 	if !ok {
 		return "", errors.New("Could not read password")
 	}
-	hostname, ok := service.Credentials["hostname"].(string)
+	hostname, ok := service.CredentialString("hostname")
 	if !ok {
 		return "", errors.New("Could not read hostname")
 	}
@@ -206,17 +206,15 @@ func createDbUriFromVCAP(logger lager.Logger) (string, error) {
 		return "", errors.New("Could not read port")
 	}
 	port := int(portF)
-	name := service.Credentials["name"]
+	database, ok := service.CredentialString("name")
+	if !ok {
+		return "", errors.New("Could not read database")
+	}
 
 	if len(username) == 0 || len(password) == 0 {
 		err := errors.New("Empty mysql username or password")
 		logger.Error("MySQL parameters are incorrect", err)
 		return "", err
-	}
-
-	database, ok := name.(string)
-	if !ok {
-		return "", errors.New("non-string database name given")
 	}
 
 	logger.Info("vcap-services.success")
