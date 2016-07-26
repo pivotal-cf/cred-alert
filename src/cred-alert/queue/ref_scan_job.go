@@ -92,9 +92,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		isText, err := j.isText(f)
 		if err != nil {
 			logger.Error("mimetype-error", err)
-			continue
-		}
-		if !isText {
+		} else if !isText {
 			logger.Info("skipped-non-text-file", lager.Data{"filename": f.Name})
 			continue
 		}
@@ -170,7 +168,13 @@ func (j *RefScanJob) isText(f *zip.File) (bool, error) {
 	defer unzippedReader.Close()
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(unzippedReader)
+	numBytes, err := buf.ReadFrom(unzippedReader)
+	if err != nil {
+		return false, err
+	}
+	if numBytes <= 0 {
+		return false, nil
+	}
 	bytes := buf.Bytes()
 
 	mime, err := j.mimetype.TypeByBuffer(bytes)
