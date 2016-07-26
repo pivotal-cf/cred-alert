@@ -23,6 +23,13 @@ import (
 	"cred-alert/queue"
 )
 
+type AWSOpts struct {
+	AwsAccessKey       string `long:"aws-access-key" description:"access key for aws SQS service" env:"AWS_ACCESS_KEY" value-name:"ACCESS_KEY"`
+	AwsSecretAccessKey string `long:"aws-secret-key" description:"secret access key for aws SQS service" env:"AWS_SECRET_ACCESS_KEY" value-name:"SECRET_KEY"`
+	AwsRegion          string `long:"aws-region" description:"aws region for SQS service" env:"AWS_REGION" value-name:"REGION"`
+	SqsQueueName       string `long:"sqs-queue-name" description:"queue name to use with SQS" env:"SQS_QUEUE_NAME" value-name:"QUEUE_NAME"`
+}
+
 type Opts struct {
 	Port      uint16   `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
 	Whitelist []string `short:"i" long:"ignore-repos" description:"comma separated list of repo names to ignore. The names may be regex patterns." env:"IGNORED_REPOS" env-delim:"," value-name:"REPO_LIST"`
@@ -36,12 +43,7 @@ type Opts struct {
 		Environment string `long:"datadog-environment" description:"environment tag for datadog" env:"DATA_DOG_ENVIRONMENT_TAG" value-name:"NAME" default:"development"`
 	} `group:"Datadog Options"`
 
-	AWS struct {
-		AwsAccessKey       string `long:"aws-access-key" description:"access key for aws SQS service" env:"AWS_ACCESS_KEY" value-name:"ACCESS_KEY"`
-		AwsSecretAccessKey string `long:"aws-secret-key" description:"secret access key for aws SQS service" env:"AWS_SECRET_ACCESS_KEY" value-name:"SECRET_KEY"`
-		AwsRegion          string `long:"aws-region" description:"aws region for SQS service" env:"AWS_REGION" value-name:"REGION"`
-		SqsQueueName       string `long:"sqs-queue-name" description:"queue name to use with SQS" env:"SQS_QUEUE_NAME" value-name:"QUEUE_NAME"`
-	} `group:"AWS Options"`
+	AWS AWSOpts `group:"AWS Options"`
 
 	MySQL struct {
 		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME"`
@@ -56,7 +58,7 @@ func main() {
 	var opts Opts
 
 	logger := lager.NewLogger("cred-alert-ingestor")
-	logger.Info("started")
+	logger.Info("starting")
 
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
@@ -94,25 +96,27 @@ func main() {
 
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
 
-	logger.Info("starting-server", lager.Data{
+	serverLogger := logger.Session("server", lager.Data{
 		"port": opts.Port,
 	})
+	serverLogger.Info("starting")
 
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
-		logger.Session("starting-server").Error("failed", err)
+		serverLogger.Error("failed", err)
 	}
 }
 
 func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
-	logger = logger.Session("creating-queue")
+	logger = logger.Session("create-queue")
+	logger.Info("starting")
 
 	if sqsValuesExist(opts) {
-		logger.Session("sqs-queue").Info("done")
-		return createSqsQueue(opts)
+		logger.Info("done")
+		return createSqsQueue(logger, opts.AWS)
 	}
 
-	logger.Session("null-queue").Info("done")
+	logger.Info("done")
 	return queue.NewNullQueue(logger), nil
 }
 
@@ -128,17 +132,20 @@ func sqsValuesExist(opts Opts) bool {
 	return false
 }
 
-func createSqsQueue(opts Opts) (queue.Queue, error) {
-	creds := credentials.NewStaticCredentials(
-		opts.AWS.AwsAccessKey,
-		opts.AWS.AwsSecretAccessKey,
-		"")
-	config := aws.NewConfig().WithCredentials(creds).WithRegion(opts.AWS.AwsRegion)
+func createSqsQueue(logger lager.Logger, awsOpts AWSOpts) (queue.Queue, error) {
+	logger = logger.Session("create-sqs-queue")
+
+	creds := credentials.NewStaticCredentials(awsOpts.AwsAccessKey, awsOpts.AwsSecretAccessKey, "")
+	config := aws.NewConfig().WithCredentials(creds).WithRegion(awsOpts.AwsRegion)
 	service := sqs.New(session.New(config))
-	queue, err := queue.BuildSQSQueue(service, opts.AWS.SqsQueueName)
+
+	queue, err := queue.BuildSQSQueue(service, awsOpts.SqsQueueName)
 	if err != nil {
+		logger.Error("failed", err)
 		return nil, err
 	}
+
+	logger.Info("done")
 	return queue, nil
 }
 

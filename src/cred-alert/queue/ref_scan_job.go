@@ -66,7 +66,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"task-id":    j.id,
 		"private":    j.Private,
 	})
-	logger.Info("start")
+	logger.Info("starting")
 
 	if j.Ref == initialCommitParentHash {
 		logger.Info("skipped-initial-nil-ref")
