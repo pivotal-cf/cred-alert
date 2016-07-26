@@ -5,6 +5,7 @@ import (
 	"cred-alert/scanners/file"
 	"cred-alert/sniff"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -50,13 +51,11 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, fileHandle *os.File) {
 func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath string) {
 	stat, err := os.Stat(directoryPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Cannot read directory %s\n", directoryPath)
-		os.Exit(1)
+		log.Fatalf("Cannot read directory %s\n", directoryPath)
 	}
 
 	if !stat.IsDir() {
-		fmt.Fprintf(os.Stderr, "%s is not a directory\n", directoryPath)
-		os.Exit(1)
+		log.Fatalf("%s is not a directory\n", directoryPath)
 	}
 
 	walkFunc := func(path string, info os.FileInfo, err error) error {
@@ -70,8 +69,8 @@ func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath str
 		return nil
 	}
 
-	if err := filepath.Walk(directoryPath, walkFunc); err != nil {
-		fmt.Fprintln(os.Stderr, "Error traversing directory: %v", err)
-		os.Exit(1)
+	err = filepath.Walk(directoryPath, walkFunc)
+	if err != nil {
+		log.Fatalf("Error traversing directory: %v", err)
 	}
 }
