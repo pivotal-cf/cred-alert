@@ -60,7 +60,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 		repoIsRegistered = false
 	}
 
-	if repoIsRegistered != true {
+	if !repoIsRegistered {
 		id := s.generator.Generate()
 		task := queue.RefScanPlan{
 			Owner:      scan.Owner,

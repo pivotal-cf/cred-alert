@@ -48,11 +48,8 @@ func (q *sqsQueue) Enqueue(task Task) error {
 		QueueUrl:          q.queueUrl,
 	}
 
-	if _, err := q.service.SendMessage(params); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := q.service.SendMessage(params)
+	return err
 }
 
 func (q *sqsQueue) Dequeue() (AckTask, error) {
@@ -118,16 +115,11 @@ func (t *sqsTask) Payload() string {
 }
 
 func (t *sqsTask) Ack() error {
-	params := &sqs.DeleteMessageInput{
+	_, err := t.service.DeleteMessage(&sqs.DeleteMessageInput{
 		QueueUrl:      t.queueURL,
 		ReceiptHandle: t.receiptHandle,
-	}
-
-	if _, err := t.service.DeleteMessage(params); err != nil {
-		return err
-	}
-
-	return nil
+	})
+	return err
 }
 
 //go:generate counterfeiter . SQSAPI

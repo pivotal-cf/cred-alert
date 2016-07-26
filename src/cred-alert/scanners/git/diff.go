@@ -28,7 +28,7 @@ func isInHeader(currentLineNumber int, currentHunk *Hunk) bool {
 }
 
 func fileHeader(rawLine string, currentLineNumber int, currentHunk *Hunk) (string, error) {
-	if currentHunk != nil && currentHunk.endOfHunk(currentLineNumber) == false {
+	if currentHunk != nil && !currentHunk.endOfHunk(currentLineNumber) {
 		return "", errors.New("Still processing a hunk, not a file header")
 	}
 	return readFileHeader(rawLine)
@@ -44,11 +44,7 @@ func readFileHeader(line string) (string, error) {
 
 func contextOrAddedLine(rawLine string) bool {
 	matches := contextAddedLinePattern.FindStringSubmatch(rawLine)
-	if len(matches) < 2 {
-		return false
-	}
-
-	return true
+	return len(matches) >= 2
 }
 
 func content(rawLine string) (string, error) {

@@ -27,7 +27,8 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 	logger = logger.Session("diff-scanner")
 
 	// read information about hunk
-	for isContentLine := false; isContentLine == false; {
+	var isContentLine bool
+	for !isContentLine {
 		logger = logger.WithData(lager.Data{
 			"line-number": d.cursor,
 		})
@@ -57,7 +58,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 		"next-line-number": nextLineNumber,
 	})
 
-	if isInHeader(nextLineNumber, d.currentHunk) == false {
+	if !isInHeader(nextLineNumber, d.currentHunk) {
 		return
 	}
 

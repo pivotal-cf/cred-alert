@@ -30,9 +30,5 @@ func InitialSchema(tx migration.LimitedTx) error {
       timestamp datetime NOT NULL
     )
 	`)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
