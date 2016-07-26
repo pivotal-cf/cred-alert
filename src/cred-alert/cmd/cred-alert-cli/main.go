@@ -33,7 +33,8 @@ func main() {
 	if opts.Directory != "" {
 		scanDirectory(logger, sniffer, opts.Directory)
 	} else {
-		scanFile(logger, sniffer, os.Stdin)
+		scanner := file.NewFileScanner(os.Stdin)
+		sniffer.Sniff(logger, scanner, handleViolation)
 	}
 }
 
@@ -41,11 +42,6 @@ func handleViolation(line scanners.Line) error {
 	fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
 
 	return nil
-}
-
-func scanFile(logger lager.Logger, sniffer sniff.Sniffer, fileHandle *os.File) {
-	scanner := file.NewFileScanner(fileHandle)
-	sniffer.Sniff(logger, scanner, handleViolation)
 }
 
 func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath string) {
@@ -64,7 +60,8 @@ func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath str
 			return err
 		}
 		if !info.IsDir() {
-			scanFile(logger, sniffer, fh)
+			scanner := file.NewFileScanner(fh)
+			sniffer.Sniff(logger, scanner, handleViolation)
 		}
 		return nil
 	}
