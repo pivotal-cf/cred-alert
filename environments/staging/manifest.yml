@@ -10,7 +10,6 @@ applications:
   command: ./cred-alert-ingestor
   services:
   - cred-alert-staging-logs
-  - cred-alert-mysql
   env:
     IGNORED_REPOS: ".*-credentials$"
     DATA_DOG_ENVIRONMENT_TAG: "staging"

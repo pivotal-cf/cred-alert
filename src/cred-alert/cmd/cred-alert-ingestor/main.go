@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
@@ -11,9 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/jessevdk/go-flags"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/ifrit"
@@ -21,8 +18,6 @@ import (
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 
-	"cred-alert/db"
-	"cred-alert/db/migrations"
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
 	"cred-alert/queue"
@@ -78,15 +73,7 @@ func main() {
 	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
 	generator := queue.NewGenerator()
 
-	database, err := createDB(logger, opts)
-	if err != nil {
-		logger.Error("Fatal Error: Could not connect to db", err)
-		os.Exit(1)
-	}
-	defer database.Close()
-	commitRepository := db.NewCommitRepository(database)
-
-	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist, generator, commitRepository)
+	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist, generator)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))
@@ -157,66 +144,4 @@ func debugHandler() http.Handler {
 	debugRouter.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	return debugRouter
-}
-
-func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
-	var uri string
-	if os.Getenv("VCAP_SERVICES") != "" {
-		var err error
-		uri, err = createDbUriFromVCAP(logger)
-		if err != nil {
-			logger.Error("Error getting db uri string: ", err)
-			return nil, err
-		}
-	} else {
-		uri = db.NewDSN(opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.DBName, opts.MySQL.Hostname, int(opts.MySQL.Port))
-	}
-
-	return migrations.LockDBAndMigrate(logger, "mysql", uri)
-}
-
-func createDbUriFromVCAP(logger lager.Logger) (string, error) {
-	logger = logger.Session("creating-db-from-vcap")
-
-	appEnv, err := cfenv.Current()
-	if err != nil {
-		logger.Error("Error getting CF environment", err)
-		return "", err
-	}
-
-	service, err := appEnv.Services.WithName("cred-alert-mysql")
-	if err != nil {
-		logger.Error("Error getting cred-alert-mysql instance", err)
-	}
-
-	username, ok := service.CredentialString("username")
-	if !ok {
-		return "", errors.New("Could not read username")
-	}
-	password, ok := service.CredentialString("password")
-	if !ok {
-		return "", errors.New("Could not read password")
-	}
-	hostname, ok := service.CredentialString("hostname")
-	if !ok {
-		return "", errors.New("Could not read hostname")
-	}
-	portF, ok := service.Credentials["port"].(float64)
-	if !ok {
-		return "", errors.New("Could not read port")
-	}
-	port := int(portF)
-	database, ok := service.CredentialString("name")
-	if !ok {
-		return "", errors.New("Could not read database")
-	}
-
-	if len(username) == 0 || len(password) == 0 {
-		err := errors.New("Empty mysql username or password")
-		logger.Error("MySQL parameters are incorrect", err)
-		return "", err
-	}
-
-	logger.Info("vcap-services.success")
-	return db.NewDSN(username, password, database, hostname, port), nil
 }

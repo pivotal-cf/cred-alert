@@ -1,7 +1,6 @@
 package ingestor
 
 import (
-	"cred-alert/db"
 	"cred-alert/metrics"
 	"cred-alert/queue"
 
@@ -15,16 +14,20 @@ type Ingestor interface {
 }
 
 type ingestor struct {
-	whitelist        *Whitelist
-	taskQueue        queue.Queue
-	generator        queue.UUIDGenerator
-	commitRepository db.CommitRepository
+	whitelist *Whitelist
+	taskQueue queue.Queue
+	generator queue.UUIDGenerator
 
 	requestCounter      metrics.Counter
 	ignoredEventCounter metrics.Counter
 }
 
-func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whitelist, generator queue.UUIDGenerator, commitRepository db.CommitRepository) *ingestor {
+func NewIngestor(
+	taskQueue queue.Queue,
+	emitter metrics.Emitter,
+	whitelist *Whitelist,
+	generator queue.UUIDGenerator,
+) *ingestor {
 	requestCounter := emitter.Counter("cred_alert.ingestor_requests")
 	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
@@ -32,7 +35,6 @@ func NewIngestor(taskQueue queue.Queue, emitter metrics.Emitter, whitelist *Whit
 		taskQueue:           taskQueue,
 		whitelist:           whitelist,
 		generator:           generator,
-		commitRepository:    commitRepository,
 		requestCounter:      requestCounter,
 		ignoredEventCounter: ignoredEventCounter,
 	}
@@ -53,54 +55,19 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 		return nil
 	}
 
-	// Check if from commit is registered, if not queue ref-scan
-	repoIsRegistered, err := s.commitRepository.IsRepoRegistered(logger, scan.Owner, scan.Repository)
-	if err != nil {
-		logger.Error("Error checking for repo: ", err)
-		repoIsRegistered = false
-	}
-
-	if !repoIsRegistered {
-		id := s.generator.Generate()
-		task := queue.RefScanPlan{
-			Owner:      scan.Owner,
-			Repository: scan.Repository,
-			Ref:        scan.Diffs[0].From,
-		}.Task(id)
-
-		sessionName := "enqueuing-ref-scan-for-new-repo"
-
-		err := s.taskQueue.Enqueue(task)
-		if err != nil {
-			logger.Session(sessionName).Error("enqueue-ref-scan-failed", err)
-			return err
-		}
-
-		err = s.commitRepository.RegisterCommit(logger, &db.Commit{
-			Repository: scan.Repository,
-			Owner:      scan.Owner,
-			SHA:        scan.Diffs[0].From,
-		})
-		if err != nil {
-			return err
-		}
-
-		logger.Session(sessionName).Info("enqueue-ref-scan-succeeded")
-	}
-
 	s.requestCounter.Inc(logger)
 
 	id := s.generator.Generate()
-	task := queue.AncestryScanPlan{
+	task := queue.PushEventPlan{
 		Owner:      scan.Owner,
 		Repository: scan.Repository,
-		SHA:        scan.Diffs[len(scan.Diffs)-1].To,
-		Depth:      queue.DefaultScanDepth,
+		From:       scan.From,
+		To:         scan.To,
 	}.Task(id)
 
-	err = s.taskQueue.Enqueue(task)
+	err := s.taskQueue.Enqueue(task)
 	if err != nil {
-		logger.Error("failed to enqueue scan", err)
+		logger.Error("failed-to-enqueue", err)
 		return err
 	}
 

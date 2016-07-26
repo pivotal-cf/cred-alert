@@ -1,8 +1,6 @@
 package queue_test
 
 import (
-	"encoding/json"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -34,70 +32,91 @@ var _ = Describe("Foreman", func() {
 		)
 	})
 
-	Describe("building runnable jobs from tasks", func() {
-		Describe("DiffScan Task", func() {
-			Context("when the foreman knows how to build the task", func() {
-				It("builds the task", func() {
-					task := &queuefakes.FakeAckTask{}
-					task.TypeReturns(queue.TaskTypeDiffScan)
-					task.PayloadReturns(`{
+	Describe("BuildJob", func() {
+		var task *queuefakes.FakeAckTask
+
+		var ItHandlesBrokenJson = func() {
+			Context("when the payload is broken json", func() {
+				BeforeEach(func() {
+					task.PayloadReturns(`{broken-json":'seriously"}`)
+				})
+
+				It("returns an error", func() {
+					_, err := foreman.BuildJob(task)
+					Expect(err).To(HaveOccurred())
+				})
+			})
+		}
+
+		BeforeEach(func() {
+			task = &queuefakes.FakeAckTask{}
+		})
+
+		Context("when the task is unknown", func() {
+			BeforeEach(func() {
+				task.TypeReturns("unknown-task-type")
+			})
+
+			It("returns an error", func() {
+				_, err := foreman.BuildJob(task)
+				Expect(err).To(MatchError("unknown task type: unknown-task-type"))
+			})
+		})
+
+		Context("when the task is a DiffScan", func() {
+			BeforeEach(func() {
+				task.TypeReturns(queue.TaskTypeDiffScan)
+				task.PayloadReturns(`{
 						"owner":      "pivotal-cf",
 						"repository": "cred-alert",
 						"from":       "abc123",
 						"to":         "def456"
 					}`)
-
-					job, err := foreman.BuildJob(task)
-					Expect(err).NotTo(HaveOccurred())
-
-					diffScan, ok := job.(*queue.DiffScanJob)
-					Expect(ok).To(BeTrue())
-
-					Expect(diffScan.Owner).To(Equal("pivotal-cf"))
-					Expect(diffScan.Repository).To(Equal("cred-alert"))
-					Expect(diffScan.From).To(Equal("abc123"))
-					Expect(diffScan.To).To(Equal("def456"))
-				})
 			})
 
-			Context("payload is not valid json", func() {
-				It("returns an error", func() {
-					task := &queuefakes.FakeAckTask{}
-					task.TypeReturns(queue.TaskTypeDiffScan)
-					task.PayloadReturns(`{broken-json":'seriously"}`)
+			It("builds the job", func() {
+				genericJob, err := foreman.BuildJob(task)
+				Expect(err).NotTo(HaveOccurred())
 
-					_, err := foreman.BuildJob(task)
-					_, isJsonError := err.(*json.SyntaxError)
-					Expect(isJsonError).To(BeTrue())
-				})
+				job, ok := genericJob.(*queue.DiffScanJob)
+				Expect(ok).To(BeTrue())
+
+				Expect(job.Owner).To(Equal("pivotal-cf"))
+				Expect(job.Repository).To(Equal("cred-alert"))
+				Expect(job.From).To(Equal("abc123"))
+				Expect(job.To).To(Equal("def456"))
 			})
+
+			ItHandlesBrokenJson()
 		})
 
-		Describe("RefScan Task", func() {
-			It("builds a ref-scan task", func() {
-				task := &queuefakes.FakeAckTask{}
+		Context("when the task is a RefScan", func() {
+			BeforeEach(func() {
 				task.TypeReturns(queue.TaskTypeRefScan)
 				task.PayloadReturns(`{
 					"owner":      "pivotal-cf",
 					"repository": "cred-alert",
 					"ref":        "abc124"
 				}`)
+			})
 
-				job, err := foreman.BuildJob(task)
+			It("builds the job", func() {
+				genericJob, err := foreman.BuildJob(task)
 				Expect(err).NotTo(HaveOccurred())
 
-				diffScan, ok := job.(*queue.RefScanJob)
+				job, ok := genericJob.(*queue.RefScanJob)
 				Expect(ok).To(BeTrue())
 
-				Expect(diffScan.Owner).To(Equal("pivotal-cf"))
-				Expect(diffScan.Repository).To(Equal("cred-alert"))
-				Expect(diffScan.Ref).To(Equal("abc124"))
+				Expect(job.Owner).To(Equal("pivotal-cf"))
+				Expect(job.Repository).To(Equal("cred-alert"))
+				Expect(job.Ref).To(Equal("abc124"))
 			})
+
+			ItHandlesBrokenJson()
 		})
 
-		Describe("AncestryScan Task", func() {
-			It("builds an ancestry-scan task", func() {
-				task := &queuefakes.FakeAckTask{}
+		Context("when the task is a AncestryScan", func() {
+			BeforeEach(func() {
 				task.TypeReturns(queue.TaskTypeAncestryScan)
 				task.PayloadReturns(`{
 					"owner":      "pivotal-cf",
@@ -105,28 +124,49 @@ var _ = Describe("Foreman", func() {
 					"sha":        "abc124",
 					"depth": 10
 				}`)
+			})
 
-				job, err := foreman.BuildJob(task)
+			It("builds the job", func() {
+				genericJob, err := foreman.BuildJob(task)
 				Expect(err).NotTo(HaveOccurred())
 
-				ancestryScan, ok := job.(*queue.AncestryScanJob)
+				job, ok := genericJob.(*queue.AncestryScanJob)
 				Expect(ok).To(BeTrue())
 
-				Expect(ancestryScan.Owner).To(Equal("pivotal-cf"))
-				Expect(ancestryScan.Repository).To(Equal("cred-alert"))
-				Expect(ancestryScan.SHA).To(Equal("abc124"))
-				Expect(ancestryScan.Depth).To(Equal(10))
+				Expect(job.Owner).To(Equal("pivotal-cf"))
+				Expect(job.Repository).To(Equal("cred-alert"))
+				Expect(job.SHA).To(Equal("abc124"))
+				Expect(job.Depth).To(Equal(10))
 			})
+
+			ItHandlesBrokenJson()
 		})
 
-		Context("when the foreman doesn't know how to build the task", func() {
-			It("returns an error", func() {
-				task := &queuefakes.FakeAckTask{}
-				task.TypeReturns("unknown-task-type")
-
-				_, err := foreman.BuildJob(task)
-				Expect(err).To(MatchError("unknown task type: unknown-task-type"))
+		Context("when the task is a PushEvent", func() {
+			BeforeEach(func() {
+				task.TypeReturns(queue.TaskTypePushEvent)
+				task.PayloadReturns(`{
+					"owner":      "pivotal-cf",
+					"repository": "cred-alert",
+					"from":       "from",
+					"to":         "to"
+				}`)
 			})
+
+			It("builds the job", func() {
+				genericJob, err := foreman.BuildJob(task)
+				Expect(err).NotTo(HaveOccurred())
+
+				job, ok := genericJob.(*queue.PushEventJob)
+				Expect(ok).To(BeTrue())
+
+				Expect(job.Owner).To(Equal("pivotal-cf"))
+				Expect(job.Repository).To(Equal("cred-alert"))
+				Expect(job.From).To(Equal("from"))
+				Expect(job.To).To(Equal("to"))
+			})
+
+			ItHandlesBrokenJson()
 		})
 	})
 })

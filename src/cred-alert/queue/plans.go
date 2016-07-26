@@ -39,6 +39,23 @@ func (p RefScanPlan) Task(id string) Task {
 	}
 }
 
+type PushEventPlan struct {
+	Owner      string `json:"owner"`
+	Repository string `json:"repository"`
+	From       string `json:"from"`
+	To         string `json:"to"`
+}
+
+func (p PushEventPlan) Task(id string) Task {
+	payload, _ := json.Marshal(p)
+
+	return basicTask{
+		id:      id,
+		typee:   TaskTypePushEvent,
+		payload: string(payload),
+	}
+}
+
 type AncestryScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`
