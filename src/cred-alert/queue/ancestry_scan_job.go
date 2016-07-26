@@ -43,38 +43,40 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		"repo":    j.Repository,
 		"task-id": j.id,
 	})
-
 	logger.Info("starting")
 
 	isRegistered, err := j.commitRepository.IsCommitRegistered(logger, j.SHA)
 	if err != nil {
-		logger.Error("is-commit-registered-failed", err)
+		logger.Error("failed", err)
 		return err
 	}
 
 	if isRegistered {
 		logger.Info("known-commit")
+		logger.Info("done")
 		return nil
 	}
 
 	if j.Depth <= 0 {
 		if err := j.enqueueRefScan(logger); err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 
 		if err = j.registerCommit(logger); err != nil {
-			logger.Error("register-commit-failed", err)
+			logger.Error("failed", err)
 			return err
 		}
 
 		logger.Info("max-depth-reached")
 		j.depthReachedCounter.Inc(logger)
+		logger.Info("done")
 		return nil
 	}
 
 	parents, err := j.client.Parents(logger, j.Owner, j.Repository, j.SHA)
 	if err != nil {
-		logger.Error("fetching-parents-failed", err)
+		logger.Error("failed", err)
 		return err
 	}
 	logger.Info("fetching-parents-succeeded", lager.Data{"parents": parents})
@@ -82,6 +84,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 	if len(parents) == 0 {
 		logger.Info("reached-initial-commit")
 		if err := j.enqueueRefScan(logger); err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 		j.initialCommitCounter.Inc(logger)
@@ -89,25 +92,34 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 
 	for _, parent := range parents {
 		if err := j.enqueueDiffScan(logger, parent, j.SHA); err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 
 		if err := j.enqueueAncestryScan(logger, parent); err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 	}
 
 	if err = j.registerCommit(logger); err != nil {
-		logger.Error("register-commit-failed", err)
+		logger.Error("failed", err)
 		return err
 	}
 
 	logger.Info("done")
-
 	return nil
 }
 
 func (j *AncestryScanJob) enqueueRefScan(logger lager.Logger) error {
+	logger = logger.Session("enqueue-ref-scan", lager.Data{
+		"owner":      j.Owner,
+		"repository": j.Repository,
+		"sha":        j.SHA,
+		"private":    j.Private,
+	})
+	logger.Info("starting")
+
 	task := RefScanPlan{
 		Owner:      j.Owner,
 		Repository: j.Repository,
@@ -115,38 +127,56 @@ func (j *AncestryScanJob) enqueueRefScan(logger lager.Logger) error {
 		Private:    j.Private,
 	}.Task(j.id)
 
-	logger.Info("enqueuing-ref-scan")
 	err := j.taskQueue.Enqueue(task)
 	if err != nil {
-		logger.Error("enqueuing-ref-scan-failed", err)
-	} else {
-		logger.Info("enqueuing-ref-scan-succeeded")
+		logger.Session("enqueue").Error("failed", err)
+		return err
 	}
 
-	return err
+	logger.Info("done")
+	return nil
 }
 
 func (j *AncestryScanJob) enqueueAncestryScan(logger lager.Logger, sha string) error {
+	depth := (j.Depth - 1)
+
+	logger = logger.Session("enqueue-ancestry-scan", lager.Data{
+		"owner":      j.Owner,
+		"repository": j.Repository,
+		"sha":        sha,
+		"depth":      depth,
+		"private":    j.Private,
+	})
+	logger.Info("starting")
+
 	task := AncestryScanPlan{
 		Owner:      j.Owner,
 		Repository: j.Repository,
 		SHA:        sha,
-		Depth:      j.Depth - 1,
+		Depth:      depth,
 		Private:    j.Private,
 	}.Task(j.id)
 
-	logger.Info("enqueuing-ancestry-scan")
 	err := j.taskQueue.Enqueue(task)
 	if err != nil {
-		logger.Error("enqueuing-ancestry-scan-failed", err)
-	} else {
-		logger.Info("enqueuing-ancestry-scan-succeeded")
+		logger.Session("enqueue").Error("failed", err)
+		return err
 	}
 
-	return err
+	logger.Info("done")
+	return nil
 }
 
 func (j *AncestryScanJob) enqueueDiffScan(logger lager.Logger, from string, to string) error {
+	logger = logger.Session("enqueue-diff-scan", lager.Data{
+		"owner":      j.Owner,
+		"repository": j.Repository,
+		"from":       from,
+		"to":         to,
+		"private":    j.Private,
+	})
+	logger.Info("starting")
+
 	task := DiffScanPlan{
 		Owner:      j.Owner,
 		Repository: j.Repository,
@@ -155,15 +185,14 @@ func (j *AncestryScanJob) enqueueDiffScan(logger lager.Logger, from string, to s
 		Private:    j.Private,
 	}.Task(j.id)
 
-	logger.Info("enqueuing-diff-scan")
 	err := j.taskQueue.Enqueue(task)
 	if err != nil {
-		logger.Error("enqueuing-diff-scan-failed", err)
-	} else {
-		logger.Info("enqueuing-diff-scan-succeeded")
+		logger.Session("enqueue").Error("failed", err)
+		return err
 	}
 
-	return err
+	logger.Info("done")
+	return nil
 }
 
 func (j *AncestryScanJob) registerCommit(logger lager.Logger) error {
