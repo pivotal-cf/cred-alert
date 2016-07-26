@@ -55,17 +55,20 @@ type Opts struct {
 func main() {
 	var opts Opts
 
+	logger := lager.NewLogger("cred-alert-ingestor")
+	logger.Info("started")
+
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
+		logger.Error("failed", err)
 		os.Exit(1)
 	}
 
-	logger := lager.NewLogger("cred-alert-ingestor")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
 	taskQueue, err := createQueue(opts, logger)
 	if err != nil {
-		logger.Error("Could not create queue", err)
+		logger.Error("failed", err)
 		os.Exit(1)
 	}
 
@@ -97,15 +100,19 @@ func main() {
 
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
-		logger.Error("running-server-failed", err)
+		logger.Session("starting-server").Error("failed", err)
 	}
 }
 
 func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
+	logger = logger.Session("creating-queue")
+
 	if sqsValuesExist(opts) {
+		logger.Session("sqs-queue").Info("done")
 		return createSqsQueue(opts)
 	}
 
+	logger.Session("null-queue").Info("done")
 	return queue.NewNullQueue(logger), nil
 }
 
