@@ -26,11 +26,23 @@ func LockDBAndMigrate(logger lager.Logger, driver, dbURI string) (*gorm.DB, erro
 
 	for {
 		logger.Info("acquiring-lock")
-		_, err = lockDB.Exec(`SELECT GET_LOCK(?,10);`, lockName)
+		var result int
+		err := lockDB.QueryRow(`SELECT GET_LOCK(?, 5);`, lockName).Scan(&result)
 		if err != nil {
-			time.Sleep(5 * time.Second)
+			return nil, err
+		}
+
+		if result != 1 {
 			continue
 		}
+
+		defer func() {
+			logger.Info("releasing-lock")
+			_, err = lockDB.Exec(`SELECT RELEASE_LOCK(?)`, lockName)
+			if err != nil {
+				logger.Error("failed", err)
+			}
+		}()
 
 		logger.Info("migrating")
 		_, err = migration.OpenWith(driver, dbURI, Migrations, migration.DefaultGetVersion, setVersion)
@@ -38,16 +50,11 @@ func LockDBAndMigrate(logger lager.Logger, driver, dbURI string) (*gorm.DB, erro
 			logger.Fatal("failed", err)
 		}
 
-		logger.Info("releasing-lock")
-		_, err = lockDB.Exec(`SELECT RELEASE_LOCK(?)`, lockName)
-		if err != nil {
-			logger.Error("failed", err)
-		}
-
 		break
 	}
 
 	logger.Info("done")
+
 	return gorm.Open(driver, dbURI)
 }
 
