@@ -38,30 +38,32 @@ func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitReposit
 
 func (j *AncestryScanJob) Run(logger lager.Logger) error {
 	logger = logger.Session("scanning-ancestry", lager.Data{
-		"sha":   j.SHA,
-		"owner": j.Owner,
-		"repo":  j.Repository,
+		"sha":     j.SHA,
+		"owner":   j.Owner,
+		"repo":    j.Repository,
+		"task-id": j.id,
 	})
+
+	logger.Info("starting")
 
 	isRegistered, err := j.commitRepository.IsCommitRegistered(logger, j.SHA)
 	if err != nil {
-		logger.Error("failed", err)
+		logger.Error("is-commit-registered-failed", err)
 		return err
 	}
 
 	if isRegistered {
-		logger.Debug("known-commit")
+		logger.Info("known-commit")
 		return nil
 	}
 
 	if j.Depth <= 0 {
-		if err := j.enqueueRefScan(); err != nil {
-			logger.Error("failed", err)
+		if err := j.enqueueRefScan(logger); err != nil {
 			return err
 		}
 
 		if err = j.registerCommit(logger); err != nil {
-			logger.Error("failed", err)
+			logger.Error("register-commit-failed", err)
 			return err
 		}
 
@@ -72,14 +74,13 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 
 	parents, err := j.client.Parents(logger, j.Owner, j.Repository, j.SHA)
 	if err != nil {
-		logger.Error("failed", err)
+		logger.Error("fetching-parents-failed", err)
 		return err
 	}
-	logger.Debug("parents", lager.Data{"parents": parents})
+	logger.Info("fetching-parents-succeeded", lager.Data{"parents": parents})
 
 	if len(parents) == 0 {
-		if err := j.enqueueRefScan(); err != nil {
-			logger.Error("failed", err)
+		if err := j.enqueueRefScan(logger); err != nil {
 			return err
 		}
 		logger.Info("reached-initial-commit")
@@ -87,57 +88,79 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 	}
 
 	for _, parent := range parents {
-		if err := j.enqueueDiffScan(parent, j.SHA); err != nil {
-			logger.Error("failed", err)
+		if err := j.enqueueDiffScan(logger, parent, j.SHA); err != nil {
 			return err
 		}
 
-		if err := j.enqueueAncestryScan(parent); err != nil {
-			logger.Error("failed", err)
+		if err := j.enqueueAncestryScan(logger, parent); err != nil {
 			return err
 		}
 	}
 
 	if err = j.registerCommit(logger); err != nil {
-		logger.Error("failed", err)
+		logger.Error("register-commit-failed", err)
 		return err
 	}
 
-	logger.Debug("done")
+	logger.Info("done")
 
 	return nil
 }
 
-func (j *AncestryScanJob) enqueueRefScan() error {
+func (j *AncestryScanJob) enqueueRefScan(logger lager.Logger) error {
 	task := RefScanPlan{
 		Owner:      j.Owner,
 		Repository: j.Repository,
 		Ref:        j.SHA,
 	}.Task(j.id)
 
-	return j.taskQueue.Enqueue(task)
+	logger.Info("enqueuing-ref-scan")
+	err := j.taskQueue.Enqueue(task)
+	if err != nil {
+		logger.Error("enqueuing-ref-scan-failed", err)
+	} else {
+		logger.Info("enqueuing-ref-scan-succeeded")
+	}
+
+	return err
 }
 
-func (j *AncestryScanJob) enqueueAncestryScan(sha string) error {
-	ancestryScan := AncestryScanPlan{
+func (j *AncestryScanJob) enqueueAncestryScan(logger lager.Logger, sha string) error {
+	task := AncestryScanPlan{
 		Owner:      j.Owner,
 		Repository: j.Repository,
 		SHA:        sha,
 		Depth:      j.Depth - 1,
 	}.Task(j.id)
 
-	return j.taskQueue.Enqueue(ancestryScan)
+	logger.Info("enqueuing-ancestry-scan")
+	err := j.taskQueue.Enqueue(task)
+	if err != nil {
+		logger.Error("enqueuing-ancestry-scan-failed", err)
+	} else {
+		logger.Info("enqueuing-ancestry-scan-succeeded")
+	}
+
+	return err
 }
 
-func (j *AncestryScanJob) enqueueDiffScan(from string, to string) error {
-	diffScan := DiffScanPlan{
+func (j *AncestryScanJob) enqueueDiffScan(logger lager.Logger, from string, to string) error {
+	task := DiffScanPlan{
 		Owner:      j.Owner,
 		Repository: j.Repository,
 		From:       from,
 		To:         to,
 	}.Task(j.id)
 
-	return j.taskQueue.Enqueue(diffScan)
+	logger.Info("enqueuing-diff-scan")
+	err := j.taskQueue.Enqueue(task)
+	if err != nil {
+		logger.Error("enqueuing-diff-scan-failed", err)
+	} else {
+		logger.Info("enqueuing-diff-scan-succeeded")
+	}
+
+	return err
 }
 
 func (j *AncestryScanJob) registerCommit(logger lager.Logger) error {

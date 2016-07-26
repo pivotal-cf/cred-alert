@@ -49,6 +49,7 @@ var _ = Describe("RefScan Job", func() {
 	repo := "repo-name"
 	repoFullName := owner + "/" + repo
 	ref := "reference"
+	id := "my-id"
 
 	BeforeEach(func() {
 		server = ghttp.NewServer()
@@ -77,7 +78,7 @@ var _ = Describe("RefScan Job", func() {
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, mimetype)
+		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, mimetype, id)
 	})
 
 	Describe("Run", func() {
@@ -167,6 +168,7 @@ var _ = Describe("RefScan Job", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"ref":"%s"`, ref)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, id)))
 		})
 
 		Context("when the ref is the nil ref (initial empty repo)", func() {

@@ -30,6 +30,7 @@ type RefScanJob struct {
 	emitter           metrics.Emitter
 	credentialCounter metrics.Counter
 	mimetype          mimetype.Mimetype
+	id                string
 }
 
 func NewRefScanJob(
@@ -39,6 +40,7 @@ func NewRefScanJob(
 	notifier notifications.Notifier,
 	emitter metrics.Emitter,
 	mimetype mimetype.Mimetype,
+	id string,
 ) *RefScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
@@ -50,6 +52,7 @@ func NewRefScanJob(
 		emitter:           emitter,
 		credentialCounter: credentialCounter,
 		mimetype:          mimetype,
+		id:                id,
 	}
 
 	return job
@@ -60,6 +63,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"owner":      j.Owner,
 		"repository": j.Repository,
 		"ref":        j.Ref,
+		"task-id":    j.id,
 	})
 
 	if j.Ref == initialCommitParentHash {
@@ -88,6 +92,12 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	}
 	defer archiveReader.Close()
 
+	logger.Info("unzipped-archive", lager.Data{
+		"file-count": len(archiveReader.File),
+	})
+
+	logger.Info("scanning-unzipped-files")
+
 	for _, f := range archiveReader.File {
 		isText, err := j.isText(f)
 		if err != nil {
@@ -114,6 +124,8 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 			return err
 		}
 	}
+
+	logger.Info("done")
 
 	return nil
 }

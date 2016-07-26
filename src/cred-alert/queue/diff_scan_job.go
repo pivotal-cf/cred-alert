@@ -21,9 +21,10 @@ type DiffScanJob struct {
 	sniffer            sniff.Sniffer
 	credentialCounter  metrics.Counter
 	notifier           notifications.Notifier
+	id                 string
 }
 
-func NewDiffScanJob(githubClient gh.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, diffScanRepository db.DiffScanRepository, plan DiffScanPlan) *DiffScanJob {
+func NewDiffScanJob(githubClient gh.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, diffScanRepository db.DiffScanRepository, plan DiffScanPlan, id string) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{
@@ -34,6 +35,7 @@ func NewDiffScanJob(githubClient gh.Client, sniffer sniff.Sniffer, emitter metri
 
 		credentialCounter: credentialCounter,
 		notifier:          notifier,
+		id:                id,
 	}
 
 	return job
@@ -45,7 +47,10 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		"repository": j.Repository,
 		"from":       j.From,
 		"to":         j.To,
+		"task-id":    j.id,
 	})
+
+	logger.Info("starting")
 
 	diff, err := j.githubClient.CompareRefs(logger, j.Owner, j.Repository, j.From, j.To)
 	if err != nil {
@@ -58,7 +63,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 
 	err = j.sniffer.Sniff(logger, diffScanner, handleViolation)
 	if err != nil {
-		logger.Error("failed", err)
+		logger.Error("sniff-failed", err)
 		return err
 	}
 

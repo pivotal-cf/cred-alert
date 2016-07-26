@@ -15,6 +15,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
@@ -38,6 +39,9 @@ var _ = Describe("Diff Scan Job", func() {
 
 	var fromGitSha string = "from-git-sha"
 	var toGitSha string = "to-git-sha"
+	var lineNumber = 1
+
+	id := "some-id"
 
 	BeforeEach(func() {
 		plan = queue.DiffScanPlan{
@@ -72,6 +76,7 @@ var _ = Describe("Diff Scan Job", func() {
 			notifier,
 			diffScanRepository,
 			plan,
+			id,
 		)
 	})
 
@@ -131,7 +136,7 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(sha).To(Equal(toGitSha))
 			Expect(line).To(Equal(scanners.Line{
 				Path:       "some/file/path",
-				LineNumber: 1,
+				LineNumber: lineNumber,
 				Content:    "content",
 			}))
 		})
@@ -146,6 +151,20 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(diffScan.FromCommit).To(Equal(plan.From))
 			Expect(diffScan.ToCommit).To(Equal(plan.To))
 			Expect(diffScan.CredentialFound).To(BeTrue())
+		})
+
+		It("logs the violation", func() {
+			err := job.Run(logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(logger).To(gbytes.Say("found-credential"))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"line-number":%d`, lineNumber)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from":"%s"`, fromGitSha)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, id)))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"to":"%s"`, toGitSha)))
 		})
 
 		Context("when the notification fails to send", func() {

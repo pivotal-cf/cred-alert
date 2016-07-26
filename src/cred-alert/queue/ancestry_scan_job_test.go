@@ -2,6 +2,7 @@ package queue_test
 
 import (
 	"errors"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -94,7 +95,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 			err := job.Run(logger)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(expectedError))
-			Expect(logger).To(gbytes.Say("scanning-ancestry.failed"))
+			Expect(logger).To(gbytes.Say("failed"))
 		})
 	}
 
@@ -106,6 +107,12 @@ var _ = Describe("Ancestry Scan Job", func() {
 	}
 
 	Describe("running the job", func() {
+		It("logs", func() {
+			job.Run(logger)
+			Expect(logger).To(gbytes.Say("starting"))
+			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, id)))
+		})
+
 		Context("when the commit repository has an error finding a commit", func() {
 			expectedError := errors.New("client repository error")
 

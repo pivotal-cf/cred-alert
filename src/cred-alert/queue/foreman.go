@@ -64,9 +64,9 @@ func NewForeman(
 func (f *foreman) BuildJob(task Task) (Job, error) {
 	switch task.Type() {
 	case TaskTypeDiffScan:
-		return f.buildDiffScan(task.Payload())
+		return f.buildDiffScan(task.ID(), task.Payload())
 	case TaskTypeRefScan:
-		return f.buildRefScan(task.Payload())
+		return f.buildRefScan(task.ID(), task.Payload())
 	case TaskTypeAncestryScan:
 		return f.buildAncestryScan(task.ID(), task.Payload())
 	case TaskTypePushEvent:
@@ -91,7 +91,7 @@ func (f *foreman) buildPushEventJob(id, payload string) (*PushEventJob, error) {
 	), nil
 }
 
-func (f *foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
+func (f *foreman) buildDiffScan(id, payload string) (*DiffScanJob, error) {
 	var diffScanPlan DiffScanPlan
 
 	if err := json.Unmarshal([]byte(payload), &diffScanPlan); err != nil {
@@ -105,10 +105,11 @@ func (f *foreman) buildDiffScan(payload string) (*DiffScanJob, error) {
 		f.notifier,
 		f.diffScanRepository,
 		diffScanPlan,
+		id,
 	), nil
 }
 
-func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
+func (f *foreman) buildRefScan(id, payload string) (*RefScanJob, error) {
 	var refScanPlan RefScanPlan
 
 	if err := json.Unmarshal([]byte(payload), &refScanPlan); err != nil {
@@ -122,6 +123,7 @@ func (f *foreman) buildRefScan(payload string) (*RefScanJob, error) {
 		f.notifier,
 		f.emitter,
 		f.mimetype,
+		id,
 	), nil
 }
 
