@@ -92,7 +92,9 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		isText, err := j.isText(f)
 		if err != nil {
 			logger.Error("mimetype-error", err)
-		} else if !isText {
+		}
+
+		if !isText {
 			logger.Info("skipped-non-text-file", lager.Data{"filename": f.Name})
 			continue
 		}

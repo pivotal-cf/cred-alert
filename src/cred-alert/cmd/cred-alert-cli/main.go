@@ -48,10 +48,13 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, fileHandle *os.File) {
 }
 
 func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath string) {
-	if stat, err := os.Stat(directoryPath); err != nil {
+	stat, err := os.Stat(directoryPath)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot read directory %s\n", directoryPath)
 		os.Exit(1)
-	} else if !stat.IsDir() {
+	}
+
+	if !stat.IsDir() {
 		fmt.Fprintf(os.Stderr, "%s is not a directory\n", directoryPath)
 		os.Exit(1)
 	}
