@@ -10,7 +10,7 @@ import (
 //go:generate counterfeiter . Ingestor
 
 type Ingestor interface {
-	IngestPushScan(lager.Logger, PushScan) error
+	IngestPushScan(lager.Logger, PushScan, string) error
 }
 
 type ingestor struct {
@@ -42,11 +42,11 @@ func NewIngestor(
 	return handler
 }
 
-func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
-	logger = logger.Session("handle-event")
+func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID string) error {
+	logger = logger.Session("ingest")
 
 	if s.whitelist.IsIgnored(scan.Repository) {
-		logger.Info("ignored-repo", lager.Data{
+		logger.Info("ignoring-repo", lager.Data{
 			"repo": scan.Repository,
 		})
 
@@ -58,6 +58,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 	s.requestCounter.Inc(logger)
 
 	id := s.generator.Generate()
+
 	task := queue.PushEventPlan{
 		Owner:      scan.Owner,
 		Repository: scan.Repository,
@@ -65,9 +66,14 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 		To:         scan.To,
 	}.Task(id)
 
+	logger = logger.Session("enqueuing-task", lager.Data{
+		"task-id":   id,
+		"github-id": githubID,
+	})
+
 	err := s.taskQueue.Enqueue(task)
 	if err != nil {
-		logger.Error("failed-to-enqueue", err)
+		logger.Error("failed", err)
 		return err
 	}
 

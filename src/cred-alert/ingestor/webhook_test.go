@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -31,14 +30,10 @@ var _ = Describe("Webhook", func() {
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
 
-		token     string
-		fakeTimes [6]time.Time
+		token string
 	)
 
 	BeforeEach(func() {
-		for i := 0; i < len(fakeTimes); i++ {
-			fakeTimes[i] = time.Now().AddDate(0, 0, i)
-		}
 		logger = lagertest.NewTestLogger("ingestor")
 		recorder = httptest.NewRecorder()
 		in = &ingestorfakes.FakeIngestor{}
@@ -48,8 +43,8 @@ var _ = Describe("Webhook", func() {
 	})
 
 	pushEvent := github.PushEvent{
-		Before: github.String("abc123bef04e"),
-		After:  github.String("def456af4e4"),
+		Before: github.String("commit-sha-0"),
+		After:  github.String("commit-sha-5"),
 		Repo: &github.PushEventRepository{
 			Private:  github.Bool(true),
 			Name:     github.String("repository-name"),
@@ -58,13 +53,12 @@ var _ = Describe("Webhook", func() {
 				Name: github.String("repository-owner"),
 			},
 		},
-		Ref: github.String("refs/heads/my-branch"),
 		Commits: []github.PushEventCommit{
-			{ID: github.String("commit-sha-1"), Timestamp: &github.Timestamp{Time: fakeTimes[1]}},
-			{ID: github.String("commit-sha-2"), Timestamp: &github.Timestamp{Time: fakeTimes[2]}},
-			{ID: github.String("commit-sha-3"), Timestamp: &github.Timestamp{Time: fakeTimes[3]}},
-			{ID: github.String("commit-sha-4"), Timestamp: &github.Timestamp{Time: fakeTimes[4]}},
-			{ID: github.String("commit-sha-5"), Timestamp: &github.Timestamp{Time: fakeTimes[5]}},
+			{ID: github.String("commit-sha-1")},
+			{ID: github.String("commit-sha-2")},
+			{ID: github.String("commit-sha-3")},
+			{ID: github.String("commit-sha-4")},
+			{ID: github.String("commit-sha-5")},
 		},
 	}
 
@@ -78,6 +72,7 @@ var _ = Describe("Webhook", func() {
 
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", body)
 			fakeRequest.Header.Set("X-Hub-Signature", macHeader)
+			fakeRequest.Header.Set("X-GitHub-Delivery", "delivery-id")
 		})
 
 		It("responds with 200", func() {
@@ -90,6 +85,16 @@ var _ = Describe("Webhook", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
 			Eventually(in.IngestPushScanCallCount).Should(Equal(1))
+			_, actualScan, actualGitHubID := in.IngestPushScanArgsForCall(0)
+
+			Expect(actualScan).To(Equal(ingestor.PushScan{
+				Owner:      "repository-owner",
+				Repository: "repository-name",
+				From:       "commit-sha-0",
+				To:         "commit-sha-5",
+				Private:    true,
+			}))
+			Expect(actualGitHubID).To(Equal("delivery-id"))
 		})
 
 		Context("when we fail to ingest the message", func() {

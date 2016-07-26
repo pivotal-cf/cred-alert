@@ -37,7 +37,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.handlePushEvent(h.logger, w, event)
+	err = h.handlePushEvent(h.logger, w, event, r.Header.Get("X-GitHub-Delivery"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -46,7 +46,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, event github.PushEvent) error {
+func (h *handler) handlePushEvent(
+	logger lager.Logger,
+	w http.ResponseWriter,
+	event github.PushEvent,
+	gitHubID string,
+) error {
 	logger = logger.Session("handling-push-event")
 
 	scan, valid := Extract(event)
@@ -68,5 +73,5 @@ func (h *handler) handlePushEvent(logger lager.Logger, w http.ResponseWriter, ev
 		"private": scan.Private,
 	})
 
-	return h.ingestor.IngestPushScan(logger, scan)
+	return h.ingestor.IngestPushScan(logger, scan, gitHubID)
 }

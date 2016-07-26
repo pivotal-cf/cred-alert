@@ -69,7 +69,7 @@ var _ = Describe("Ingestor", func() {
 
 	JustBeforeEach(func() {
 		in = ingestor.NewIngestor(taskQueue, emitter, whitelist, generator)
-		ingestErr = in.IngestPushScan(logger, scan)
+		ingestErr = in.IngestPushScan(logger, scan, "github-id")
 	})
 
 	It("tries to enqueue a PushEventPlan", func() {
@@ -94,6 +94,14 @@ var _ = Describe("Ingestor", func() {
 
 	It("increments cred_alert.ingestor_requests", func() {
 		Expect(requestCounter.IncCallCount()).To(Equal(1))
+	})
+
+	It("logs the correlation between our ID and a GitHub ID", func() {
+		contents := logger.Buffer().Contents()
+
+		Expect(contents).To(ContainSubstring("enqueuing-task"))
+		Expect(contents).To(ContainSubstring("id-1"))
+		Expect(contents).To(ContainSubstring("github-id"))
 	})
 
 	Context("when enqueuing a task fails", func() {
