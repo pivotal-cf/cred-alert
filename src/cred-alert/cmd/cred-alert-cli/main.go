@@ -55,11 +55,13 @@ func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath str
 	}
 
 	walkFunc := func(path string, info os.FileInfo, err error) error {
-		fh, err := os.Open(path)
-		if err != nil {
-			return err
-		}
 		if !info.IsDir() {
+			fh, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer fh.Close()
+
 			scanner := file.NewFileScanner(fh)
 			sniffer.Sniff(logger, scanner, handleViolation)
 		}
