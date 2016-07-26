@@ -18,8 +18,6 @@ type Notifier interface {
 }
 
 type slackNotifier struct {
-	logger lager.Logger
-
 	webhookURL string
 	client     *http.Client
 }
@@ -99,9 +97,7 @@ func (n *slackNotifier) buildNotification(repository string, sha string, line sc
 	}
 }
 
-type nullSlackNotifier struct {
-	logger lager.Logger
-}
+type nullSlackNotifier struct{}
 
 func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error {
 	logger.Session("send-notification").Debug("sent")

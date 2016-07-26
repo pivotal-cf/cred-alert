@@ -62,7 +62,6 @@ func (emitter *emitter) Timer(name string) Timer {
 }
 
 type nullEmitter struct {
-	name        string
 	environment string
 }
 
