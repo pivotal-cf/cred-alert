@@ -152,7 +152,7 @@ var _ = Describe("Database Connections", func() {
 				Expect(err).To(Equal(findError))
 
 				Expect(logger).To(gbytes.Say("finding-repo"))
-				Expect(logger).To(gbytes.Say("error-finding-repo"))
+				Expect(logger).To(gbytes.Say("finding-repo.failed"))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repoName)))
 			})
 		})
@@ -199,7 +199,7 @@ var _ = Describe("Database Connections", func() {
 		It("should log successfully saving", func() {
 			diffScanRepository.SaveDiffScan(logger, fakeDiffScan)
 			Expect(logger).To(gbytes.Say("saving-diffscan"))
-			Expect(logger).To(gbytes.Say("successfully-saved-diffscan"))
+			Expect(logger).To(gbytes.Say("saving-diffscan.done"))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"credential-found":%v`, fakeDiffScan.CredentialFound)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from-commit":"%s"`, fakeDiffScan.FromCommit)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, fakeDiffScan.Owner)))
@@ -211,7 +211,7 @@ var _ = Describe("Database Connections", func() {
 			findError := errors.New("save diff error")
 			database.AddError(findError)
 			diffScanRepository.SaveDiffScan(logger, fakeDiffScan)
-			Expect(logger).To(gbytes.Say("error-saving-diffscan"))
+			Expect(logger).To(gbytes.Say("saving-diffscan.failed"))
 		})
 	})
 })
