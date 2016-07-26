@@ -23,11 +23,12 @@ type FakeClient struct {
 		result1 string
 		result2 error
 	}
-	ArchiveLinkStub        func(owner, repo string) (*url.URL, error)
+	ArchiveLinkStub        func(owner, repo, ref string) (*url.URL, error)
 	archiveLinkMutex       sync.RWMutex
 	archiveLinkArgsForCall []struct {
 		owner string
 		repo  string
+		ref   string
 	}
 	archiveLinkReturns struct {
 		result1 *url.URL
@@ -87,16 +88,17 @@ func (fake *FakeClient) CompareRefsReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) ArchiveLink(owner string, repo string) (*url.URL, error) {
+func (fake *FakeClient) ArchiveLink(owner string, repo string, ref string) (*url.URL, error) {
 	fake.archiveLinkMutex.Lock()
 	fake.archiveLinkArgsForCall = append(fake.archiveLinkArgsForCall, struct {
 		owner string
 		repo  string
-	}{owner, repo})
-	fake.recordInvocation("ArchiveLink", []interface{}{owner, repo})
+		ref   string
+	}{owner, repo, ref})
+	fake.recordInvocation("ArchiveLink", []interface{}{owner, repo, ref})
 	fake.archiveLinkMutex.Unlock()
 	if fake.ArchiveLinkStub != nil {
-		return fake.ArchiveLinkStub(owner, repo)
+		return fake.ArchiveLinkStub(owner, repo, ref)
 	} else {
 		return fake.archiveLinkReturns.result1, fake.archiveLinkReturns.result2
 	}
@@ -108,10 +110,10 @@ func (fake *FakeClient) ArchiveLinkCallCount() int {
 	return len(fake.archiveLinkArgsForCall)
 }
 
-func (fake *FakeClient) ArchiveLinkArgsForCall(i int) (string, string) {
+func (fake *FakeClient) ArchiveLinkArgsForCall(i int) (string, string, string) {
 	fake.archiveLinkMutex.RLock()
 	defer fake.archiveLinkMutex.RUnlock()
-	return fake.archiveLinkArgsForCall[i].owner, fake.archiveLinkArgsForCall[i].repo
+	return fake.archiveLinkArgsForCall[i].owner, fake.archiveLinkArgsForCall[i].repo, fake.archiveLinkArgsForCall[i].ref
 }
 
 func (fake *FakeClient) ArchiveLinkReturns(result1 *url.URL, result2 error) {

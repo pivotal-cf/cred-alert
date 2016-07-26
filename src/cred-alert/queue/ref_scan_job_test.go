@@ -109,9 +109,10 @@ var _ = Describe("RefScan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(client.ArchiveLinkCallCount()).To(Equal(1))
-			owner, repo := client.ArchiveLinkArgsForCall(0)
-			Expect(owner).To(Equal("repo-owner"))
-			Expect(repo).To(Equal("repo-name"))
+			returnedOwner, returnedRepo, returnedRef := client.ArchiveLinkArgsForCall(0)
+			Expect(returnedOwner).To(Equal(owner))
+			Expect(returnedRepo).To(Equal(repo))
+			Expect(returnedRef).To(Equal(ref))
 		})
 
 		It("Scans the archive", func() {

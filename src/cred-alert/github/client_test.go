@@ -207,14 +207,10 @@ var _ = Describe("Client", func() {
 	})
 
 	Describe("GetArchiveLink", func() {
-		BeforeEach(func() {
-			header.Set("Location", server.URL()+"/zipBall")
-		})
-
 		It("returns a download link", func() {
-			url, err := client.ArchiveLink("owner", "repo")
+			url, err := client.ArchiveLink("owner", "repo", "ref")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(url.String()).To(Equal(server.URL() + "/repos/owner/repo/zipball"))
+			Expect(url.String()).To(Equal(server.URL() + "/repos/owner/repo/zipball/ref"))
 		})
 	})
 })

@@ -67,15 +67,15 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		return nil
 	}
 
-	downloadURL, err := j.client.ArchiveLink(j.Owner, j.Repository)
+	downloadURL, err := j.client.ArchiveLink(j.Owner, j.Repository, j.Ref)
 	if err != nil {
-		logger.Error("Error getting download url", err)
+		logger.Error("error-creating-archive-link", err)
 		return err
 	}
 
 	archiveFile, err := downloadArchive(logger, downloadURL)
 	if err != nil {
-		logger.Error("Error downloading archive", err)
+		logger.Error("error-downloading-archive", err)
 		return err
 	}
 	defer os.Remove(archiveFile.Name())
@@ -83,7 +83,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 
 	archiveReader, err := zip.OpenReader(archiveFile.Name())
 	if err != nil {
-		logger.Error("Error unzipping archive", err)
+		logger.Error("error-unzipping-archive", err)
 		return err
 	}
 	defer archiveReader.Close()
@@ -119,9 +119,13 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 }
 
 func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
+	logger.Info("downloading-archive", lager.Data{
+		"url": link.String(),
+	})
+
 	tempFile, err := ioutil.TempFile("", "downloaded-git-archive")
 	if err != nil {
-		logger.Error("Error creating archive temp file", err)
+		logger.Error("error-creating-archive-temp-file", err)
 		return nil, err
 	}
 
