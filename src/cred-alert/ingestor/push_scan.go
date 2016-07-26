@@ -51,7 +51,7 @@ func Extract(event github.PushEvent) (PushScan, bool) {
 		},
 	}
 
-	for i, _ := range event.Commits {
+	for i := range event.Commits {
 		if i == len(event.Commits)-1 {
 			break
 		}

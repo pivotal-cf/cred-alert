@@ -88,11 +88,11 @@ var _ = Describe("SQS Queue", func() {
 		Describe("retrieving work from the queue", func() {
 			expectedHandle := "handle"
 			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{
-				"id": &sqs.MessageAttributeValue{
+				"id": {
 					DataType:    aws.String("String"),
 					StringValue: aws.String("task-id"),
 				},
-				"type": &sqs.MessageAttributeValue{
+				"type": {
 					DataType:    aws.String("String"),
 					StringValue: aws.String("task-name"),
 				},
@@ -175,11 +175,11 @@ var _ = Describe("SQS Queue", func() {
 		Describe("removing work from the queue after we've done it", func() {
 			expectedHandle := "handle"
 			expectedMessageAttributes := map[string]*sqs.MessageAttributeValue{
-				"id": &sqs.MessageAttributeValue{
+				"id": {
 					DataType:    aws.String("String"),
 					StringValue: aws.String("task-id"),
 				},
-				"type": &sqs.MessageAttributeValue{
+				"type": {
 					DataType:    aws.String("String"),
 					StringValue: aws.String("task-name"),
 				},
