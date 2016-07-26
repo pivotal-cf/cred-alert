@@ -8,12 +8,12 @@ type nullQueue struct {
 
 func NewNullQueue(logger lager.Logger) *nullQueue {
 	return &nullQueue{
-		logger: logger,
+		logger: logger.Session("null-queue"),
 	}
 }
 
 func (q *nullQueue) Enqueue(task Task) error {
-	q.logger.Info("enqueue-task")
+	q.logger.Info("enqueue-task", lager.Data{"task-type": task.Type()})
 	return nil
 }
 
