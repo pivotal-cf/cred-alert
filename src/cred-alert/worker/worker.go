@@ -71,7 +71,7 @@ func (w *worker) dequeue() (<-chan queue.AckTask, <-chan error) {
 }
 
 func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
-	logger = logger.Session("processing-task", lager.Data{
+	logger = logger.Session("process-task", lager.Data{
 		"task-id":   task.ID(),
 		"task-type": task.Type(),
 	})
@@ -79,7 +79,7 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 
 	job, err := w.foreman.BuildJob(task)
 	if err != nil {
-		logger.Session("building-job").Error("failed", err)
+		logger.Session("build-job").Error("failed", err)
 		w.failedJobs.Inc(logger)
 		return
 	}
@@ -96,7 +96,7 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 
 	err = task.Ack()
 	if err != nil {
-		logger.Session("acking-task").Error("failed", err)
+		logger.Session("ack-task").Error("failed", err)
 		w.failedAcks.Inc(logger)
 		return
 	}
