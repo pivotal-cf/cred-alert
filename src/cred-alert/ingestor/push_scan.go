@@ -10,8 +10,8 @@ type PushScan struct {
 	Private    bool
 }
 
-func Extract(event github.PushEvent) (PushScan, bool) {
-	if event.Repo == nil || event.After == nil || event.Before == nil {
+func extractPushScanFromEvent(event github.PushEvent) (PushScan, bool) {
+	if event.After == nil || event.Before == nil {
 		return PushScan{}, false
 	}
 

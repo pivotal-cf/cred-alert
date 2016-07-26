@@ -30,7 +30,8 @@ var _ = Describe("Webhook", func() {
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
 
-		token string
+		token     string
+		pushEvent github.PushEvent
 	)
 
 	BeforeEach(func() {
@@ -39,31 +40,31 @@ var _ = Describe("Webhook", func() {
 		in = &ingestorfakes.FakeIngestor{}
 		token = "example-key"
 
+		pushEvent = github.PushEvent{
+			Before: github.String("commit-sha-0"),
+			After:  github.String("commit-sha-5"),
+			Repo: &github.PushEventRepository{
+				Private:  github.Bool(true),
+				Name:     github.String("repository-name"),
+				FullName: github.String("repository-owner/repository-name"),
+				Owner: &github.PushEventRepoOwner{
+					Name: github.String("repository-owner"),
+				},
+			},
+			Commits: []github.PushEventCommit{
+				{ID: github.String("commit-sha-1")},
+				{ID: github.String("commit-sha-2")},
+				{ID: github.String("commit-sha-3")},
+				{ID: github.String("commit-sha-4")},
+				{ID: github.String("commit-sha-5")},
+			},
+		}
+
 		handler = ingestor.Handler(logger, in, token)
 	})
 
-	pushEvent := github.PushEvent{
-		Before: github.String("commit-sha-0"),
-		After:  github.String("commit-sha-5"),
-		Repo: &github.PushEventRepository{
-			Private:  github.Bool(true),
-			Name:     github.String("repository-name"),
-			FullName: github.String("repository-owner/repository-name"),
-			Owner: &github.PushEventRepoOwner{
-				Name: github.String("repository-owner"),
-			},
-		},
-		Commits: []github.PushEventCommit{
-			{ID: github.String("commit-sha-1")},
-			{ID: github.String("commit-sha-2")},
-			{ID: github.String("commit-sha-3")},
-			{ID: github.String("commit-sha-4")},
-			{ID: github.String("commit-sha-5")},
-		},
-	}
-
 	Context("when the request is properly formed", func() {
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			body := &bytes.Buffer{}
 			err := json.NewEncoder(body).Encode(pushEvent)
 			Expect(err).NotTo(HaveOccurred())
@@ -108,10 +109,42 @@ var _ = Describe("Webhook", func() {
 				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
 			})
 		})
+
+		Context("when the payload is missing a Before", func() {
+			BeforeEach(func() {
+				pushEvent.Before = nil
+			})
+
+			It("responds with OK", func() {
+				handler.ServeHTTP(recorder, fakeRequest)
+				Expect(recorder.Code).To(Equal(http.StatusOK))
+			})
+
+			It("does not enqueue anything", func() {
+				handler.ServeHTTP(recorder, fakeRequest)
+				Expect(in.IngestPushScanCallCount()).To(BeZero())
+			})
+		})
+
+		Context("when the payload is missing an After", func() {
+			BeforeEach(func() {
+				pushEvent.After = nil
+			})
+
+			It("responds with OK", func() {
+				handler.ServeHTTP(recorder, fakeRequest)
+				Expect(recorder.Code).To(Equal(http.StatusOK))
+			})
+
+			It("does not enqueue anything", func() {
+				handler.ServeHTTP(recorder, fakeRequest)
+				Expect(in.IngestPushScanCallCount()).To(BeZero())
+			})
+		})
 	})
 
 	Context("when the signature is invalid", func() {
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			body := &bytes.Buffer{}
 			err := json.NewEncoder(body).Encode(pushEvent)
 			Expect(err).NotTo(HaveOccurred())
@@ -134,7 +167,7 @@ var _ = Describe("Webhook", func() {
 	})
 
 	Context("when the payload is not valid JSON", func() {
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			badJSON := bytes.NewBufferString("{'ooops:---")
 
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", badJSON)
