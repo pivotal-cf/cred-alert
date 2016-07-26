@@ -14,7 +14,7 @@ import (
 //go:generate counterfeiter . Notifier
 
 type Notifier interface {
-	SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error
+	SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error
 }
 
 type slackNotifier struct {
@@ -49,10 +49,10 @@ func NewSlackNotifier(webhookURL string) Notifier {
 	}
 }
 
-func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error {
+func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
 	logger = logger.Session("send-notification")
 
-	notification := n.buildNotification(repository, sha, line)
+	notification := n.buildNotification(repository, sha, line, private)
 
 	body, err := json.Marshal(notification)
 	if err != nil {
@@ -82,14 +82,18 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, repository string,
 	return nil
 }
 
-func (n *slackNotifier) buildNotification(repository string, sha string, line scanners.Line) slackNotification {
+func (n *slackNotifier) buildNotification(repository string, sha string, line scanners.Line, private bool) slackNotification {
 	link := fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repository, sha, line.Path, line.LineNumber)
 
+	color := "danger"
+	if private {
+		color = "warning"
+	}
 	return slackNotification{
 		Attachments: []slackAttachment{
 			{
 				Fallback: link,
-				Color:    "danger",
+				Color:    color,
 				Title:    fmt.Sprintf("Credential detected in %s!", repository),
 				Text:     fmt.Sprintf("<%s|%s:%d>", link, line.Path, line.LineNumber),
 			},
@@ -99,7 +103,7 @@ func (n *slackNotifier) buildNotification(repository string, sha string, line sc
 
 type nullSlackNotifier struct{}
 
-func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line) error {
+func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
 	logger.Session("send-notification").Debug("sent")
 
 	return nil

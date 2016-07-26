@@ -128,7 +128,7 @@ var _ = Describe("RefScan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(len(files)))
-			_, repository, sha, line := notifier.SendNotificationArgsForCall(0)
+			_, repository, sha, line, private := notifier.SendNotificationArgsForCall(0)
 
 			Expect(repository).To(Equal(repoFullName))
 			Expect(sha).To(Equal(ref))
@@ -137,6 +137,7 @@ var _ = Describe("RefScan Job", func() {
 				LineNumber: lineNumber,
 				Content:    fileContent,
 			}))
+			Expect(private).To(Equal(plan.Private))
 		})
 
 		Context("when the notification fails to send", func() {
@@ -188,6 +189,14 @@ var _ = Describe("RefScan Job", func() {
 				_, tags := credentialCounter.IncArgsForCall(0)
 				Expect(tags).To(HaveLen(1))
 				Expect(tags).To(ConsistOf("public"))
+			})
+
+			It("sends a notification with private set to false", func() {
+				job.Run(logger)
+
+				Expect(notifier.SendNotificationCallCount()).To(Equal(len(files)))
+				_, _, _, _, private := notifier.SendNotificationArgsForCall(0)
+				Expect(private).To(Equal(false))
 			})
 		})
 

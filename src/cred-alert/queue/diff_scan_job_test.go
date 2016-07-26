@@ -134,7 +134,7 @@ var _ = Describe("Diff Scan Job", func() {
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
 
-			_, repository, sha, line := notifier.SendNotificationArgsForCall(0)
+			_, repository, sha, line, private := notifier.SendNotificationArgsForCall(0)
 
 			Expect(repository).To(Equal(repoFullName))
 			Expect(sha).To(Equal(toGitSha))
@@ -143,6 +143,7 @@ var _ = Describe("Diff Scan Job", func() {
 				LineNumber: lineNumber,
 				Content:    "content",
 			}))
+			Expect(private).To(Equal(plan.Private))
 		})
 
 		It("saves a record of the diffscan and that credentials were found", func() {
@@ -197,6 +198,14 @@ var _ = Describe("Diff Scan Job", func() {
 				Expect(tags).To(HaveLen(1))
 				Expect(tags).To(ConsistOf("public"))
 				Expect(logger).To(gbytes.Say(`"private":false`))
+			})
+
+			It("sends a notification with private set to false", func() {
+				job.Run(logger)
+
+				Expect(notifier.SendNotificationCallCount()).To(Equal(1))
+				_, _, _, _, private := notifier.SendNotificationArgsForCall(0)
+				Expect(private).To(Equal(plan.Private))
 			})
 		})
 	})

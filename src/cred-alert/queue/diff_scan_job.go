@@ -92,7 +92,7 @@ func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, rep
 			"sha":         sha,
 		})
 
-		err := j.notifier.SendNotification(logger, repoName, sha, line)
+		err := j.notifier.SendNotification(logger, repoName, sha, line, j.Private)
 		if err != nil {
 			return err
 		}

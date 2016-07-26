@@ -164,7 +164,7 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repo
 			"ref":         ref,
 		})
 
-		err := j.notifier.SendNotification(logger, repoName, ref, line)
+		err := j.notifier.SendNotification(logger, repoName, ref, line, j.Private)
 		if err != nil {
 			return err
 		}
