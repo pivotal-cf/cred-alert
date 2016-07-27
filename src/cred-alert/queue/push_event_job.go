@@ -37,6 +37,7 @@ func (j *PushEventJob) Run(logger lager.Logger) error {
 
 	registered, err := j.commitRepository.IsRepoRegistered(logger, j.Owner, j.Repository)
 	if err != nil {
+		logger.Error("failed", err)
 		return err
 	}
 
@@ -47,6 +48,7 @@ func (j *PushEventJob) Run(logger lager.Logger) error {
 			Ref:        j.From,
 		}.Task(j.id))
 		if err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 	}
