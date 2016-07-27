@@ -73,7 +73,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 		d.currentHunk = nil
 	}
 
-	startLine, length, err := hunkHeader(rawLine)
+	startLine, length, err := hunkHeader(logger, rawLine)
 	if err == nil {
 		logger.Debug("detected-hunk-header")
 		d.currentHunk = newHunk(d.currentPath, startLine, length)

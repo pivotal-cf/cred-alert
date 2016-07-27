@@ -4,6 +4,8 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
+
+	"github.com/pivotal-golang/lager"
 )
 
 type Hunk struct {
@@ -11,6 +13,8 @@ type Hunk struct {
 	startLine int
 	length    int
 }
+
+var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?(\d+)?\s@@`)
 
 func newHunk(path string, startLine int, length int) *Hunk {
 	return &Hunk{
@@ -20,14 +24,19 @@ func newHunk(path string, startLine int, length int) *Hunk {
 	}
 }
 
-func hunkHeader(rawLine string) (int, int, error) {
-	matches := regexp.MustCompile(`^@@.*\+(\d+),?(\d+)?\s@@`).FindStringSubmatch(rawLine)
+func hunkHeader(logger lager.Logger, rawLine string) (int, int, error) {
+	logger = logger.Session("hunk-header")
+	logger.Info("starting")
+
+	matches := hunkHeaderRegexp.FindStringSubmatch(rawLine)
 	if len(matches) < 3 {
+		logger.Info("done")
 		return 0, 0, errors.New("Not a hunk header")
 	}
 
 	startLine, err := strconv.Atoi(matches[1])
 	if err != nil {
+		logger.Error("failed", err)
 		return 0, 0, err
 	}
 
@@ -37,10 +46,12 @@ func hunkHeader(rawLine string) (int, int, error) {
 	} else {
 		var err error
 		if length, err = strconv.Atoi(matches[2]); err != nil {
+			logger.Error("failed", err)
 			return 0, 0, err
 		}
 	}
 
+	logger.Info("done")
 	return startLine, length, nil
 }
 
