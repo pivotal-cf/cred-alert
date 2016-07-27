@@ -161,6 +161,39 @@ var _ = Describe("Ancestry Scan Job", func() {
 						}, nil)
 					})
 
+					It("kicks off a commit message scan", func() {
+						err := job.Run(logger)
+						Expect(err).ToNot(HaveOccurred())
+
+						expectedTask := queue.CommitMessageScanPlan{
+							Owner:      plan.Owner,
+							Repository: plan.Repository,
+							SHA:        plan.SHA,
+							Private:    true,
+							Message:    "commit message",
+						}.Task(id)
+
+						Expect(taskQueue.EnqueueCallCount()).To(Equal(7))
+						task := taskQueue.EnqueueArgsForCall(6)
+						Expect(task).To(Equal(expectedTask))
+					})
+
+					Context("when enqueing a commit message scan fails", func() {
+						expectedError := errors.New("queue error")
+
+						BeforeEach(func() {
+							taskQueue.EnqueueStub = func(task queue.Task) error {
+								if task.Type() == queue.TaskTypeCommitMessageScan {
+									return expectedError
+								}
+								return nil
+							}
+						})
+
+						ItReturnsAndLogsAnError(expectedError)
+						ItDoesNotRegisterCommit()
+					})
+
 					Context("when the task queue returns an error enqueueing diffs", func() {
 						expectedError := errors.New("queue error")
 
@@ -181,7 +214,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 						err := job.Run(logger)
 						Expect(err).NotTo(HaveOccurred())
 
-						Expect(taskQueue.EnqueueCallCount()).To(Equal(6))
+						Expect(taskQueue.EnqueueCallCount()).To(Equal(7))
 
 						for i, parent := range expectedParents {
 							expectedTask := queue.DiffScanPlan{
@@ -224,7 +257,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 						err := job.Run(logger)
 						Expect(err).NotTo(HaveOccurred())
 
-						Expect(taskQueue.EnqueueCallCount()).To(Equal(6))
+						Expect(taskQueue.EnqueueCallCount()).To(Equal(7))
 
 						for i, parent := range expectedParents {
 							expectedTask := queue.AncestryScanPlan{
@@ -253,7 +286,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 					It("Enqueues a ref scan", func() {
 						err := job.Run(logger)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
+						Expect(taskQueue.EnqueueCallCount()).To(Equal(2))
 
 						task := taskQueue.EnqueueArgsForCall(0)
 						Expect(task.Type()).To(Equal(queue.TaskTypeRefScan))

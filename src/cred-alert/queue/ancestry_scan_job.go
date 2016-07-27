@@ -103,6 +103,11 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		}
 	}
 
+	if err := j.enqueueCommitMessageScan(logger, j.SHA, info.Message); err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
 	if err = j.registerCommit(logger); err != nil {
 		logger.Error("failed", err)
 		return err
@@ -184,6 +189,33 @@ func (j *AncestryScanJob) enqueueDiffScan(logger lager.Logger, from string, to s
 		From:       from,
 		To:         to,
 		Private:    j.Private,
+	}.Task(j.id)
+
+	err := j.taskQueue.Enqueue(task)
+	if err != nil {
+		logger.Session("enqueue").Error("failed", err)
+		return err
+	}
+
+	logger.Info("done")
+	return nil
+}
+
+func (j *AncestryScanJob) enqueueCommitMessageScan(logger lager.Logger, sha string, message string) error {
+	logger = logger.Session("enqueue-commit-message-scan", lager.Data{
+		"owner":      j.Owner,
+		"repository": j.Repository,
+		"private":    j.Private,
+		"sha":        sha,
+	})
+	logger.Info("starting")
+
+	task := CommitMessageScanPlan{
+		Owner:      j.Owner,
+		Repository: j.Repository,
+		SHA:        sha,
+		Private:    j.Private,
+		Message:    message,
 	}.Task(j.id)
 
 	err := j.taskQueue.Enqueue(task)
