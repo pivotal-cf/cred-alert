@@ -52,12 +52,16 @@ var _ = Describe("Client", func() {
 			server.Close()
 		}
 	})
-	Describe("Parents", func() {
-		var parentsJson string
+
+	Describe("CommitInfo", func() {
+		var commitInfoJSON string
 
 		BeforeEach(func() {
-			parentsJson = `
+			commitInfoJSON = `
 			{
+				"commit": {
+					"message": "this is a commit message"
+				},
 				"parents": [
 					{
 						"sha": "parent1",
@@ -77,24 +81,24 @@ var _ = Describe("Client", func() {
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-					ghttp.RespondWith(http.StatusOK, parentsJson, header),
+					ghttp.RespondWith(http.StatusOK, commitInfoJSON, header),
 				),
 			)
-			parents, err := client.Parents(logger, "owner", "repo", "someSha")
+			commitInfo, err := client.CommitInfo(logger, "owner", "repo", "someSha")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(len(parents)).To(Equal(2))
-			Expect(parents).To(ContainElement("parent1"))
-			Expect(parents).To(ContainElement("parent2"))
+
+			Expect(commitInfo.Parents).To(ConsistOf("parent1", "parent2"))
+			Expect(commitInfo.Message).To(Equal("this is a commit message"))
 		})
 
 		It("updates the remaining api calls gauge", func() {
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-					ghttp.RespondWith(http.StatusOK, parentsJson, header),
+					ghttp.RespondWith(http.StatusOK, commitInfoJSON, header),
 				),
 			)
-			client.Parents(logger, "owner", "repo", "someSha")
+			client.CommitInfo(logger, "owner", "repo", "someSha")
 			Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
 			_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
 			Expect(value).To(Equal(float32(remainingApiBudget)))
@@ -105,11 +109,11 @@ var _ = Describe("Client", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-						ghttp.RespondWith(http.StatusInternalServerError, parentsJson, header),
+						ghttp.RespondWith(http.StatusInternalServerError, commitInfoJSON, header),
 					),
 				)
 
-				_, err := client.Parents(logger, "owner", "repo", "someSha")
+				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
 				Expect(err).To(HaveOccurred())
 				Expect(logger).To(gbytes.Say("fetching-parents.unexpected-status-code"))
 			})
@@ -120,12 +124,12 @@ var _ = Describe("Client", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-						ghttp.RespondWith(http.StatusOK, parentsJson, header),
+						ghttp.RespondWith(http.StatusOK, commitInfoJSON, header),
 					),
 				)
 				server.Close()
 				server = nil
-				_, err := client.Parents(logger, "owner", "repo", "someSha")
+				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
 				Expect(err).To(HaveOccurred())
 				Expect(logger).To(gbytes.Say("fetching-parents.failed"))
 			})
@@ -140,7 +144,7 @@ var _ = Describe("Client", func() {
 					),
 				)
 
-				_, err := client.Parents(logger, "owner", "repo", "someSha")
+				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
 				Expect(err).To(HaveOccurred())
 				Expect(logger).To(gbytes.Say("fetching-parents.failed"))
 			})

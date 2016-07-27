@@ -74,11 +74,12 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		return nil
 	}
 
-	parents, err := j.client.Parents(logger, j.Owner, j.Repository, j.SHA)
+	info, err := j.client.CommitInfo(logger, j.Owner, j.Repository, j.SHA)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
 	}
+	parents := info.Parents
 	logger.Info("fetching-parents-succeeded", lager.Data{"parents": parents})
 
 	if len(parents) == 0 {

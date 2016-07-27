@@ -34,16 +34,16 @@ type FakeClient struct {
 		result1 *url.URL
 		result2 error
 	}
-	ParentsStub        func(logger lager.Logger, owner, repo, sha string) ([]string, error)
-	parentsMutex       sync.RWMutex
-	parentsArgsForCall []struct {
+	CommitInfoStub        func(logger lager.Logger, owner, repo, sha string) (githubclient.CommitInfo, error)
+	commitInfoMutex       sync.RWMutex
+	commitInfoArgsForCall []struct {
 		logger lager.Logger
 		owner  string
 		repo   string
 		sha    string
 	}
-	parentsReturns struct {
-		result1 []string
+	commitInfoReturns struct {
+		result1 githubclient.CommitInfo
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -124,39 +124,39 @@ func (fake *FakeClient) ArchiveLinkReturns(result1 *url.URL, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Parents(logger lager.Logger, owner string, repo string, sha string) ([]string, error) {
-	fake.parentsMutex.Lock()
-	fake.parentsArgsForCall = append(fake.parentsArgsForCall, struct {
+func (fake *FakeClient) CommitInfo(logger lager.Logger, owner string, repo string, sha string) (githubclient.CommitInfo, error) {
+	fake.commitInfoMutex.Lock()
+	fake.commitInfoArgsForCall = append(fake.commitInfoArgsForCall, struct {
 		logger lager.Logger
 		owner  string
 		repo   string
 		sha    string
 	}{logger, owner, repo, sha})
-	fake.recordInvocation("Parents", []interface{}{logger, owner, repo, sha})
-	fake.parentsMutex.Unlock()
-	if fake.ParentsStub != nil {
-		return fake.ParentsStub(logger, owner, repo, sha)
+	fake.recordInvocation("CommitInfo", []interface{}{logger, owner, repo, sha})
+	fake.commitInfoMutex.Unlock()
+	if fake.CommitInfoStub != nil {
+		return fake.CommitInfoStub(logger, owner, repo, sha)
 	} else {
-		return fake.parentsReturns.result1, fake.parentsReturns.result2
+		return fake.commitInfoReturns.result1, fake.commitInfoReturns.result2
 	}
 }
 
-func (fake *FakeClient) ParentsCallCount() int {
-	fake.parentsMutex.RLock()
-	defer fake.parentsMutex.RUnlock()
-	return len(fake.parentsArgsForCall)
+func (fake *FakeClient) CommitInfoCallCount() int {
+	fake.commitInfoMutex.RLock()
+	defer fake.commitInfoMutex.RUnlock()
+	return len(fake.commitInfoArgsForCall)
 }
 
-func (fake *FakeClient) ParentsArgsForCall(i int) (lager.Logger, string, string, string) {
-	fake.parentsMutex.RLock()
-	defer fake.parentsMutex.RUnlock()
-	return fake.parentsArgsForCall[i].logger, fake.parentsArgsForCall[i].owner, fake.parentsArgsForCall[i].repo, fake.parentsArgsForCall[i].sha
+func (fake *FakeClient) CommitInfoArgsForCall(i int) (lager.Logger, string, string, string) {
+	fake.commitInfoMutex.RLock()
+	defer fake.commitInfoMutex.RUnlock()
+	return fake.commitInfoArgsForCall[i].logger, fake.commitInfoArgsForCall[i].owner, fake.commitInfoArgsForCall[i].repo, fake.commitInfoArgsForCall[i].sha
 }
 
-func (fake *FakeClient) ParentsReturns(result1 []string, result2 error) {
-	fake.ParentsStub = nil
-	fake.parentsReturns = struct {
-		result1 []string
+func (fake *FakeClient) CommitInfoReturns(result1 githubclient.CommitInfo, result2 error) {
+	fake.CommitInfoStub = nil
+	fake.commitInfoReturns = struct {
+		result1 githubclient.CommitInfo
 		result2 error
 	}{result1, result2}
 }
@@ -168,8 +168,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.compareRefsMutex.RUnlock()
 	fake.archiveLinkMutex.RLock()
 	defer fake.archiveLinkMutex.RUnlock()
-	fake.parentsMutex.RLock()
-	defer fake.parentsMutex.RUnlock()
+	fake.commitInfoMutex.RLock()
+	defer fake.commitInfoMutex.RUnlock()
 	return fake.invocations
 }
 

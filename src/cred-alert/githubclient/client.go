@@ -23,7 +23,12 @@ const DefaultGitHubURL = "https://api.github.com/"
 type Client interface {
 	CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error)
 	ArchiveLink(owner, repo, ref string) (*url.URL, error)
-	Parents(logger lager.Logger, owner, repo, sha string) ([]string, error)
+	CommitInfo(logger lager.Logger, owner, repo, sha string) (CommitInfo, error)
+}
+
+type CommitInfo struct {
+	Message string
+	Parents []string
 }
 
 type client struct {
@@ -101,7 +106,20 @@ func (c *client) ArchiveLink(owner, repo string, ref string) (*url.URL, error) {
 	return url.Parse(urljoiner.Join(c.baseURL, "repos", owner, repo, "zipball", ref))
 }
 
-func (c *client) Parents(logger lager.Logger, owner, repo, sha string) ([]string, error) {
+type commit struct {
+	Message string `json:"message"`
+}
+
+type parent struct {
+	SHA string `json:"sha"`
+}
+
+var commitResponse struct {
+	Commit  commit   `json:"commit"`
+	Parents []parent `json:"parents"`
+}
+
+func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (CommitInfo, error) {
 	logger = logger.Session("fetching-parents", lager.Data{
 		"Owner": owner,
 		"Repo":  repo,
@@ -113,14 +131,14 @@ func (c *client) Parents(logger lager.Logger, owner, repo, sha string) ([]string
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		logger.Error("failed", err)
-		return []string{}, err
+		return CommitInfo{}, err
 	}
 	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		logger.Error("read-error", err)
-		return []string{}, err
+		return CommitInfo{}, err
 	}
 
 	if response.StatusCode != http.StatusOK {
@@ -129,31 +147,25 @@ func (c *client) Parents(logger lager.Logger, owner, repo, sha string) ([]string
 			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
 			"body":   string(body),
 		})
-		return []string{}, err
+		return CommitInfo{}, err
 	}
 
-	type Parent struct {
-		Sha string
-	}
-
-	type Commit struct {
-		Parents []Parent
-	}
-
-	var commit Commit
-	if err := json.Unmarshal(body, &commit); err != nil {
+	if err := json.Unmarshal(body, &commitResponse); err != nil {
 		logger.Error("failed", err)
-		return []string{}, err
+		return CommitInfo{}, err
 	}
 
 	parentShas := []string{}
-	for _, parent := range commit.Parents {
-		parentShas = append(parentShas, parent.Sha)
+	for _, parent := range commitResponse.Parents {
+		parentShas = append(parentShas, parent.SHA)
 	}
 
 	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
 		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
 	}
 
-	return parentShas, nil
+	return CommitInfo{
+		Message: commitResponse.Commit.Message,
+		Parents: parentShas,
+	}, nil
 }

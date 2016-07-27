@@ -12,6 +12,7 @@ import (
 
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
+	"cred-alert/githubclient"
 	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
@@ -139,7 +140,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 					expectedError := errors.New("client error")
 
 					BeforeEach(func() {
-						client.ParentsReturns(nil, expectedError)
+						client.CommitInfoReturns(githubclient.CommitInfo{}, expectedError)
 					})
 
 					ItReturnsAndLogsAnError(expectedError)
@@ -154,7 +155,10 @@ var _ = Describe("Ancestry Scan Job", func() {
 					}
 
 					BeforeEach(func() {
-						client.ParentsReturns(expectedParents, nil)
+						client.CommitInfoReturns(githubclient.CommitInfo{
+							Message: "commit message",
+							Parents: expectedParents,
+						}, nil)
 					})
 
 					Context("when the task queue returns an error enqueueing diffs", func() {
@@ -240,7 +244,10 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 				Context("when the current commit is the initial commit", func() {
 					BeforeEach(func() {
-						client.ParentsReturns([]string{}, nil)
+						client.CommitInfoReturns(githubclient.CommitInfo{
+							Message: "commit message",
+							Parents: []string{},
+						}, nil)
 					})
 
 					It("Enqueues a ref scan", func() {
@@ -311,7 +318,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 					})
 
 					It("does not look for any more parents", func() {
-						Expect(client.ParentsCallCount()).To(Equal(0))
+						Expect(client.CommitInfoCallCount()).To(Equal(0))
 					})
 
 					Context("When there is an error registering a commit", func() {
