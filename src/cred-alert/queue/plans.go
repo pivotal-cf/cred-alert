@@ -56,6 +56,24 @@ func (p PushEventPlan) Task(id string) Task {
 	}
 }
 
+type CommitMessageScanPlan struct {
+	Owner      string `json:"owner"`
+	Repository string `json:"repository"`
+	SHA        string `json:"sha"`
+	Message    string `json:"message"`
+	Private    bool   `json:"private"`
+}
+
+func (p CommitMessageScanPlan) Task(id string) Task {
+	payload, _ := json.Marshal(p)
+
+	return basicTask{
+		id:      id,
+		typee:   TaskTypeCommitMessageScan,
+		payload: string(payload),
+	}
+}
+
 type AncestryScanPlan struct {
 	Owner      string `json:"owner"`
 	Repository string `json:"repository"`

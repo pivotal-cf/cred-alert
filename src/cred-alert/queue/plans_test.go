@@ -37,6 +37,35 @@ var _ = Describe("Plans", func() {
 		})
 	})
 
+	Describe("CommitMessageScanPlan", func() {
+		It("can be encoded into a task", func() {
+			plan := queue.CommitMessageScanPlan{
+				Owner:      "owner",
+				Repository: "repository",
+				Private:    true,
+				SHA:        "abc123",
+				Message:    "message",
+			}
+
+			task := plan.Task("an-id")
+			Expect(task.ID()).To(Equal("an-id"))
+			Expect(task.Type()).To(Equal(queue.TaskTypeCommitMessageScan))
+			Expect(task.Payload()).To(MatchJSON(`
+				{
+					"owner": "owner",
+					"repository": "repository",
+					"private": true,
+					"sha": "abc123",
+					"message": "message"
+				}
+			`))
+		})
+
+		It("is a queueable plan", func() {
+			var _ queue.Plan = queue.CommitMessageScanPlan{}
+		})
+	})
+
 	Describe("RefScanPlan", func() {
 		It("can be encoded into a task", func() {
 			plan := queue.RefScanPlan{
