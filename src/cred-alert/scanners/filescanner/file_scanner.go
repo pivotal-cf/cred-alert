@@ -41,10 +41,19 @@ func (s *fileScanner) Scan(logger lager.Logger) bool {
 	return success
 }
 
-func (s *fileScanner) Line() *scanners.Line {
+func (s *fileScanner) Line(logger lager.Logger) *scanners.Line {
+	lineNumber := s.lineNumber
+	path := s.path
+
+	logger = logger.Session("line", lager.Data{
+		"liner-number": lineNumber,
+		"path":         path,
+	})
+	logger.Info("starting")
+	logger.Info("done")
 	return &scanners.Line{
 		Content:    s.bufioScanner.Text(),
-		LineNumber: s.lineNumber,
-		Path:       s.path,
+		LineNumber: lineNumber,
+		Path:       path,
 	}
 }

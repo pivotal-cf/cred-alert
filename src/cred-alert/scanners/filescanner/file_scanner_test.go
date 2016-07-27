@@ -56,7 +56,7 @@ line3`
 
 	It("returns the current line", func() {
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
-		line := fileScanner.Line()
+		line := fileScanner.Line(logger)
 
 		Expect(line.Path).To(Equal(fileHandle.Name()))
 		Expect(line.Content).To(Equal("line1"))
@@ -67,7 +67,7 @@ line3`
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
-		line := fileScanner.Line()
+		line := fileScanner.Line(logger)
 		Expect(line.LineNumber).To(Equal(3))
 	})
 })

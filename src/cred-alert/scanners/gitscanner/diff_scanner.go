@@ -2,7 +2,6 @@ package gitscanner
 
 import (
 	"cred-alert/scanners"
-	"fmt"
 	"strings"
 
 	"github.com/pivotal-golang/lager"
@@ -51,6 +50,29 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 
 	logger.Info("done")
 	return true
+}
+
+func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
+	lineNumber := d.currentLineNumber
+	path := d.currentHunk.path
+
+	logger = logger.Session("line", lager.Data{
+		"liner-number": lineNumber,
+		"path":         path,
+	})
+	logger.Info("starting")
+
+	content, err := content(d.diff[d.cursor])
+	if err != nil {
+		logger.Error("setting content to ''", err)
+	}
+
+	logger.Info("done")
+	return &scanners.Line{
+		Content:    content,
+		LineNumber: lineNumber,
+		Path:       path,
+	}
 }
 
 func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
@@ -104,19 +126,4 @@ func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
 
 	logger.Info("done")
 	return false
-}
-
-func (d *DiffScanner) Line() *scanners.Line {
-	line := new(scanners.Line)
-	line.Path = d.currentHunk.path
-	content, err := content(d.diff[d.cursor])
-	if err == nil {
-		line.Content = content
-	} else {
-		line.Content = ""
-		fmt.Println(err)
-	}
-	line.LineNumber = d.currentLineNumber
-
-	return line
 }

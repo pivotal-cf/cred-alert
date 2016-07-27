@@ -24,7 +24,7 @@ const rsaPrivateKeyHeaderPattern = `-----BEGIN RSA PRIVATE KEY-----`
 
 type Scanner interface {
 	Scan(lager.Logger) bool
-	Line() *scanners.Line
+	Line(lager.Logger) *scanners.Line
 }
 
 //go:generate counterfeiter . Sniffer
@@ -75,7 +75,7 @@ func (s *sniffer) Sniff(
 	var result error
 
 	for scanner.Scan(logger) {
-		line := *scanner.Line()
+		line := *scanner.Line(logger)
 
 		if s.exclusionMatcher.Match(line.Content) {
 			continue

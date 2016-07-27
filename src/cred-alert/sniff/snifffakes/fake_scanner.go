@@ -18,10 +18,12 @@ type FakeScanner struct {
 	scanReturns struct {
 		result1 bool
 	}
-	LineStub        func() *scanners.Line
+	LineStub        func(lager.Logger) *scanners.Line
 	lineMutex       sync.RWMutex
-	lineArgsForCall []struct{}
-	lineReturns     struct {
+	lineArgsForCall []struct {
+		arg1 lager.Logger
+	}
+	lineReturns struct {
 		result1 *scanners.Line
 	}
 	invocations      map[string][][]interface{}
@@ -61,13 +63,15 @@ func (fake *FakeScanner) ScanReturns(result1 bool) {
 	}{result1}
 }
 
-func (fake *FakeScanner) Line() *scanners.Line {
+func (fake *FakeScanner) Line(arg1 lager.Logger) *scanners.Line {
 	fake.lineMutex.Lock()
-	fake.lineArgsForCall = append(fake.lineArgsForCall, struct{}{})
-	fake.recordInvocation("Line", []interface{}{})
+	fake.lineArgsForCall = append(fake.lineArgsForCall, struct {
+		arg1 lager.Logger
+	}{arg1})
+	fake.recordInvocation("Line", []interface{}{arg1})
 	fake.lineMutex.Unlock()
 	if fake.LineStub != nil {
-		return fake.LineStub()
+		return fake.LineStub(arg1)
 	} else {
 		return fake.lineReturns.result1
 	}
@@ -77,6 +81,12 @@ func (fake *FakeScanner) LineCallCount() int {
 	fake.lineMutex.RLock()
 	defer fake.lineMutex.RUnlock()
 	return len(fake.lineArgsForCall)
+}
+
+func (fake *FakeScanner) LineArgsForCall(i int) lager.Logger {
+	fake.lineMutex.RLock()
+	defer fake.lineMutex.RUnlock()
+	return fake.lineArgsForCall[i].arg1
 }
 
 func (fake *FakeScanner) LineReturns(result1 *scanners.Line) {

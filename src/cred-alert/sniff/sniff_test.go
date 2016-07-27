@@ -149,7 +149,7 @@ var _ = Describe("Sniffer", func() {
 					expectations = append(expectations, line)
 				}
 
-				scanner.LineStub = func() *scanners.Line {
+				scanner.LineStub = func(logger lager.Logger) *scanners.Line {
 					scanner.ScanReturns(false)
 
 					return &scanners.Line{
