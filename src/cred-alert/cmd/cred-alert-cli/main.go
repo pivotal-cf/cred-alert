@@ -15,6 +15,7 @@ import (
 
 type Opts struct {
 	Directory string `short:"d" long:"directory" description:"the directory to scan" value-name:"DIR"`
+	File      string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
 }
 
 func main() {
@@ -32,10 +33,25 @@ func main() {
 
 	if opts.Directory != "" {
 		scanDirectory(logger, sniffer, opts.Directory)
-	} else {
-		scanner := filescanner.New(os.Stdin, "STDIN")
-		sniffer.Sniff(logger, scanner, handleViolation)
+		os.Exit(0)
 	}
+
+	var f *os.File
+	if opts.File != "" {
+		var err error
+		f, err = os.Open(opts.File)
+		if err != nil {
+			log.Fatalf("Failed to open file: %s", err.Error())
+		}
+		defer f.Close()
+		scanner := filescanner.New(f, f.Name())
+		sniffer.Sniff(logger, scanner, handleViolation)
+		os.Exit(0)
+	}
+
+	scanner := filescanner.New(os.Stdin, os.Stdin.Name())
+	sniffer.Sniff(logger, scanner, handleViolation)
+	os.Exit(0)
 }
 
 func handleViolation(line scanners.Line) error {
