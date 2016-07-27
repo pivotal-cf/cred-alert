@@ -62,8 +62,8 @@ var _ = Describe("Metrics", func() {
 		expectedValue := 1
 		metric.Update(logger, float32(expectedValue))
 
-		Expect(len(logger.LogMessages())).To(Equal(1))
-		Expect(logger.LogMessages()[0]).To(ContainSubstring("emit-metric"))
+		Expect(len(logger.LogMessages())).To(Equal(2))
+		Expect(logger.LogMessages()[0]).To(ContainSubstring("metrics.update.starting"))
 		Expect(logger.Logs()[0].Data["name"]).To(Equal(expectedMetricName))
 		Expect(logger.Logs()[0].Data["type"]).To(Equal(expectedMetricType))
 		Expect(logger.Logs()[0].Data["environment"]).To(Equal(expectedEnv))

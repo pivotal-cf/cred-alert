@@ -37,6 +37,6 @@ var _ = Describe("Timer", func() {
 
 		Expect(dur).To(BeNumerically(">", 0))
 		Expect(tags).To(ConsistOf("tag:value"))
-		Expect(logger.LogMessages()).To(HaveLen(1))
+		Expect(logger.LogMessages()).To(HaveLen(2))
 	})
 })

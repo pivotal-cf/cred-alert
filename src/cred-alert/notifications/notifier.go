@@ -51,6 +51,7 @@ func NewSlackNotifier(webhookURL string) Notifier {
 
 func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
 	logger = logger.Session("send-notification")
+	logger.Info("starting")
 
 	notification := n.buildNotification(repository, sha, line, private)
 
@@ -75,10 +76,12 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, repository string,
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Info(fmt.Sprintf("bad responze (!200): %d", resp.StatusCode))
-		return fmt.Errorf("bad responze (!200): %d", resp.StatusCode)
+		err := fmt.Errorf("bad response (!200): %d", resp.StatusCode)
+		logger.Error("bad-response", err)
+		return err
 	}
 
+	logger.Info("done")
 	return nil
 }
 
@@ -104,7 +107,6 @@ func (n *slackNotifier) buildNotification(repository string, sha string, line sc
 type nullSlackNotifier struct{}
 
 func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
-	logger.Session("send-notification").Debug("sent")
-
+	logger.Session("send-notification").Debug("done")
 	return nil
 }

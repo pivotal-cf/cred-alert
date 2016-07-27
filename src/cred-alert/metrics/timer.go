@@ -23,7 +23,8 @@ func NewTimer(metric Metric) *timer {
 }
 
 func (t *timer) Time(logger lager.Logger, work func(), tags ...string) {
-	logger = logger.Session("timing")
+	logger = logger.Session("time")
+	logger.Info("starting")
 	startTime := time.Now()
 
 	work()
@@ -40,5 +41,6 @@ func (t *timer) Time(logger lager.Logger, work func(), tags ...string) {
 type nullTimer struct{}
 
 func (t *nullTimer) Time(logger lager.Logger, fn func(), tags ...string) {
+	logger.Session("time").Info("done")
 	fn()
 }
