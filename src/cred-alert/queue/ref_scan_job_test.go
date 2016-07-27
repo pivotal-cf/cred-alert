@@ -238,7 +238,7 @@ var _ = Describe("RefScan Job", func() {
 
 				It("logs an error", func() {
 					job.Run(logger)
-					Expect(logger).To(gbytes.Say("should-scan.failed"))
+					Expect(logger).To(gbytes.Say("consider-skipping.failed"))
 				})
 
 				It("scans the file", func() {

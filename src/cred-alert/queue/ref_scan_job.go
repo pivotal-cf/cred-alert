@@ -104,7 +104,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	for _, f := range archiveReader.File {
 		logger = logger.Session("archive-reader-file", lager.Data{"filename": f.Name})
 
-		if !j.shouldScan(logger, f) {
+		if j.shouldSkip(logger, f) {
 			logger.Info("skipped")
 			continue
 		}
@@ -186,13 +186,13 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repo
 	}
 }
 
-func (j *RefScanJob) shouldScan(logger lager.Logger, f *zip.File) bool {
-	logger = logger.Session("should-scan")
+func (j *RefScanJob) shouldSkip(logger lager.Logger, f *zip.File) bool {
+	logger = logger.Session("consider-skipping")
 
 	unzippedReader, err := f.Open()
 	if err != nil {
 		logger.Error("failed", err)
-		return true
+		return false
 	}
 	defer unzippedReader.Close()
 
@@ -200,25 +200,25 @@ func (j *RefScanJob) shouldScan(logger lager.Logger, f *zip.File) bool {
 	numBytes, err := buf.ReadFrom(unzippedReader)
 	if err != nil {
 		logger.Error("failed", err)
-		return true
+		return false
 	}
 	if numBytes <= 0 {
 		logger.Info("done")
-		return false
+		return true
 	}
 	bytes := buf.Bytes()
 
 	mime, err := j.mimetype.TypeByBuffer(bytes)
 	if err != nil {
 		logger.Error("failed", err)
-		return true
+		return false
 	}
 
 	if strings.HasPrefix(mime, "text") {
 		logger.Info("done")
-		return true
+		return false
 	}
 
 	logger.Info("done")
-	return false
+	return true
 }
