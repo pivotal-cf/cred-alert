@@ -23,6 +23,8 @@ func Handler(logger lager.Logger, ingestor Ingestor, secretKey string) *handler 
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("starting")
+
 	payload, err := github.ValidatePayload(r, h.secretKey)
 	if err != nil {
 		h.logger.Error("invalid-payload", err)
@@ -56,9 +58,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = h.ingestor.IngestPushScan(h.logger, scan, r.Header.Get("X-GitHub-Delivery"))
 	if err != nil {
+		h.logger.Error("ingest-push-scan-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	h.logger.Info("done")
 	w.WriteHeader(http.StatusOK)
 }
