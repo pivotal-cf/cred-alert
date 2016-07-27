@@ -56,7 +56,7 @@ var _ = Describe("Diff Scan Job", func() {
 		notifier = &notificationsfakes.FakeNotifier{}
 		fakeGithubClient = new(githubfakes.FakeClient)
 		diffScanRepository = &dbfakes.FakeDiffScanRepository{}
-		logger = lagertest.NewTestLogger("diff-scan-job")
+		logger = lagertest.NewTestLogger("diff-scan-job-test")
 
 		credentialCounter = &metricsfakes.FakeCounter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
@@ -162,7 +162,7 @@ var _ = Describe("Diff Scan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(logger).To(gbytes.Say("found-credential"))
+			Expect(logger).To(gbytes.Say("handle-violation"))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"line-number":%d`, lineNumber)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))

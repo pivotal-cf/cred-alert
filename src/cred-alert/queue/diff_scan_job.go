@@ -50,11 +50,11 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		"task-id":    j.id,
 		"private":    j.Private,
 	})
-
 	logger.Info("starting")
 
 	diff, err := j.githubClient.CompareRefs(logger, j.Owner, j.Repository, j.From, j.To)
 	if err != nil {
+		logger.Error("failed", err)
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 
 	err = j.sniffer.Sniff(logger, diffScanner, handleViolation)
 	if err != nil {
-		logger.Error("sniff-failed", err)
+		logger.Error("failed", err)
 		return err
 	}
 
@@ -76,17 +76,17 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		CredentialFound: credentialsFound,
 	})
 	if err != nil {
+		logger.Error("failed", err)
 		return err
 	}
 
 	logger.Info("done")
-
 	return nil
 }
 
 func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, repoName string, credentialsFound *bool) func(scanners.Line) error {
 	return func(line scanners.Line) error {
-		logger.Info("found-credential", lager.Data{
+		logger.Info("handle-violation", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
 			"sha":         sha,
@@ -94,6 +94,7 @@ func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, rep
 
 		err := j.notifier.SendNotification(logger, repoName, sha, line, j.Private)
 		if err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 
@@ -104,6 +105,7 @@ func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, rep
 		}
 		j.credentialCounter.Inc(logger, tag)
 
+		logger.Info("done")
 		return nil
 	}
 }
