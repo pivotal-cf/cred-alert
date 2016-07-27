@@ -24,7 +24,7 @@ func NewDiffScanner(diff string) *DiffScanner {
 }
 
 func (d *DiffScanner) Scan(logger lager.Logger) bool {
-	logger = logger.Session("scan")
+	logger = logger.Session("diff-scanner").Session("scan")
 	logger.Info("starting")
 
 	// read information about hunk

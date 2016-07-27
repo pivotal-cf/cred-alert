@@ -23,7 +23,8 @@ func New(r io.Reader, filename string) *fileScanner {
 }
 
 func (s *fileScanner) Scan(logger lager.Logger) bool {
-	logger = logger.Session("file-scanner")
+	logger = logger.Session("file-scanner").Session("scan")
+	logger.Info("starting")
 
 	success := s.bufioScanner.Scan()
 
@@ -35,6 +36,8 @@ func (s *fileScanner) Scan(logger lager.Logger) bool {
 	if success {
 		s.lineNumber++
 	}
+
+	logger.Info("done")
 	return success
 }
 
