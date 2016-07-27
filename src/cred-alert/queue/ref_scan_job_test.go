@@ -18,7 +18,7 @@ import (
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 
-	"cred-alert/github/githubfakes"
+	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/mimetype/mimetypefakes"
@@ -31,7 +31,7 @@ import (
 
 var _ = Describe("RefScan Job", func() {
 	var (
-		client *githubfakes.FakeClient
+		client *githubclientfakes.FakeClient
 
 		logger *lagertest.TestLogger
 
@@ -61,7 +61,7 @@ var _ = Describe("RefScan Job", func() {
 		}
 
 		sniffer = new(snifffakes.FakeSniffer)
-		client = &githubfakes.FakeClient{}
+		client = &githubclientfakes.FakeClient{}
 		logger = lagertest.NewTestLogger("ref-scan-test")
 		notifier = &notificationsfakes.FakeNotifier{}
 		emitter = &metricsfakes.FakeEmitter{}

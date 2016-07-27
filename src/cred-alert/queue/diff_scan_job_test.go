@@ -2,7 +2,7 @@ package queue_test
 
 import (
 	"cred-alert/db/dbfakes"
-	"cred-alert/github/githubfakes"
+	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/notifications/notificationsfakes"
@@ -25,7 +25,7 @@ var _ = Describe("Diff Scan Job", func() {
 		job                *queue.DiffScanJob
 		emitter            *metricsfakes.FakeEmitter
 		notifier           *notificationsfakes.FakeNotifier
-		fakeGithubClient   *githubfakes.FakeClient
+		fakeGithubClient   *githubclientfakes.FakeClient
 		diffScanRepository *dbfakes.FakeDiffScanRepository
 		plan               queue.DiffScanPlan
 		sniffer            *snifffakes.FakeSniffer
@@ -54,7 +54,7 @@ var _ = Describe("Diff Scan Job", func() {
 		sniffer = new(snifffakes.FakeSniffer)
 		emitter = &metricsfakes.FakeEmitter{}
 		notifier = &notificationsfakes.FakeNotifier{}
-		fakeGithubClient = new(githubfakes.FakeClient)
+		fakeGithubClient = new(githubclientfakes.FakeClient)
 		diffScanRepository = &dbfakes.FakeDiffScanRepository{}
 		logger = lagertest.NewTestLogger("diff-scan-job-test")
 

@@ -26,7 +26,7 @@ import (
 
 	"cred-alert/db"
 	"cred-alert/db/migrations"
-	"cred-alert/github"
+	"cred-alert/githubclient"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/queue"
@@ -88,7 +88,7 @@ func main() {
 		},
 	}
 	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
-	ghClient := github.NewClient(github.DefaultGitHubURL, httpClient, emitter)
+	client := githubclient.NewClient(githubclient.DefaultGitHubURL, httpClient, emitter)
 	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl)
 	sniffer := sniff.NewDefaultSniffer()
 
@@ -111,7 +111,7 @@ func main() {
 	mimetype, err := magicmime.NewDecoder(magicmime.MAGIC_MIME_TYPE | magicmime.MAGIC_SYMLINK | magicmime.MAGIC_ERROR)
 
 	foreman := queue.NewForeman(
-		ghClient,
+		client,
 		sniffer,
 		emitter,
 		notifier,

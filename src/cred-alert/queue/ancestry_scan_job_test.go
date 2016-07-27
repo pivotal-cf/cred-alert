@@ -12,7 +12,7 @@ import (
 
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
-	"cred-alert/github/githubfakes"
+	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
@@ -24,7 +24,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 		logger *lagertest.TestLogger
 
 		taskQueue            *queuefakes.FakeQueue
-		client               *githubfakes.FakeClient
+		client               *githubclientfakes.FakeClient
 		commitRepository     *dbfakes.FakeCommitRepository
 		maxDepthCounter      *metricsfakes.FakeCounter
 		initialCommitCounter *metricsfakes.FakeCounter
@@ -44,7 +44,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 		}
 
 		taskQueue = &queuefakes.FakeQueue{}
-		client = &githubfakes.FakeClient{}
+		client = &githubclientfakes.FakeClient{}
 		commitRepository = &dbfakes.FakeCommitRepository{}
 		emitter = &metricsfakes.FakeEmitter{}
 		maxDepthCounter = &metricsfakes.FakeCounter{}

@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cred-alert/db/dbfakes"
-	"cred-alert/github/githubfakes"
+	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/mimetype/mimetypefakes"
 	"cred-alert/notifications/notificationsfakes"
@@ -21,7 +21,7 @@ var _ = Describe("Foreman", func() {
 
 	BeforeEach(func() {
 		foreman = queue.NewForeman(
-			&githubfakes.FakeClient{},
+			&githubclientfakes.FakeClient{},
 			&snifffakes.FakeSniffer{},
 			&metricsfakes.FakeEmitter{},
 			&notificationsfakes.FakeNotifier{},

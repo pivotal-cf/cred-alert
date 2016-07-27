@@ -2,13 +2,12 @@ package queue
 
 import (
 	"cred-alert/db"
+	"cred-alert/githubclient"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"cred-alert/scanners/gitscanner"
 	"cred-alert/sniff"
-
-	gh "cred-alert/github"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -17,14 +16,14 @@ type DiffScanJob struct {
 	DiffScanPlan
 
 	diffScanRepository db.DiffScanRepository
-	githubClient       gh.Client
+	githubClient       githubclient.Client
 	sniffer            sniff.Sniffer
 	credentialCounter  metrics.Counter
 	notifier           notifications.Notifier
 	id                 string
 }
 
-func NewDiffScanJob(githubClient gh.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, diffScanRepository db.DiffScanRepository, plan DiffScanPlan, id string) *DiffScanJob {
+func NewDiffScanJob(githubClient githubclient.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, diffScanRepository db.DiffScanRepository, plan DiffScanPlan, id string) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{

@@ -1,4 +1,4 @@
-package github_test
+package githubclient_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestGithub(t *testing.T) {
+func TestGithubclient(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "GitHub Suite")
+	RunSpecs(t, "Githubclient Suite")
 }

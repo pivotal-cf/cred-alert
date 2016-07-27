@@ -3,7 +3,7 @@ package queue
 import (
 	"archive/zip"
 	"bytes"
-	"cred-alert/github"
+	"cred-alert/githubclient"
 	"cred-alert/metrics"
 	"cred-alert/mimetype"
 	"cred-alert/notifications"
@@ -24,7 +24,7 @@ const initialCommitParentHash = "0000000000000000000000000000000000000000"
 
 type RefScanJob struct {
 	RefScanPlan
-	client            github.Client
+	client            githubclient.Client
 	sniffer           sniff.Sniffer
 	notifier          notifications.Notifier
 	emitter           metrics.Emitter
@@ -35,7 +35,7 @@ type RefScanJob struct {
 
 func NewRefScanJob(
 	plan RefScanPlan,
-	client github.Client,
+	client githubclient.Client,
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
 	emitter metrics.Emitter,

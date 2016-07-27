@@ -4,7 +4,7 @@ import (
 	"github.com/pivotal-golang/lager"
 
 	"cred-alert/db"
-	"cred-alert/github"
+	"cred-alert/githubclient"
 	"cred-alert/metrics"
 )
 
@@ -14,12 +14,12 @@ type AncestryScanJob struct {
 	commitRepository     db.CommitRepository
 	depthReachedCounter  metrics.Counter
 	initialCommitCounter metrics.Counter
-	client               github.Client
+	client               githubclient.Client
 	taskQueue            Queue
 	id                   string
 }
 
-func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitRepository, client github.Client, emitter metrics.Emitter, taskQueue Queue, id string) *AncestryScanJob {
+func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitRepository, client githubclient.Client, emitter metrics.Emitter, taskQueue Queue, id string) *AncestryScanJob {
 	depthReachedCounter := emitter.Counter("cred_alert.max-depth-reached")
 	initialCommitCounter := emitter.Counter("cred_alert.initial-commit-scanned")
 	job := &AncestryScanJob{

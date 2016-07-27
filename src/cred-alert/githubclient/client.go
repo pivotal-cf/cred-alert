@@ -1,4 +1,4 @@
-package github
+package githubclient
 
 import (
 	"cred-alert/metrics"

@@ -2,14 +2,13 @@ package queue
 
 import (
 	"cred-alert/db"
+	"cred-alert/githubclient"
 	"cred-alert/metrics"
 	"cred-alert/mimetype"
 	"cred-alert/notifications"
 	"cred-alert/sniff"
 	"encoding/json"
 	"fmt"
-
-	gh "cred-alert/github"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -27,7 +26,7 @@ type Foreman interface {
 }
 
 type foreman struct {
-	githubClient       gh.Client
+	client             githubclient.Client
 	sniffer            sniff.Sniffer
 	emitter            metrics.Emitter
 	notifier           notifications.Notifier
@@ -38,7 +37,7 @@ type foreman struct {
 }
 
 func NewForeman(
-	githubClient gh.Client,
+	client githubclient.Client,
 	sniffer sniff.Sniffer,
 	emitter metrics.Emitter,
 	notifier notifications.Notifier,
@@ -48,7 +47,7 @@ func NewForeman(
 	decoder mimetype.Decoder,
 ) *foreman {
 	foreman := &foreman{
-		githubClient:       githubClient,
+		client:             client,
 		sniffer:            sniffer,
 		emitter:            emitter,
 		notifier:           notifier,
@@ -99,7 +98,7 @@ func (f *foreman) buildDiffScan(id, payload string) (*DiffScanJob, error) {
 	}
 
 	return NewDiffScanJob(
-		f.githubClient,
+		f.client,
 		f.sniffer,
 		f.emitter,
 		f.notifier,
@@ -118,7 +117,7 @@ func (f *foreman) buildRefScan(id, payload string) (*RefScanJob, error) {
 
 	return NewRefScanJob(
 		refScanPlan,
-		f.githubClient,
+		f.client,
 		f.sniffer,
 		f.notifier,
 		f.emitter,
@@ -137,7 +136,7 @@ func (f *foreman) buildAncestryScan(id, payload string) (*AncestryScanJob, error
 	return NewAncestryScanJob(
 		ancestryScanPlan,
 		f.commitRepository,
-		f.githubClient,
+		f.client,
 		f.emitter,
 		f.taskQueue,
 		id,

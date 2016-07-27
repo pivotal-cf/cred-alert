@@ -1,4 +1,4 @@
-package github_test
+package githubclient_test
 
 import (
 	"net/http"
@@ -11,14 +11,14 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"github.com/pivotal-golang/lager/lagertest"
 
-	"cred-alert/github"
+	"cred-alert/githubclient"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 )
 
 var _ = Describe("Client", func() {
 	var (
-		client              github.Client
+		client              githubclient.Client
 		server              *ghttp.Server
 		fakeEmitter         *metricsfakes.FakeEmitter
 		remainingCallsGauge *metricsfakes.FakeGauge
@@ -44,7 +44,7 @@ var _ = Describe("Client", func() {
 		fakeEmitter.GaugeStub = func(name string) metrics.Gauge {
 			return remainingCallsGauge
 		}
-		client = github.NewClient(server.URL(), httpClient, fakeEmitter)
+		client = githubclient.NewClient(server.URL(), httpClient, fakeEmitter)
 	})
 
 	AfterEach(func() {
