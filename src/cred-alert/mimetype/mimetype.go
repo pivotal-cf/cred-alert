@@ -1,7 +1,7 @@
 package mimetype
 
-//go:generate counterfeiter . Mimetype
+//go:generate counterfeiter . Decoder
 
-type Mimetype interface {
+type Decoder interface {
 	TypeByBuffer([]byte) (string, error)
 }

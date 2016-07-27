@@ -29,7 +29,7 @@ type RefScanJob struct {
 	notifier          notifications.Notifier
 	emitter           metrics.Emitter
 	credentialCounter metrics.Counter
-	mimetype          mimetype.Mimetype
+	mimetype          mimetype.Decoder
 	id                string
 }
 
@@ -39,7 +39,7 @@ func NewRefScanJob(
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
 	emitter metrics.Emitter,
-	mimetype mimetype.Mimetype,
+	mimetype mimetype.Decoder,
 	id string,
 ) *RefScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")

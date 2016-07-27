@@ -34,7 +34,7 @@ type foreman struct {
 	diffScanRepository db.DiffScanRepository
 	commitRepository   db.CommitRepository
 	taskQueue          Queue
-	mimetype           mimetype.Mimetype
+	decoder            mimetype.Decoder
 }
 
 func NewForeman(
@@ -45,7 +45,7 @@ func NewForeman(
 	diffScanRepository db.DiffScanRepository,
 	commitRepository db.CommitRepository,
 	taskQueue Queue,
-	mimetype mimetype.Mimetype,
+	decoder mimetype.Decoder,
 ) *foreman {
 	foreman := &foreman{
 		githubClient:       githubClient,
@@ -55,7 +55,7 @@ func NewForeman(
 		diffScanRepository: diffScanRepository,
 		commitRepository:   commitRepository,
 		taskQueue:          taskQueue,
-		mimetype:           mimetype,
+		decoder:            decoder,
 	}
 
 	return foreman
@@ -122,7 +122,7 @@ func (f *foreman) buildRefScan(id, payload string) (*RefScanJob, error) {
 		f.sniffer,
 		f.notifier,
 		f.emitter,
-		f.mimetype,
+		f.decoder,
 		id,
 	), nil
 }

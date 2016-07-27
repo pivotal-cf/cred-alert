@@ -42,7 +42,7 @@ var _ = Describe("RefScan Job", func() {
 		notifier          *notificationsfakes.FakeNotifier
 		emitter           *metricsfakes.FakeEmitter
 		credentialCounter *metricsfakes.FakeCounter
-		mimetype          *mimetypefakes.FakeMimetype
+		decoder           *mimetypefakes.FakeDecoder
 	)
 
 	owner := "repo-owner"
@@ -74,12 +74,12 @@ var _ = Describe("RefScan Job", func() {
 				panic("unexpected counter name! " + name)
 			}
 		}
-		mimetype = &mimetypefakes.FakeMimetype{}
-		mimetype.TypeByBufferReturns("text/some-text", nil)
+		decoder = &mimetypefakes.FakeDecoder{}
+		decoder.TypeByBufferReturns("text/some-text", nil)
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, mimetype, id)
+		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, decoder, id)
 	})
 
 	Describe("Run", func() {
@@ -223,7 +223,7 @@ var _ = Describe("RefScan Job", func() {
 
 		Context("when file is not text", func() {
 			BeforeEach(func() {
-				mimetype.TypeByBufferReturns("application/octet-stream", nil)
+				decoder.TypeByBufferReturns("application/octet-stream", nil)
 			})
 
 			It("should not perform a scan", func() {
@@ -233,7 +233,7 @@ var _ = Describe("RefScan Job", func() {
 
 			Context("when there is an error getting the type", func() {
 				BeforeEach(func() {
-					mimetype.TypeByBufferReturns("unknown", errors.New("disaster"))
+					decoder.TypeByBufferReturns("unknown", errors.New("disaster"))
 				})
 
 				It("logs an error", func() {

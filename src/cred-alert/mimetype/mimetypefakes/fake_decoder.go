@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type FakeMimetype struct {
+type FakeDecoder struct {
 	TypeByBufferStub        func([]byte) (string, error)
 	typeByBufferMutex       sync.RWMutex
 	typeByBufferArgsForCall []struct {
@@ -20,7 +20,7 @@ type FakeMimetype struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMimetype) TypeByBuffer(arg1 []byte) (string, error) {
+func (fake *FakeDecoder) TypeByBuffer(arg1 []byte) (string, error) {
 	var arg1Copy []byte
 	if arg1 != nil {
 		arg1Copy = make([]byte, len(arg1))
@@ -39,19 +39,19 @@ func (fake *FakeMimetype) TypeByBuffer(arg1 []byte) (string, error) {
 	}
 }
 
-func (fake *FakeMimetype) TypeByBufferCallCount() int {
+func (fake *FakeDecoder) TypeByBufferCallCount() int {
 	fake.typeByBufferMutex.RLock()
 	defer fake.typeByBufferMutex.RUnlock()
 	return len(fake.typeByBufferArgsForCall)
 }
 
-func (fake *FakeMimetype) TypeByBufferArgsForCall(i int) []byte {
+func (fake *FakeDecoder) TypeByBufferArgsForCall(i int) []byte {
 	fake.typeByBufferMutex.RLock()
 	defer fake.typeByBufferMutex.RUnlock()
 	return fake.typeByBufferArgsForCall[i].arg1
 }
 
-func (fake *FakeMimetype) TypeByBufferReturns(result1 string, result2 error) {
+func (fake *FakeDecoder) TypeByBufferReturns(result1 string, result2 error) {
 	fake.TypeByBufferStub = nil
 	fake.typeByBufferReturns = struct {
 		result1 string
@@ -59,7 +59,7 @@ func (fake *FakeMimetype) TypeByBufferReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeMimetype) Invocations() map[string][][]interface{} {
+func (fake *FakeDecoder) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.typeByBufferMutex.RLock()
@@ -67,7 +67,7 @@ func (fake *FakeMimetype) Invocations() map[string][][]interface{} {
 	return fake.invocations
 }
 
-func (fake *FakeMimetype) recordInvocation(key string, args []interface{}) {
+func (fake *FakeDecoder) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -79,4 +79,4 @@ func (fake *FakeMimetype) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ mimetype.Mimetype = new(FakeMimetype)
+var _ mimetype.Decoder = new(FakeDecoder)
