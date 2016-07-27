@@ -20,15 +20,11 @@ func isInHeader(currentLineNumber int, currentHunk *Hunk) bool {
 		return true
 	}
 
-	if currentHunk != nil && currentHunk.endOfHunk(currentLineNumber) {
-		return true
-	}
-
-	return false
+	return currentHunk.endOfHunk(currentLineNumber)
 }
 
 func fileHeader(rawLine string, currentLineNumber int, currentHunk *Hunk) (string, error) {
-	if currentHunk != nil && !currentHunk.endOfHunk(currentLineNumber) {
+	if !isInHeader(currentLineNumber, currentHunk) {
 		return "", errors.New("Still processing a hunk, not a file header")
 	}
 	return readFileHeader(rawLine)
