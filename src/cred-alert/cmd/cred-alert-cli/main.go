@@ -1,13 +1,20 @@
 package main
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"bufio"
+	"compress/gzip"
+	"cred-alert/mimetype"
 	"cred-alert/scanners"
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/pivotal-golang/lager"
@@ -44,14 +51,78 @@ func main() {
 			log.Fatalf("Failed to open file: %s", err.Error())
 		}
 		defer f.Close()
-		scanner := filescanner.New(f, f.Name())
-		sniffer.Sniff(logger, scanner, handleViolation)
+		scanFile(logger, sniffer, f, f.Name())
 		os.Exit(0)
 	}
 
-	scanner := filescanner.New(os.Stdin, os.Stdin.Name())
-	sniffer.Sniff(logger, scanner, handleViolation)
-	os.Exit(0)
+	scanFile(logger, sniffer, os.Stdin, "STDIN")
+}
+
+func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name string) {
+	br := bufio.NewReader(r)
+	mime, ok := mimetype.IsArchive(br)
+	if ok {
+		switch mime {
+		case "application/zip":
+			r2, err := zip.OpenReader(name)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			for _, f := range r2.File {
+				rc, err := f.Open()
+				if err != nil {
+					logger.Error("failed-to-open-file", err, lager.Data{
+						"filename": name,
+						"mimetype": mime,
+					})
+					continue
+				}
+
+				if f.FileInfo().IsDir() {
+					rc.Close()
+					continue
+				}
+
+				scanFile(logger, sniffer, rc, f.Name)
+				rc.Close()
+			}
+		case "application/x-tar":
+			r2 := tar.NewReader(br)
+
+			for {
+				header, err := r2.Next()
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+
+					log.Fatal(err.Error())
+				}
+
+				if header.FileInfo().IsDir() {
+					continue
+				}
+
+				scanFile(logger, sniffer, r2, header.Name)
+			}
+		case "application/gzip":
+			r2, err := gzip.NewReader(br)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+
+			scanFile(logger, sniffer, r2, name)
+
+			r2.Close()
+		default:
+			panic(fmt.Sprintf("I don't know how to handle %s", mime))
+		}
+	}
+
+	if strings.Contains(mime, "text") {
+		scanner := filescanner.New(br, name)
+		sniffer.Sniff(logger, scanner, handleViolation)
+	}
 }
 
 func handleViolation(line scanners.Line) error {
