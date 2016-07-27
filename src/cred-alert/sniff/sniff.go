@@ -71,6 +71,7 @@ func (s *sniffer) Sniff(
 	handleViolation func(scanners.Line) error,
 ) error {
 	logger = logger.Session("sniff")
+	logger.Info("starting")
 
 	var result error
 
@@ -84,10 +85,12 @@ func (s *sniffer) Sniff(
 		if s.matcher.Match(line.Content) {
 			err := handleViolation(line)
 			if err != nil {
+				logger.Session("handle-violation").Error("failed", err)
 				result = multierror.Append(result, err)
 			}
 		}
 	}
 
+	logger.Info("done")
 	return result
 }
