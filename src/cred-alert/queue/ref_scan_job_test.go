@@ -238,7 +238,12 @@ var _ = Describe("RefScan Job", func() {
 
 				It("logs an error", func() {
 					job.Run(logger)
-					Expect(logger).To(gbytes.Say("is-text.failed"))
+					Expect(logger).To(gbytes.Say("should-scan.failed"))
+				})
+
+				It("scans the file", func() {
+					job.Run(logger)
+					Expect(sniffer.SniffCallCount()).To(BeNumerically(">", 0))
 				})
 			})
 		})
