@@ -1,7 +1,7 @@
-package git_test
+package gitscanner_test
 
 import (
-	"cred-alert/scanners/git"
+	"cred-alert/scanners/gitscanner"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
@@ -55,14 +55,14 @@ index 1e13fe8..06b14f8 100644
 	})
 
 	It("scans lines from a diff", func() {
-		diffScanner := git.NewDiffScanner(shortFile)
+		diffScanner := gitscanner.NewDiffScanner(shortFile)
 		Expect(diffScanner.Scan(logger)).To(BeTrue())
 		Expect(diffScanner.Scan(logger)).To(BeTrue())
 		Expect(diffScanner.Scan(logger)).To(BeFalse())
 	})
 
 	It("returns the current line from a diff", func() {
-		diffScanner := git.NewDiffScanner(shortFile)
+		diffScanner := gitscanner.NewDiffScanner(shortFile)
 		diffScanner.Scan(logger)
 		line := diffScanner.Line()
 
@@ -78,13 +78,13 @@ index 1e13fe8..06b14f8 100644
 	})
 
 	It("scans for a filename", func() {
-		diffScanner := git.NewDiffScanner(shortFile)
+		diffScanner := gitscanner.NewDiffScanner(shortFile)
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line().Path).To(Equal("our/path/somefile.txt"))
 	})
 
 	It("Is not fooled by lines that look like file headers", func() {
-		diffScanner := git.NewDiffScanner(sneakyFile)
+		diffScanner := gitscanner.NewDiffScanner(sneakyFile)
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line().Path).To(Equal("our/path/somefile.txt"))
 		Expect(diffScanner.Line().Content).To(Equal("first line of content"))
@@ -95,7 +95,7 @@ index 1e13fe8..06b14f8 100644
 	})
 
 	It("scans for a hunk", func() {
-		diffScanner := git.NewDiffScanner(shortFile)
+		diffScanner := gitscanner.NewDiffScanner(shortFile)
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line().LineNumber).To(Equal(5))
 		diffScanner.Scan(logger)
@@ -103,7 +103,7 @@ index 1e13fe8..06b14f8 100644
 	})
 
 	It("scans multiple hunks in one diff", func() {
-		diffScanner := git.NewDiffScanner(sampleDiff)
+		diffScanner := gitscanner.NewDiffScanner(sampleDiff)
 		for i := 0; i < 8; i++ {
 			diffScanner.Scan(logger)
 			fmt.Fprintf(GinkgoWriter, "%d: %s\n", diffScanner.Line().LineNumber, diffScanner.Line().Content)
@@ -114,7 +114,7 @@ index 1e13fe8..06b14f8 100644
 	})
 
 	It("scans single line hunks", func() {
-		diffScanner := git.NewDiffScanner(singleLineRemovedFile)
+		diffScanner := gitscanner.NewDiffScanner(singleLineRemovedFile)
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line().LineNumber).To(Equal(1))
 		Expect(diffScanner.Line().Content).To(Equal("blah"))
@@ -123,13 +123,13 @@ index 1e13fe8..06b14f8 100644
 		Expect(diffScanner.Line().Content).To(Equal("lol"))
 		Expect(diffScanner.Scan(logger)).To(BeFalse())
 
-		diffScanner = git.NewDiffScanner(singleLineAddedFile)
+		diffScanner = gitscanner.NewDiffScanner(singleLineAddedFile)
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line().LineNumber).To(Equal(1))
 		Expect(diffScanner.Line().Content).To(Equal("rofl"))
 		Expect(diffScanner.Scan(logger)).To(BeFalse())
 
-		diffScanner = git.NewDiffScanner(singleLineReplacementFile)
+		diffScanner = gitscanner.NewDiffScanner(singleLineReplacementFile)
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line().LineNumber).To(Equal(1))
 		Expect(diffScanner.Line().Content).To(Equal("afk"))
@@ -137,7 +137,7 @@ index 1e13fe8..06b14f8 100644
 	})
 
 	It("keeps track of the filename in sections of a unified diff", func() {
-		diffScanner := git.NewDiffScanner(sampleDiff)
+		diffScanner := gitscanner.NewDiffScanner(sampleDiff)
 		for i := 0; i < 30; i++ {
 			diffScanner.Scan(logger)
 			fmt.Fprintf(GinkgoWriter, "%d: %s\n", diffScanner.Line().LineNumber, diffScanner.Line().Content)
@@ -149,7 +149,7 @@ index 1e13fe8..06b14f8 100644
 	})
 
 	It("keeps track of line numbers in sections of a unified diff", func() {
-		diffScanner := git.NewDiffScanner(sampleDiff)
+		diffScanner := gitscanner.NewDiffScanner(sampleDiff)
 		for i := 0; i < 5; i++ {
 			diffScanner.Scan(logger)
 			fmt.Fprintf(GinkgoWriter, "%d: %s\n", diffScanner.Line().LineNumber, diffScanner.Line().Content)

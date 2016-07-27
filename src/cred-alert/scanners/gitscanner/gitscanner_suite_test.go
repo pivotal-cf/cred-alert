@@ -1,4 +1,4 @@
-package git_test
+package gitscanner_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestGit(t *testing.T) {
+func TestGitscanner(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Git Suite")
+	RunSpecs(t, "Gitscanner Suite")
 }

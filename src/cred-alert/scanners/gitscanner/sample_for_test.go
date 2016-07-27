@@ -1,4 +1,4 @@
-package git_test
+package gitscanner_test
 
 var sampleDiff = `diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests.txt
 index 940393e..fa5a232 100644

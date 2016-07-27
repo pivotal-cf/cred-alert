@@ -1,4 +1,4 @@
-package git
+package gitscanner
 
 import (
 	"cred-alert/scanners"

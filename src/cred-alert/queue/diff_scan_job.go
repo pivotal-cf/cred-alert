@@ -5,7 +5,7 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
-	"cred-alert/scanners/git"
+	"cred-alert/scanners/gitscanner"
 	"cred-alert/sniff"
 
 	gh "cred-alert/github"
@@ -58,11 +58,11 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	diffScanner := git.NewDiffScanner(diff)
+	scanner := gitscanner.NewDiffScanner(diff)
 	credentialsFound := false
 	handleViolation := j.createHandleViolation(logger, j.To, j.Owner+"/"+j.Repository, &credentialsFound)
 
-	err = j.sniffer.Sniff(logger, diffScanner, handleViolation)
+	err = j.sniffer.Sniff(logger, scanner, handleViolation)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
