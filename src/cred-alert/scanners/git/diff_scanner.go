@@ -17,10 +17,10 @@ type DiffScanner struct {
 }
 
 func NewDiffScanner(diff string) *DiffScanner {
-	d := new(DiffScanner)
-	d.diff = strings.Split(diff, "\n")
-	d.cursor = -1
-	return d
+	return &DiffScanner{
+		cursor: -1,
+		diff:   strings.Split(diff, "\n"),
+	}
 }
 
 func (d *DiffScanner) Scan(logger lager.Logger) bool {

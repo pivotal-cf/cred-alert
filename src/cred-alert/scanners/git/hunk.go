@@ -13,12 +13,11 @@ type Hunk struct {
 }
 
 func newHunk(path string, startLine int, length int) *Hunk {
-	hunk := new(Hunk)
-	hunk.path = path
-	hunk.startLine = startLine
-	hunk.length = length
-
-	return hunk
+	return &Hunk{
+		path:      path,
+		startLine: startLine,
+		length:    length,
+	}
 }
 
 func hunkHeader(rawLine string) (int, int, error) {
