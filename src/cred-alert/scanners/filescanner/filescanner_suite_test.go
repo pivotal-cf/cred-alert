@@ -1,4 +1,4 @@
-package file_test
+package filescanner_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestFile(t *testing.T) {
+func TestFilescanner(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "File Suite")
+	RunSpecs(t, "Filescanner Suite")
 }

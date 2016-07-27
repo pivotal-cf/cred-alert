@@ -8,7 +8,7 @@ import (
 	"cred-alert/mimetype"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
-	"cred-alert/scanners/file"
+	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
 	"io"
 	"io/ioutil"
@@ -116,7 +116,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		}
 		defer unzippedReader.Close()
 
-		bufioScanner := file.NewReaderScanner(unzippedReader, f.Name)
+		bufioScanner := filescanner.New(unzippedReader, f.Name)
 		handleViolation := j.createHandleViolation(logger, j.Ref, j.Owner+"/"+j.Repository)
 
 		err = j.sniffer.Sniff(logger, bufioScanner, handleViolation)

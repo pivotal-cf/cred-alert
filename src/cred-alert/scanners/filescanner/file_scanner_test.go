@@ -1,10 +1,10 @@
-package file_test
+package filescanner_test
 
 import (
 	"io/ioutil"
 	"os"
 
-	"cred-alert/scanners/file"
+	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
 
 	. "github.com/onsi/ginkgo"
@@ -44,7 +44,7 @@ line3`
 	})
 
 	JustBeforeEach(func() {
-		fileScanner = file.NewFileScanner(fileHandle)
+		fileScanner = filescanner.New(fileHandle, fileHandle.Name())
 	})
 
 	It("scans lines from a file", func() {

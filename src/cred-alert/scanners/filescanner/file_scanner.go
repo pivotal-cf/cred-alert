@@ -1,10 +1,9 @@
-package file
+package filescanner
 
 import (
 	"bufio"
 	"cred-alert/scanners"
 	"io"
-	"os"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -15,16 +14,7 @@ type fileScanner struct {
 	lineNumber   int
 }
 
-func NewFileScanner(file *os.File) *fileScanner {
-	bufioScanner := bufio.NewScanner(file)
-
-	return &fileScanner{
-		path:         file.Name(),
-		bufioScanner: bufioScanner,
-	}
-}
-
-func NewReaderScanner(r io.Reader, filename string) *fileScanner {
+func New(r io.Reader, filename string) *fileScanner {
 	bufioScanner := bufio.NewScanner(r)
 	return &fileScanner{
 		path:         filename,

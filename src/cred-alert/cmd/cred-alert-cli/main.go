@@ -2,7 +2,7 @@ package main
 
 import (
 	"cred-alert/scanners"
-	"cred-alert/scanners/file"
+	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
 	"fmt"
 	"log"
@@ -33,7 +33,7 @@ func main() {
 	if opts.Directory != "" {
 		scanDirectory(logger, sniffer, opts.Directory)
 	} else {
-		scanner := file.NewFileScanner(os.Stdin)
+		scanner := filescanner.New(os.Stdin, "STDIN")
 		sniffer.Sniff(logger, scanner, handleViolation)
 	}
 }
@@ -62,7 +62,7 @@ func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath str
 			}
 			defer fh.Close()
 
-			scanner := file.NewFileScanner(fh)
+			scanner := filescanner.New(fh, fh.Name())
 			sniffer.Sniff(logger, scanner, handleViolation)
 		}
 		return nil
