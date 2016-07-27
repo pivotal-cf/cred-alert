@@ -2,6 +2,20 @@
 
 > scans repos for credentials and then shouts if it finds them
 
+## Dependencies
+
+Cred-alert depends on libmagic being installed on the system in order
+to run. For building you'll need the libmagic header as well, usually
+provided by a development package of the library.
+
+On Mac OS
+
+  $ brew install libmagic
+
+On debian flavoured linux:
+
+  $ apt-get install -y libmagic-dev
+
 ## Set Up
 
 You'll need to install `gosub` in order to manage the submodules of this
@@ -92,8 +106,21 @@ one that we build in CI.
     $ cf push cred-alert -b binary_buildpack -p /tmp/app
 
 When you push the application for the first time it will fail since the
-necessary environment variables are not set. Refer to the next section for all
-the needed environment variables.
+necessary environment variables are not set and MySQL is not available.
+
+#### Binding MySQL
+
+Before the worker will start, the app needs to be bound to a MySQL service instance named `cred-alert-mysql`.
+
+For local development the worker can be started with the following command line parameters:
+
+| Parameter                 | Description         |
+| ------------------------- | ------------------- |
+| --mysql-username=USERNAME | MySQL username      |
+| --mysql-password=PASSWORD | MySQL password      |
+| --mysql-hostname=HOSTNAME | MySQL hostname      |
+| --mysql-port=PORT         | MySQL port          |
+| --mysql-dbname=DBNAME     | MySQL database name |
 
 ### Environment Variables
 

@@ -44,14 +44,6 @@ type Opts struct {
 	} `group:"Datadog Options"`
 
 	AWS AWSOpts `group:"AWS Options"`
-
-	MySQL struct {
-		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME"`
-		Password string `long:"mysql-password" description:"MySQL password" value-name:"PASSWORD"`
-		Hostname string `long:"mysql-hostname" description:"MySQL hostname" value-name:"HOSTNAME"`
-		Port     uint16 `long:"mysql-port" description:"MySQL port" value-name:"PORT"`
-		DBName   string `long:"mysql-dbname" description:"MySQL database name" value-name:"DBNAME"`
-	}
 }
 
 func main() {
