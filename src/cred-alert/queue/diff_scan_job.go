@@ -6,7 +6,7 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
-	"cred-alert/scanners/gitscanner"
+	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
 
 	"github.com/pivotal-golang/lager"
@@ -57,7 +57,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	scanner := gitscanner.NewDiffScanner(diff)
+	scanner := diffscanner.NewDiffScanner(diff)
 	credentialsFound := false
 	handleViolation := j.createHandleViolation(logger, j.To, j.Owner+"/"+j.Repository, &credentialsFound)
 

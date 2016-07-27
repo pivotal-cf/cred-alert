@@ -1,4 +1,4 @@
-package gitscanner
+package diffscanner
 
 import (
 	"errors"

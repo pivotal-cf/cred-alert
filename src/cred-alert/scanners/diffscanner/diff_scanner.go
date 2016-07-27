@@ -1,7 +1,9 @@
-package gitscanner
+package diffscanner
 
 import (
 	"cred-alert/scanners"
+	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/pivotal-golang/lager"
@@ -62,7 +64,7 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 	})
 	logger.Info("starting")
 
-	content, err := content(d.diff[d.cursor])
+	content, err := diffContents(d.diff[d.cursor])
 	if err != nil {
 		logger.Error("setting content to ''", err)
 	}
@@ -126,4 +128,45 @@ func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
 
 	logger.Info("done")
 	return false
+}
+
+var fileHeaderPattern = regexp.MustCompile(`^\+\+\+\s\w\/(.*)$`)
+var contextAddedLinePattern = regexp.MustCompile(`^(\s|\+)`)
+var plusMinusSpacePattern = regexp.MustCompile(`^(\s|\+|\-)(.*)`)
+
+func fileHeader(rawLine string, currentLineNumber int, currentHunk *Hunk) (string, error) {
+	if !isInHeader(currentLineNumber, currentHunk) {
+		return "", errors.New("Still processing a hunk, not a file header")
+	}
+	return readFileHeader(rawLine)
+}
+
+func isInHeader(currentLineNumber int, currentHunk *Hunk) bool {
+	if currentHunk == nil {
+		return true
+	}
+
+	return currentHunk.endOfHunk(currentLineNumber)
+}
+
+func readFileHeader(line string) (string, error) {
+	matches := fileHeaderPattern.FindStringSubmatch(line)
+	if len(matches) < 2 {
+		return "", errors.New("Not a path")
+	}
+	return matches[1], nil
+}
+
+func contextOrAddedLine(rawLine string) bool {
+	matches := contextAddedLinePattern.FindStringSubmatch(rawLine)
+	return len(matches) >= 2
+}
+
+func diffContents(rawLine string) (string, error) {
+	matches := plusMinusSpacePattern.FindStringSubmatch(rawLine) // detect +, -, or <space>
+	if len(matches) >= 3 {
+		return matches[2], nil
+	}
+
+	return "", errors.New("Could not match content string")
 }
