@@ -27,9 +27,4 @@ var _ = Describe("Binaries", func() {
 		_, err := gexec.Build("cred-alert/cmd/cred-alert-worker")
 		Expect(err).NotTo(HaveOccurred())
 	})
-
-	It("builds cred-alert-cli", func() {
-		_, err := gexec.Build("cred-alert/cmd/cred-alert-cli")
-		Expect(err).NotTo(HaveOccurred())
-	})
 })
