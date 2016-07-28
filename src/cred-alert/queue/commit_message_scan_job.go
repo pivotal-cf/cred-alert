@@ -7,7 +7,7 @@ import (
 	"cred-alert/scanners/textscanner"
 	"cred-alert/sniff"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type CommitMessageJob struct {

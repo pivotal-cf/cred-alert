@@ -4,7 +4,7 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/queue"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 //go:generate counterfeiter . Ingestor

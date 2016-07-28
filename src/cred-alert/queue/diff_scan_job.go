@@ -9,7 +9,7 @@ import (
 	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type DiffScanJob struct {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 func CreateDB(logger lager.Logger, uri string) (*gorm.DB, error) {

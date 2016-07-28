@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 
 	"cred-alert/metrics"
 	"cred-alert/queue"

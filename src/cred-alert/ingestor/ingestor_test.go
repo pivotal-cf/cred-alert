@@ -12,7 +12,7 @@ import (
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 
-	"github.com/pivotal-golang/lager/lagertest"
+	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Ingestor", func() {

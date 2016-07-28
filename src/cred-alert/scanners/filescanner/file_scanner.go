@@ -5,7 +5,7 @@ import (
 	"cred-alert/scanners"
 	"io"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type fileScanner struct {

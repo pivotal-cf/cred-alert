@@ -3,7 +3,7 @@ package queue
 import (
 	"cred-alert/db"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type PushEventJob struct {

@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 
 	"cred-alert/db"
 	"cred-alert/githubclient"

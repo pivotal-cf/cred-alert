@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/github"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type handler struct {

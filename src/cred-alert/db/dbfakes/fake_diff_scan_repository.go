@@ -5,7 +5,7 @@ import (
 	"cred-alert/db"
 	"sync"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeDiffScanRepository struct {

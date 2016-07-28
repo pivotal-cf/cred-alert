@@ -5,7 +5,7 @@ import (
 	"cred-alert/sniff/matchers"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 const bashStringInterpolationPattern = `["]\$`

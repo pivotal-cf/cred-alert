@@ -13,7 +13,7 @@ import (
 
 	"github.com/cloudfoundry/gunk/urljoiner"
 	"github.com/google/go-github/github"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 const DefaultGitHubURL = "https://api.github.com/"

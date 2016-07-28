@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type Opts struct {

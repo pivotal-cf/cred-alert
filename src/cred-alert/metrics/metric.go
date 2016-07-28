@@ -3,7 +3,7 @@ package metrics
 import (
 	"cred-alert/datadog"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 //go:generate counterfeiter . Metric

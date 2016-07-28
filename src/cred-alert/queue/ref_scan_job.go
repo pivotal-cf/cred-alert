@@ -17,7 +17,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 const initialCommitParentHash = "0000000000000000000000000000000000000000"

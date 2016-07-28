@@ -6,7 +6,7 @@ import (
 	"cred-alert/scanners"
 	"sync"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeNotifier struct {

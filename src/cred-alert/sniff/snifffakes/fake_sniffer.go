@@ -6,7 +6,7 @@ import (
 	"cred-alert/sniff"
 	"sync"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeSniffer struct {

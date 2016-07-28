@@ -5,7 +5,7 @@ import (
 	"cred-alert/ingestor"
 	"sync"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeIngestor struct {

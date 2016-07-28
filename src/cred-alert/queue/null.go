@@ -1,6 +1,6 @@
 package queue
 
-import "github.com/pivotal-golang/lager"
+import "code.cloudfoundry.org/lager"
 
 type nullQueue struct {
 	logger lager.Logger

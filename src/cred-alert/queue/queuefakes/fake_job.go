@@ -5,7 +5,7 @@ import (
 	"cred-alert/queue"
 	"sync"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeJob struct {
