@@ -32,6 +32,10 @@ func init() {
 }
 
 func IsArchive(r *bufio.Reader) (string, bool) {
+	if r == nil {
+		return "", false
+	}
+
 	bs, err := r.Peek(512)
 	if err != nil && err != io.EOF {
 		log.Fatalf("failed to peek: %#v, bs: %s", err, string(bs))
