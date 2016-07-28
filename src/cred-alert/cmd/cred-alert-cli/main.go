@@ -68,8 +68,8 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name stri
 			if err != nil {
 				log.Fatal(err.Error())
 			}
-			for _, f := range r2.File {
-				rc, err := f.Open()
+			for i := range r2.File {
+				rc, err := r2.File[i].Open()
 				if err != nil {
 					logger.Error("failed-to-open-file", err, lager.Data{
 						"filename": name,
@@ -78,12 +78,12 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name stri
 					continue
 				}
 
-				if f.FileInfo().IsDir() {
+				if r2.File[i].FileInfo().IsDir() {
 					rc.Close()
 					continue
 				}
 
-				scanFile(logger, sniffer, rc, f.Name)
+				scanFile(logger, sniffer, rc, r2.File[i].Name)
 				rc.Close()
 			}
 		case "application/x-tar":
