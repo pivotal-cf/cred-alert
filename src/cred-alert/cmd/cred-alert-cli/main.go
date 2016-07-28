@@ -105,7 +105,7 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name stri
 
 				scanFile(logger, sniffer, r2, header.Name)
 			}
-		case "application/gzip":
+		case "application/gzip", "application/x-gzip":
 			r2, err := gzip.NewReader(br)
 			if err != nil {
 				log.Fatal(err.Error())
