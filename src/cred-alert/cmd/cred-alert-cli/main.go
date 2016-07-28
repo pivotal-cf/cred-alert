@@ -69,6 +69,7 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name stri
 
 	if ok {
 		iterator := archiveiterator.NewIterator(logger, br, mime, name)
+		defer iterator.Close()
 
 		for {
 			entry, name := iterator.Next()
@@ -78,8 +79,6 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name stri
 			scanFile(logger, sniffer, entry, name, ancestors)
 			entry.Close()
 		}
-
-		iterator.Close()
 	} else {
 		if strings.Contains(mime, "text") {
 			scanner := filescanner.New(br, name)
