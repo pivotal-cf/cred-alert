@@ -8,10 +8,6 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-func CreateDB(logger lager.Logger, uri string) (*gorm.DB, error) {
-	return gorm.Open("mysql", uri)
-}
-
 func NewDSN(username, password, dbName, hostname string, port int) string {
 	dbConfig := &mysql.Config{
 		User:            username,
