@@ -46,7 +46,8 @@ func NewClient(baseURL string, httpClient *http.Client, emitter metrics.Emitter)
 }
 
 func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error) {
-	logger = logger.Session("comparing-refs")
+	logger = logger.Session("compare-refs")
+	logger.Info("starting")
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
 	request, _ := http.NewRequest("GET", url, nil)
@@ -77,10 +78,14 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
 		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
 	}
+
+	logger.Info("done")
 	return string(body), nil
 }
 
 func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) (github.Rate, error) {
+	logger = logger.Session("compare-refs")
+
 	header := response.Header
 	reset, err := strconv.ParseInt(header.Get("X-Ratelimit-Reset"), 10, 64)
 	if err != nil {
