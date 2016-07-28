@@ -50,19 +50,18 @@ func main() {
 	var opts Opts
 
 	logger := lager.NewLogger("cred-alert-ingestor")
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 	logger.Info("starting")
 
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
-		logger.Error("failed", err)
+		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
 
-	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
-
 	taskQueue, err := createQueue(opts, logger)
 	if err != nil {
-		logger.Error("failed", err)
+		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
 

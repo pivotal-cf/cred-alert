@@ -34,6 +34,13 @@ import (
 	"cred-alert/worker"
 )
 
+type AWSOpts struct {
+	AwsAccessKey       string `long:"aws-access-key" description:"access key for aws SQS service" env:"AWS_ACCESS_KEY" value-name:"ACCESS_KEY"`
+	AwsSecretAccessKey string `long:"aws-secret-key" description:"secret access key for aws SQS service" env:"AWS_SECRET_ACCESS_KEY" value-name:"SECRET_KEY"`
+	AwsRegion          string `long:"aws-region" description:"aws region for SQS service" env:"AWS_REGION" value-name:"REGION"`
+	SqsQueueName       string `long:"sqs-queue-name" description:"queue name to use with SQS" env:"SQS_QUEUE_NAME" value-name:"QUEUE_NAME"`
+}
+
 type Opts struct {
 	GitHub struct {
 		AccessToken string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
@@ -48,12 +55,7 @@ type Opts struct {
 		WebhookUrl string `long:"slack-webhook-url" description:"Slack webhook URL" env:"SLACK_WEBHOOK_URL" value-name:"WEBHOOK"`
 	} `group:"Slack Options"`
 
-	AWS struct {
-		AwsAccessKey       string `long:"aws-access-key" description:"access key for aws SQS service" env:"AWS_ACCESS_KEY" value-name:"ACCESS_KEY"`
-		AwsSecretAccessKey string `long:"aws-secret-key" description:"secret access key for aws SQS service" env:"AWS_SECRET_ACCESS_KEY" value-name:"SECRET_KEY"`
-		AwsRegion          string `long:"aws-region" description:"aws region for SQS service" env:"AWS_REGION" value-name:"REGION"`
-		SqsQueueName       string `long:"sqs-queue-name" description:"queue name to use with SQS" env:"SQS_QUEUE_NAME" value-name:"QUEUE_NAME"`
-	} `group:"AWS Options"`
+	AWS AWSOpts `group:"AWS Options"`
 
 	MySQL struct {
 		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME"`
@@ -67,13 +69,15 @@ type Opts struct {
 func main() {
 	var opts Opts
 
-	_, err := flags.ParseArgs(&opts, os.Args)
-	if err != nil {
-		os.Exit(1)
-	}
-
 	logger := lager.NewLogger("cred-alert-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
+	logger.Info("starting")
+
+	_, err := flags.ParseArgs(&opts, os.Args)
+	if err != nil {
+		logger.Fatal("failed", err)
+		os.Exit(1)
+	}
 
 	tokenSource := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
@@ -94,7 +98,7 @@ func main() {
 
 	database, err := createDB(logger, opts)
 	if err != nil {
-		logger.Error("Fatal Error: Could not connect to db", err)
+		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
 	defer database.Close()
@@ -104,7 +108,7 @@ func main() {
 
 	taskQueue, err := createQueue(opts, logger)
 	if err != nil {
-		logger.Error("Could not create queue", err)
+		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
 
@@ -140,18 +144,23 @@ func main() {
 }
 
 func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
-	if sqsValuesExist(opts) {
-		return createSqsQueue(opts)
+	logger = logger.Session("create-queue")
+	logger.Info("starting")
+
+	if sqsValuesExist(opts.AWS) {
+		logger.Info("done")
+		return createSqsQueue(logger, opts.AWS)
 	}
 
+	logger.Info("done")
 	return queue.NewNullQueue(logger), nil
 }
 
-func sqsValuesExist(opts Opts) bool {
-	if opts.AWS.AwsAccessKey != "" &&
-		opts.AWS.AwsSecretAccessKey != "" &&
-		opts.AWS.AwsRegion != "" &&
-		opts.AWS.SqsQueueName != "" {
+func sqsValuesExist(awsOpts AWSOpts) bool {
+	if awsOpts.AwsAccessKey != "" &&
+		awsOpts.AwsSecretAccessKey != "" &&
+		awsOpts.AwsRegion != "" &&
+		awsOpts.SqsQueueName != "" {
 
 		return true
 	}
@@ -159,17 +168,20 @@ func sqsValuesExist(opts Opts) bool {
 	return false
 }
 
-func createSqsQueue(opts Opts) (queue.Queue, error) {
-	creds := credentials.NewStaticCredentials(
-		opts.AWS.AwsAccessKey,
-		opts.AWS.AwsSecretAccessKey,
-		"")
-	config := aws.NewConfig().WithCredentials(creds).WithRegion(opts.AWS.AwsRegion)
+func createSqsQueue(logger lager.Logger, awsOpts AWSOpts) (queue.Queue, error) {
+	logger = logger.Session("create-sqs-queue")
+
+	creds := credentials.NewStaticCredentials(awsOpts.AwsAccessKey, awsOpts.AwsSecretAccessKey, "")
+	config := aws.NewConfig().WithCredentials(creds).WithRegion(awsOpts.AwsRegion)
 	service := sqs.New(session.New(config))
-	queue, err := queue.BuildSQSQueue(service, opts.AWS.SqsQueueName)
+
+	queue, err := queue.BuildSQSQueue(service, awsOpts.SqsQueueName)
 	if err != nil {
+		logger.Error("failed", err)
 		return nil, err
 	}
+
+	logger.Info("done")
 	return queue, nil
 }
 
@@ -185,18 +197,22 @@ func debugHandler() http.Handler {
 }
 
 func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
+	logger = logger.Session("create-db")
+	logger.Info("starting")
+
 	var uri string
 	if os.Getenv("VCAP_SERVICES") != "" {
 		var err error
 		uri, err = createDbUriFromVCAP(logger)
 		if err != nil {
-			logger.Error("Error getting db uri string: ", err)
+			logger.Error("failed", err)
 			return nil, err
 		}
 	} else {
 		uri = db.NewDSN(opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.DBName, opts.MySQL.Hostname, int(opts.MySQL.Port))
 	}
 
+	logger.Info("done")
 	return migrations.LockDBAndMigrate(logger, "mysql", uri)
 }
 
@@ -205,7 +221,7 @@ func createDbUriFromVCAP(logger lager.Logger) (string, error) {
 
 	appEnv, err := cfenv.Current()
 	if err != nil {
-		logger.Error("Error getting CF environment", err)
+		logger.Error("failed", err)
 		return "", err
 	}
 
@@ -216,34 +232,44 @@ func createDbUriFromVCAP(logger lager.Logger) (string, error) {
 
 	username, ok := service.Credentials["username"].(string)
 	if !ok {
-		return "", errors.New("Could not read username")
+		err = errors.New("Could not read username")
+		logger.Error("failed", err)
+		return "", err
 	}
 	password, ok := service.Credentials["password"].(string)
 	if !ok {
-		return "", errors.New("Could not read password")
+		err = errors.New("Could not read password")
+		logger.Error("failed", err)
+		return "", err
 	}
 	hostname, ok := service.Credentials["hostname"].(string)
 	if !ok {
-		return "", errors.New("Could not read hostname")
+		err = errors.New("Could not read hostname")
+		logger.Error("failed", err)
+		return "", err
 	}
 	portF, ok := service.Credentials["port"].(float64)
 	if !ok {
-		return "", errors.New("Could not read port")
+		err = errors.New("Could not read port")
+		logger.Error("failed", err)
+		return "", err
 	}
 	port := int(portF)
 	name := service.Credentials["name"]
 
 	if len(username) == 0 || len(password) == 0 {
-		err := errors.New("Empty mysql username or password")
-		logger.Error("MySQL parameters are incorrect", err)
+		err = errors.New("Empty mysql username or password")
+		logger.Error("failed", err)
 		return "", err
 	}
 
 	database, ok := name.(string)
 	if !ok {
-		return "", errors.New("non-string database name given")
+		err = errors.New("non-string database name given")
+		logger.Error("failed", err)
+		return "", err
 	}
 
-	logger.Info("vcap-services.success")
+	logger.Info("done")
 	return db.NewDSN(username, password, database, hostname, port), nil
 }
