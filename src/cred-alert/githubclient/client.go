@@ -61,7 +61,20 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 }
 
 func (c *client) ArchiveLink(owner, repo string, ref string) (*url.URL, error) {
-	return url.Parse(urljoiner.Join(c.baseURL, "repos", owner, repo, "zipball", ref))
+	reqUrl := urljoiner.Join(c.baseURL, "repos", owner, repo, "zipball", ref)
+
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp *http.Response
+	resp, err = c.httpClient.Transport.RoundTrip(req)
+	if err != nil || resp.StatusCode != http.StatusFound {
+		return nil, err
+	}
+
+	return url.Parse(resp.Header.Get("Location"))
 }
 
 type commit struct {

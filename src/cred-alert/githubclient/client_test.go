@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/ghttp"
-	"code.cloudfoundry.org/lager/lagertest"
 
 	"cred-alert/githubclient"
 	"cred-alert/metrics"
@@ -36,7 +36,9 @@ var _ = Describe("Client", func() {
 			"X-RateLimit-Reset":     []string{"1467645800"},
 		}
 		fakeEmitter = new(metricsfakes.FakeEmitter)
-		httpClient := &http.Client{}
+		httpClient := &http.Client{
+			Transport: &http.Transport{},
+		}
 
 		logger = lagertest.NewTestLogger("client")
 
@@ -211,10 +213,22 @@ var _ = Describe("Client", func() {
 	})
 
 	Describe("GetArchiveLink", func() {
+		zipLocation := "https://github.example.com/there/is/a/file/here.zip"
+		BeforeEach(func() {
+			header.Set("Location", zipLocation)
+		})
+
 		It("returns a download link", func() {
-			url, err := client.ArchiveLink("owner", "repo", "ref")
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball/abcdef"),
+					ghttp.RespondWith(http.StatusFound, "", header),
+				),
+			)
+
+			url, err := client.ArchiveLink("owner", "repo", "abcdef")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(url.String()).To(Equal(server.URL() + "/repos/owner/repo/zipball/ref"))
+			Expect(url.String()).To(Equal(zipLocation))
 		})
 	})
 })
