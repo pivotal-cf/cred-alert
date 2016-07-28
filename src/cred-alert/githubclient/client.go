@@ -3,7 +3,6 @@ package githubclient
 import (
 	"cred-alert/metrics"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/gunk/urljoiner"
 	"github.com/google/go-github/github"
-	"code.cloudfoundry.org/lager"
 )
 
 const DefaultGitHubURL = "https://api.github.com/"
@@ -50,64 +49,15 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 	logger.Info("starting")
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
-	request, _ := http.NewRequest("GET", url, nil)
-	request.Header.Set("Accept", "application/vnd.github.diff")
-	response, err := c.httpClient.Do(request)
+
+	body, err := c.responseBodyFrom(logger, url, map[string]string{"Accept": "application/vnd.github.diff"})
 	if err != nil {
 		logger.Error("failed", err)
 		return "", err
-	}
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		logger.Error("failed", err)
-		return "", err
-	}
-
-	if response.StatusCode != http.StatusOK {
-		err := errors.New("status code not 200")
-		logger.Error("unexpected-status-code", err, lager.Data{
-			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
-			"body":   string(body),
-		})
-
-		logger.Error("failed", err)
-		return "", err
-	}
-
-	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
-		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
 	}
 
 	logger.Info("done")
 	return string(body), nil
-}
-
-func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) (github.Rate, error) {
-	logger = logger.Session("rate-from-response")
-	logger.Info("starting")
-
-	header := response.Header
-	reset, err := strconv.ParseInt(header.Get("X-Ratelimit-Reset"), 10, 64)
-	if err != nil {
-		logger.Error("failed", err)
-		return github.Rate{}, err
-	}
-
-	timestamp := github.Timestamp{Time: time.Unix(reset, 0)}
-
-	remain, err := strconv.Atoi(header.Get("X-Ratelimit-Remaining"))
-	if err != nil {
-		logger.Error("failed", err)
-		return github.Rate{}, err
-	}
-
-	logger.Info("done")
-	return github.Rate{
-		Remaining: remain,
-		Reset:     timestamp,
-	}, nil
 }
 
 func (c *client) ArchiveLink(owner, repo string, ref string) (*url.URL, error) {
@@ -136,26 +86,10 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 	logger.Info("starting")
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "commits", sha)
-	request, _ := http.NewRequest("GET", url, nil)
-	response, err := c.httpClient.Do(request)
+
+	body, err := c.responseBodyFrom(logger, url, map[string]string{})
 	if err != nil {
 		logger.Error("failed", err)
-		return CommitInfo{}, err
-	}
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		logger.Error("failed", err)
-		return CommitInfo{}, err
-	}
-
-	if response.StatusCode != http.StatusOK {
-		err := fmt.Errorf("bad response (!200): %d", response.StatusCode)
-		logger.Error("failed", err, lager.Data{
-			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
-			"body":   string(body),
-		})
 		return CommitInfo{}, err
 	}
 
@@ -169,13 +103,75 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 		parentShas = append(parentShas, parent.SHA)
 	}
 
-	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
-		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
-	}
-
 	logger.Info("done")
 	return CommitInfo{
 		Message: commitResponse.Commit.Message,
 		Parents: parentShas,
 	}, nil
+}
+
+func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) (github.Rate, error) {
+	logger = logger.Session("rate-from-response")
+	logger.Info("starting")
+
+	header := response.Header
+	reset, err := strconv.ParseInt(header.Get("X-Ratelimit-Reset"), 10, 64)
+	if err != nil {
+		logger.Error("failed", err)
+		return github.Rate{}, err
+	}
+
+	timestamp := github.Timestamp{Time: time.Unix(reset, 0)}
+
+	remain, err := strconv.Atoi(header.Get("X-Ratelimit-Remaining"))
+	if err != nil {
+		logger.Error("failed", err)
+		return github.Rate{}, err
+	}
+
+	logger.Info("done")
+	return github.Rate{
+		Remaining: remain,
+		Reset:     timestamp,
+	}, nil
+}
+
+func (c *client) responseBodyFrom(logger lager.Logger, url string, headers map[string]string) ([]byte, error) {
+	logger = logger.Session("response-body-from")
+	logger.Info("starting", lager.Data{"url": url})
+
+	request, _ := http.NewRequest("GET", url, nil)
+
+	for headerName, headerValue := range headers {
+		request.Header.Set(headerName, headerValue)
+	}
+
+	response, err := c.httpClient.Do(request)
+	if err != nil {
+		logger.Error("failed", err)
+		return []byte{}, err
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		logger.Error("failed", err)
+		return []byte{}, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		err := fmt.Errorf("bad response (!200): %d", response.StatusCode)
+		logger.Error("failed", err, lager.Data{
+			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
+			"body":   body,
+		})
+		return []byte{}, err
+	}
+
+	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
+		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
+	}
+
+	logger.Info("done")
+	return body, nil
 }
