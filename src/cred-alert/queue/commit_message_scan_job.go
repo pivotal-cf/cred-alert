@@ -46,7 +46,7 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 		"task-id":    j.id,
 	})
 
-	logger.Info("start")
+	logger.Info("starting")
 
 	textScanner := textscanner.New(j.Message)
 

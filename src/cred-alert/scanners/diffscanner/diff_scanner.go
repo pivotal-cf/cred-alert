@@ -86,6 +86,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 	nextLineNumber := d.currentLineNumber + 1
 
 	if !isInHeader(nextLineNumber, d.currentHunk) {
+		logger.Info("not-in-header")
 		logger.Info("done")
 		return
 	}
@@ -105,6 +106,8 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 		// the hunk header exists immeidately before the first line
 		d.currentLineNumber = startLine - 1
 	}
+
+	logger.Info("done")
 }
 
 func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
