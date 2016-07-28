@@ -3,6 +3,7 @@
 
 gosub list \
   -a cred-alert/cmd/cred-alert-cli \
+  -t cred-alert/cmd/cred-alert-cli \
   -a cred-alert/cmd/cred-alert-ingestor \
   -a cred-alert/cmd/cred-alert-worker \
   -a teamstr/cmd/teamstr \

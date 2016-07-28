@@ -96,3 +96,7 @@
 	path = src/github.com/rakyll/magicmime
 	url = https://github.com/rakyll/magicmime
 	branch = master
+[submodule "src/github.com/cloudfoundry/archiver"]
+	path = src/github.com/cloudfoundry/archiver
+	url = https://github.com/cloudfoundry/archiver
+	branch = master
