@@ -115,7 +115,7 @@ var _ = Describe("Client", func() {
 
 				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
 				Expect(err).To(HaveOccurred())
-				Expect(logger).To(gbytes.Say("fetching-parents.unexpected-status-code"))
+				Expect(logger).To(gbytes.Say("commit-info.failed"))
 			})
 		})
 
@@ -131,7 +131,7 @@ var _ = Describe("Client", func() {
 				server = nil
 				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
 				Expect(err).To(HaveOccurred())
-				Expect(logger).To(gbytes.Say("fetching-parents.failed"))
+				Expect(logger).To(gbytes.Say("commit-info.failed"))
 			})
 		})
 
@@ -146,7 +146,7 @@ var _ = Describe("Client", func() {
 
 				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
 				Expect(err).To(HaveOccurred())
-				Expect(logger).To(gbytes.Say("fetching-parents.failed"))
+				Expect(logger).To(gbytes.Say("commit-info.failed"))
 			})
 		})
 

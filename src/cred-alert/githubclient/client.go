@@ -72,6 +72,7 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 			"body":   string(body),
 		})
 
+		logger.Error("failed", err)
 		return "", err
 	}
 
@@ -84,12 +85,13 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 }
 
 func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) (github.Rate, error) {
-	logger = logger.Session("compare-refs")
+	logger = logger.Session("rate-from-response")
+	logger.Info("starting")
 
 	header := response.Header
 	reset, err := strconv.ParseInt(header.Get("X-Ratelimit-Reset"), 10, 64)
 	if err != nil {
-		logger.Error("Error getting rate limit form header", err)
+		logger.Error("failed", err)
 		return github.Rate{}, err
 	}
 
@@ -97,10 +99,11 @@ func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) 
 
 	remain, err := strconv.Atoi(header.Get("X-Ratelimit-Remaining"))
 	if err != nil {
-		logger.Error("Error getting rate limit from header.", err)
+		logger.Error("failed", err)
 		return github.Rate{}, err
 	}
 
+	logger.Info("done")
 	return github.Rate{
 		Remaining: remain,
 		Reset:     timestamp,
@@ -125,11 +128,12 @@ var commitResponse struct {
 }
 
 func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (CommitInfo, error) {
-	logger = logger.Session("fetching-parents", lager.Data{
+	logger = logger.Session("commit-info", lager.Data{
 		"Owner": owner,
 		"Repo":  repo,
 		"SHA":   sha,
 	})
+	logger.Info("starting")
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "commits", sha)
 	request, _ := http.NewRequest("GET", url, nil)
@@ -142,13 +146,13 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		logger.Error("read-error", err)
+		logger.Error("failed", err)
 		return CommitInfo{}, err
 	}
 
 	if response.StatusCode != http.StatusOK {
-		err := errors.New("status code not 200")
-		logger.Error("unexpected-status-code", err, lager.Data{
+		err := fmt.Errorf("bad response (!200): %d", response.StatusCode)
+		logger.Error("failed", err, lager.Data{
 			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
 			"body":   string(body),
 		})
@@ -169,6 +173,7 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
 	}
 
+	logger.Info("done")
 	return CommitInfo{
 		Message: commitResponse.Commit.Message,
 		Parents: parentShas,
