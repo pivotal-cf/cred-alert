@@ -24,7 +24,6 @@ func NewCommitMessageJob(
 	emitter metrics.Emitter,
 	notifier notifications.Notifier,
 	plan CommitMessageScanPlan,
-	id string,
 ) *CommitMessageJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
@@ -33,7 +32,6 @@ func NewCommitMessageJob(
 		sniffer:               sniffer,
 		credentialCounter:     credentialCounter,
 		notifier:              notifier,
-		id:                    id,
 	}
 }
 
@@ -43,7 +41,6 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 		"repository": j.Repository,
 		"private":    j.Private,
 		"sha":        j.SHA,
-		"task-id":    j.id,
 	})
 
 	logger.Info("starting")

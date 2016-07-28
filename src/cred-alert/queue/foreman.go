@@ -70,6 +70,8 @@ func (f *foreman) BuildJob(task Task) (Job, error) {
 		return f.buildAncestryScan(task.ID(), task.Payload())
 	case TaskTypePushEvent:
 		return f.buildPushEventJob(task.ID(), task.Payload())
+	case TaskTypeCommitMessageScan:
+		return f.buildCommitMessageJob(task.Payload())
 	default:
 		return nil, fmt.Errorf("unknown task type: %s", task.Type())
 	}
@@ -87,6 +89,21 @@ func (f *foreman) buildPushEventJob(id, payload string) (*PushEventJob, error) {
 		id,
 		f.taskQueue,
 		f.commitRepository,
+	), nil
+}
+
+func (f *foreman) buildCommitMessageJob(payload string) (*CommitMessageJob, error) {
+	var plan CommitMessageScanPlan
+
+	if err := json.Unmarshal([]byte(payload), &plan); err != nil {
+		return nil, err
+	}
+
+	return NewCommitMessageJob(
+		f.sniffer,
+		f.emitter,
+		f.notifier,
+		plan,
 	), nil
 }
 

@@ -115,6 +115,35 @@ var _ = Describe("Foreman", func() {
 			ItHandlesBrokenJson()
 		})
 
+		Context("when the task is a CommitMessageScan", func() {
+			BeforeEach(func() {
+				task.TypeReturns(queue.TaskTypeCommitMessageScan)
+				task.PayloadReturns(`{
+					"owner":      "pivotal-cf",
+					"repository": "cred-alert",
+					"sha":        "abc124",
+					"message":    "commit message",
+					"private":    true
+				}`)
+			})
+
+			It("builds the job", func() {
+				genericJob, err := foreman.BuildJob(task)
+				Expect(err).NotTo(HaveOccurred())
+
+				job, ok := genericJob.(*queue.CommitMessageJob)
+				Expect(ok).To(BeTrue())
+
+				Expect(job.Owner).To(Equal("pivotal-cf"))
+				Expect(job.Repository).To(Equal("cred-alert"))
+				Expect(job.SHA).To(Equal("abc124"))
+				Expect(job.Message).To(Equal("commit message"))
+				Expect(job.Private).To(BeTrue())
+			})
+
+			ItHandlesBrokenJson()
+		})
+
 		Context("when the task is a AncestryScan", func() {
 			BeforeEach(func() {
 				task.TypeReturns(queue.TaskTypeAncestryScan)

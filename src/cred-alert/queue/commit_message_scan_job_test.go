@@ -58,7 +58,7 @@ var _ = Describe("Commit Message Scan Job", func() {
 		})
 
 		JustBeforeEach(func() {
-			job = queue.NewCommitMessageJob(sniffer, emitter, notifier, plan, taskId)
+			job = queue.NewCommitMessageJob(sniffer, emitter, notifier, plan)
 		})
 
 		It("logs basic info", func() {
@@ -70,7 +70,6 @@ var _ = Describe("Commit Message Scan Job", func() {
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"private":%v`, plan.Private)))
 			Expect(logger).To(gbytes.Say(plan.Repository))
 			Expect(logger).To(gbytes.Say(plan.SHA))
-			Expect(logger).To(gbytes.Say(taskId))
 		})
 
 		Context("When the message contains a credential", func() {
