@@ -1,10 +1,8 @@
 package main
 
 import (
-	"archive/tar"
-	"archive/zip"
 	"bufio"
-	"compress/gzip"
+	"cred-alert/archiveiterator"
 	"cred-alert/mimetype"
 	"cred-alert/scanners"
 	"cred-alert/scanners/filescanner"
@@ -16,8 +14,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jessevdk/go-flags"
 	"code.cloudfoundry.org/lager"
+
+	"github.com/jessevdk/go-flags"
 )
 
 type Opts struct {
@@ -59,69 +58,27 @@ func main() {
 }
 
 func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name string) {
+	logger = logger.WithData(lager.Data{"filename": name})
 	br := bufio.NewReader(r)
 	mime, ok := mimetype.IsArchive(br)
 	if ok {
-		switch mime {
-		case "application/zip":
-			r2, err := zip.OpenReader(name)
-			if err != nil {
-				log.Fatal(err.Error())
+		iterator := archiveiterator.NewIterator(logger, br, mime, name)
+
+		for {
+			entry, name := iterator.Next()
+			if entry == nil {
+				break
 			}
-			for i := range r2.File {
-				rc, err := r2.File[i].Open()
-				if err != nil {
-					logger.Error("failed-to-open-file", err, lager.Data{
-						"filename": name,
-						"mimetype": mime,
-					})
-					continue
-				}
-
-				if r2.File[i].FileInfo().IsDir() {
-					rc.Close()
-					continue
-				}
-
-				scanFile(logger, sniffer, rc, r2.File[i].Name)
-				rc.Close()
-			}
-		case "application/x-tar":
-			r2 := tar.NewReader(br)
-
-			for {
-				header, err := r2.Next()
-				if err != nil {
-					if err == io.EOF {
-						break
-					}
-
-					log.Fatal(err.Error())
-				}
-
-				if header.FileInfo().IsDir() {
-					continue
-				}
-
-				scanFile(logger, sniffer, r2, header.Name)
-			}
-		case "application/gzip", "application/x-gzip":
-			r2, err := gzip.NewReader(br)
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-
-			scanFile(logger, sniffer, r2, name)
-
-			r2.Close()
-		default:
-			panic(fmt.Sprintf("I don't know how to handle %s", mime))
+			scanFile(logger, sniffer, entry, name)
+			entry.Close()
 		}
-	}
 
-	if strings.Contains(mime, "text") {
-		scanner := filescanner.New(br, name)
-		sniffer.Sniff(logger, scanner, handleViolation)
+		iterator.Close()
+	} else {
+		if strings.Contains(mime, "text") {
+			scanner := filescanner.New(br, name)
+			sniffer.Sniff(logger, scanner, handleViolation)
+		}
 	}
 }
 
