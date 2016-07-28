@@ -94,7 +94,10 @@ RECUR:
 			goto RECUR
 		}
 
-		return rc, i.reader.File[i.cursor].Name
+		name := i.reader.File[i.cursor].Name
+		i.cursor++
+
+		return rc, name
 	}
 
 	return nil, ""
