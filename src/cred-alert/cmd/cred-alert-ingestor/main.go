@@ -103,7 +103,7 @@ func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
 	logger = logger.Session("create-queue")
 	logger.Info("starting")
 
-	if sqsValuesExist(opts) {
+	if sqsValuesExist(opts.AWS) {
 		logger.Info("done")
 		return createSqsQueue(logger, opts.AWS)
 	}
@@ -112,11 +112,11 @@ func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
 	return queue.NewNullQueue(logger), nil
 }
 
-func sqsValuesExist(opts Opts) bool {
-	if opts.AWS.AwsAccessKey != "" &&
-		opts.AWS.AwsSecretAccessKey != "" &&
-		opts.AWS.AwsRegion != "" &&
-		opts.AWS.SqsQueueName != "" {
+func sqsValuesExist(awsOpts AWSOpts) bool {
+	if awsOpts.AwsAccessKey != "" &&
+		awsOpts.AwsSecretAccessKey != "" &&
+		awsOpts.AwsRegion != "" &&
+		awsOpts.SqsQueueName != "" {
 
 		return true
 	}
