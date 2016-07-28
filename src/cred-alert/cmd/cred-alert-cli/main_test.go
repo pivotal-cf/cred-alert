@@ -121,7 +121,7 @@ var _ = Describe("Main", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					zipFilePath := path.Join(outDir, "out.zip")
-					err = zipit(filepath.Join(inDir, "/"), zipFilePath, "")
+					err = zipit(inDir, zipFilePath, "")
 					Expect(err).NotTo(HaveOccurred())
 
 					cmdArgs = []string{"-f", zipFilePath}
