@@ -29,6 +29,10 @@ var _ = Describe("Main", func() {
 		`
 	)
 
+	BeforeEach(func() {
+		stdin = nil
+	})
+
 	JustBeforeEach(func() {
 		cmd := exec.Command(cliPath, cmdArgs...)
 		if stdin != nil {
