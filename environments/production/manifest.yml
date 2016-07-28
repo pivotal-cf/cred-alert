@@ -12,7 +12,7 @@ applications:
   - cred-alert-production-logs
   env:
     IGNORED_REPOS: ".*-credentials,.*-resource-pool,.*-locks,.*-envs,deployments-.*"
-    DATA_DOG_ENVIRONMENT_TAG: "production"
+    ENVIRONMENT: "production"
 
 - name: cred-alert-worker-production
   instances: 1
@@ -27,4 +27,4 @@ applications:
   - cred-alert-mysql
   - cred-alert-production-logs
   env:
-    DATA_DOG_ENVIRONMENT_TAG: "production"
+    ENVIRONMENT: "production"

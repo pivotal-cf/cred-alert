@@ -6,13 +6,15 @@ import (
 	"net/http/pprof"
 	"os"
 
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+
+	"code.cloudfoundry.org/lager"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/contraband/zest"
 	"github.com/jessevdk/go-flags"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"code.cloudfoundry.org/lager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
@@ -38,10 +40,11 @@ type Opts struct {
 		WebhookToken string `short:"w" long:"webhook-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_KEY" value-name:"TOKEN" required:"true"`
 	} `group:"GitHub Options"`
 
-	Datadog struct {
-		APIKey      string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATA_DOG_API_KEY" value-name:"KEY"`
-		Environment string `long:"datadog-environment" description:"environment tag for datadog" env:"DATA_DOG_ENVIRONMENT_TAG" value-name:"NAME" default:"development"`
-	} `group:"Datadog Options"`
+	Metrics struct {
+		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
+		YellerAPIKey  string `long:"yeller-api-key" description:"key to emit to yeller" env:"YELLER_API_KEY" value-name:"KEY"`
+		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
+	} `group:"Metrics Options"`
 
 	AWS AWSOpts `group:"AWS Options"`
 }
@@ -51,6 +54,12 @@ func main() {
 
 	logger := lager.NewLogger("cred-alert-ingestor")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
+
+	if opts.Metrics.YellerAPIKey != "" {
+		sink := zest.NewYellerSink(opts.Metrics.YellerAPIKey, opts.Metrics.Environment)
+		logger.RegisterSink(sink)
+	}
+
 	logger.Info("starting")
 
 	_, err := flags.ParseArgs(&opts, os.Args)
@@ -65,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	emitter := metrics.BuildEmitter(opts.Datadog.APIKey, opts.Datadog.Environment)
+	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
 	generator := queue.NewGenerator()
 

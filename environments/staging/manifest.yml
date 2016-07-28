@@ -12,7 +12,7 @@ applications:
   - cred-alert-staging-logs
   env:
     IGNORED_REPOS: ".*-credentials$"
-    DATA_DOG_ENVIRONMENT_TAG: "staging"
+    ENVIRONMENT: "staging"
 
 - name: cred-alert-worker-staging
   instances: 1
@@ -27,4 +27,4 @@ applications:
   - cred-alert-staging-logs
   - cred-alert-mysql
   env:
-    DATA_DOG_ENVIRONMENT_TAG: "staging"
+    ENVIRONMENT: "staging"
