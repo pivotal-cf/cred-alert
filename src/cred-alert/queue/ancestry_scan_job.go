@@ -53,7 +53,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 
 	if isRegistered {
 		logger.Info("known-commit")
-		logger.Info("done")
+		logger.Debug("done")
 		return nil
 	}
 
@@ -70,7 +70,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 
 		logger.Info("max-depth-reached")
 		j.depthReachedCounter.Inc(logger)
-		logger.Info("done")
+		logger.Debug("done")
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 
@@ -139,7 +139,7 @@ func (j *AncestryScanJob) enqueueRefScan(logger lager.Logger) error {
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 
@@ -169,7 +169,7 @@ func (j *AncestryScanJob) enqueueAncestryScan(logger lager.Logger, sha string) e
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 
@@ -197,7 +197,7 @@ func (j *AncestryScanJob) enqueueDiffScan(logger lager.Logger, from string, to s
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 
@@ -224,7 +224,7 @@ func (j *AncestryScanJob) enqueueCommitMessageScan(logger lager.Logger, sha stri
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 

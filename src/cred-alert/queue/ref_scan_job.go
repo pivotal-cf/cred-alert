@@ -66,11 +66,11 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"task-id":    j.id,
 		"private":    j.Private,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	if j.Ref == initialCommitParentHash {
 		logger.Info("skipped-initial-nil-ref")
-		logger.Info("done")
+		logger.Debug("done")
 		return nil
 	}
 
@@ -126,7 +126,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		}
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 
 	return nil
 }
@@ -135,7 +135,7 @@ func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
 	logger.Info("download-archive", lager.Data{
 		"url": link.String(),
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	tempFile, err := ioutil.TempFile("", "downloaded-git-archive")
 	if err != nil {
@@ -156,7 +156,7 @@ func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
 		return nil, err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return tempFile, nil
 }
 
@@ -167,7 +167,7 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repo
 			"line-number": line.LineNumber,
 			"ref":         ref,
 		})
-		logger.Info("starting")
+		logger.Debug("starting")
 
 		err := j.notifier.SendNotification(logger, repoName, ref, line, j.Private)
 		if err != nil {
@@ -182,7 +182,7 @@ func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repo
 
 		j.credentialCounter.Inc(logger, tag)
 
-		logger.Info("done")
+		logger.Debug("done")
 		return nil
 	}
 }
@@ -204,7 +204,7 @@ func (j *RefScanJob) shouldSkip(logger lager.Logger, f *zip.File) bool {
 		return false
 	}
 	if numBytes <= 0 {
-		logger.Info("done")
+		logger.Debug("done")
 		return true
 	}
 	bytes := buf.Bytes()
@@ -216,10 +216,10 @@ func (j *RefScanJob) shouldSkip(logger lager.Logger, f *zip.File) bool {
 	}
 
 	if strings.HasPrefix(mime, "text") {
-		logger.Info("done")
+		logger.Debug("done")
 		return false
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return true
 }

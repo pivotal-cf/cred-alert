@@ -91,6 +91,6 @@ func (s *sniffer) Sniff(
 		}
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return result
 }

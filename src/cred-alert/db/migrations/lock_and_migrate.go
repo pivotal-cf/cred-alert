@@ -53,7 +53,7 @@ func LockDBAndMigrate(logger lager.Logger, driver, dbURI string) (*gorm.DB, erro
 		break
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 
 	return gorm.Open(driver, dbURI)
 }
@@ -80,7 +80,7 @@ func dbOpen(logger lager.Logger, driver, dbURI string) (*sql.DB, error) {
 		break
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return lockDB, err
 }
 

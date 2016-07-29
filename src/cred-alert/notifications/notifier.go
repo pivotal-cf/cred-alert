@@ -81,7 +81,7 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, repository string,
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 

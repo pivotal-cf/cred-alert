@@ -41,6 +41,6 @@ func (t *timer) Time(logger lager.Logger, work func(), tags ...string) {
 type nullTimer struct{}
 
 func (t *nullTimer) Time(logger lager.Logger, fn func(), tags ...string) {
-	logger.Session("time").Info("done")
+	logger.Session("time").Debug("done")
 	fn()
 }

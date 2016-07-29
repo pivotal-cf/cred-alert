@@ -79,7 +79,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 
@@ -104,7 +104,7 @@ func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, rep
 		}
 		j.credentialCounter.Inc(logger, tag)
 
-		logger.Info("done")
+		logger.Debug("done")
 		return nil
 	}
 }

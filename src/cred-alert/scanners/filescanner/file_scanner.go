@@ -37,7 +37,7 @@ func (s *fileScanner) Scan(logger lager.Logger) bool {
 		s.lineNumber++
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return success
 }
 
@@ -50,7 +50,7 @@ func (s *fileScanner) Line(logger lager.Logger) *scanners.Line {
 		"path":         path,
 	})
 	logger.Info("starting")
-	logger.Info("done")
+	logger.Debug("done")
 	return &scanners.Line{
 		Content:    s.bufioScanner.Text(),
 		LineNumber: lineNumber,

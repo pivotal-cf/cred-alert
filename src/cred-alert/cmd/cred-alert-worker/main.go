@@ -157,11 +157,11 @@ func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
 	logger.Info("starting")
 
 	if sqsValuesExist(opts.AWS) {
-		logger.Info("done")
+		logger.Debug("done")
 		return createSqsQueue(logger, opts.AWS)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return queue.NewNullQueue(logger), nil
 }
 
@@ -190,7 +190,7 @@ func createSqsQueue(logger lager.Logger, awsOpts AWSOpts) (queue.Queue, error) {
 		return nil, err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return queue, nil
 }
 
@@ -221,7 +221,7 @@ func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
 		uri = db.NewDSN(opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.DBName, opts.MySQL.Hostname, int(opts.MySQL.Port))
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return migrations.LockDBAndMigrate(logger, "mysql", uri)
 }
 
@@ -279,6 +279,6 @@ func createDbUriFromVCAP(logger lager.Logger) (string, error) {
 		return "", err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return db.NewDSN(username, password, database, hostname, port), nil
 }

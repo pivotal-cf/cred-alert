@@ -101,5 +101,5 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 		return
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 }

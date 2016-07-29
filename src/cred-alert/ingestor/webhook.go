@@ -63,6 +63,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("done")
+	h.logger.Debug("done")
 	w.WriteHeader(http.StatusOK)
 }

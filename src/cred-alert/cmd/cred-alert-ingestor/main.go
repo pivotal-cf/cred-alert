@@ -112,11 +112,11 @@ func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
 	logger.Info("starting")
 
 	if sqsValuesExist(opts.AWS) {
-		logger.Info("done")
+		logger.Debug("done")
 		return createSqsQueue(logger, opts.AWS)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return queue.NewNullQueue(logger), nil
 }
 
@@ -145,7 +145,7 @@ func createSqsQueue(logger lager.Logger, awsOpts AWSOpts) (queue.Queue, error) {
 		return nil, err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return queue, nil
 }
 

@@ -30,7 +30,7 @@ func hunkHeader(logger lager.Logger, rawLine string) (int, int, error) {
 
 	matches := hunkHeaderRegexp.FindStringSubmatch(rawLine)
 	if len(matches) < 3 {
-		logger.Info("done")
+		logger.Debug("done")
 		return 0, 0, errors.New("Not a hunk header")
 	}
 
@@ -51,7 +51,7 @@ func hunkHeader(logger lager.Logger, rawLine string) (int, int, error) {
 		}
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return startLine, length, nil
 }
 

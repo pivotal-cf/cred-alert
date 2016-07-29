@@ -53,7 +53,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID s
 
 		s.ignoredEventCounter.Inc(logger)
 
-		logger.Info("done")
+		logger.Debug("done")
 		return nil
 	}
 
@@ -80,6 +80,6 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID s
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }

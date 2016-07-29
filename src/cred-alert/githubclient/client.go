@@ -56,7 +56,7 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 		return "", err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return string(body), nil
 }
 
@@ -116,7 +116,7 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 		parentShas = append(parentShas, parent.SHA)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return CommitInfo{
 		Message: commitResponse.Commit.Message,
 		Parents: parentShas,
@@ -142,7 +142,7 @@ func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) 
 		return github.Rate{}, err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return github.Rate{
 		Remaining: remain,
 		Reset:     timestamp,
@@ -185,6 +185,6 @@ func (c *client) responseBodyFrom(logger lager.Logger, url string, headers map[s
 		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return body, nil
 }

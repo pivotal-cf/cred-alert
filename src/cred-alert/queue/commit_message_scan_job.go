@@ -53,7 +53,7 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 
 	return nil
 }

@@ -56,7 +56,7 @@ func (c *commitRepository) RegisterCommit(logger lager.Logger, commit *Commit) e
 		return err
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (c *commitRepository) IsCommitRegistered(logger lager.Logger, sha string) (
 		logger.Error("failed", err)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return len(commits) == 1, err
 }
 
@@ -88,7 +88,7 @@ func (c *commitRepository) IsRepoRegistered(logger lager.Logger, owner, reposito
 		logger.Error("failed", err)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return len(commits) == 1, err
 }
 
@@ -121,6 +121,6 @@ func (d *diffScanRepository) SaveDiffScan(logger lager.Logger, diffScan *DiffSca
 		logger.Error("failed", err)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return err
 }

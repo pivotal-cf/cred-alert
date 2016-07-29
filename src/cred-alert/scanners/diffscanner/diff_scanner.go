@@ -39,7 +39,7 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 
 		if d.cursor >= len(d.diff) {
 			logger.Debug("passed-last-line")
-			logger.Info("done")
+			logger.Debug("done")
 			return false
 		}
 
@@ -50,7 +50,7 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 		isContentLine = d.scanHunk(l, rawLine)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return true
 }
 
@@ -69,7 +69,7 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 		logger.Error("setting content to ''", err)
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return &scanners.Line{
 		Content:    content,
 		LineNumber: lineNumber,
@@ -85,7 +85,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 
 	if !isInHeader(nextLineNumber, d.currentHunk) {
 		logger.Info("not-in-header")
-		logger.Info("done")
+		logger.Debug("done")
 		return
 	}
 
@@ -105,7 +105,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 		d.currentLineNumber = startLine - 1
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 }
 
 func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
@@ -114,18 +114,18 @@ func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
 	nextLineNumber := d.currentLineNumber + 1
 
 	if isInHeader(nextLineNumber, d.currentHunk) {
-		logger.Info("done")
+		logger.Debug("done")
 		return false
 	}
 
 	if contextOrAddedLine(rawLine) {
 		logger.Debug("detected-content-line")
 		d.currentLineNumber = nextLineNumber
-		logger.Info("done")
+		logger.Debug("done")
 		return true
 	}
 
-	logger.Info("done")
+	logger.Debug("done")
 	return false
 }
 
