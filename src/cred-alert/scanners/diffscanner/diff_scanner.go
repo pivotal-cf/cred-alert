@@ -31,8 +31,8 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 	// read information about hunk
 	var isContentLine bool
 	for !isContentLine {
-		logger = logger.WithData(lager.Data{
-			"line-number": d.cursor,
+		l := logger.WithData(lager.Data{
+			"current-line-number": d.currentLineNumber,
 		})
 
 		d.cursor++
@@ -43,11 +43,11 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 			return false
 		}
 
-		logger.Debug("considering-line")
+		l.Debug("considering-line")
 		rawLine := d.diff[d.cursor]
 
-		d.scanHeader(logger, rawLine)
-		isContentLine = d.scanHunk(logger, rawLine)
+		d.scanHeader(l, rawLine)
+		isContentLine = d.scanHunk(l, rawLine)
 	}
 
 	logger.Info("done")
@@ -78,9 +78,7 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 }
 
 func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
-	logger = logger.Session("scan-header", lager.Data{
-		"current-line-number": d.currentLineNumber,
-	})
+	logger = logger.Session("scan-header")
 	logger.Info("starting")
 
 	nextLineNumber := d.currentLineNumber + 1
@@ -111,9 +109,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 }
 
 func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
-	logger = logger.Session("scan-hunk", lager.Data{
-		"current-line-number": d.currentLineNumber,
-	})
+	logger = logger.Session("scan-hunk")
 	logger.Info("starting")
 	nextLineNumber := d.currentLineNumber + 1
 
