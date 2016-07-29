@@ -111,8 +111,7 @@ func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath str
 			}
 			defer fh.Close()
 
-			scanner := filescanner.New(fh, fh.Name())
-			sniffer.Sniff(logger, scanner, handleViolation)
+			scanFile(logger, sniffer, fh, path)
 		}
 		return nil
 	}
