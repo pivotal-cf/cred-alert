@@ -6,9 +6,9 @@ import (
 	"cred-alert/queue/queuefakes"
 	"errors"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("PushEventJob", func() {
@@ -29,6 +29,7 @@ var _ = Describe("PushEventJob", func() {
 			Repository: "repo",
 			From:       "from",
 			To:         "to",
+			Private:    true,
 		}
 		id := "id"
 		job = queue.NewPushEventJob(plan, id, taskQueue, commitRepository)
@@ -56,6 +57,7 @@ var _ = Describe("PushEventJob", func() {
 					Owner:      "owner",
 					Repository: "repo",
 					Ref:        "from",
+					Private:    true,
 				}.Task("id")
 				actualTask := taskQueue.EnqueueArgsForCall(0)
 				Expect(actualTask).To(Equal(expectedTask))
@@ -103,6 +105,7 @@ var _ = Describe("PushEventJob", func() {
 				Repository: "repo",
 				SHA:        "to",
 				Depth:      queue.DefaultScanDepth,
+				Private:    true,
 			}.Task("id")
 			actualTask := taskQueue.EnqueueArgsForCall(1)
 			Expect(actualTask).To(Equal(expectedTask))

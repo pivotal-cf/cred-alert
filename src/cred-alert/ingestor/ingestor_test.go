@@ -82,6 +82,7 @@ var _ = Describe("Ingestor", func() {
 			Repository: "repo",
 			To:         "to",
 			From:       "from",
+			Private:    true,
 		}.Task("id-1")
 
 		builtTask := taskQueue.EnqueueArgsForCall(0)

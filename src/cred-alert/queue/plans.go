@@ -44,6 +44,7 @@ type PushEventPlan struct {
 	Repository string `json:"repository"`
 	From       string `json:"from"`
 	To         string `json:"to"`
+	Private    bool   `json:"private"`
 }
 
 func (p PushEventPlan) Task(id string) Task {
