@@ -24,7 +24,7 @@ func NewTimer(metric Metric) *timer {
 
 func (t *timer) Time(logger lager.Logger, work func(), tags ...string) {
 	logger = logger.Session("time")
-	logger.Info("starting")
+	logger.Debug("starting")
 	startTime := time.Now()
 
 	work()

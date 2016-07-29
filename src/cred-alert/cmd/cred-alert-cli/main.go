@@ -33,7 +33,7 @@ func main() {
 	}
 
 	logger := lager.NewLogger("cred-alert-cli")
-	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
+	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.INFO))
 
 	sniffer := sniff.NewDefaultSniffer()
 

@@ -33,7 +33,7 @@ func (m *metric) Update(logger lager.Logger, value float32, tags ...string) {
 		"environment": m.emitter.environment,
 		"value":       value,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	tagsWithEnv := append(tags, m.emitter.environment)
 	ddMetric := m.emitter.client.BuildMetric(m.metricType, m.name, value, tagsWithEnv...)

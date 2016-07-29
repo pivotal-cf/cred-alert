@@ -51,7 +51,7 @@ func NewSlackNotifier(webhookURL string) Notifier {
 
 func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
 	logger = logger.Session("send-notification")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	notification := n.buildNotification(repository, sha, line, private)
 

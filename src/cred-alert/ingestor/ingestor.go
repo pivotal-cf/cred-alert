@@ -44,7 +44,7 @@ func NewIngestor(
 
 func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID string) error {
 	logger = logger.Session("ingest-push-scan")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	if scan.Private && s.whitelist.IsIgnored(scan.Repository) {
 		logger.Info("ignoring-repo", lager.Data{

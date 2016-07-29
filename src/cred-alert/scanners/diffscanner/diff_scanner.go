@@ -26,7 +26,7 @@ func NewDiffScanner(diff string) *DiffScanner {
 
 func (d *DiffScanner) Scan(logger lager.Logger) bool {
 	logger = logger.Session("diff-scanner").Session("scan")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	// read information about hunk
 	var isContentLine bool
@@ -62,7 +62,7 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 		"liner-number": lineNumber,
 		"path":         path,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	content, err := diffContents(d.diff[d.cursor])
 	if err != nil {
@@ -79,7 +79,7 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 
 func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 	logger = logger.Session("scan-header")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	nextLineNumber := d.currentLineNumber + 1
 
@@ -110,7 +110,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 
 func (d *DiffScanner) scanHunk(logger lager.Logger, rawLine string) bool {
 	logger = logger.Session("scan-hunk")
-	logger.Info("starting")
+	logger.Debug("starting")
 	nextLineNumber := d.currentLineNumber + 1
 
 	if isInHeader(nextLineNumber, d.currentHunk) {

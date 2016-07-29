@@ -46,7 +46,7 @@ func NewClient(baseURL string, httpClient *http.Client, emitter metrics.Emitter)
 
 func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error) {
 	logger = logger.Session("compare-refs")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
 
@@ -96,7 +96,7 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 		"Repo":  repo,
 		"SHA":   sha,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "commits", sha)
 
@@ -125,7 +125,7 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 
 func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) (github.Rate, error) {
 	logger = logger.Session("rate-from-response")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	header := response.Header
 	reset, err := strconv.ParseInt(header.Get("X-Ratelimit-Reset"), 10, 64)

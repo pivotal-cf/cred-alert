@@ -55,7 +55,7 @@ func main() {
 	logger := lager.NewLogger("cred-alert-ingestor")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
@@ -109,7 +109,7 @@ func main() {
 
 func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
 	logger = logger.Session("create-queue")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	if sqsValuesExist(opts.AWS) {
 		logger.Debug("done")

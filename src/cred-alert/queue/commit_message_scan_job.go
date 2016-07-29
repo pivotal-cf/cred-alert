@@ -43,7 +43,7 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 		"sha":        j.SHA,
 	})
 
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	textScanner := textscanner.New(j.Message)
 

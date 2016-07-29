@@ -23,7 +23,7 @@ func Handler(logger lager.Logger, ingestor Ingestor, secretKey string) *handler 
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("starting")
+	h.logger.Debug("starting")
 
 	payload, err := github.ValidatePayload(r, h.secretKey)
 	if err != nil {

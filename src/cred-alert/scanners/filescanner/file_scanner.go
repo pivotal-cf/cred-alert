@@ -24,7 +24,7 @@ func New(r io.Reader, filename string) *fileScanner {
 
 func (s *fileScanner) Scan(logger lager.Logger) bool {
 	logger = logger.Session("file-scanner").Session("scan")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	success := s.bufioScanner.Scan()
 
@@ -49,7 +49,7 @@ func (s *fileScanner) Line(logger lager.Logger) *scanners.Line {
 		"liner-number": lineNumber,
 		"path":         path,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 	logger.Debug("done")
 	return &scanners.Line{
 		Content:    s.bufioScanner.Text(),

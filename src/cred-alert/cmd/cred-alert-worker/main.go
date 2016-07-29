@@ -80,7 +80,7 @@ func main() {
 		logger.RegisterSink(sink)
 	}
 
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
@@ -154,7 +154,7 @@ func main() {
 
 func createQueue(opts Opts, logger lager.Logger) (queue.Queue, error) {
 	logger = logger.Session("create-queue")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	if sqsValuesExist(opts.AWS) {
 		logger.Debug("done")
@@ -207,7 +207,7 @@ func debugHandler() http.Handler {
 
 func createDB(logger lager.Logger, opts Opts) (*gorm.DB, error) {
 	logger = logger.Session("create-db")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	var uri string
 	if os.Getenv("VCAP_SERVICES") != "" {

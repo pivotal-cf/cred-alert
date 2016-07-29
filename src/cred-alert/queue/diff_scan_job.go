@@ -49,7 +49,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		"task-id":    j.id,
 		"private":    j.Private,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	diff, err := j.githubClient.CompareRefs(logger, j.Owner, j.Repository, j.From, j.To)
 	if err != nil {

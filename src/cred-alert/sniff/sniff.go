@@ -4,8 +4,8 @@ import (
 	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 
-	"github.com/hashicorp/go-multierror"
 	"code.cloudfoundry.org/lager"
+	"github.com/hashicorp/go-multierror"
 )
 
 const bashStringInterpolationPattern = `["]\$`
@@ -71,7 +71,7 @@ func (s *sniffer) Sniff(
 	handleViolation func(scanners.Line) error,
 ) error {
 	logger = logger.Session("sniff")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	var result error
 

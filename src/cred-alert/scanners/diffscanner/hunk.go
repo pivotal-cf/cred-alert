@@ -26,7 +26,7 @@ func newHunk(path string, startLine int, length int) *Hunk {
 
 func hunkHeader(logger lager.Logger, rawLine string) (int, int, error) {
 	logger = logger.Session("hunk-header")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	matches := hunkHeaderRegexp.FindStringSubmatch(rawLine)
 	if len(matches) < 3 {

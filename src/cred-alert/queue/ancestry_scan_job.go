@@ -43,7 +43,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		"repo":    j.Repository,
 		"task-id": j.id,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	isRegistered, err := j.commitRepository.IsCommitRegistered(logger, j.SHA)
 	if err != nil {
@@ -124,7 +124,7 @@ func (j *AncestryScanJob) enqueueRefScan(logger lager.Logger) error {
 		"sha":        j.SHA,
 		"private":    j.Private,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	task := RefScanPlan{
 		Owner:      j.Owner,
@@ -153,7 +153,7 @@ func (j *AncestryScanJob) enqueueAncestryScan(logger lager.Logger, sha string) e
 		"depth":      depth,
 		"private":    j.Private,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	task := AncestryScanPlan{
 		Owner:      j.Owner,
@@ -181,7 +181,7 @@ func (j *AncestryScanJob) enqueueDiffScan(logger lager.Logger, from string, to s
 		"to":         to,
 		"private":    j.Private,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	task := DiffScanPlan{
 		Owner:      j.Owner,
@@ -208,7 +208,7 @@ func (j *AncestryScanJob) enqueueCommitMessageScan(logger lager.Logger, sha stri
 		"private":    j.Private,
 		"sha":        sha,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	task := CommitMessageScanPlan{
 		Owner:      j.Owner,

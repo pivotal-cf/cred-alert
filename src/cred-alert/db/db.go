@@ -48,7 +48,7 @@ func (c *commitRepository) RegisterCommit(logger lager.Logger, commit *Commit) e
 		"repository": commit.Repository,
 		"sha":        commit.SHA,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	err := c.db.Save(commit).Error
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *commitRepository) IsCommitRegistered(logger lager.Logger, sha string) (
 	logger = logger.Session("finding-commit", lager.Data{
 		"sha": sha,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	var commits []Commit
 	err := c.db.Where("SHA = ?", sha).First(&commits).Error
@@ -80,7 +80,7 @@ func (c *commitRepository) IsRepoRegistered(logger lager.Logger, owner, reposito
 	logger = logger.Session("finding-repo", lager.Data{
 		"repository": repository,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	var commits []Commit
 	err := c.db.Where(&Commit{Owner: owner, Repository: repository}).First(&commits).Error
@@ -114,7 +114,7 @@ func (d *diffScanRepository) SaveDiffScan(logger lager.Logger, diffScan *DiffSca
 		"to-commit":        diffScan.ToCommit,
 		"credential-found": diffScan.CredentialFound,
 	})
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	err := d.db.Save(diffScan).Error
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 
 func LockDBAndMigrate(logger lager.Logger, driver, dbURI string) (*gorm.DB, error) {
 	logger = logger.Session("lock-db-and-migrate")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	lockDB, err := dbOpen(logger, driver, dbURI)
 	if err != nil {
@@ -63,7 +63,7 @@ func dbOpen(logger lager.Logger, driver, dbURI string) (*sql.DB, error) {
 	var lockDB *sql.DB
 
 	logger = logger.Session("db-open")
-	logger.Info("starting")
+	logger.Debug("starting")
 
 	for {
 		lockDB, err = sql.Open(driver, dbURI)
