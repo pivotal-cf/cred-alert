@@ -45,4 +45,5 @@ RECUR:
 	return ioutil.NopCloser(i.r), header.Name
 }
 
-func (i *tarIterator) Close() {}
+func (i *tarIterator) Close()       {}
+func (i *tarIterator) Name() string { return "tar" }

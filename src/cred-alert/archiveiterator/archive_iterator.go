@@ -9,6 +9,7 @@ import (
 )
 
 type ArchiveIterator interface {
+	Name() string
 	Next() (io.ReadCloser, string)
 	Close()
 }
@@ -18,6 +19,8 @@ type NopIterator struct{}
 func (i *NopIterator) Next() (io.ReadCloser, string) {
 	return nil, ""
 }
+
+func (i *NopIterator) Name() string { return "nop" }
 
 func (i *NopIterator) Close() {}
 

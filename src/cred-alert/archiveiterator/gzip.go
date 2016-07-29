@@ -38,7 +38,10 @@ func (i *gzipIterator) Next() (io.ReadCloser, string) {
 		})
 		return nil, i.name
 	}
+
 	return reader, i.name
 }
 
 func (i *gzipIterator) Close() {}
+
+func (i *gzipIterator) Name() string { return "gzip" }
