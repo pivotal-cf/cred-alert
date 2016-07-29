@@ -28,6 +28,7 @@ func (i *gzipIterator) Next() (io.ReadCloser, string) {
 		i.logger.Error("failed-to-create-gzip-reader", err, lager.Data{
 			"filename": i.name,
 		})
+		return nil, i.name
 	}
 	return reader, i.name
 }
