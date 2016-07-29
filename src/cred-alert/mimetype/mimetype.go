@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 
+	"code.cloudfoundry.org/lager"
+
 	"github.com/rakyll/magicmime"
 )
 
@@ -31,14 +33,16 @@ func init() {
 	}
 }
 
-func IsArchive(r *bufio.Reader) (string, bool) {
+func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
 	if r == nil {
 		return "", false
 	}
 
 	bs, err := r.Peek(512)
 	if err != nil && err != io.EOF {
-		log.Fatalf("failed to peek: %#v, bs: %s", err, string(bs))
+		logger.Error("failed-to-peek", err, lager.Data{
+			"bytes": string(bs),
+		})
 	}
 
 	if len(bs) == 0 {
@@ -47,7 +51,7 @@ func IsArchive(r *bufio.Reader) (string, bool) {
 
 	mime, err := decoder.TypeByBuffer(bs)
 	if err != nil {
-		log.Fatalf("failed to get mimetype: %s", err.Error())
+		logger.Error("failed-to-get-mimetype", err)
 	}
 
 	for _, mimetype := range archiveMimetypes {

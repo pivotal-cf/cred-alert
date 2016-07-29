@@ -64,7 +64,7 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name stri
 	})
 
 	br := bufio.NewReader(r)
-	mime, ok := mimetype.IsArchive(br)
+	mime, ok := mimetype.IsArchive(logger, br)
 	ancestors = append(ancestors, fmt.Sprintf(`%s (%s)`, name, mime))
 
 	if ok {
