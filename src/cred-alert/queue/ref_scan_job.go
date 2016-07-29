@@ -102,9 +102,9 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	logger.Info("scanning-unzipped-files")
 
 	for _, f := range archiveReader.File {
-		logger = logger.Session("archive-reader-file", lager.Data{"filename": f.Name})
+		l := logger.Session("archive-reader-file", lager.Data{"filename": f.Name})
 
-		if j.shouldSkip(logger, f) {
+		if j.shouldSkip(l, f) {
 			logger.Info("skipped")
 			continue
 		}
@@ -117,16 +117,17 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		defer unzippedReader.Close()
 
 		bufioScanner := filescanner.New(unzippedReader, f.Name)
-		handleViolation := j.createHandleViolation(logger, j.Ref, j.Owner+"/"+j.Repository)
+		handleViolation := j.createHandleViolation(l, j.Ref, j.Owner+"/"+j.Repository)
 
-		err = j.sniffer.Sniff(logger, bufioScanner, handleViolation)
+		err = j.sniffer.Sniff(l, bufioScanner, handleViolation)
 		if err != nil {
-			logger.Error("failed", err)
+			l.Error("failed", err)
 			return err
 		}
 	}
 
 	logger.Info("done")
+
 	return nil
 }
 
