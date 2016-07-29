@@ -55,17 +55,17 @@ func main() {
 	logger := lager.NewLogger("cred-alert-ingestor")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
-	if opts.Metrics.YellerAPIKey != "" {
-		sink := zest.NewYellerSink(opts.Metrics.YellerAPIKey, opts.Metrics.Environment)
-		logger.RegisterSink(sink)
-	}
-
 	logger.Info("starting")
 
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
 		logger.Fatal("failed", err)
 		os.Exit(1)
+	}
+
+	if opts.Metrics.YellerAPIKey != "" {
+		sink := zest.NewYellerSink(opts.Metrics.YellerAPIKey, opts.Metrics.Environment)
+		logger.RegisterSink(sink)
 	}
 
 	taskQueue, err := createQueue(opts, logger)
