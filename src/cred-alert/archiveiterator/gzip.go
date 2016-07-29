@@ -23,6 +23,14 @@ func NewGzipIterator(logger lager.Logger, br *bufio.Reader, name string) Archive
 }
 
 func (i *gzipIterator) Next() (io.ReadCloser, string) {
+	if i.br == nil {
+		return nil, ""
+	}
+
+	defer func() {
+		i.br = nil
+	}()
+
 	reader, err := gzip.NewReader(i.br)
 	if err != nil {
 		i.logger.Error("failed-to-create-gzip-reader", err, lager.Data{

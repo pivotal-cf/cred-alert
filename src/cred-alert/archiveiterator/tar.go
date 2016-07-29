@@ -22,9 +22,14 @@ func NewTarIterator(logger lager.Logger, br *bufio.Reader) ArchiveIterator {
 }
 
 func (i *tarIterator) Next() (io.ReadCloser, string) {
+	if i.r == nil {
+		return nil, ""
+	}
+
 RECUR:
 	header, err := i.r.Next()
 	if err == io.EOF {
+		i.r = nil
 		return nil, ""
 	}
 

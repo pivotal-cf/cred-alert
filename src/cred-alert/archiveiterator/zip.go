@@ -105,4 +105,5 @@ RECUR:
 
 func (i *zipIterator) Close() {
 	i.reader.Close()
+	i.reader = nil
 }
