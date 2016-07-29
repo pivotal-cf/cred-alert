@@ -50,17 +50,23 @@ func main() {
 			log.Fatalf("Failed to open file: %s", err.Error())
 		}
 		defer f.Close()
-		scanFile(logger, sniffer, f, f.Name())
+		scanFile(logger, sniffer, f, f.Name(), []string{})
 		os.Exit(0)
 	}
 
-	scanFile(logger, sniffer, os.Stdin, "STDIN")
+	scanFile(logger, sniffer, os.Stdin, "STDIN", []string{})
 }
 
-func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name string) {
-	logger = logger.WithData(lager.Data{"filename": name})
+func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name string, ancestors []string) {
+	logger = logger.WithData(lager.Data{
+		"filename":  name,
+		"ancestors": ancestors,
+	})
+
 	br := bufio.NewReader(r)
 	mime, ok := mimetype.IsArchive(br)
+	ancestors = append(ancestors, fmt.Sprintf(`%s (%s)`, name, mime))
+
 	if ok {
 		iterator := archiveiterator.NewIterator(logger, br, mime, name)
 
@@ -69,7 +75,7 @@ func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name stri
 			if entry == nil {
 				break
 			}
-			scanFile(logger, sniffer, entry, name)
+			scanFile(logger, sniffer, entry, name, ancestors)
 			entry.Close()
 		}
 
