@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"cred-alert/archiveiterator"
+	"bytes"
 	"cred-alert/mimetype"
 	"cred-alert/scanners"
 	"cred-alert/scanners/filescanner"
@@ -10,9 +10,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"code.cloudfoundry.org/lager"
 
@@ -23,6 +26,8 @@ type Opts struct {
 	Directory string `short:"d" long:"directory" description:"the directory to scan" value-name:"DIR"`
 	File      string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
 }
+
+var sniffer = sniff.NewDefaultSniffer()
 
 func main() {
 	var opts Opts
@@ -35,55 +40,56 @@ func main() {
 	logger := lager.NewLogger("cred-alert-cli")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.INFO))
 
-	sniffer := sniff.NewDefaultSniffer()
+	if opts.Directory != "" || opts.File != "" {
+		destination := filepath.Join(os.TempDir(), fmt.Sprintf("%d", time.Now().Unix()))
+		defer os.RemoveAll(destination)
 
-	if opts.Directory != "" {
-		scanDirectory(logger, sniffer, opts.Directory)
-		os.Exit(0)
-	}
-
-	var f *os.File
-	if opts.File != "" {
-		var err error
-		f, err = os.Open(opts.File)
-		if err != nil {
-			log.Fatalf("Failed to open file: %s", err.Error())
+		switch {
+		case opts.Directory != "":
+			handlePath(logger, opts.Directory, destination)
+		case opts.File != "":
+			handlePath(logger, opts.File, destination)
 		}
-		defer f.Close()
-		scanFile(logger, sniffer, f, f.Name(), []string{})
+
 		os.Exit(0)
 	}
 
-	scanFile(logger, sniffer, os.Stdin, "STDIN", []string{})
+	scanFile(logger, os.Stdin, "STDIN")
 }
 
-func scanFile(logger lager.Logger, sniffer sniff.Sniffer, r io.Reader, name string, ancestors []string) {
-	logger = logger.WithData(lager.Data{
-		"filename":  name,
-		"ancestors": ancestors,
-	})
+func extractFile(mime, path, destination string) {
+	err := os.MkdirAll(destination, 0755)
+	if err != nil {
+		panic(err.Error())
+	}
 
-	br := bufio.NewReader(r)
-	mime, ok := mimetype.IsArchive(logger, br)
-	ancestors = append(ancestors, fmt.Sprintf(`%s (%s)`, name, mime))
-
-	if ok {
-		iterator := archiveiterator.NewIterator(logger, br, mime, name)
-		defer iterator.Close()
-
-		for {
-			entry, name := iterator.Next()
-			if entry == nil {
-				break
-			}
-			scanFile(logger, sniffer, entry, name, ancestors)
-			entry.Close()
+	var cmd *exec.Cmd
+	switch mime {
+	case "application/zip":
+		println(path)
+		cmd = exec.Command("unzip", path, "-d", destination)
+	case "application/x-tar":
+		cmd = exec.Command("tar", "xf", path, "-C", destination)
+	case "application/gzip", "application/x-gzip":
+		fileName := filepath.Base(path)
+		fileNameWithoutExt := fileName[:len(fileName)-len(filepath.Ext(fileName))]
+		output, err := os.Create(filepath.Join(destination, fileNameWithoutExt))
+		if err != nil {
+			panic(err.Error())
 		}
-	} else {
-		if strings.Contains(mime, "text") {
-			scanner := filescanner.New(br, name)
-			sniffer.Sniff(logger, scanner, handleViolation)
-		}
+		defer output.Close()
+
+		cmd = exec.Command("gunzip", "-c", path)
+		cmd.Stdout = output
+	default:
+		panic(fmt.Sprintf("don't know how to extract %s", mime))
+	}
+
+	buf := &bytes.Buffer{}
+	cmd.Stderr = buf
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf("failed-to-run-cmd: %s\nStderr:\n%s\n", err.Error(), buf.String())
 	}
 }
 
@@ -93,7 +99,54 @@ func handleViolation(line scanners.Line) error {
 	return nil
 }
 
-func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath string) {
+func handlePath(logger lager.Logger, path, directoryPath string) {
+	fi, err := os.Lstat(path)
+	if err != nil {
+		panic("could not lstat")
+	}
+
+	if fi.IsDir() {
+		scanDirectory(logger, sniffer, path)
+	} else {
+		fh, err := os.Open(path)
+		if err != nil {
+			panic(err.Error())
+		}
+		br := bufio.NewReader(fh)
+		mime, ok := mimetype.IsArchive(logger, br)
+		if ok {
+			archiveName := filepath.Base(fh.Name())
+			destinationDir := filepath.Join(directoryPath, archiveName)
+			extractFile(mime, fh.Name(), destinationDir)
+			scanDirectory(logger, sniffer, destinationDir)
+		} else {
+			if strings.Contains(mime, "text") {
+				scanFile(logger, br, fh.Name())
+			}
+		}
+	}
+}
+
+func scanFile(logger lager.Logger, f io.Reader, name string) {
+	scanner := filescanner.New(f, name)
+	sniffer.Sniff(logger, scanner, handleViolation)
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randSeq(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func scanDirectory(
+	logger lager.Logger,
+	sniffer sniff.Sniffer,
+	directoryPath string,
+) {
 	stat, err := os.Stat(directoryPath)
 	if err != nil {
 		log.Fatalf("Cannot read directory %s\n", directoryPath)
@@ -105,13 +158,17 @@ func scanDirectory(logger lager.Logger, sniffer sniff.Sniffer, directoryPath str
 
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
+			if !info.Mode().IsRegular() {
+				return nil
+			}
+
 			fh, err := os.Open(path)
 			if err != nil {
 				return err
 			}
 			defer fh.Close()
 
-			scanFile(logger, sniffer, fh, path)
+			handlePath(logger, path, directoryPath+randSeq(6))
 		}
 		return nil
 	}
