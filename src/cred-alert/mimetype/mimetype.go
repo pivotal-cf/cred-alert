@@ -17,7 +17,6 @@ type Decoder interface {
 	TypeByBuffer([]byte) (string, error)
 }
 
-var decoder *magicmime.Decoder
 var archiveMimetypes = []string{
 	"application/x-gzip",
 	"application/gzip",
@@ -26,8 +25,7 @@ var archiveMimetypes = []string{
 }
 
 func init() {
-	var err error
-	decoder, err = magicmime.NewDecoder(magicmime.MAGIC_MIME_TYPE | magicmime.MAGIC_SYMLINK | magicmime.MAGIC_ERROR)
+	err := magicmime.Open(magicmime.MAGIC_MIME_TYPE | magicmime.MAGIC_SYMLINK | magicmime.MAGIC_ERROR)
 	if err != nil {
 		log.Fatalf("failed to make new decoder: %s", err.Error())
 	}
@@ -49,7 +47,7 @@ func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
 		return "", false
 	}
 
-	mime, err := decoder.TypeByBuffer(bs)
+	mime, err := magicmime.TypeByBuffer(bs)
 	if err != nil {
 		logger.Error("failed-to-get-mimetype", err)
 	}
