@@ -18,3 +18,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends libmagic-dev && \
     apt-get clean && apt-get autoremove --purge && \
     rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends unzip && \
+    apt-get clean && apt-get autoremove --purge && \
+    rm -rf /var/lib/apt/lists/*
