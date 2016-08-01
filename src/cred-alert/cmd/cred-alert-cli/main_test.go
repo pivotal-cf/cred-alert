@@ -240,7 +240,11 @@ func zipit(source, target, prefix string) error {
 			return err
 		}
 
-		header.Name = strings.TrimPrefix(path, source)
+		relpath, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		header.Name = strings.TrimPrefix(relpath, source)
 
 		if info.IsDir() {
 			header.Name += string(os.PathSeparator)
