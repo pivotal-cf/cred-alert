@@ -59,8 +59,8 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 	path := d.currentHunk.path
 
 	logger = logger.Session("line", lager.Data{
-		"liner-number": lineNumber,
-		"path":         path,
+		"line-number": lineNumber,
+		"path":        path,
 	})
 	logger.Debug("starting")
 
