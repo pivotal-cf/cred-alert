@@ -20,7 +20,7 @@ type AncestryScanJob struct {
 }
 
 func NewAncestryScanJob(plan AncestryScanPlan, commitRepository db.CommitRepository, client githubclient.Client, emitter metrics.Emitter, taskQueue Queue, id string) *AncestryScanJob {
-	depthReachedCounter := emitter.Counter("cred_alert.max-depth-reached")
+	depthReachedCounter := emitter.Counter("cred_alert.reached-max-depth")
 	initialCommitCounter := emitter.Counter("cred_alert.initial-commit-scanned")
 	job := &AncestryScanJob{
 		AncestryScanPlan: plan,
@@ -45,6 +45,12 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 	})
 	logger.Debug("starting")
 
+	if j.SHA == initialCommitParentHash {
+		logger.Info("reached-null-commit")
+		logger.Debug("done")
+		return nil
+	}
+
 	isRegistered, err := j.commitRepository.IsCommitRegistered(logger, j.SHA)
 	if err != nil {
 		logger.Error("failed", err)
@@ -68,7 +74,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 			return err
 		}
 
-		logger.Info("max-depth-reached")
+		logger.Info("reached-max-depth")
 		j.depthReachedCounter.Inc(logger)
 		logger.Debug("done")
 		return nil
@@ -79,6 +85,7 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 		logger.Error("failed", err)
 		return err
 	}
+
 	parents := info.Parents
 	logger.Info("fetching-parents-succeeded", lager.Data{"parents": parents})
 

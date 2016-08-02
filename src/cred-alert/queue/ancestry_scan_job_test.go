@@ -55,7 +55,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 		id = "test-id"
 
 		emitter.CounterStub = func(name string) metrics.Counter {
-			if name == "cred_alert.max-depth-reached" {
+			if name == "cred_alert.reached-max-depth" {
 				return maxDepthCounter
 			} else {
 				return initialCommitCounter
@@ -275,7 +275,20 @@ var _ = Describe("Ancestry Scan Job", func() {
 					ItMarksTheCommitAsSeen()
 				})
 
-				Context("when the current commit is the initial commit", func() {
+				Context("when the current commit is the initial null commit", func() {
+					BeforeEach(func() {
+						plan.SHA = "0000000000000000000000000000000000000000"
+					})
+
+					It("Does not return an error", func() {
+						err := job.Run(logger)
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					ItStopsAndDoesNotEnqueueAnyMoreWork()
+				})
+
+				Context("when the current commit is the first commit", func() {
 					BeforeEach(func() {
 						client.CommitInfoReturns(githubclient.CommitInfo{
 							Message: "commit message",
@@ -347,7 +360,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 					It("logs that max depth was reached", func() {
 						job.Run(logger)
-						Expect(logger).To(gbytes.Say(`scanning-ancestry.max-depth-reached`))
+						Expect(logger).To(gbytes.Say(`scanning-ancestry.reached-max-depth`))
 					})
 
 					It("does not look for any more parents", func() {
