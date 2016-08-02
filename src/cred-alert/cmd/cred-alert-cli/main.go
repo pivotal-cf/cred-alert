@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"cred-alert/mimetype"
 	"cred-alert/scanners"
+	"cred-alert/scanners/diffscanner"
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -25,9 +27,11 @@ import (
 type Opts struct {
 	Directory string `short:"d" long:"directory" description:"the directory to scan" value-name:"DIR"`
 	File      string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
+	Diff      bool   `long:"diff" description:"content to be scanned is a git diff"`
 }
 
 var sniffer = sniff.NewDefaultSniffer()
+var foundViolation = false
 
 func main() {
 	var opts Opts
@@ -50,11 +54,17 @@ func main() {
 		case opts.File != "":
 			handlePath(logger, opts.File, destination)
 		}
-
-		os.Exit(0)
+	} else if opts.Diff {
+		handleDiff(logger, opts)
+	} else {
+		scanFile(logger, os.Stdin, "STDIN")
 	}
 
-	scanFile(logger, os.Stdin, "STDIN")
+	if foundViolation {
+		os.Exit(1)
+	}
+
+	os.Exit(0)
 }
 
 func extractFile(mime, path, destination string) {
@@ -95,6 +105,7 @@ func extractFile(mime, path, destination string) {
 
 func handleViolation(line scanners.Line) error {
 	fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
+	foundViolation = true
 
 	return nil
 }
@@ -177,4 +188,17 @@ func scanDirectory(
 	if err != nil {
 		log.Fatalf("Error traversing directory: %v", err)
 	}
+}
+
+func handleDiff(logger lager.Logger, opts Opts) {
+	logger.Session("handle-diff")
+	diff, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		logger.Error("read-error", err)
+	}
+
+	scanner := diffscanner.NewDiffScanner(string(diff))
+	sniffer := sniff.NewDefaultSniffer()
+
+	sniffer.Sniff(logger, scanner, handleViolation)
 }

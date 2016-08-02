@@ -27,6 +27,16 @@ var _ = Describe("Main", func() {
 			AKIASOMEMORETEXTHERE
 			words
 		`
+		offendingDiff = `
+diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests.txt
+index 940393e..fa5a232 100644
+--- a/spec/integration/git-secrets-pattern-tests.txt
++++ b/spec/integration/git-secrets-pattern-tests.txt
+@@ -28,7 +28,7 @@ private_key = "should_match" # COMMENT: comments shouldn't have an effect
+ private_key '$should_match'
+
+ ## Suspicious Variable Names
+`
 	)
 
 	BeforeEach(func() {
@@ -51,6 +61,18 @@ var _ = Describe("Main", func() {
 
 		It("scans stdin", func() {
 			Eventually(session.Out).Should(gbytes.Say("Line matches pattern!"))
+		})
+
+		Context("when given a --diff flag", func() {
+			BeforeEach(func() {
+				cmdArgs = []string{"--diff"}
+				stdin = strings.NewReader(offendingDiff)
+			})
+
+			It("scans the diff", func() {
+				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt"))
+				Eventually(session.Out).Should(gbytes.Say("Line Number: 28"))
+			})
 		})
 	})
 
