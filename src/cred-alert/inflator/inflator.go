@@ -48,6 +48,41 @@ func RecursivelyExtractArchive(logger lager.Logger, path, destination string, cl
 	return nil
 }
 
+func extractFile(mime, path, destination string) {
+	err := os.MkdirAll(destination, 0755)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var cmd *exec.Cmd
+	switch mime {
+	case "application/zip":
+		cmd = exec.Command("unzip", path, "-d", destination)
+	case "application/x-tar":
+		cmd = exec.Command("tar", "xf", path, "-C", destination)
+	case "application/gzip", "application/x-gzip":
+		fileName := filepath.Base(path)
+		fileNameWithoutExt := fileName[:len(fileName)-len(filepath.Ext(fileName))]
+		output, err := os.Create(filepath.Join(destination, fileNameWithoutExt))
+		if err != nil {
+			panic(err.Error())
+		}
+		defer output.Close()
+
+		cmd = exec.Command("gunzip", "-c", path)
+		cmd.Stdout = output
+	default:
+		panic(fmt.Sprintf("don't know how to extract %s", mime))
+	}
+
+	buf := &bytes.Buffer{}
+	cmd.Stderr = buf
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf("failed-to-run-cmd: %s\nStderr:\n%s\n", err.Error(), buf.String())
+	}
+}
+
 func recursivelyExtractArchivesInDir(logger lager.Logger, path, destination string) error {
 	children, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -253,44 +288,4 @@ var nonArchiveExtensions = map[string]struct{}{
 	".yaml":         struct{}{},
 	".yardopts":     struct{}{},
 	".yml":          struct{}{},
-}
-
-func extractFile(mime, path, destination string) {
-	_, err := os.Lstat(path)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	err = os.MkdirAll(destination, 0755)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	var cmd *exec.Cmd
-	switch mime {
-	case "application/zip":
-		cmd = exec.Command("unzip", path, "-d", destination)
-	case "application/x-tar":
-		cmd = exec.Command("tar", "xf", path, "-C", destination)
-	case "application/gzip", "application/x-gzip":
-		fileName := filepath.Base(path)
-		fileNameWithoutExt := fileName[:len(fileName)-len(filepath.Ext(fileName))]
-		output, err := os.Create(filepath.Join(destination, fileNameWithoutExt))
-		if err != nil {
-			panic(err.Error())
-		}
-		defer output.Close()
-
-		cmd = exec.Command("gunzip", "-c", path)
-		cmd.Stdout = output
-	default:
-		panic(fmt.Sprintf("don't know how to extract %s", mime))
-	}
-
-	buf := &bytes.Buffer{}
-	cmd.Stderr = buf
-	err = cmd.Run()
-	if err != nil {
-		fmt.Printf("failed-to-run-cmd: %s\nStderr:\n%s\n", err.Error(), buf.String())
-	}
 }
