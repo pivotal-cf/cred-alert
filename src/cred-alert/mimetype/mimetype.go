@@ -52,9 +52,9 @@ func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
 		logger.Error("failed-to-get-mimetype", err)
 	}
 
-	for _, mimetype := range archiveMimetypes {
-		if strings.HasPrefix(mime, mimetype) {
-			return mimetype, true
+	for i := range archiveMimetypes {
+		if strings.HasPrefix(mime, archiveMimetypes[i]) {
+			return archiveMimetypes[i], true
 		}
 	}
 

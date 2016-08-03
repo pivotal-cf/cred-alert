@@ -8,16 +8,15 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-const bashStringInterpolationPattern = `["]\$`
-const fakePattern = `(?i)fake`
-const examplePattern = `(?i)example`
+const bashStringInterpolationPattern = `"$`
+const fakePattern = `FAKE`
+const examplePattern = `EXAMPLE`
 
 const awsAccessKeyIDPattern = `AKIA[A-Z0-9]{16}`
-const awsSecretAccessKeyPattern = `(?i)("|')?(aws)?_?(secret)?_?(access)?_?(key)("|')?\s*(:|=>|=)\s*("|')?[A-Za-z0-9/\+=]{40}("|')?`
-const awsAccountIDPattern = `(?i)("|')?(aws)?_?(account)_?(id)?("|')?\s*(:|=>|=)\s*("|')?[0-9]{4}\-?[0-9]{4}\-?[0-9]{4}("|')?`
-const cryptMD5Pattern = `\$1\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{22}`
-const cryptSHA256Pattern = `\$5\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{43}`
-const cryptSHA512Pattern = `\$6\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}`
+const awsSecretAccessKeyPattern = `KEY["']?\s*(?::|=>|=)\s*["']?[A-Z0-9/\+=]{40}["']?`
+const cryptMD5Pattern = `\$1\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{22}`
+const cryptSHA256Pattern = `\$5\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{43}`
+const cryptSHA512Pattern = `\$6\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{86}`
 const rsaPrivateKeyHeaderPattern = `-----BEGIN RSA PRIVATE KEY-----`
 
 //go:generate counterfeiter . Scanner
@@ -47,20 +46,19 @@ func NewSniffer(matcher, exclusionMatcher matchers.Matcher) Sniffer {
 
 func NewDefaultSniffer() Sniffer {
 	return &sniffer{
-		matcher: matchers.Multi(
-			matchers.KnownFormat(awsAccessKeyIDPattern),
-			matchers.KnownFormat(awsSecretAccessKeyPattern),
-			matchers.KnownFormat(awsAccountIDPattern),
-			matchers.KnownFormat(cryptMD5Pattern),
-			matchers.KnownFormat(cryptSHA256Pattern),
-			matchers.KnownFormat(cryptSHA512Pattern),
-			matchers.KnownFormat(rsaPrivateKeyHeaderPattern),
-			matchers.Assignment(),
+		matcher: matchers.UpcasedMulti(
+			matchers.Filter(matchers.Format(awsAccessKeyIDPattern), "AKIA"),
+			matchers.Format(awsSecretAccessKeyPattern),
+			matchers.Filter(matchers.Format(cryptMD5Pattern), "$1$"),
+			matchers.Filter(matchers.Format(cryptSHA256Pattern), "$5$"),
+			matchers.Filter(matchers.Format(cryptSHA512Pattern), "$6$"),
+			matchers.Substring(rsaPrivateKeyHeaderPattern),
+			matchers.Filter(matchers.Assignment(), "=", ":=", ":", "=>", "SECRET", "PRIVATE", "KEY", "PASSWORD", "SALT"),
 		),
-		exclusionMatcher: matchers.Multi(
-			matchers.KnownFormat(bashStringInterpolationPattern),
-			matchers.KnownFormat(fakePattern),
-			matchers.KnownFormat(examplePattern),
+		exclusionMatcher: matchers.UpcasedMulti(
+			matchers.Substring(bashStringInterpolationPattern),
+			matchers.Substring(fakePattern),
+			matchers.Substring(examplePattern),
 		),
 	}
 }

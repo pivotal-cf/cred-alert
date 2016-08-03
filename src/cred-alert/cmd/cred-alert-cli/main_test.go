@@ -76,32 +76,6 @@ index 940393e..fa5a232 100644
 		})
 	})
 
-	Context("when given a directory flag", func() {
-		var tmpDir string
-
-		BeforeEach(func() {
-			var err error
-			tmpDir, err = ioutil.TempDir("", "cli-main-test")
-			Expect(err).NotTo(HaveOccurred())
-
-			tmpFile, err := ioutil.TempFile(tmpDir, "cli-main-test")
-			Expect(err).NotTo(HaveOccurred())
-			defer tmpFile.Close()
-
-			ioutil.WriteFile(tmpFile.Name(), []byte(offendingText), os.ModePerm)
-
-			cmdArgs = []string{"-d", filepath.Dir(tmpFile.Name())}
-		})
-
-		AfterEach(func() {
-			os.RemoveAll(tmpDir)
-		})
-
-		It("scans each file in the directory", func() {
-			Eventually(session.Out).Should(gbytes.Say("Line matches pattern!"))
-		})
-	})
-
 	Context("when given a file flag", func() {
 		var tmpFile *os.File
 

@@ -9,7 +9,6 @@ var Credentials = `
 
 aws_access_key_id: AKIAIOSFODNN7DSOTPWI # should_match
 aws_secret_access_key: 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 # should_match
-aws_account_id: 1234-1234-1234 # should_match
 
 ## Operators
 password 'should_match'
@@ -42,7 +41,6 @@ private_key: ".$+=&/\\-_should_match"
 # Case
 AWS_ACCESS_KEY_ID: AKIAIOSFODNN7DSOTPWI # should_match
 AWS_SECRET_ACCESS_KEY: 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 # should_match
-AWS_ACCOUNT_ID: 1234-1234-1234 # should_match
 SOME_SECRET: "should_match"
 HARD_CODED_SALT: "should_match"
 PRIVATE_KEY: "should_match"

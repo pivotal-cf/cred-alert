@@ -7,16 +7,21 @@ import (
 	"cred-alert/sniff/matchers"
 )
 
-var _ = Describe("Known Matcher", func() {
+var _ = Describe("Format", func() {
 	var matcher matchers.Matcher
 
 	BeforeEach(func() {
-		matcher = matchers.KnownFormat("AKIA[A-Z0-9]{16}")
+		matcher = matchers.Format("AKIA[A-Z0-9]{16}")
 	})
 
-	It("returns true when the line matches", func() {
+	It("returns true when the line matches case-sensitively", func() {
 		line := "aws_access_key_id: AKIAIOSFOEXAMPLETPWI"
 		Expect(matcher.Match(line)).To(BeTrue())
+	})
+
+	It("returns false when the line does not match case-sensitively", func() {
+		line := "aws_access_key_id: akiaiosfoexampletpwi"
+		Expect(matcher.Match(line)).To(BeFalse())
 	})
 
 	It("returns false when the line does not match", func() {

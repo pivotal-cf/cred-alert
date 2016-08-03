@@ -1,6 +1,8 @@
 package matchers
 
-func Multi(matchers ...Matcher) Matcher {
+import "strings"
+
+func UpcasedMulti(matchers ...Matcher) Matcher {
 	return &multi{
 		matchers: matchers,
 	}
@@ -11,8 +13,9 @@ type multi struct {
 }
 
 func (m *multi) Match(line string) bool {
+	upcasedLine := strings.ToUpper(line)
 	for _, matcher := range m.matchers {
-		if matcher.Match(line) {
+		if matcher.Match(upcasedLine) {
 			return true
 		}
 	}

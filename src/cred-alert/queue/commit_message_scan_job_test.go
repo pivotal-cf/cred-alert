@@ -30,7 +30,6 @@ var _ = Describe("Commit Message Scan Job", func() {
 			notifier          *notificationsfakes.FakeNotifier
 			sniffer           *snifffakes.FakeSniffer
 			credentialCounter *metricsfakes.FakeCounter
-			taskId            string
 		)
 
 		BeforeEach(func() {
@@ -54,7 +53,6 @@ var _ = Describe("Commit Message Scan Job", func() {
 					panic("unexpected counter name! " + name)
 				}
 			}
-			taskId = "task-id"
 		})
 
 		JustBeforeEach(func() {

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Multi", func() {
+var _ = Describe("UpcasedMulti", func() {
 	var (
 		matcher      *matchersfakes.FakeMatcher
 		multimatcher matchers.Matcher
@@ -16,14 +16,14 @@ var _ = Describe("Multi", func() {
 
 	BeforeEach(func() {
 		matcher = new(matchersfakes.FakeMatcher)
-		multimatcher = matchers.Multi(matcher)
+		multimatcher = matchers.UpcasedMulti(matcher)
 	})
 
 	It("calls each matcher with the line", func() {
 		multimatcher.Match("this is a line")
 
 		Expect(matcher.MatchCallCount()).To(Equal(1))
-		Expect(matcher.MatchArgsForCall(0)).To(Equal("this is a line"))
+		Expect(matcher.MatchArgsForCall(0)).To(Equal("THIS IS A LINE"))
 	})
 
 	It("returns false", func() {
@@ -41,7 +41,7 @@ var _ = Describe("Multi", func() {
 			trueMatcher = new(matchersfakes.FakeMatcher)
 			trueMatcher.MatchReturns(true)
 
-			multimatcher = matchers.Multi(trueMatcher, matcher)
+			multimatcher = matchers.UpcasedMulti(trueMatcher, matcher)
 		})
 
 		It("returns true", func() {

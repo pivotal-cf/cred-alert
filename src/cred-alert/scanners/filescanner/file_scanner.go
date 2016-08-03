@@ -15,10 +15,9 @@ type fileScanner struct {
 }
 
 func New(r io.Reader, filename string) *fileScanner {
-	bufioScanner := bufio.NewScanner(r)
 	return &fileScanner{
 		path:         filename,
-		bufioScanner: bufioScanner,
+		bufioScanner: bufio.NewScanner(r),
 	}
 }
 

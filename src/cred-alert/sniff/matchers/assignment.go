@@ -1,14 +1,17 @@
 package matchers
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
-const generalPattern = `(?i)["']?[A-Za-z0-9_-]*(secret|private[-_]?key|password|salt)["']?\s*(=|:|:=|=>)?\s*["']?[A-Za-z0-9.$+=&\/_\\-]{12,}["']?`
+const generalPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)["']?\s*(=|:|:=|=>)?\s*["']?[A-Z0-9.$+=&\/_\\-]{12,}`
 
-const assignmentPattern = `(?i)["']?[A-Za-z0-9_-]*(secret|private[-_]?key|password|salt)["']?\s*(=|:|:=|=>)?\s*["'][A-Za-z0-9.$+=&\/_\\-]{12,}["']`
+const assignmentPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)["']?\s*(?:=|:|:=|=>)?\s*["'][A-Z0-9.$+=&\/_\\-]{12,}["']`
 
-const yamlPattern = `(?i)[A-Za-z0-9_-]*(secret|private[-_]?key|password|salt):\s*["']?[A-Za-z0-9.$+=&\/_\\-]{12,}["']?`
+const yamlPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT):\s*["']?[A-Z0-9.$+=&\/_\\-]{12,}`
 
-const guidPattern = `(?i)[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[a-f0-9]{4}-[a-f0-9]{12}`
+const guidPattern = `[A-F0-9]{8}-[A-F0-9]{4}-[1-5][A-F0-9]{3}-[A-F0-9]{4}-[A-F0-9]{12}`
 
 func Assignment() Matcher {
 	return &assignmentMatcher{
@@ -27,22 +30,23 @@ type assignmentMatcher struct {
 }
 
 func (m *assignmentMatcher) Match(line string) bool {
-	result := m.pattern.FindStringSubmatch(line)
+	upcasedLine := strings.ToUpper(line)
+	result := m.pattern.FindStringSubmatch(upcasedLine)
 	if result == nil {
 		return false
 	}
 
-	if m.guidPattern.MatchString(line) {
+	if m.guidPattern.MatchString(upcasedLine) {
 		return false
 	}
 
 	if isYAMLAssignment(result) {
-		return m.yamlPattern.MatchString(line)
+		return m.yamlPattern.MatchString(upcasedLine)
 	}
 
-	return m.assignmentPattern.MatchString(line)
+	return m.assignmentPattern.MatchString(upcasedLine)
 }
 
 func isYAMLAssignment(result []string) bool {
-	return result[2] == ":"
+	return result[1] == ":"
 }
