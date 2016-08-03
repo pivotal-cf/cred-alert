@@ -91,9 +91,10 @@ func recursivelyExtractArchivesInDir(logger lager.Logger, path, destination stri
 
 	for i := range children {
 		basename := children[i].Name()
+		wholeName := filepath.Join(path, basename)
 
 		if children[i].IsDir() {
-			err := recursivelyExtractArchivesInDir(logger, filepath.Join(path, basename), filepath.Join(path, basename))
+			err := recursivelyExtractArchivesInDir(logger, wholeName, wholeName)
 			if err != nil {
 				return err
 			}
@@ -106,7 +107,7 @@ func recursivelyExtractArchivesInDir(logger lager.Logger, path, destination stri
 
 		_, found := nonArchiveExtensions[filepath.Ext(basename)]
 		if !found {
-			RecursivelyExtractArchive(logger, filepath.Join(path, basename), destination, true)
+			RecursivelyExtractArchive(logger, wholeName, destination, true)
 		}
 	}
 
