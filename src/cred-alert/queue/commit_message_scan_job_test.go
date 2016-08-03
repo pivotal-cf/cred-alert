@@ -76,8 +76,8 @@ var _ = Describe("Commit Message Scan Job", func() {
 			}
 
 			BeforeEach(func() {
-				sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
-					return handleViolation(violatingLine)
+				sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(lager.Logger, scanners.Line) error) error {
+					return handleViolation(logger, violatingLine)
 				}
 			})
 
@@ -85,7 +85,7 @@ var _ = Describe("Commit Message Scan Job", func() {
 				err := job.Run(logger)
 
 				Expect(err).ToNot(HaveOccurred())
-				Expect(logger).To(gbytes.Say("found-credentials"))
+				Expect(logger).To(gbytes.Say("handle-violation"))
 			})
 
 			It("emits the violations", func() {

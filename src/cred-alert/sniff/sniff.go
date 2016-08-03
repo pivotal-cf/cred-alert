@@ -29,7 +29,7 @@ type Scanner interface {
 //go:generate counterfeiter . Sniffer
 
 type Sniffer interface {
-	Sniff(lager.Logger, Scanner, func(scanners.Line) error) error
+	Sniff(lager.Logger, Scanner, func(lager.Logger, scanners.Line) error) error
 }
 
 type sniffer struct {
@@ -66,7 +66,7 @@ func NewDefaultSniffer() Sniffer {
 func (s *sniffer) Sniff(
 	logger lager.Logger,
 	scanner Scanner,
-	handleViolation func(scanners.Line) error,
+	handleViolation func(lager.Logger, scanners.Line) error,
 ) error {
 	logger = logger.Session("sniff")
 	logger.Debug("starting")
@@ -81,9 +81,9 @@ func (s *sniffer) Sniff(
 		}
 
 		if s.matcher.Match(line.Content) {
-			err := handleViolation(line)
+			err := handleViolation(logger, line)
 			if err != nil {
-				logger.Session("handle-violation").Error("failed", err)
+				logger.Error("failed", err)
 				result = multierror.Append(result, err)
 			}
 		}

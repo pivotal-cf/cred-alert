@@ -48,14 +48,14 @@ var _ = Describe("Sniffer", func() {
 
 	Describe("Sniff", func() {
 		It("calls the exclusion matcher with each line", func() {
-			sniffer.Sniff(logger, scanner, func(scanners.Line) error {
+			sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Line) error {
 				return nil
 			})
 			Expect(exclusionMatcher.MatchCallCount()).To(Equal(3))
 		})
 
 		It("calls the regular matcher with each line", func() {
-			sniffer.Sniff(logger, scanner, func(scanners.Line) error {
+			sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Line) error {
 				return nil
 			})
 			Expect(matcher.MatchCallCount()).To(Equal(3))
@@ -67,7 +67,7 @@ var _ = Describe("Sniffer", func() {
 			})
 
 			It("does not call the regular matcher", func() {
-				sniffer.Sniff(logger, scanner, func(scanners.Line) error {
+				sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Line) error {
 					return nil
 				})
 				Expect(matcher.MatchCallCount()).To(BeZero())
@@ -83,7 +83,7 @@ var _ = Describe("Sniffer", func() {
 
 			It("calls the callback with the line", func() {
 				var actualLine *scanners.Line
-				callback := func(line scanners.Line) error {
+				callback := func(logger lager.Logger, line scanners.Line) error {
 					actualLine = &line
 					return nil
 				}
@@ -94,13 +94,13 @@ var _ = Describe("Sniffer", func() {
 			Context("when the callback returns an error", func() {
 				var (
 					callCount int
-					callback  func(scanners.Line) error
+					callback  func(lager.Logger, scanners.Line) error
 				)
 
 				BeforeEach(func() {
 					callCount = 0
 
-					callback = func(line scanners.Line) error {
+					callback = func(logger lager.Logger, line scanners.Line) error {
 						callCount++
 						return errors.New("tragedy")
 					}
@@ -157,7 +157,7 @@ var _ = Describe("Sniffer", func() {
 					}
 				}
 
-				sniffer.Sniff(logger, scanner, func(line scanners.Line) error {
+				sniffer.Sniff(logger, scanner, func(logger lager.Logger, line scanners.Line) error {
 					actuals = append(actuals, line.Content)
 					return nil
 				})

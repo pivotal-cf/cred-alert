@@ -47,7 +47,7 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 
 	textScanner := textscanner.New(j.Message)
 
-	err := j.sniffer.Sniff(logger, textScanner, j.createHandleViolation(logger))
+	err := j.sniffer.Sniff(logger, textScanner, j.createHandleViolation())
 	if err != nil {
 		logger.Error("failed", err)
 		return err
@@ -58,9 +58,10 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 	return nil
 }
 
-func (j *CommitMessageJob) createHandleViolation(logger lager.Logger) func(scanners.Line) error {
-	return func(line scanners.Line) error {
-		logger.Info("found-credentials")
+func (j *CommitMessageJob) createHandleViolation() func(lager.Logger, scanners.Line) error {
+	return func(logger lager.Logger, line scanners.Line) error {
+		logger = logger.Session("handle-violation")
+		logger.Debug("starting")
 
 		privacyTag := "public"
 		if j.Private {
@@ -73,6 +74,7 @@ func (j *CommitMessageJob) createHandleViolation(logger lager.Logger) func(scann
 			return err
 		}
 
+		logger.Debug("done")
 		return nil
 	}
 }

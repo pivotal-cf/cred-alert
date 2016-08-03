@@ -76,7 +76,7 @@ func main() {
 	}
 }
 
-func handleViolation(line scanners.Line) error {
+func handleViolation(logger lager.Logger, line scanners.Line) error {
 	fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
 
 	return nil

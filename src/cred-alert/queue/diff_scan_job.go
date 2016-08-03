@@ -59,7 +59,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 
 	scanner := diffscanner.NewDiffScanner(diff)
 	credentialsFound := false
-	handleViolation := j.createHandleViolation(logger, j.To, j.Owner+"/"+j.Repository, &credentialsFound)
+	handleViolation := j.createHandleViolation(j.To, j.Owner+"/"+j.Repository, &credentialsFound)
 
 	err = j.sniffer.Sniff(logger, scanner, handleViolation)
 	if err != nil {
@@ -83,13 +83,14 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 	return nil
 }
 
-func (j *DiffScanJob) createHandleViolation(logger lager.Logger, sha string, repoName string, credentialsFound *bool) func(scanners.Line) error {
-	return func(line scanners.Line) error {
-		logger.Info("handle-violation", lager.Data{
+func (j *DiffScanJob) createHandleViolation(sha string, repoName string, credentialsFound *bool) func(lager.Logger, scanners.Line) error {
+	return func(logger lager.Logger, line scanners.Line) error {
+		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
 			"sha":         sha,
 		})
+		logger.Debug("starting")
 
 		err := j.notifier.SendNotification(logger, repoName, sha, line, j.Private)
 		if err != nil {

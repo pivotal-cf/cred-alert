@@ -13,11 +13,11 @@ import (
 	"errors"
 	"fmt"
 
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Diff Scan Job", func() {
@@ -109,8 +109,8 @@ var _ = Describe("Diff Scan Job", func() {
 		BeforeEach(func() {
 			filePath = "some/file/path"
 
-			sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(scanners.Line) error) error {
-				return handleViolation(scanners.Line{
+			sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation func(lager.Logger, scanners.Line) error) error {
+				return handleViolation(logger, scanners.Line{
 					Path:       filePath,
 					LineNumber: 1,
 					Content:    "content",

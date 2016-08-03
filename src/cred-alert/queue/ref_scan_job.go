@@ -118,7 +118,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		defer unzippedReader.Close()
 
 		bufioScanner := filescanner.New(unzippedReader, f.Name)
-		handleViolation := j.createHandleViolation(l, j.Ref, j.Owner+"/"+j.Repository)
+		handleViolation := j.createHandleViolation(j.Ref, j.Owner+"/"+j.Repository)
 
 		err = j.sniffer.Sniff(l, bufioScanner, handleViolation)
 		if err != nil {
@@ -167,8 +167,8 @@ func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
 	return tempFile, nil
 }
 
-func (j *RefScanJob) createHandleViolation(logger lager.Logger, ref string, repoName string) func(scanners.Line) error {
-	return func(line scanners.Line) error {
+func (j *RefScanJob) createHandleViolation(ref string, repoName string) func(lager.Logger, scanners.Line) error {
+	return func(logger lager.Logger, line scanners.Line) error {
 		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
