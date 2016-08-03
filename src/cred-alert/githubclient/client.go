@@ -70,8 +70,11 @@ func (c *client) ArchiveLink(owner, repo string, ref string) (*url.URL, error) {
 
 	var resp *http.Response
 	resp, err = c.httpClient.Transport.RoundTrip(req)
-	if err != nil || resp.StatusCode != http.StatusFound {
+	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusFound {
+		return nil, fmt.Errorf("Unexpected response status code: %s", resp.StatusCode)
 	}
 
 	return url.Parse(resp.Header.Get("Location"))

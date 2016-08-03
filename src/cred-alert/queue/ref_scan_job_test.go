@@ -13,10 +13,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/ghttp"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/ghttp"
 
 	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/metrics"
@@ -245,6 +245,17 @@ var _ = Describe("RefScan Job", func() {
 					job.Run(logger)
 					Expect(sniffer.SniffCallCount()).To(BeNumerically(">", 0))
 				})
+			})
+		})
+
+		Context("When the archive url is nil", func() {
+			BeforeEach(func() {
+				client.ArchiveLinkReturns(nil, nil)
+			})
+
+			It("Returns an error", func() {
+				err := job.Run(logger)
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})

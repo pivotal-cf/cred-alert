@@ -10,6 +10,7 @@ import (
 	"cred-alert/scanners"
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -132,6 +133,12 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 }
 
 func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
+	if link == nil {
+		err := errors.New("Archive link was nil")
+		logger.Error("failed", err)
+		return nil, err
+	}
+
 	logger.Info("download-archive", lager.Data{
 		"url": link.String(),
 	})

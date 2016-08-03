@@ -230,5 +230,22 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(url.String()).To(Equal(zipLocation))
 		})
+
+		Context("When github returns an unexpected status code", func() {
+			BeforeEach(func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball/abcdef"),
+						ghttp.RespondWith(http.StatusTooManyRequests, "", header),
+					),
+				)
+			})
+
+			It("returns an error", func() {
+				url, err := client.ArchiveLink("owner", "repo", "abcdef")
+				Expect(url).To(BeNil())
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 })
