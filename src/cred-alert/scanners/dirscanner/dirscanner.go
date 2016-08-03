@@ -56,7 +56,8 @@ func (s *dirScanner) scan(
 	}
 
 	for i := range children {
-		if !shouldScan(children[i]) {
+		_, skippable := skippableExtensions[filepath.Ext(children[i].Name())]
+		if skippable {
 			continue
 		}
 
@@ -99,11 +100,6 @@ func (s *dirScanner) scan(
 	}
 
 	return nil
-}
-
-func shouldScan(file os.FileInfo) bool {
-	_, skippable := skippableExtensions[filepath.Ext(file.Name())]
-	return !skippable
 }
 
 var skippableExtensions = map[string]struct{}{
