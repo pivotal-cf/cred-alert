@@ -16,7 +16,7 @@ applications:
 
 - name: cred-alert-worker-production
   instances: 1
-  memory: 256M
+  memory: 512M
   disk_quota: 1024M
   no-route: true
   health-check-type: none
