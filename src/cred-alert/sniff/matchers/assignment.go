@@ -3,6 +3,7 @@ package matchers
 import (
 	"regexp"
 	"strings"
+	"sync"
 )
 
 const generalPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)["']?\s*(=|:|:=|=>)?\s*["']?[A-Z0-9.$+=&\/_\\-]{12,}`
@@ -19,6 +20,7 @@ func Assignment() Matcher {
 		assignmentPattern: regexp.MustCompile(assignmentPattern),
 		yamlPattern:       regexp.MustCompile(yamlPattern),
 		guidPattern:       regexp.MustCompile(guidPattern),
+		l:                 &sync.Mutex{},
 	}
 }
 
@@ -27,9 +29,13 @@ type assignmentMatcher struct {
 	assignmentPattern *regexp.Regexp
 	yamlPattern       *regexp.Regexp
 	guidPattern       *regexp.Regexp
+	l                 *sync.Mutex
 }
 
 func (m *assignmentMatcher) Match(line string) bool {
+	m.l.Lock()
+	defer m.l.Unlock()
+
 	upcasedLine := strings.ToUpper(line)
 	result := m.pattern.FindStringSubmatch(upcasedLine)
 	if result == nil {

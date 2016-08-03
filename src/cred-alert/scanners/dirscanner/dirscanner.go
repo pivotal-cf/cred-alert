@@ -10,6 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+
+	"github.com/cloudfoundry/gunk/workpool"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -27,6 +30,26 @@ func New(handler func(lager.Logger, scanners.Line) error, sniffer sniff.Sniffer)
 }
 
 func (s *dirScanner) Scan(logger lager.Logger, path string) error {
+	workPool, err := workpool.NewWorkPool(2)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	err = s.scan(logger, path, wg, workPool)
+
+	wg.Done()
+	wg.Wait()
+
+	workPool.Stop()
+
+	return err
+}
+
+func (s *dirScanner) scan(
+	logger lager.Logger,
+	path string,
+	wg *sync.WaitGroup,
+	workPool *workpool.WorkPool,
+) error {
 	children, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err
@@ -40,7 +63,7 @@ func (s *dirScanner) Scan(logger lager.Logger, path string) error {
 		wholePath := filepath.Join(path, children[i].Name())
 
 		if children[i].IsDir() {
-			err := s.Scan(logger, wholePath)
+			err := s.scan(logger, wholePath, wg, workPool)
 			if err != nil {
 				return err
 			}
@@ -56,8 +79,10 @@ func (s *dirScanner) Scan(logger lager.Logger, path string) error {
 			return err
 		}
 
-		func() {
+		wg.Add(1)
+		workPool.Submit(func() {
 			defer f.Close()
+			defer wg.Done()
 
 			if probablyIsText(children[i].Name()) {
 				scanner := filescanner.New(f, wholePath)
@@ -70,7 +95,7 @@ func (s *dirScanner) Scan(logger lager.Logger, path string) error {
 					s.sniffer.Sniff(logger, scanner, s.handler)
 				}
 			}
-		}()
+		})
 	}
 
 	return nil
