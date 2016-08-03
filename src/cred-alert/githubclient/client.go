@@ -74,7 +74,7 @@ func (c *client) ArchiveLink(owner, repo string, ref string) (*url.URL, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusFound {
-		return nil, fmt.Errorf("Unexpected response status code: %s", resp.StatusCode)
+		return nil, fmt.Errorf("Unexpected response status code: %d", resp.StatusCode)
 	}
 
 	return url.Parse(resp.Header.Get("Location"))
