@@ -18,6 +18,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/ghttp"
 
+	"cred-alert/githubclient"
 	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
@@ -256,6 +257,23 @@ var _ = Describe("RefScan Job", func() {
 			})
 		})
 
+		Context("when the githubapi returns not found", func() {
+			BeforeEach(func() {
+				client.ArchiveLinkReturns(nil, githubclient.ErrNotFound)
+			})
+			It("Logs an error", func() {
+				job.Run(logger)
+				Expect(logger.Buffer()).To(gbytes.Say("archive-link.failed"))
+			})
+			It("Does not return an error", func() {
+				err := job.Run(logger)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("Does not scan anything", func() {
+				job.Run(logger)
+				Expect(sniffer.SniffCallCount()).To(Equal(0))
+			})
+		})
 		Context("When the archive url is nil", func() {
 			BeforeEach(func() {
 				client.ArchiveLinkReturns(nil, nil)

@@ -3,6 +3,7 @@ package githubclient
 import (
 	"cred-alert/metrics"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,6 +17,11 @@ import (
 )
 
 const DefaultGitHubURL = "https://api.github.com/"
+const ErrNotFound = Error("githubclient-not-found")
+
+type Error string
+
+func (e Error) Error() string { return string(e) }
 
 //go:generate counterfeiter . Client
 
@@ -50,9 +56,24 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
 
-	body, err := c.responseBodyFrom(logger, url, map[string]string{"Accept": "application/vnd.github.diff"})
+	response, err := c.responseFrom(logger, url, map[string]string{"Accept": "application/vnd.github.diff"})
 	if err != nil {
 		logger.Error("failed", err)
+		return "", err
+	}
+
+	body, err := c.bodyFromResponse(logger, response)
+	if err != nil {
+		logger.Error("failed", err)
+		return "", err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		err := fmt.Errorf("bad response (!200): %d", response.StatusCode)
+		logger.Error("failed", err, lager.Data{
+			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
+			"body":   body,
+		})
 		return "", err
 	}
 
@@ -72,6 +93,9 @@ func (c *client) ArchiveLink(owner, repo string, ref string) (*url.URL, error) {
 	resp, err = c.httpClient.Transport.RoundTrip(req)
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, ErrNotFound
 	}
 	if resp.StatusCode != http.StatusFound {
 		return nil, fmt.Errorf("Unexpected response status code: %d", resp.StatusCode)
@@ -103,10 +127,30 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "commits", sha)
 
-	body, err := c.responseBodyFrom(logger, url, map[string]string{})
+	response, err := c.responseFrom(logger, url, map[string]string{})
 	if err != nil {
 		logger.Error("failed", err)
 		return CommitInfo{}, err
+	}
+
+	body, err := c.bodyFromResponse(logger, response)
+	if err != nil {
+		logger.Error("failed", err)
+		return CommitInfo{}, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		err := fmt.Errorf("bad response (!200): %d", response.StatusCode)
+		logger.Error("failed", err, lager.Data{
+			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
+			"body":   body,
+		})
+
+		if response.StatusCode == http.StatusNotFound {
+			return CommitInfo{}, ErrNotFound
+		} else {
+			return CommitInfo{}, err
+		}
 	}
 
 	if err := json.Unmarshal(body, &commitResponse); err != nil {
@@ -152,7 +196,26 @@ func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) 
 	}, nil
 }
 
-func (c *client) responseBodyFrom(logger lager.Logger, url string, headers map[string]string) ([]byte, error) {
+func (c *client) bodyFromResponse(logger lager.Logger, response *http.Response) ([]byte, error) {
+	defer response.Body.Close()
+	if response == nil {
+		return []byte{}, errors.New("nil-response")
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		logger.Error("failed", err)
+		return []byte{}, err
+	}
+
+	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
+		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
+	}
+
+	logger.Debug("done")
+	return body, nil
+}
+
+func (c *client) responseFrom(logger lager.Logger, url string, headers map[string]string) (*http.Response, error) {
 	logger = logger.Session("response-body-from")
 	logger.Info("starting", lager.Data{"url": url})
 
@@ -165,29 +228,8 @@ func (c *client) responseBodyFrom(logger lager.Logger, url string, headers map[s
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		logger.Error("failed", err)
-		return []byte{}, err
-	}
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		logger.Error("failed", err)
-		return []byte{}, err
+		return nil, err
 	}
 
-	if response.StatusCode != http.StatusOK {
-		err := fmt.Errorf("bad response (!200): %d", response.StatusCode)
-		logger.Error("failed", err, lager.Data{
-			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
-			"body":   body,
-		})
-		return []byte{}, err
-	}
-
-	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
-		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
-	}
-
-	logger.Debug("done")
-	return body, nil
+	return response, nil
 }

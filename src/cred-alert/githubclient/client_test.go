@@ -137,6 +137,21 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+		Context("The commit is not found", func() {
+			It("logs and returns a not found error", func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
+						ghttp.RespondWith(http.StatusNotFound, commitInfoJSON, header),
+					),
+				)
+				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(githubclient.ErrNotFound))
+				Expect(logger).To(gbytes.Say("commit-info.failed"))
+			})
+		})
+
 		Context("the response is not valid json", func() {
 			It("returns and logs an error", func() {
 				server.AppendHandlers(
@@ -245,6 +260,20 @@ var _ = Describe("Client", func() {
 				url, err := client.ArchiveLink("owner", "repo", "abcdef")
 				Expect(url).To(BeNil())
 				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("When the commit is not found", func() {
+			It("returns a not found error", func() {
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("GET", "/repos/owner/repo/zipball/abcdef"),
+						ghttp.RespondWith(http.StatusNotFound, "", header),
+					),
+				)
+				_, err := client.ArchiveLink("owner", "repo", "abcdef")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(githubclient.ErrNotFound))
 			})
 		})
 	})

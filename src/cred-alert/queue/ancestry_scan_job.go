@@ -83,6 +83,9 @@ func (j *AncestryScanJob) Run(logger lager.Logger) error {
 	info, err := j.client.CommitInfo(logger, j.Owner, j.Repository, j.SHA)
 	if err != nil {
 		logger.Error("failed", err)
+		if err == githubclient.ErrNotFound {
+			return nil
+		}
 		return err
 	}
 

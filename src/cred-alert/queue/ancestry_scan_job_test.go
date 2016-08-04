@@ -136,7 +136,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 					plan.Depth = 5
 				})
 
-				Context("when the github client returns an error", func() {
+				Context("when commit info returns an error", func() {
 					expectedError := errors.New("client error")
 
 					BeforeEach(func() {
@@ -145,6 +145,20 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 					ItReturnsAndLogsAnError(expectedError)
 					ItDoesNotRegisterCommit()
+				})
+
+				Context("when commit info returns not found", func() {
+					BeforeEach(func() {
+						client.CommitInfoReturns(githubclient.CommitInfo{}, githubclient.ErrNotFound)
+					})
+
+					It("logs but does not return an error", func() {
+						err := job.Run(logger)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(logger).To(gbytes.Say("failed"))
+					})
+
+					ItStopsAndDoesNotEnqueueAnyMoreWork()
 				})
 
 				Context("when the commit has parents", func() {

@@ -78,6 +78,9 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	downloadURL, err := j.client.ArchiveLink(j.Owner, j.Repository, j.Ref)
 	if err != nil {
 		logger.Session("archive-link").Error("failed", err)
+		if err == githubclient.ErrNotFound {
+			return nil
+		}
 		return err
 	}
 
