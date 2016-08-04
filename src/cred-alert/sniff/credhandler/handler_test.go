@@ -61,4 +61,24 @@ var _ = Describe("Handler", func() {
 
 		Expect(handler.CredentialsFound()).To(BeTrue())
 	})
+
+	It("can tell you how many credentials were found", func() {
+		line := scanners.Line{
+			Content:    "credential",
+			Path:       "/etc/shadow",
+			LineNumber: 42,
+		}
+
+		Expect(handler.CredentialCount()).To(BeZero())
+
+		err := handler.HandleViolation(logger, line)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(handler.CredentialCount()).To(Equal(1))
+
+		err = handler.HandleViolation(logger, line)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(handler.CredentialCount()).To(Equal(2))
+	})
 })

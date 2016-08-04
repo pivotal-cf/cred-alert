@@ -102,6 +102,16 @@ index 940393e..fa5a232 100644
 			Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 		})
 
+		var ItShowsHowLongItTookAndHowManyCredentialsWereFound = func() {
+			It("shows how long the scan took", func() {
+				Eventually(session.Out).Should(gbytes.Say("Time taken:"))
+			})
+
+			It("shows show many credentials were found", func() {
+				Eventually(session.Out).Should(gbytes.Say("Credentials found: 1"))
+			})
+		}
+
 		Context("when the file is a zip file", func() {
 			var (
 				inDir, outDir string
@@ -134,6 +144,8 @@ index 940393e..fa5a232 100644
 				It("scans each text file in the zip", func() {
 					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 				})
+
+				ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 			})
 		})
 
@@ -172,6 +184,8 @@ index 940393e..fa5a232 100644
 			It("scans each text file in the tar", func() {
 				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 			})
+
+			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 		})
 
 		Context("when the file is a gzipped tar file", func() {
@@ -207,6 +221,8 @@ index 940393e..fa5a232 100644
 			It("scans each text file in the tar", func() {
 				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 			})
+
+			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 		})
 	})
 })

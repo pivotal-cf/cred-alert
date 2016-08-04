@@ -86,7 +86,10 @@ func main() {
 			duration := time.Since(start)
 
 			fmt.Println()
-			fmt.Println("Scan complete! Time taken:", duration)
+			fmt.Println("Scan complete!")
+			fmt.Println()
+			fmt.Println("Time taken:", duration)
+			fmt.Println("Credentials found:", handler.CredentialCount())
 			fmt.Println()
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
 		} else {
