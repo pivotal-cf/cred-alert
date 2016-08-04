@@ -109,3 +109,7 @@
 	path = src/github.com/contraband/holler
 	url = https://github.com/contraband/holler
 	branch = master
+[submodule "src/github.com/mgutz/ansi"]
+	path = src/github.com/mgutz/ansi
+	url = https://github.com/mgutz/ansi
+	branch = master

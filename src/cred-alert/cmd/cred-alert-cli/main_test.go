@@ -60,7 +60,8 @@ index 940393e..fa5a232 100644
 		})
 
 		It("scans stdin", func() {
-			Eventually(session.Out).Should(gbytes.Say("Line matches pattern!"))
+			Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+			Eventually(session.Out).Should(gbytes.Say("STDIN"))
 		})
 
 		Context("when given a --diff flag", func() {
@@ -70,8 +71,7 @@ index 940393e..fa5a232 100644
 			})
 
 			It("scans the diff", func() {
-				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt"))
-				Eventually(session.Out).Should(gbytes.Say("Line Number: 28"))
+				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt:28"))
 			})
 		})
 	})
@@ -95,7 +95,7 @@ index 940393e..fa5a232 100644
 		})
 
 		It("scans the file", func() {
-			Eventually(session.Out).Should(gbytes.Say("Line matches pattern!"))
+			Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 		})
 
 		Context("when the file is a zip file", func() {
@@ -128,7 +128,7 @@ index 940393e..fa5a232 100644
 				})
 
 				It("scans each text file in the zip", func() {
-					Eventually(session.Out).Should(gbytes.Say("Line matches pattern!"))
+					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 				})
 			})
 		})
@@ -166,7 +166,7 @@ index 940393e..fa5a232 100644
 			})
 
 			It("scans each text file in the tar", func() {
-				Eventually(session.Out).Should(gbytes.Say("Line matches pattern!"))
+				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 			})
 		})
 
@@ -201,7 +201,7 @@ index 940393e..fa5a232 100644
 			})
 
 			It("scans each text file in the tar", func() {
-				Eventually(session.Out).Should(gbytes.Say("Line matches pattern!"))
+				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 			})
 		})
 	})

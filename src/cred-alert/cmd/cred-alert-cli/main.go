@@ -21,12 +21,16 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/mgutz/ansi"
 )
 
 type Opts struct {
 	File string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
 	Diff bool   `long:"diff" description:"content to be scanned is a git diff"`
 }
+
+var red = ansi.ColorFunc("red+b")
+var green = ansi.ColorFunc("green+b")
 
 func main() {
 	var opts Opts
@@ -59,10 +63,13 @@ func main() {
 		br := bufio.NewReader(fh)
 		mime, isArchive := mimetype.IsArchive(logger, br)
 		if isArchive {
+			fmt.Printf("Inflating archive... ")
 			err := inflate.Inflate(logger, opts.File, destination)
 			if err != nil {
+				fmt.Printf("%s\n", red("FAILED"))
 				log.Fatalln(err.Error())
 			}
+			fmt.Printf("%s\n", green("DONE"))
 
 			dirScanner := dirscanner.New(handleViolation, sniffer)
 			err = dirScanner.Scan(logger, destination)
@@ -89,7 +96,7 @@ func main() {
 }
 
 func handleViolation(logger lager.Logger, line scanners.Line) error {
-	fmt.Printf("Line matches pattern! File: %s, Line Number: %d, Content: %s\n", line.Path, line.LineNumber, line.Content)
+	fmt.Printf("%s %s:%d\n", red("[CRED]"), line.Path, line.LineNumber)
 
 	return nil
 }
