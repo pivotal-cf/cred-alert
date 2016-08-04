@@ -7,6 +7,7 @@ import (
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,7 +53,8 @@ func (s *dirScanner) scan(
 ) error {
 	children, err := ioutil.ReadDir(path)
 	if err != nil {
-		return err
+		log.Println("failed to read dir:", path)
+		return nil
 	}
 
 	for i := range children {
@@ -77,7 +79,8 @@ func (s *dirScanner) scan(
 
 		f, err := os.Open(wholePath)
 		if err != nil {
-			return err
+			log.Println("failed to open:", wholePath)
+			continue
 		}
 
 		wg.Add(1)
