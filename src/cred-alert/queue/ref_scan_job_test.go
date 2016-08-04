@@ -35,6 +35,8 @@ var _ = Describe("RefScan Job", func() {
 
 		logger *lagertest.TestLogger
 
+		files []fileInfo
+
 		job               *queue.RefScanJob
 		server            *ghttp.Server
 		sniffer           *snifffakes.FakeSniffer
@@ -60,9 +62,15 @@ var _ = Describe("RefScan Job", func() {
 			Private:    true,
 		}
 
+		logger = lagertest.NewTestLogger("ref-scan-test")
+
+		files = []fileInfo{
+			{"readme.txt", `lolz`},
+			{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
+			{"todo.txt", "Get animal handling licence.\nWrite more examples."},
+		}
 		sniffer = new(snifffakes.FakeSniffer)
 		client = &githubclientfakes.FakeClient{}
-		logger = lagertest.NewTestLogger("ref-scan-test")
 		notifier = &notificationsfakes.FakeNotifier{}
 		emitter = &metricsfakes.FakeEmitter{}
 		credentialCounter = &metricsfakes.FakeCounter{}
@@ -90,7 +98,7 @@ var _ = Describe("RefScan Job", func() {
 		BeforeEach(func() {
 			serverUrl, _ := url.Parse(server.URL())
 			client.ArchiveLinkReturns(serverUrl, nil)
-			someZip := createZip()
+			someZip := createZip(logger, files)
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/"),
@@ -261,35 +269,33 @@ var _ = Describe("RefScan Job", func() {
 	})
 })
 
-var files = []struct {
-	Name, Body string
-}{
-	{"readme.txt", `lolz`},
-	{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-	{"todo.txt", "Get animal handling licence.\nWrite more examples."},
+type fileInfo struct {
+	Name string
+	Body string
 }
 
-func createZip() *bytes.Buffer {
-	// Create a buffer to write our archive to.
+func createZip(logger *lagertest.TestLogger, files []fileInfo) *bytes.Buffer {
 	buf := new(bytes.Buffer)
 
-	// Create a new zip archive.
 	w := zip.NewWriter(buf)
 
-	// Add some files to the archive.
 	for _, file := range files {
 		f, err := w.Create(file.Name)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal("zip-create-file-error", err)
 		}
 		_, err = f.Write([]byte(file.Body))
 		if err != nil {
+			logger.Fatal("zip-write-file-error", err)
 			log.Fatal(err)
 		}
 	}
 
-	// Make sure to check the error on Close.
-	w.Close()
+	err := w.Close()
+	if err != nil {
+		logger.Fatal("zip-write-close-error", err)
+		log.Fatal(err)
+	}
 
 	return buf
 }
