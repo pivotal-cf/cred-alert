@@ -2,7 +2,6 @@ package inflator
 
 import (
 	"bufio"
-	"bytes"
 	"cred-alert/mimetype"
 	"fmt"
 	"io/ioutil"
@@ -13,7 +12,34 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-func RecursivelyExtractArchive(logger lager.Logger, path, destination string, cleanup bool) error {
+type inflator struct {
+	logfile *os.File
+}
+
+func New() *inflator {
+	f, err := ioutil.TempFile("", "inflator-errors")
+	if err != nil {
+		panic("failed creating temp file: " + err.Error())
+	}
+
+	return &inflator{
+		logfile: f,
+	}
+}
+
+func (i *inflator) LogPath() string {
+	return i.logfile.Name()
+}
+
+func (i *inflator) Close() error {
+	return i.logfile.Close()
+}
+
+func (i *inflator) Inflate(logger lager.Logger, archivePath, destination string) error {
+	return i.recInflate(logger, archivePath, destination, false)
+}
+
+func (i *inflator) recInflate(logger lager.Logger, path, destination string, cleanup bool) error {
 	fh, err := os.Open(path)
 	if err != nil {
 		return err
@@ -23,7 +49,7 @@ func RecursivelyExtractArchive(logger lager.Logger, path, destination string, cl
 	if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
 		basename := filepath.Base(fh.Name())
 		nextLevelDestination := filepath.Join(destination, basename+"-contents")
-		extractFile(mime, fh.Name(), nextLevelDestination)
+		i.extractFile(mime, fh.Name(), nextLevelDestination)
 
 		err = fh.Close()
 		if err != nil {
@@ -37,7 +63,7 @@ func RecursivelyExtractArchive(logger lager.Logger, path, destination string, cl
 			}
 		}
 
-		return recursivelyExtractArchivesInDir(logger, nextLevelDestination, nextLevelDestination)
+		return i.recursivelyExtractArchivesInDir(logger, nextLevelDestination, nextLevelDestination)
 	}
 
 	err = fh.Close()
@@ -48,7 +74,7 @@ func RecursivelyExtractArchive(logger lager.Logger, path, destination string, cl
 	return nil
 }
 
-func extractFile(mime, path, destination string) {
+func (i *inflator) extractFile(mime, path, destination string) {
 	err := os.MkdirAll(destination, 0755)
 	if err != nil {
 		panic(err.Error())
@@ -75,39 +101,38 @@ func extractFile(mime, path, destination string) {
 		panic(fmt.Sprintf("don't know how to extract %s", mime))
 	}
 
-	buf := &bytes.Buffer{}
-	cmd.Stderr = buf
+	cmd.Stderr = i.logfile
 	err = cmd.Run()
 	if err != nil {
-		fmt.Printf("failed-to-run-cmd: %s\nStderr:\n%s\n", err.Error(), buf.String())
+		// We've already logged the output to a file. Let's just keep going.
 	}
 }
 
-func recursivelyExtractArchivesInDir(logger lager.Logger, path, destination string) error {
+func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, path, destination string) error {
 	children, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err
 	}
 
-	for i := range children {
-		basename := children[i].Name()
+	for c := range children {
+		basename := children[c].Name()
 		wholeName := filepath.Join(path, basename)
 
-		if children[i].IsDir() {
-			err := recursivelyExtractArchivesInDir(logger, wholeName, wholeName)
+		if children[c].IsDir() {
+			err := i.recursivelyExtractArchivesInDir(logger, wholeName, wholeName)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 
-		if !children[i].Mode().IsRegular() {
+		if !children[c].Mode().IsRegular() {
 			continue
 		}
 
 		_, found := nonArchiveExtensions[filepath.Ext(basename)]
 		if !found {
-			RecursivelyExtractArchive(logger, wholeName, destination, true)
+			i.recInflate(logger, wholeName, destination, true)
 		}
 	}
 

@@ -37,6 +37,8 @@ func main() {
 
 	logger := kolsch.NewLogger()
 	sniffer := sniff.NewDefaultSniffer()
+	inflate := inflator.New()
+	defer inflate.Close()
 
 	if opts.File != "" {
 		fh, err := os.Open(opts.File)
@@ -54,7 +56,7 @@ func main() {
 		br := bufio.NewReader(fh)
 		mime, isArchive := mimetype.IsArchive(logger, br)
 		if isArchive {
-			err := inflator.RecursivelyExtractArchive(logger, opts.File, destination, false)
+			err := inflate.Inflate(logger, opts.File, destination)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
@@ -64,6 +66,11 @@ func main() {
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
+
+			fmt.Println()
+			fmt.Println("Scan complete!")
+			fmt.Println()
+			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
 		} else {
 			if strings.HasPrefix(mime, "text") {
 				scanFile(logger, sniffer, br, opts.File)
