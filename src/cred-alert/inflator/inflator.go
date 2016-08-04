@@ -57,7 +57,7 @@ func extractFile(mime, path, destination string) {
 	var cmd *exec.Cmd
 	switch mime {
 	case "application/zip":
-		cmd = exec.Command("unzip", path, "-d", destination)
+		cmd = exec.Command("unzip", "-P", "", "-d", destination, path)
 	case "application/x-tar":
 		cmd = exec.Command("tar", "xf", path, "-C", destination)
 	case "application/gzip", "application/x-gzip":
