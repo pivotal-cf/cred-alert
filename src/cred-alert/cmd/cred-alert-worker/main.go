@@ -92,7 +92,7 @@ func main() {
 		&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
 	)
 	httpClient := &http.Client{
-		Timeout: time.Second,
+		Timeout: 30 * time.Second,
 		Transport: &oauth2.Transport{
 			Source: tokenSource,
 			Base: &http.Transport{
