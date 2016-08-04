@@ -73,6 +73,10 @@ index 940393e..fa5a232 100644
 			It("scans the diff", func() {
 				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt:28"))
 			})
+
+			It("exits with status 1", func() {
+				Eventually(session).Should(gexec.Exit(1))
+			})
 		})
 	})
 

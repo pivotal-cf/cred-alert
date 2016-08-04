@@ -10,6 +10,7 @@ import (
 	"cred-alert/scanners/dirscanner"
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
+	"cred-alert/sniff/credhandler"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -45,6 +46,11 @@ func main() {
 	inflate := inflator.New()
 	defer inflate.Close()
 
+	handler := credhandler.New(func(logger lager.Logger, line scanners.Line) error {
+		fmt.Printf("%s %s:%d\n", red("[CRED]"), line.Path, line.LineNumber)
+		return nil
+	})
+
 	if opts.File != "" {
 		start := time.Now()
 
@@ -71,7 +77,7 @@ func main() {
 			}
 			fmt.Printf("%s\n", green("DONE"))
 
-			dirScanner := dirscanner.New(handleViolation, sniffer)
+			dirScanner := dirscanner.New(handler.HandleViolation, sniffer)
 			err = dirScanner.Scan(logger, destination)
 			if err != nil {
 				log.Fatalln(err.Error())
@@ -85,33 +91,32 @@ func main() {
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
 		} else {
 			if strings.HasPrefix(mime, "text") {
-				scanFile(logger, sniffer, br, opts.File)
+				scanFile(logger, handler, sniffer, br, opts.File)
 			}
 		}
 	} else if opts.Diff {
-		handleDiff(logger, opts)
+		handleDiff(logger, handler, opts)
+
+		if handler.CredentialsFound() {
+			os.Exit(1)
+		}
 	} else {
-		scanFile(logger, sniffer, os.Stdin, "STDIN")
+		scanFile(logger, handler, sniffer, os.Stdin, "STDIN")
 	}
-}
-
-func handleViolation(logger lager.Logger, line scanners.Line) error {
-	fmt.Printf("%s %s:%d\n", red("[CRED]"), line.Path, line.LineNumber)
-
-	return nil
 }
 
 func scanFile(
 	logger lager.Logger,
+	handler *credhandler.Handler,
 	sniffer sniff.Sniffer,
 	f io.Reader,
 	name string,
 ) {
 	scanner := filescanner.New(f, name)
-	sniffer.Sniff(logger, scanner, handleViolation)
+	sniffer.Sniff(logger, scanner, handler.HandleViolation)
 }
 
-func handleDiff(logger lager.Logger, opts Opts) {
+func handleDiff(logger lager.Logger, handler *credhandler.Handler, opts Opts) {
 	logger.Session("handle-diff")
 	diff, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -121,5 +126,5 @@ func handleDiff(logger lager.Logger, opts Opts) {
 	scanner := diffscanner.NewDiffScanner(string(diff))
 	sniffer := sniff.NewDefaultSniffer()
 
-	sniffer.Sniff(logger, scanner, handleViolation)
+	sniffer.Sniff(logger, scanner, handler.HandleViolation)
 }
