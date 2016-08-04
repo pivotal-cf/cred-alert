@@ -16,6 +16,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"code.cloudfoundry.org/lager"
 
@@ -41,6 +42,8 @@ func main() {
 	defer inflate.Close()
 
 	if opts.File != "" {
+		start := time.Now()
+
 		fh, err := os.Open(opts.File)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -67,8 +70,10 @@ func main() {
 				log.Fatalln(err.Error())
 			}
 
+			duration := time.Since(start)
+
 			fmt.Println()
-			fmt.Println("Scan complete!")
+			fmt.Println("Scan complete! Time taken:", duration)
 			fmt.Println()
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
 		} else {
