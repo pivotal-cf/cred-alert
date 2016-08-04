@@ -68,7 +68,7 @@ func NewClient(apiKey string) *client {
 	return &client{
 		apiKey: apiKey,
 		client: &http.Client{
-			Timeout: 1 * time.Second,
+			Timeout: 10 * time.Second,
 			Transport: &http.Transport{
 				DisableKeepAlives: true,
 			},
