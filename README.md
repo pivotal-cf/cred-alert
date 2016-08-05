@@ -4,17 +4,17 @@
 
 ## Dependencies
 
-Cred-alert depends on libmagic being installed on the system in order
-to run. For building you'll need the libmagic header as well, usually
+Cred-alert depends on `libmagic` being installed on the system in order
+to run. For building you'll need the `libmagic` header as well, usually
 provided by a development package of the library.
 
-On Mac OS
+On Mac OS:
 
-  $ brew install libmagic
+    $ brew install libmagic
 
-On debian flavoured linux:
+On a Debian flavoured linux:
 
-  $ apt-get install -y libmagic-dev
+    $ apt-get install -y libmagic-dev
 
 ## Set Up
 
@@ -64,10 +64,10 @@ The default behavior of the cli is to read from standard input, scan for secrets
 matches on standard output. It can also be used to recursively scan files in a directory.
 Use --help to see all options.
 
-#### Scan a directory
+#### Scan a file
 
 
-    $ ./cred-alert-cli -d src/cred-alert/
+    $ ./cred-alert-cli -f src/cred-alert/product.zip
 
 
 #### Scan from standard input
