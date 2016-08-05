@@ -4,27 +4,35 @@ import (
 	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"fmt"
+	"net/http"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/onsi/gomega/ghttp"
+	"code.cloudfoundry.org/clock/fakeclock"
+
 	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Notifications", func() {
-	var slackNotifier notifications.Notifier
-	var logger *lagertest.TestLogger
-	var private bool
+	var (
+		slackNotifier notifications.Notifier
+		clock         *fakeclock.FakeClock
+		logger        *lagertest.TestLogger
+		private       bool
+	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("slack-notifier")
+		clock = fakeclock.NewFakeClock(time.Now())
 		private = true
 	})
 
 	Context("nil webhookUrl", func() {
 		BeforeEach(func() {
-			slackNotifier = notifications.NewSlackNotifier("")
+			slackNotifier = notifications.NewSlackNotifier("", clock)
 		})
 
 		It("Returns a nullNotifier", func() {
@@ -42,7 +50,7 @@ var _ = Describe("Notifications", func() {
 
 		BeforeEach(func() {
 			server = ghttp.NewServer()
-			slackNotifier = notifications.NewSlackNotifier(server.URL())
+			slackNotifier = notifications.NewSlackNotifier(server.URL(), clock)
 		})
 
 		It("POSTs a message to the fake slack webhook", func() {
@@ -59,7 +67,123 @@ var _ = Describe("Notifications", func() {
 			Expect(server.ReceivedRequests()).Should(HaveLen(1))
 		})
 
-		Context("When the repo is public", func() {
+		Context("when Slack responds with an 429 Too Many Requests", func() {
+			BeforeEach(func() {
+				expectedJSON := notificationJSON("warning")
+				header := http.Header{}
+				header.Add("Retry-After", "5")
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+						ghttp.RespondWith(http.StatusTooManyRequests, nil, header),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+						ghttp.RespondWith(http.StatusOK, nil),
+					),
+				)
+			})
+
+			It("tries again after the time it was told", func() {
+				done := make(chan struct{})
+
+				go func() {
+					defer GinkgoRecover()
+
+					err := slackNotifier.SendNotification(
+						logger,
+						"owner/repo",
+						"abc123",
+						scanners.Line{
+							Path:       "path/to/file.txt",
+							LineNumber: 123,
+						},
+						private,
+					)
+					Expect(err).NotTo(HaveOccurred())
+					close(done)
+				}()
+
+				Eventually(server.ReceivedRequests).Should(HaveLen(1))
+				Consistently(done).ShouldNot(BeClosed())
+
+				clock.IncrementBySeconds(4)
+
+				Consistently(server.ReceivedRequests).Should(HaveLen(1))
+				Consistently(done).ShouldNot(BeClosed())
+
+				clock.IncrementBySeconds(2) // 6 seconds total
+
+				Eventually(server.ReceivedRequests).Should(HaveLen(2))
+				Eventually(done).Should(BeClosed())
+			})
+		})
+
+		Context("when Slack responds with an 429 Too Many Requests more than 3 times", func() {
+			BeforeEach(func() {
+				expectedJSON := notificationJSON("warning")
+				header := http.Header{}
+				header.Add("Retry-After", "5")
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+						ghttp.RespondWith(http.StatusTooManyRequests, nil, header),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+						ghttp.RespondWith(http.StatusTooManyRequests, nil, header),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+						ghttp.RespondWith(http.StatusTooManyRequests, nil, header),
+					),
+				)
+			})
+
+			It("gives up and returns an error", func() {
+				done := make(chan struct{})
+
+				go func() {
+					defer GinkgoRecover()
+
+					err := slackNotifier.SendNotification(
+						logger,
+						"owner/repo",
+						"abc123",
+						scanners.Line{
+							Path:       "path/to/file.txt",
+							LineNumber: 123,
+						},
+						private,
+					)
+					Expect(err).To(HaveOccurred())
+
+					close(done)
+				}()
+
+				Eventually(server.ReceivedRequests).Should(HaveLen(1))
+				Eventually(done).ShouldNot(BeClosed())
+
+				clock.IncrementBySeconds(6)
+
+				Eventually(server.ReceivedRequests).Should(HaveLen(2))
+				Consistently(done).ShouldNot(BeClosed())
+
+				clock.IncrementBySeconds(6)
+
+				Eventually(server.ReceivedRequests).Should(HaveLen(3))
+				Eventually(done).Should(BeClosed())
+			})
+		})
+
+		Context("when the repo is public", func() {
 			BeforeEach(func() {
 				private = false
 			})

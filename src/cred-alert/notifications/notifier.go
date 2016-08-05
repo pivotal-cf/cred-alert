@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"cred-alert/scanners"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -20,6 +23,7 @@ type Notifier interface {
 type slackNotifier struct {
 	webhookURL string
 	client     *http.Client
+	clock      clock.Clock
 }
 
 type slackNotification struct {
@@ -33,13 +37,14 @@ type slackAttachment struct {
 	Text     string `json:"text"`
 }
 
-func NewSlackNotifier(webhookURL string) Notifier {
+func NewSlackNotifier(webhookURL string, clock clock.Clock) Notifier {
 	if webhookURL == "" {
 		return &nullSlackNotifier{}
 	}
 
 	return &slackNotifier{
 		webhookURL: webhookURL,
+		clock:      clock,
 		client: &http.Client{
 			Timeout: 3 * time.Second,
 			Transport: &http.Transport{
@@ -48,6 +53,8 @@ func NewSlackNotifier(webhookURL string) Notifier {
 		},
 	}
 }
+
+const maxRetries = 3
 
 func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
 	logger = logger.Session("send-notification")
@@ -61,28 +68,53 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, repository string,
 		return err
 	}
 
-	req, err := http.NewRequest("POST", n.webhookURL, bytes.NewBuffer(body))
-	if err != nil {
-		logger.Error("request-failed", err)
-		return err
+	for numReq := 0; numReq < maxRetries; numReq++ {
+		req, err := http.NewRequest("POST", n.webhookURL, bytes.NewBuffer(body))
+		if err != nil {
+			logger.Error("request-failed", err)
+			return err
+		}
+
+		req.Header.Set("Content-type", "application/json")
+
+		resp, err := n.client.Do(req)
+		if err != nil {
+			logger.Error("response-error", err)
+			return err
+		}
+
+		switch resp.StatusCode {
+		case http.StatusOK:
+			logger.Debug("done")
+			return nil
+		case http.StatusTooManyRequests:
+			lastLoop := (numReq == maxRetries-1)
+			if lastLoop {
+				break
+			}
+
+			afterStr := resp.Header.Get("Retry-After")
+			after, err := strconv.Atoi(afterStr)
+			if err != nil {
+				logger.Error("failed", err)
+				return err
+			}
+
+			wait := after + 1 // +1 for luck
+
+			n.clock.Sleep(time.Duration(wait) * time.Second)
+			continue
+		default:
+			err = fmt.Errorf("bad response (!200): %d", resp.StatusCode)
+			logger.Error("bad-response", err)
+			return err
+		}
 	}
 
-	req.Header.Set("Content-type", "application/json")
+	err = errors.New("retried too many times")
+	logger.Error("failed", err)
 
-	resp, err := n.client.Do(req)
-	if err != nil {
-		logger.Error("response-error", err)
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("bad response (!200): %d", resp.StatusCode)
-		logger.Error("bad-response", err)
-		return err
-	}
-
-	logger.Debug("done")
-	return nil
+	return err
 }
 
 func (n *slackNotifier) buildNotification(repository string, sha string, line scanners.Line, private bool) slackNotification {

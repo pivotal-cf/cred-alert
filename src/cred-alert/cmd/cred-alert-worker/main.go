@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -102,7 +103,8 @@ func main() {
 	}
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	client := githubclient.NewClient(githubclient.DefaultGitHubURL, httpClient, emitter)
-	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl)
+	clock := clock.NewClock()
+	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl, clock)
 	sniffer := sniff.NewDefaultSniffer()
 
 	database, err := createDB(logger, opts)
