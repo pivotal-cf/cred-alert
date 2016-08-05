@@ -136,15 +136,14 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 }
 
 func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
+	logger = logger.Session("downloading-archive")
+
 	if link == nil {
 		err := errors.New("Archive link was nil")
 		logger.Error("failed", err)
 		return nil, err
 	}
 
-	logger.Info("download-archive", lager.Data{
-		"url": link.String(),
-	})
 	logger.Debug("starting")
 
 	tempFile, err := ioutil.TempFile("", "downloaded-git-archive")
