@@ -84,7 +84,7 @@ func (d *DiffScanner) scanHeader(logger lager.Logger, rawLine string) {
 	nextLineNumber := d.currentLineNumber + 1
 
 	if !isInHeader(nextLineNumber, d.currentHunk) {
-		logger.Info("not-in-header")
+		logger.Debug("not-in-header")
 		logger.Debug("done")
 		return
 	}
