@@ -36,10 +36,10 @@ func (i *inflator) Close() error {
 }
 
 func (i *inflator) Inflate(logger lager.Logger, archivePath, destination string) error {
-	return i.recInflate(logger, archivePath, destination, false)
+	return i.inflate(logger, archivePath, destination, false)
 }
 
-func (i *inflator) recInflate(logger lager.Logger, path, destination string, cleanup bool) error {
+func (i *inflator) inflate(logger lager.Logger, path, destination string, cleanup bool) error {
 	fh, err := os.Open(path)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, path, de
 
 		_, found := nonArchiveExtensions[filepath.Ext(basename)]
 		if !found {
-			i.recInflate(logger, wholeName, destination, true)
+			i.inflate(logger, wholeName, destination, true)
 		}
 	}
 
