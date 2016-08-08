@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -57,19 +58,45 @@ func main() {
 			log.Fatalln(err.Error())
 		}
 
-		destination, err := ioutil.TempDir("", "cred-alert-cli")
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-
-		defer os.RemoveAll(destination)
-
 		br := bufio.NewReader(fh)
 		mime, isArchive := mimetype.IsArchive(logger, br)
 		if isArchive {
+			inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+			defer os.RemoveAll(inflateDir)
+
+			violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+
+			archiveViolationHandler := credhandler.New(func(logger lager.Logger, line scanners.Line) error {
+				relPath, err := filepath.Rel(inflateDir, line.Path)
+				if err != nil {
+					return err
+				}
+
+				destPath := filepath.Join(violationsDir, relPath)
+				err = os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
+				if err != nil {
+					return err
+				}
+
+				err = persistFile(line.Path, destPath)
+				if err != nil {
+					return err
+				}
+
+				fmt.Printf("%s %s:%d\n", red("[CRED]"), destPath, line.LineNumber)
+
+				return nil
+			})
+
 			inflateStart := time.Now()
-			fmt.Printf("Inflating archive to %s ... ", destination)
-			err := inflate.Inflate(logger, opts.File, destination)
+			fmt.Printf("Inflating archive... ", inflateDir)
+			err = inflate.Inflate(logger, opts.File, inflateDir)
 			if err != nil {
 				fmt.Printf("%s\n", red("FAILED"))
 				log.Fatalln(err.Error())
@@ -77,8 +104,8 @@ func main() {
 			fmt.Printf("%s (%s)\n", green("DONE"), time.Since(inflateStart))
 
 			scanStart := time.Now()
-			dirScanner := dirscanner.New(handler.HandleViolation, sniffer)
-			err = dirScanner.Scan(logger, destination)
+			dirScanner := dirscanner.New(archiveViolationHandler.HandleViolation, sniffer)
+			err = dirScanner.Scan(logger, inflateDir)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
@@ -87,7 +114,7 @@ func main() {
 			fmt.Println("Scan complete!")
 			fmt.Println()
 			fmt.Println("Time taken:", time.Since(scanStart))
-			fmt.Println("Credentials found:", handler.CredentialCount())
+			fmt.Println("Credentials found:", archiveViolationHandler.CredentialCount())
 			fmt.Println()
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
 		} else {
@@ -105,6 +132,23 @@ func main() {
 	if handler.CredentialsFound() {
 		os.Exit(1)
 	}
+}
+
+func persistFile(srcPath, destPath string) error {
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	_, err = io.Copy(destFile, srcFile)
+	return err
 }
 
 func scanFile(
