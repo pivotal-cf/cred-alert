@@ -64,6 +64,10 @@ index 940393e..fa5a232 100644
 			Eventually(session.Out).Should(gbytes.Say("STDIN"))
 		})
 
+		It("exits with status 1", func() {
+			Eventually(session).Should(gexec.Exit(1))
+		})
+
 		Context("when given a --diff flag", func() {
 			BeforeEach(func() {
 				cmdArgs = []string{"--diff"}
@@ -74,9 +78,6 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt:28"))
 			})
 
-			It("exits with status 1", func() {
-				Eventually(session).Should(gexec.Exit(1))
-			})
 		})
 	})
 
@@ -111,6 +112,10 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("Credentials found: 1"))
 			})
 		}
+
+		It("exits with status 1", func() {
+			Eventually(session).Should(gexec.Exit(1))
+		})
 
 		Context("when the file is a zip file", func() {
 			var (
@@ -223,6 +228,44 @@ index 940393e..fa5a232 100644
 			})
 
 			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+		})
+	})
+
+	Context("When no credentials are found", func() {
+		var politeText = `
+			words
+			NotACredential
+			words
+		`
+		var tmpFile *os.File
+
+		Context("when given content on stdin", func() {
+			BeforeEach(func() {
+				stdin = strings.NewReader(politeText)
+			})
+			It("exits with status 0", func() {
+				Eventually(session).Should(gexec.Exit(0))
+			})
+		})
+
+		Context("when given a file flag", func() {
+			BeforeEach(func() {
+				var err error
+				tmpFile, err = ioutil.TempFile("", "cli-main-test")
+				Expect(err).NotTo(HaveOccurred())
+				defer tmpFile.Close()
+
+				ioutil.WriteFile(tmpFile.Name(), []byte(politeText), os.ModePerm)
+
+				cmdArgs = []string{"-f", tmpFile.Name()}
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(tmpFile.Name())
+			})
+			It("exits with status 0", func() {
+				Eventually(session).Should(gexec.Exit(0))
+			})
 		})
 	})
 })

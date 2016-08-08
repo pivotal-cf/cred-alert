@@ -100,11 +100,12 @@ func main() {
 	} else if opts.Diff {
 		handleDiff(logger, handler, opts)
 
-		if handler.CredentialsFound() {
-			os.Exit(1)
-		}
 	} else {
 		scanFile(logger, handler, sniffer, os.Stdin, "STDIN")
+	}
+
+	if handler.CredentialsFound() {
+		os.Exit(1)
 	}
 }
 
