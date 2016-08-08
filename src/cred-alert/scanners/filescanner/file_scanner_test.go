@@ -7,10 +7,10 @@ import (
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("File", func() {

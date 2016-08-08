@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/gomega"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 type Runner struct {

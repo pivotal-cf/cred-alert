@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/google/go-github/github"
 	"code.cloudfoundry.org/lager"
+	"github.com/google/go-github/github"
 )
 
 type handler struct {

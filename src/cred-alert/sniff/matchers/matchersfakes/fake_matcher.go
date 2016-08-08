@@ -15,6 +15,8 @@ type FakeMatcher struct {
 	matchReturns struct {
 		result1 bool
 	}
+	invocations      map[string][][]interface{}
+	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeMatcher) Match(arg1 []byte) bool {
@@ -27,6 +29,7 @@ func (fake *FakeMatcher) Match(arg1 []byte) bool {
 	fake.matchArgsForCall = append(fake.matchArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
+	fake.recordInvocation("Match", []interface{}{arg1Copy})
 	fake.matchMutex.Unlock()
 	if fake.MatchStub != nil {
 		return fake.MatchStub(arg1)
@@ -52,6 +55,26 @@ func (fake *FakeMatcher) MatchReturns(result1 bool) {
 	fake.matchReturns = struct {
 		result1 bool
 	}{result1}
+}
+
+func (fake *FakeMatcher) Invocations() map[string][][]interface{} {
+	fake.invocationsMutex.RLock()
+	defer fake.invocationsMutex.RUnlock()
+	fake.matchMutex.RLock()
+	defer fake.matchMutex.RUnlock()
+	return fake.invocations
+}
+
+func (fake *FakeMatcher) recordInvocation(key string, args []interface{}) {
+	fake.invocationsMutex.Lock()
+	defer fake.invocationsMutex.Unlock()
+	if fake.invocations == nil {
+		fake.invocations = map[string][][]interface{}{}
+	}
+	if fake.invocations[key] == nil {
+		fake.invocations[key] = [][]interface{}{}
+	}
+	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
 var _ matchers.Matcher = new(FakeMatcher)

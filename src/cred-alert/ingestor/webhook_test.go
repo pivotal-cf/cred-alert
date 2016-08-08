@@ -13,8 +13,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/google/go-github/github"
 	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/google/go-github/github"
 
 	"cred-alert/ingestor"
 	"cred-alert/ingestor/ingestorfakes"

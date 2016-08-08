@@ -4,9 +4,9 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Counters", func() {

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/BurntSushi/migration"
 	"github.com/jinzhu/gorm"
-	"code.cloudfoundry.org/lager"
 )
 
 func LockDBAndMigrate(logger lager.Logger, driver, dbURI string) (*gorm.DB, error) {

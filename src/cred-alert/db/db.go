@@ -3,9 +3,9 @@ package db
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"code.cloudfoundry.org/lager"
 )
 
 func NewDSN(username, password, dbName, hostname string, port int) string {
