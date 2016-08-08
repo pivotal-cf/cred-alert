@@ -20,7 +20,7 @@ import (
 var _ = Describe("Main", func() {
 	var (
 		cmdArgs       []string
-		stdin         io.Reader
+		stdin         string
 		session       *gexec.Session
 		offendingText = `
 			words
@@ -40,13 +40,13 @@ index 940393e..fa5a232 100644
 	)
 
 	BeforeEach(func() {
-		stdin = nil
+		stdin = ""
 	})
 
 	JustBeforeEach(func() {
 		cmd := exec.Command(cliPath, cmdArgs...)
-		if stdin != nil {
-			cmd.Stdin = stdin
+		if stdin != "" {
+			cmd.Stdin = strings.NewReader(stdin)
 		}
 
 		var err error
@@ -56,7 +56,7 @@ index 940393e..fa5a232 100644
 
 	Context("when given content on stdin", func() {
 		BeforeEach(func() {
-			stdin = strings.NewReader(offendingText)
+			stdin = offendingText
 		})
 
 		It("scans stdin", func() {
@@ -71,7 +71,7 @@ index 940393e..fa5a232 100644
 		Context("when given a --diff flag", func() {
 			BeforeEach(func() {
 				cmdArgs = []string{"--diff"}
-				stdin = strings.NewReader(offendingDiff)
+				stdin = offendingDiff
 			})
 
 			It("scans the diff", func() {
@@ -241,7 +241,8 @@ index 940393e..fa5a232 100644
 
 		Context("when given content on stdin", func() {
 			BeforeEach(func() {
-				stdin = strings.NewReader(politeText)
+				cmdArgs = []string{}
+				stdin = politeText
 			})
 			It("exits with status 0", func() {
 				Eventually(session).Should(gexec.Exit(0))
