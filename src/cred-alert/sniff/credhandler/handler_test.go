@@ -36,7 +36,7 @@ var _ = Describe("Handler", func() {
 
 	It("calls the registered handler func", func() {
 		line := scanners.Line{
-			Content:    "credential",
+			Content:    []byte("credential"),
 			Path:       "/etc/shadow",
 			LineNumber: 42,
 		}
@@ -49,7 +49,7 @@ var _ = Describe("Handler", func() {
 
 	It("can check whether or not a credential was found", func() {
 		line := scanners.Line{
-			Content:    "credential",
+			Content:    []byte("credential"),
 			Path:       "/etc/shadow",
 			LineNumber: 42,
 		}
@@ -64,7 +64,7 @@ var _ = Describe("Handler", func() {
 
 	It("can tell you how many credentials were found", func() {
 		line := scanners.Line{
-			Content:    "credential",
+			Content:    []byte("credential"),
 			Path:       "/etc/shadow",
 			LineNumber: 42,
 		}

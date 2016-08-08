@@ -66,12 +66,12 @@ index 1e13fe8..06b14f8 100644
 
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
-		Expect(diffScanner.Line(logger).Content).To(Equal(`first line of content`))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`first line of content`)))
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(5))
 
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
-		Expect(diffScanner.Line(logger).Content).To(Equal("second line of content"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("second line of content")))
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(6))
 	})
 
@@ -86,13 +86,13 @@ index 1e13fe8..06b14f8 100644
 		diffScanner.Scan(logger)
 
 		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
-		Expect(diffScanner.Line(logger).Content).To(Equal("first line of content"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("first line of content")))
 
 		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).Content).To(Equal("second line of content"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("second line of content")))
 
 		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).Content).To(Equal("++sneaky line of content"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("++sneaky line of content")))
 	})
 
 	It("scans for a hunk", func() {
@@ -117,7 +117,7 @@ index 1e13fe8..06b14f8 100644
 		}
 
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(36))
-		Expect(diffScanner.Line(logger).Content).To(Equal("## Special Characters"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("## Special Characters")))
 	})
 
 	It("scans single line hunks", func() {
@@ -125,24 +125,24 @@ index 1e13fe8..06b14f8 100644
 
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(1))
-		Expect(diffScanner.Line(logger).Content).To(Equal("blah"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("blah")))
 
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(2))
-		Expect(diffScanner.Line(logger).Content).To(Equal("lol"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("lol")))
 		Expect(diffScanner.Scan(logger)).To(BeFalse())
 
 		diffScanner = diffscanner.NewDiffScanner(singleLineAddedFile)
 
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(1))
-		Expect(diffScanner.Line(logger).Content).To(Equal("rofl"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("rofl")))
 		Expect(diffScanner.Scan(logger)).To(BeFalse())
 
 		diffScanner = diffscanner.NewDiffScanner(singleLineReplacementFile)
 		diffScanner.Scan(logger)
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(1))
-		Expect(diffScanner.Line(logger).Content).To(Equal("afk"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("afk")))
 		Expect(diffScanner.Scan(logger)).To(BeFalse())
 	})
 
@@ -159,7 +159,7 @@ index 1e13fe8..06b14f8 100644
 		}
 
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(28))
-		Expect(diffScanner.Line(logger).Content).To(Equal("private_key '$should_match'"))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("private_key '$should_match'")))
 		Expect(diffScanner.Line(logger).Path).To(Equal("spec/integration/git-secrets-pattern-tests2.txt"))
 	})
 
@@ -176,7 +176,7 @@ index 1e13fe8..06b14f8 100644
 		}
 
 		Expect(diffScanner.Line(logger).LineNumber).To(Equal(32))
-		Expect(diffScanner.Line(logger).Content).To(Equal(`hard_coded_salt: "should_match"`))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`hard_coded_salt: "should_match"`)))
 		Expect(diffScanner.Line(logger).Path).To(Equal("spec/integration/git-secrets-pattern-tests.txt"))
 	})
 })

@@ -113,7 +113,7 @@ var _ = Describe("Diff Scan Job", func() {
 				return handleViolation(logger, scanners.Line{
 					Path:       filePath,
 					LineNumber: 1,
-					Content:    "content",
+					Content:    []byte("content"),
 				})
 			}
 		})
@@ -141,7 +141,7 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(line).To(Equal(scanners.Line{
 				Path:       "some/file/path",
 				LineNumber: lineNumber,
-				Content:    "content",
+				Content:    []byte("content"),
 			}))
 			Expect(private).To(Equal(plan.Private))
 		})

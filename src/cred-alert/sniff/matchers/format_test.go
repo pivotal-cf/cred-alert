@@ -16,16 +16,16 @@ var _ = Describe("Format", func() {
 
 	It("returns true when the line matches case-sensitively", func() {
 		line := "aws_access_key_id: AKIAIOSFOEXAMPLETPWI"
-		Expect(matcher.Match(line)).To(BeTrue())
+		Expect(matcher.Match([]byte(line))).To(BeTrue())
 	})
 
 	It("returns false when the line does not match case-sensitively", func() {
 		line := "aws_access_key_id: akiaiosfoexampletpwi"
-		Expect(matcher.Match(line)).To(BeFalse())
+		Expect(matcher.Match([]byte(line))).To(BeFalse())
 	})
 
 	It("returns false when the line does not match", func() {
 		line := "does not match"
-		Expect(matcher.Match(line)).To(BeFalse())
+		Expect(matcher.Match([]byte(line))).To(BeFalse())
 	})
 })

@@ -41,7 +41,7 @@ var _ = Describe("Sniffer", func() {
 		expectedLine = &scanners.Line{
 			Path:       "some-path",
 			LineNumber: 42,
-			Content:    "some-content",
+			Content:    []byte("some-content"),
 		}
 		scanner.LineReturns(expectedLine)
 	})
@@ -76,7 +76,7 @@ var _ = Describe("Sniffer", func() {
 
 		Context("when the regular matcher returns true", func() {
 			BeforeEach(func() {
-				matcher.MatchStub = func(string) bool {
+				matcher.MatchStub = func([]byte) bool {
 					return matcher.MatchCallCount() != 1 // 2 should match
 				}
 			})
@@ -153,12 +153,12 @@ var _ = Describe("Sniffer", func() {
 					scanner.ScanReturns(false)
 
 					return &scanners.Line{
-						Content: line,
+						Content: []byte(line),
 					}
 				}
 
 				sniffer.Sniff(logger, scanner, func(logger lager.Logger, line scanners.Line) error {
-					actuals = append(actuals, line.Content)
+					actuals = append(actuals, string(line.Content))
 					return nil
 				})
 			}

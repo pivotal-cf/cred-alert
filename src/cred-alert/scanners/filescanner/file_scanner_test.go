@@ -47,7 +47,7 @@ line3`
 		fileScanner = filescanner.New(fileHandle, fileHandle.Name())
 	})
 
-	It("scans lines from a file", func() {
+	It("returns true when the scan results in a line", func() {
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
 		Expect(fileScanner.Scan(logger)).To(BeTrue())
@@ -59,7 +59,7 @@ line3`
 		line := fileScanner.Line(logger)
 
 		Expect(line.Path).To(Equal(fileHandle.Name()))
-		Expect(line.Content).To(Equal("line1"))
+		Expect(line.Content).To(ContainSubstring("line1"))
 		Expect(line.LineNumber).To(Equal(1))
 	})
 

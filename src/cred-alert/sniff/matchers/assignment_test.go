@@ -17,7 +17,7 @@ var _ = Describe("Assignment Matcher", func() {
 
 	DescribeTable("not matching other assignments",
 		func(line string) {
-			Expect(matcher.Match(line)).To(BeFalse())
+			Expect(matcher.Match([]byte(line))).To(BeFalse())
 		},
 		Entry("not an assignment", "package not_an_assignment"),
 		Entry("RHS is too short", "password too-short"),
@@ -27,7 +27,7 @@ var _ = Describe("Assignment Matcher", func() {
 
 	DescribeTable("matching secret assignments",
 		func(line string) {
-			Expect(matcher.Match(line)).To(BeTrue())
+			Expect(matcher.Match([]byte(line))).To(BeTrue())
 		},
 		Entry("simple assignment with no operator", "password 'should_match'"),
 		Entry("simple assignment with colon", "password: 'should_match'"),

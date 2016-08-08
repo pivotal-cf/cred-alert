@@ -17,9 +17,9 @@ func Format(format string) Matcher {
 	}
 }
 
-func (m *formatMatcher) Match(line string) bool {
+func (m *formatMatcher) Match(line []byte) bool {
 	m.l.Lock()
 	defer m.l.Unlock()
 
-	return m.r.MatchString(line)
+	return m.r.Match(line)
 }

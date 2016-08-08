@@ -1,24 +1,30 @@
 package matchers
 
-import "strings"
+import "bytes"
 
 func Filter(submatcher Matcher, filters ...string) Matcher {
+	fs := make([][]byte, len(filters))
+
+	for i := range filters {
+		fs[i] = []byte(filters[i])
+	}
+
 	return &filter{
 		matcher: submatcher,
-		filters: filters,
+		filters: fs,
 	}
 }
 
 type filter struct {
 	matcher Matcher
-	filters []string
+	filters [][]byte
 }
 
-func (f *filter) Match(line string) bool {
+func (f *filter) Match(line []byte) bool {
 	found := false
 
 	for i := range f.filters {
-		if strings.Contains(line, f.filters[i]) {
+		if bytes.Contains(line, f.filters[i]) {
 			found = true
 			break
 		}

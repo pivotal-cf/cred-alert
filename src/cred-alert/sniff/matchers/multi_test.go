@@ -20,14 +20,14 @@ var _ = Describe("UpcasedMulti", func() {
 	})
 
 	It("calls each matcher with the line", func() {
-		multimatcher.Match("this is a line")
+		multimatcher.Match([]byte("this is a line"))
 
 		Expect(matcher.MatchCallCount()).To(Equal(1))
-		Expect(matcher.MatchArgsForCall(0)).To(Equal("THIS IS A LINE"))
+		Expect(matcher.MatchArgsForCall(0)).To(Equal([]byte("THIS IS A LINE")))
 	})
 
 	It("returns false", func() {
-		matches := multimatcher.Match("this is a line")
+		matches := multimatcher.Match([]byte("this is a line"))
 
 		Expect(matches).To(BeFalse())
 	})
@@ -45,13 +45,13 @@ var _ = Describe("UpcasedMulti", func() {
 		})
 
 		It("returns true", func() {
-			matches := multimatcher.Match("this is a line")
+			matches := multimatcher.Match([]byte("this is a line"))
 
 			Expect(matches).To(BeTrue())
 		})
 
 		It("doesn't call the later matchers", func() {
-			multimatcher.Match("this is a line")
+			multimatcher.Match([]byte("this is a line"))
 
 			Expect(matcher.MatchCallCount()).To(BeZero())
 		})

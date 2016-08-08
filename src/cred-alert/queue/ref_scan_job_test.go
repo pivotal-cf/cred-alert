@@ -93,7 +93,7 @@ var _ = Describe("RefScan Job", func() {
 
 	Describe("Run", func() {
 		filePath := "some/file/path"
-		fileContent := "content"
+		fileContent := []byte("content")
 		lineNumber := 2
 
 		BeforeEach(func() {

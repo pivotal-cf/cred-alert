@@ -40,7 +40,7 @@ line3`
 		line := scanner.Line(logger)
 
 		Expect(line.Path).To(Equal("text"))
-		Expect(line.Content).To(Equal("line1"))
+		Expect(line.Content).To(ContainSubstring("line1"))
 		Expect(line.LineNumber).To(Equal(1))
 	})
 

@@ -1,6 +1,6 @@
 package matchers
 
-import "strings"
+import "bytes"
 
 func UpcasedMulti(matchers ...Matcher) Matcher {
 	return &multi{
@@ -12,8 +12,8 @@ type multi struct {
 	matchers []Matcher
 }
 
-func (m *multi) Match(line string) bool {
-	upcasedLine := strings.ToUpper(line)
+func (m *multi) Match(line []byte) bool {
+	upcasedLine := bytes.ToUpper(line)
 	for _, matcher := range m.matchers {
 		if matcher.Match(upcasedLine) {
 			return true

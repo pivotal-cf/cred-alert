@@ -71,7 +71,7 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 
 	logger.Debug("done")
 	return &scanners.Line{
-		Content:    content,
+		Content:    []byte(content),
 		LineNumber: lineNumber,
 		Path:       path,
 	}

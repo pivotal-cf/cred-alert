@@ -9,15 +9,16 @@ import (
 )
 
 type fileScanner struct {
-	path         string
-	bufioScanner *bufio.Scanner
-	lineNumber   int
+	path        string
+	reader      *bufio.Reader
+	lineNumber  int
+	currentLine []byte
 }
 
 func New(r io.Reader, filename string) *fileScanner {
 	return &fileScanner{
-		path:         filename,
-		bufioScanner: bufio.NewScanner(r),
+		path:   filename,
+		reader: bufio.NewReader(r),
 	}
 }
 
@@ -25,19 +26,20 @@ func (s *fileScanner) Scan(logger lager.Logger) bool {
 	logger = logger.Session("file-scanner").Session("scan")
 	logger.Debug("starting")
 
-	success := s.bufioScanner.Scan()
-
-	if err := s.bufioScanner.Err(); err != nil {
+	line, err := s.reader.ReadBytes('\n')
+	if err != nil && err != io.EOF {
 		logger.Error("bufio-error", err)
 		return false
 	}
 
-	if success {
-		s.lineNumber++
+	if len(line) == 0 {
+		return false
 	}
 
-	logger.Debug("done")
-	return success
+	s.currentLine = line
+	s.lineNumber++
+
+	return true
 }
 
 func (s *fileScanner) Line(logger lager.Logger) *scanners.Line {
@@ -51,7 +53,7 @@ func (s *fileScanner) Line(logger lager.Logger) *scanners.Line {
 	logger.Debug("starting")
 	logger.Debug("done")
 	return &scanners.Line{
-		Content:    s.bufioScanner.Text(),
+		Content:    s.currentLine,
 		LineNumber: lineNumber,
 		Path:       path,
 	}

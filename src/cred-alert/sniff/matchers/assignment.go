@@ -1,8 +1,8 @@
 package matchers
 
 import (
+	"bytes"
 	"regexp"
-	"strings"
 	"sync"
 )
 
@@ -32,27 +32,33 @@ type assignmentMatcher struct {
 	l                 *sync.Mutex
 }
 
-func (m *assignmentMatcher) Match(line string) bool {
+func (m *assignmentMatcher) Match(line []byte) bool {
 	m.l.Lock()
 	defer m.l.Unlock()
 
-	upcasedLine := strings.ToUpper(line)
-	result := m.pattern.FindStringSubmatch(upcasedLine)
-	if result == nil {
+	upcasedLine := bytes.ToUpper(line)
+	matchIndexPairs := m.pattern.FindSubmatchIndex(upcasedLine)
+	if matchIndexPairs == nil {
 		return false
 	}
 
-	if m.guidPattern.MatchString(upcasedLine) {
+	if m.guidPattern.Match(upcasedLine) {
 		return false
 	}
 
-	if isYAMLAssignment(result) {
-		return m.yamlPattern.MatchString(upcasedLine)
+	if isYAMLAssignment(matchIndexPairs, line) {
+		return m.yamlPattern.Match(upcasedLine)
 	}
 
-	return m.assignmentPattern.MatchString(upcasedLine)
+	return m.assignmentPattern.Match(upcasedLine)
 }
 
-func isYAMLAssignment(result []string) bool {
-	return result[1] == ":"
+func isYAMLAssignment(matchIndexPairs []int, line []byte) bool {
+	startMatch := matchIndexPairs[2]
+	endMatch := matchIndexPairs[3]
+	if startMatch != -1 && endMatch != 1 {
+		return bytes.Compare(line[startMatch:endMatch], []byte(":")) == 0
+	}
+
+	return false
 }
