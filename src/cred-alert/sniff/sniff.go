@@ -19,6 +19,8 @@ const cryptSHA256Pattern = `\$5\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{43}`
 const cryptSHA512Pattern = `\$6\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{86}`
 const rsaPrivateKeyHeaderPattern = `-----BEGIN RSA PRIVATE KEY-----`
 
+type ViolationHandlerFunc func(lager.Logger, scanners.Line) error
+
 //go:generate counterfeiter . Scanner
 
 type Scanner interface {
@@ -29,7 +31,7 @@ type Scanner interface {
 //go:generate counterfeiter . Sniffer
 
 type Sniffer interface {
-	Sniff(lager.Logger, Scanner, func(lager.Logger, scanners.Line) error) error
+	Sniff(lager.Logger, Scanner, ViolationHandlerFunc) error
 }
 
 type sniffer struct {
@@ -66,7 +68,7 @@ func NewDefaultSniffer() Sniffer {
 func (s *sniffer) Sniff(
 	logger lager.Logger,
 	scanner Scanner,
-	handleViolation func(lager.Logger, scanners.Line) error,
+	handleViolation ViolationHandlerFunc,
 ) error {
 	logger = logger.Session("sniff")
 	logger.Debug("starting")

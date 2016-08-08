@@ -10,7 +10,6 @@ import (
 	"cred-alert/scanners/dirscanner"
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
-	"cred-alert/sniff/credhandler"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -47,10 +46,13 @@ func main() {
 	inflate := inflator.New()
 	defer inflate.Close()
 
-	handler := credhandler.New(func(logger lager.Logger, line scanners.Line) error {
+	var credsFound int
+	handler := func(logger lager.Logger, line scanners.Line) error {
+		credsFound++
 		fmt.Printf("%s %s:%d\n", red("[CRED]"), line.Path, line.LineNumber)
+
 		return nil
-	})
+	}
 
 	if opts.File != "" {
 		fh, err := os.Open(opts.File)
@@ -72,7 +74,8 @@ func main() {
 				log.Fatalln(err.Error())
 			}
 
-			archiveViolationHandler := credhandler.New(func(logger lager.Logger, line scanners.Line) error {
+			archiveViolationHandler := func(logger lager.Logger, line scanners.Line) error {
+				credsFound++
 				relPath, err := filepath.Rel(inflateDir, line.Path)
 				if err != nil {
 					return err
@@ -92,7 +95,7 @@ func main() {
 				fmt.Printf("%s %s:%d\n", red("[CRED]"), destPath, line.LineNumber)
 
 				return nil
-			})
+			}
 
 			inflateStart := time.Now()
 			fmt.Printf("Inflating archive... ", inflateDir)
@@ -104,7 +107,7 @@ func main() {
 			fmt.Printf("%s (%s)\n", green("DONE"), time.Since(inflateStart))
 
 			scanStart := time.Now()
-			dirScanner := dirscanner.New(archiveViolationHandler.HandleViolation, sniffer)
+			dirScanner := dirscanner.New(archiveViolationHandler, sniffer)
 			err = dirScanner.Scan(logger, inflateDir)
 			if err != nil {
 				log.Fatalln(err.Error())
@@ -114,7 +117,7 @@ func main() {
 			fmt.Println("Scan complete!")
 			fmt.Println()
 			fmt.Println("Time taken:", time.Since(scanStart))
-			fmt.Println("Credentials found:", archiveViolationHandler.CredentialCount())
+			fmt.Println("Credentials found:", credsFound)
 			fmt.Println()
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
 		} else {
@@ -129,7 +132,7 @@ func main() {
 		scanFile(logger, handler, sniffer, os.Stdin, "STDIN")
 	}
 
-	if handler.CredentialsFound() {
+	if credsFound > 0 {
 		os.Exit(1)
 	}
 }
@@ -153,16 +156,16 @@ func persistFile(srcPath, destPath string) error {
 
 func scanFile(
 	logger lager.Logger,
-	handler *credhandler.Handler,
+	handler sniff.ViolationHandlerFunc,
 	sniffer sniff.Sniffer,
 	f io.Reader,
 	name string,
 ) {
 	scanner := filescanner.New(f, name)
-	sniffer.Sniff(logger, scanner, handler.HandleViolation)
+	sniffer.Sniff(logger, scanner, handler)
 }
 
-func handleDiff(logger lager.Logger, handler *credhandler.Handler, opts Opts) {
+func handleDiff(logger lager.Logger, handler sniff.ViolationHandlerFunc, opts Opts) {
 	logger.Session("handle-diff")
 	diff, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -172,5 +175,5 @@ func handleDiff(logger lager.Logger, handler *credhandler.Handler, opts Opts) {
 	scanner := diffscanner.NewDiffScanner(string(diff))
 	sniffer := sniff.NewDefaultSniffer()
 
-	sniffer.Sniff(logger, scanner, handler.HandleViolation)
+	sniffer.Sniff(logger, scanner, handler)
 }

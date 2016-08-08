@@ -106,7 +106,7 @@ var _ = Describe("RefScan Job", func() {
 					ghttp.RespondWith(http.StatusOK, someZip.Bytes(), http.Header{}),
 				),
 			)
-			sniffer.SniffStub = func(lgr lager.Logger, scanner sniff.Scanner, handleViolation func(lager.Logger, scanners.Line) error) error {
+			sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation sniff.ViolationHandlerFunc) error {
 				return handleViolation(logger, scanners.Line{
 					Path:       filePath,
 					LineNumber: lineNumber,

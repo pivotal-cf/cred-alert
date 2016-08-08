@@ -2,7 +2,6 @@
 package snifffakes
 
 import (
-	"cred-alert/scanners"
 	"cred-alert/sniff"
 	"sync"
 
@@ -10,12 +9,12 @@ import (
 )
 
 type FakeSniffer struct {
-	SniffStub        func(lager.Logger, sniff.Scanner, func(lager.Logger, scanners.Line) error) error
+	SniffStub        func(lager.Logger, sniff.Scanner, sniff.ViolationHandlerFunc) error
 	sniffMutex       sync.RWMutex
 	sniffArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 sniff.Scanner
-		arg3 func(lager.Logger, scanners.Line) error
+		arg3 sniff.ViolationHandlerFunc
 	}
 	sniffReturns struct {
 		result1 error
@@ -24,12 +23,12 @@ type FakeSniffer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSniffer) Sniff(arg1 lager.Logger, arg2 sniff.Scanner, arg3 func(lager.Logger, scanners.Line) error) error {
+func (fake *FakeSniffer) Sniff(arg1 lager.Logger, arg2 sniff.Scanner, arg3 sniff.ViolationHandlerFunc) error {
 	fake.sniffMutex.Lock()
 	fake.sniffArgsForCall = append(fake.sniffArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 sniff.Scanner
-		arg3 func(lager.Logger, scanners.Line) error
+		arg3 sniff.ViolationHandlerFunc
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("Sniff", []interface{}{arg1, arg2, arg3})
 	fake.sniffMutex.Unlock()
@@ -46,7 +45,7 @@ func (fake *FakeSniffer) SniffCallCount() int {
 	return len(fake.sniffArgsForCall)
 }
 
-func (fake *FakeSniffer) SniffArgsForCall(i int) (lager.Logger, sniff.Scanner, func(lager.Logger, scanners.Line) error) {
+func (fake *FakeSniffer) SniffArgsForCall(i int) (lager.Logger, sniff.Scanner, sniff.ViolationHandlerFunc) {
 	fake.sniffMutex.RLock()
 	defer fake.sniffMutex.RUnlock()
 	return fake.sniffArgsForCall[i].arg1, fake.sniffArgsForCall[i].arg2, fake.sniffArgsForCall[i].arg3
