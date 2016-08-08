@@ -52,8 +52,6 @@ func main() {
 	})
 
 	if opts.File != "" {
-		start := time.Now()
-
 		fh, err := os.Open(opts.File)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -69,26 +67,26 @@ func main() {
 		br := bufio.NewReader(fh)
 		mime, isArchive := mimetype.IsArchive(logger, br)
 		if isArchive {
-			fmt.Printf("Inflating archive... ")
+			inflateStart := time.Now()
+			fmt.Printf("Inflating archive to %s ... ", destination)
 			err := inflate.Inflate(logger, opts.File, destination)
 			if err != nil {
 				fmt.Printf("%s\n", red("FAILED"))
 				log.Fatalln(err.Error())
 			}
-			fmt.Printf("%s\n", green("DONE"))
+			fmt.Printf("%s (%s)\n", green("DONE"), time.Since(inflateStart))
 
+			scanStart := time.Now()
 			dirScanner := dirscanner.New(handler.HandleViolation, sniffer)
 			err = dirScanner.Scan(logger, destination)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
 
-			duration := time.Since(start)
-
 			fmt.Println()
 			fmt.Println("Scan complete!")
 			fmt.Println()
-			fmt.Println("Time taken:", duration)
+			fmt.Println("Time taken:", time.Since(scanStart))
 			fmt.Println("Credentials found:", handler.CredentialCount())
 			fmt.Println()
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
