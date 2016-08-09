@@ -112,7 +112,6 @@ func main() {
 		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
-	defer database.Close()
 
 	diffScanRepository := db.NewDiffScanRepository(database)
 	commitRepository := db.NewCommitRepository(database)
@@ -146,7 +145,19 @@ func main() {
 		)},
 	}
 
-	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
+	dbCloser := ifrit.RunFunc(func(signals <-chan os.Signal, ready chan<- struct{}) error {
+		close(ready)
+		<-signals
+
+		database.Close()
+
+		return nil
+	})
+
+	runner := sigmon.New(grouper.NewOrdered(os.Interrupt, grouper.Members{
+		{"main", grouper.NewParallel(os.Interrupt, members)},
+		{"dbCloser", dbCloser},
+	}))
 
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
