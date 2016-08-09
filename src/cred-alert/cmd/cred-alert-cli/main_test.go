@@ -64,8 +64,8 @@ index 940393e..fa5a232 100644
 			Eventually(session.Out).Should(gbytes.Say("STDIN"))
 		})
 
-		It("exits with status 1", func() {
-			Eventually(session).Should(gexec.Exit(1))
+		It("exits with status 3", func() {
+			Eventually(session).Should(gexec.Exit(3))
 		})
 
 		Context("when given a --diff flag", func() {
@@ -113,8 +113,8 @@ index 940393e..fa5a232 100644
 			})
 		}
 
-		It("exits with status 1", func() {
-			Eventually(session).Should(gexec.Exit(1))
+		It("exits with status 3", func() {
+			Eventually(session).Should(gexec.Exit(3))
 		})
 
 		Context("when the file is a zip file", func() {

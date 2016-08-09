@@ -32,7 +32,7 @@ case "${hook_type}" in
   pre-commit)
     output=$(pre_commit_diff | cred-alert-cli --diff)
     status="$?"
-    if [ "$status" -ne 0 ]; then
+    if [ "$status" -eq 3 ]; then
       printf "Found possible credentials in the commit! Locations are listed below:\n"
       printf "%s\n" "$output"
     fi
@@ -41,7 +41,7 @@ case "${hook_type}" in
   commit-msg)
     output=$(cred-alert-cli -f "${1}")
     status="$?"
-    if [ "$status" -ne 0 ]; then
+    if [ "$status" -eq 3 ]; then
       printf "Found possible credentials in the commit message!\n"
       printf "%s\n" "$output"
     fi
@@ -51,7 +51,7 @@ case "${hook_type}" in
     merge_indicator="${2},${3}"
     output=$(prepare_commit_msg_diff "${merge_indicator}" | cred-alert-cli --diff)
     status="$?"
-    if [ "$status" -ne 0 ]; then
+    if [ "$status" -eq 3 ]; then
       printf "Found possible credentials in the commit! Locations are listed below:\n"
       printf "%s\n" "$output"
     fi

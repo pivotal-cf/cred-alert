@@ -133,7 +133,7 @@ func main() {
 	}
 
 	if credsFound > 0 {
-		os.Exit(1)
+		os.Exit(3)
 	}
 }
 
