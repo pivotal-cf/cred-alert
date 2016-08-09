@@ -30,14 +30,32 @@ prepare_commit_msg_diff() {
 
 case "${hook_type}" in
   pre-commit)
-    echo "$(pre_commit_diff)" | cred-alert-cli --diff
+    output=$(pre_commit_diff | cred-alert-cli --diff)
+    status="$?"
+    if [ "$status" -ne 0 ]; then
+      printf "Found possible credentials in the commit! Locations are listed below:\n"
+      printf "%s\n" "$output"
+    fi
+    exit "$status"
   ;;
   commit-msg)
-    cred-alert-cli -f "${1}"
+    output=$(cred-alert-cli -f "${1}")
+    status="$?"
+    if [ "$status" -ne 0 ]; then
+      printf "Found possible credentials in the commit message!\n"
+      printf "%s\n" "$output"
+    fi
+    exit "$status"
     ;;
   prepare-commit-msg)
     merge_indicator="${2},${3}"
-    echo "$(prepare_commit_msg_diff "${merge_indicator}")" | cred-alert-cli --diff
+    output=$(prepare_commit_msg_diff "${merge_indicator}" | cred-alert-cli --diff)
+    status="$?"
+    if [ "$status" -ne 0 ]; then
+      printf "Found possible credentials in the commit! Locations are listed below:\n"
+      printf "%s\n" "$output"
+    fi
+    exit "$status"
     ;;
   *) ;;
 esac
