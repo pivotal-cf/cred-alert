@@ -76,6 +76,14 @@ Use --help to see all options.
     $ cat src/cred-alert/sniff/patterns/samples_for_test.go | ./cred-alert-cli
 
 
+#### Exit status
+
+  `0` No error occurred and no credentials found
+
+  `1` Miscellaneous error occurred
+
+  `3` Found credentials
+
 ## Server
 
 The server app sets up an endpoint at `/webhook` to receive Github webhooks.
