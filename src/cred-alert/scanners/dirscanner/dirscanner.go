@@ -11,9 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
-
-	"github.com/cloudfoundry/gunk/workpool"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -31,25 +28,12 @@ func New(handler func(lager.Logger, scanners.Line) error, sniffer sniff.Sniffer)
 }
 
 func (s *dirScanner) Scan(logger lager.Logger, path string) error {
-	workPool, err := workpool.NewWorkPool(2)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-
-	err = s.scan(logger, path, wg, workPool)
-
-	wg.Done()
-	wg.Wait()
-
-	workPool.Stop()
-
-	return err
+	return s.scan(logger, path)
 }
 
 func (s *dirScanner) scan(
 	logger lager.Logger,
 	path string,
-	wg *sync.WaitGroup,
-	workPool *workpool.WorkPool,
 ) error {
 	children, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -58,22 +42,24 @@ func (s *dirScanner) scan(
 	}
 
 	for i := range children {
-		_, skippable := skippableExtensions[filepath.Ext(children[i].Name())]
+		child := children[i]
+
+		_, skippable := skippableExtensions[filepath.Ext(child.Name())]
 		if skippable {
 			continue
 		}
 
-		wholePath := filepath.Join(path, children[i].Name())
+		wholePath := filepath.Join(path, child.Name())
 
-		if children[i].IsDir() {
-			err := s.scan(logger, wholePath, wg, workPool)
+		if child.IsDir() {
+			err := s.scan(logger, wholePath)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 
-		if !children[i].Mode().IsRegular() {
+		if !child.Mode().IsRegular() {
 			continue
 		}
 
@@ -83,23 +69,23 @@ func (s *dirScanner) scan(
 			continue
 		}
 
-		wg.Add(1)
-		workPool.Submit(func() {
-			defer f.Close()
-			defer wg.Done()
-
-			if probablyIsText(children[i].Name()) {
-				scanner := filescanner.New(f, wholePath)
-				s.sniffer.Sniff(logger, scanner, s.handler)
-			} else {
-				br := bufio.NewReader(f)
-				mime, _ := mimetype.IsArchive(logger, br)
-				if strings.HasPrefix(mime, "text") {
-					scanner := filescanner.New(br, wholePath)
-					s.sniffer.Sniff(logger, scanner, s.handler)
+		if probablyIsText(child.Name()) {
+			scanner := filescanner.New(f, wholePath)
+			err := s.sniffer.Sniff(logger, scanner, s.handler)
+			if err != nil {
+				return err
+			}
+		} else {
+			br := bufio.NewReader(f)
+			mime, _ := mimetype.IsArchive(logger, br)
+			if strings.HasPrefix(mime, "text") {
+				scanner := filescanner.New(br, wholePath)
+				err := s.sniffer.Sniff(logger, scanner, s.handler)
+				if err != nil {
+					return err
 				}
 			}
-		})
+		}
 	}
 
 	return nil

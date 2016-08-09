@@ -12,6 +12,12 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+//go:generate counterfeiter . Inflator
+
+type Inflator interface {
+	Inflate(lager.Logger, string, string) error
+}
+
 type inflator struct {
 	logfile *os.File
 }

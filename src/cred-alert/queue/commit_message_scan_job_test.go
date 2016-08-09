@@ -102,15 +102,16 @@ var _ = Describe("Commit Message Scan Job", func() {
 
 				Expect(notifier.SendNotificationCallCount()).To(Equal(1))
 
-				_, repository, sha, line, private := notifier.SendNotificationArgsForCall(0)
-
-				Expect(repository).To(Equal(plan.Owner))
-				Expect(sha).To(Equal(plan.SHA))
-				Expect(line).To(Equal(violatingLine))
-				Expect(private).To(Equal(plan.Private))
+				_, notification := notifier.SendNotificationArgsForCall(0)
+				Expect(notification.Owner).To(Equal(plan.Owner))
+				Expect(notification.Repository).To(Equal(plan.Repository))
+				Expect(notification.SHA).To(Equal(plan.SHA))
+				Expect(notification.Path).To(Equal(violatingLine.Path))
+				Expect(notification.LineNumber).To(Equal(violatingLine.LineNumber))
+				Expect(notification.Private).To(Equal(plan.Private))
 			})
 
-			Context("When the repo is public", func() {
+			Context("when the repo is public", func() {
 				BeforeEach(func() {
 					plan.Private = false
 				})
@@ -124,8 +125,8 @@ var _ = Describe("Commit Message Scan Job", func() {
 					_, tags := credentialCounter.IncArgsForCall(0)
 					Expect(tags).To(ContainElement("public"))
 
-					_, _, _, _, notificationPrivacy := notifier.SendNotificationArgsForCall(0)
-					Expect(notificationPrivacy).To(Equal(false))
+					_, notification := notifier.SendNotificationArgsForCall(0)
+					Expect(notification.Private).To(Equal(plan.Private))
 				})
 			})
 

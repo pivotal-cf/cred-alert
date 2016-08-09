@@ -3,8 +3,8 @@ package queue
 import (
 	"cred-alert/db"
 	"cred-alert/githubclient"
+	"cred-alert/inflator"
 	"cred-alert/metrics"
-	"cred-alert/mimetype"
 	"cred-alert/notifications"
 	"cred-alert/sniff"
 	"encoding/json"
@@ -33,7 +33,8 @@ type foreman struct {
 	diffScanRepository db.DiffScanRepository
 	commitRepository   db.CommitRepository
 	taskQueue          Queue
-	decoder            mimetype.Decoder
+	expander           inflator.Inflator
+	scratchSpace       inflator.ScratchSpace
 }
 
 func NewForeman(
@@ -44,7 +45,8 @@ func NewForeman(
 	diffScanRepository db.DiffScanRepository,
 	commitRepository db.CommitRepository,
 	taskQueue Queue,
-	decoder mimetype.Decoder,
+	expander inflator.Inflator,
+	scratchSpace inflator.ScratchSpace,
 ) *foreman {
 	foreman := &foreman{
 		client:             client,
@@ -54,7 +56,8 @@ func NewForeman(
 		diffScanRepository: diffScanRepository,
 		commitRepository:   commitRepository,
 		taskQueue:          taskQueue,
-		decoder:            decoder,
+		expander:           expander,
+		scratchSpace:       scratchSpace,
 	}
 
 	return foreman
@@ -138,8 +141,8 @@ func (f *foreman) buildRefScan(id, payload string) (*RefScanJob, error) {
 		f.sniffer,
 		f.notifier,
 		f.emitter,
-		f.decoder,
-		id,
+		f.expander,
+		f.scratchSpace,
 	), nil
 }
 

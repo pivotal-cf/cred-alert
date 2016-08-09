@@ -35,7 +35,6 @@ var _ = Describe("Diff Scan Job", func() {
 
 	var owner = "rad-co"
 	var repo = "my-awesome-repo"
-	var repoFullName = fmt.Sprintf("%s/%s", owner, repo)
 
 	var fromGitSha string = "from-git-sha"
 	var toGitSha string = "to-git-sha"
@@ -134,16 +133,13 @@ var _ = Describe("Diff Scan Job", func() {
 
 			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
 
-			_, repository, sha, line, private := notifier.SendNotificationArgsForCall(0)
-
-			Expect(repository).To(Equal(repoFullName))
-			Expect(sha).To(Equal(toGitSha))
-			Expect(line).To(Equal(scanners.Line{
-				Path:       "some/file/path",
-				LineNumber: lineNumber,
-				Content:    []byte("content"),
-			}))
-			Expect(private).To(Equal(plan.Private))
+			_, notification := notifier.SendNotificationArgsForCall(0)
+			Expect(notification.Owner).To(Equal(plan.Owner))
+			Expect(notification.Repository).To(Equal(plan.Repository))
+			Expect(notification.SHA).To(Equal(toGitSha))
+			Expect(notification.Path).To(Equal("some/file/path"))
+			Expect(notification.LineNumber).To(Equal(lineNumber))
+			Expect(notification.Private).To(Equal(plan.Private))
 		})
 
 		It("saves a record of the diffscan and that credentials were found", func() {
@@ -204,8 +200,8 @@ var _ = Describe("Diff Scan Job", func() {
 				job.Run(logger)
 
 				Expect(notifier.SendNotificationCallCount()).To(Equal(1))
-				_, _, _, _, private := notifier.SendNotificationArgsForCall(0)
-				Expect(private).To(Equal(plan.Private))
+				_, notification := notifier.SendNotificationArgsForCall(0)
+				Expect(notification.Private).To(Equal(plan.Private))
 			})
 		})
 	})

@@ -92,7 +92,16 @@ func (j *DiffScanJob) createHandleViolation(sha string, repoName string, credent
 		})
 		logger.Debug("starting")
 
-		err := j.notifier.SendNotification(logger, repoName, sha, line, j.Private)
+		notification := notifications.Notification{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			Private:    j.Private,
+			SHA:        sha,
+			Path:       line.Path,
+			LineNumber: line.LineNumber,
+		}
+
+		err := j.notifier.SendNotification(logger, notification)
 		if err != nil {
 			logger.Error("failed", err)
 			return err

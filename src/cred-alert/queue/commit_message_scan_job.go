@@ -70,7 +70,16 @@ func (j *CommitMessageJob) createHandleViolation() func(lager.Logger, scanners.L
 
 		j.credentialCounter.Inc(logger, privacyTag, "commit-message")
 
-		if err := j.notifier.SendNotification(logger, j.Owner, j.SHA, line, j.Private); err != nil {
+		notification := notifications.Notification{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			Private:    j.Private,
+			SHA:        j.SHA,
+			Path:       line.Path,
+			LineNumber: line.LineNumber,
+		}
+
+		if err := j.notifier.SendNotification(logger, notification); err != nil {
 			return err
 		}
 

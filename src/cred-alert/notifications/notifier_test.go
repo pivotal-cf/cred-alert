@@ -2,7 +2,6 @@ package notifications_test
 
 import (
 	"cred-alert/notifications"
-	"cred-alert/scanners"
 	"fmt"
 	"net/http"
 	"time"
@@ -40,7 +39,14 @@ var _ = Describe("Notifications", func() {
 		})
 
 		It("handles sending notifications", func() {
-			err := slackNotifier.SendNotification(logger, "owner/repo", "123abc", scanners.Line{}, private)
+			err := slackNotifier.SendNotification(logger, notifications.Notification{
+				Owner:      "owner",
+				Repository: "repo",
+				Private:    private,
+				SHA:        "123abc",
+				Path:       "a/path/to/a/file",
+				LineNumber: 42,
+			})
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -55,6 +61,7 @@ var _ = Describe("Notifications", func() {
 
 		It("POSTs a message to the fake slack webhook", func() {
 			expectedJSON := notificationJSON("warning")
+
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("POST", "/"),
@@ -62,7 +69,15 @@ var _ = Describe("Notifications", func() {
 				),
 			)
 
-			slackNotifier.SendNotification(logger, "owner/repo", "abc123", scanners.Line{Path: "path/to/file.txt", LineNumber: 123}, private)
+			err := slackNotifier.SendNotification(logger, notifications.Notification{
+				Owner:      "owner",
+				Repository: "repo",
+				Private:    private,
+				SHA:        "abc123",
+				Path:       "path/to/file.txt",
+				LineNumber: 123,
+			})
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(server.ReceivedRequests()).Should(HaveLen(1))
 		})
@@ -95,15 +110,17 @@ var _ = Describe("Notifications", func() {
 
 					err := slackNotifier.SendNotification(
 						logger,
-						"owner/repo",
-						"abc123",
-						scanners.Line{
+						notifications.Notification{
+							Owner:      "owner",
+							Repository: "repo",
+							Private:    private,
+							SHA:        "abc123",
 							Path:       "path/to/file.txt",
 							LineNumber: 123,
 						},
-						private,
 					)
 					Expect(err).NotTo(HaveOccurred())
+
 					close(done)
 				}()
 
@@ -155,13 +172,14 @@ var _ = Describe("Notifications", func() {
 
 					err := slackNotifier.SendNotification(
 						logger,
-						"owner/repo",
-						"abc123",
-						scanners.Line{
+						notifications.Notification{
+							Owner:      "owner",
+							Repository: "repo",
+							Private:    private,
+							SHA:        "abc123",
 							Path:       "path/to/file.txt",
 							LineNumber: 123,
 						},
-						private,
 					)
 					Expect(err).To(HaveOccurred())
 
@@ -197,7 +215,18 @@ var _ = Describe("Notifications", func() {
 					),
 				)
 
-				slackNotifier.SendNotification(logger, "owner/repo", "abc123", scanners.Line{Path: "path/to/file.txt", LineNumber: 123}, private)
+				err := slackNotifier.SendNotification(
+					logger,
+					notifications.Notification{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    private,
+						SHA:        "abc123",
+						Path:       "path/to/file.txt",
+						LineNumber: 123,
+					},
+				)
+				Expect(err).NotTo(HaveOccurred())
 
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})

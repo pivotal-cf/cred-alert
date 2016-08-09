@@ -21,7 +21,6 @@ import (
 	"github.com/contraband/zest"
 	"github.com/jessevdk/go-flags"
 	"github.com/jinzhu/gorm"
-	"github.com/rakyll/magicmime"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
@@ -30,6 +29,7 @@ import (
 	"cred-alert/db"
 	"cred-alert/db/migrations"
 	"cred-alert/githubclient"
+	"cred-alert/inflator"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/queue"
@@ -122,8 +122,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	mimetype, err := magicmime.NewDecoder(magicmime.MAGIC_MIME_TYPE | magicmime.MAGIC_SYMLINK | magicmime.MAGIC_ERROR)
-
+	expander := inflator.New()
+	scratch := inflator.NewScratch()
 	foreman := queue.NewForeman(
 		client,
 		sniffer,
@@ -132,7 +132,8 @@ func main() {
 		diffScanRepository,
 		commitRepository,
 		taskQueue,
-		mimetype,
+		expander,
+		scratch,
 	)
 
 	backgroundWorker := worker.New(logger, foreman, taskQueue, emitter)

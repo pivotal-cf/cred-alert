@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"bytes"
-	"cred-alert/scanners"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +16,22 @@ import (
 //go:generate counterfeiter . Notifier
 
 type Notifier interface {
-	SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error
+	SendNotification(lager.Logger, Notification) error
+}
+
+type Notification struct {
+	Owner      string
+	Repository string
+	Private    bool
+
+	SHA string
+
+	Path       string
+	LineNumber int
+}
+
+func (n Notification) FullName() string {
+	return fmt.Sprintf("%s/%s", n.Owner, n.Repository)
 }
 
 type slackNotifier struct {
@@ -26,7 +40,7 @@ type slackNotifier struct {
 	clock      clock.Clock
 }
 
-type slackNotification struct {
+type slackMessage struct {
 	Attachments []slackAttachment `json:"attachments"`
 }
 
@@ -56,18 +70,22 @@ func NewSlackNotifier(webhookURL string, clock clock.Clock) Notifier {
 
 const maxRetries = 3
 
-func (n *slackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
+func (n *slackNotifier) SendNotification(logger lager.Logger, notification Notification) error {
 	logger = logger.Session("send-notification")
 	logger.Debug("starting")
 
-	notification := n.buildNotification(repository, sha, line, private)
+	message := n.formatSlackMessage(notification)
 
-	body, err := json.Marshal(notification)
+	body, err := json.Marshal(message)
 	if err != nil {
 		logger.Error("unmarshal-faiiled", err)
 		return err
 	}
 
+	return n.send(logger, body)
+}
+
+func (n *slackNotifier) send(logger lager.Logger, body []byte) error {
 	for numReq := 0; numReq < maxRetries; numReq++ {
 		req, err := http.NewRequest("POST", n.webhookURL, bytes.NewBuffer(body))
 		if err != nil {
@@ -111,26 +129,27 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, repository string,
 		}
 	}
 
-	err = errors.New("retried too many times")
+	err := errors.New("retried too many times")
 	logger.Error("failed", err)
 
 	return err
 }
 
-func (n *slackNotifier) buildNotification(repository string, sha string, line scanners.Line, private bool) slackNotification {
-	link := fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repository, sha, line.Path, line.LineNumber)
+func (n *slackNotifier) formatSlackMessage(not Notification) slackMessage {
+	link := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s#L%d", not.Owner, not.Repository, not.SHA, not.Path, not.LineNumber)
 
 	color := "danger"
-	if private {
+	if not.Private {
 		color = "warning"
 	}
-	return slackNotification{
+
+	return slackMessage{
 		Attachments: []slackAttachment{
 			{
 				Fallback: link,
 				Color:    color,
-				Title:    fmt.Sprintf("Credential detected in %s!", repository),
-				Text:     fmt.Sprintf("<%s|%s:%d>", link, line.Path, line.LineNumber),
+				Title:    fmt.Sprintf("Credential detected in %s!", not.FullName()),
+				Text:     fmt.Sprintf("<%s|%s:%d>", link, not.Path, not.LineNumber),
 			},
 		},
 	}
@@ -138,7 +157,8 @@ func (n *slackNotifier) buildNotification(repository string, sha string, line sc
 
 type nullSlackNotifier struct{}
 
-func (n *nullSlackNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
+func (n *nullSlackNotifier) SendNotification(logger lager.Logger, notification Notification) error {
 	logger.Session("send-notification").Debug("done")
+
 	return nil
 }

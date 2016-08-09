@@ -3,13 +3,14 @@ package queue_test
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"archive/zip"
 	"bytes"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -20,14 +21,13 @@ import (
 
 	"cred-alert/githubclient"
 	"cred-alert/githubclient/githubclientfakes"
+	"cred-alert/inflator"
+	"cred-alert/inflator/inflatorfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
-	"cred-alert/mimetype/mimetypefakes"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/queue"
-	"cred-alert/scanners"
 	"cred-alert/sniff"
-	"cred-alert/sniff/snifffakes"
 )
 
 var _ = Describe("RefScan Job", func() {
@@ -40,19 +40,20 @@ var _ = Describe("RefScan Job", func() {
 
 		job               *queue.RefScanJob
 		server            *ghttp.Server
-		sniffer           *snifffakes.FakeSniffer
+		sniffer           sniff.Sniffer
 		plan              queue.RefScanPlan
 		notifier          *notificationsfakes.FakeNotifier
 		emitter           *metricsfakes.FakeEmitter
 		credentialCounter *metricsfakes.FakeCounter
-		decoder           *mimetypefakes.FakeDecoder
+		expander          *inflatorfakes.FakeInflator
+		scratchSpace      inflator.ScratchSpace
+
+		tmpPath string
 	)
 
 	owner := "repo-owner"
 	repo := "repo-name"
-	repoFullName := owner + "/" + repo
 	ref := "reference"
-	id := "my-id"
 
 	BeforeEach(func() {
 		server = ghttp.NewServer()
@@ -65,12 +66,7 @@ var _ = Describe("RefScan Job", func() {
 
 		logger = lagertest.NewTestLogger("ref-scan-test")
 
-		files = []fileInfo{
-			{"readme.txt", `lolz`},
-			{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-			{"todo.txt", "Get animal handling licence.\nWrite more examples."},
-		}
-		sniffer = new(snifffakes.FakeSniffer)
+		sniffer = sniff.NewDefaultSniffer()
 		client = &githubclientfakes.FakeClient{}
 		notifier = &notificationsfakes.FakeNotifier{}
 		emitter = &metricsfakes.FakeEmitter{}
@@ -83,35 +79,41 @@ var _ = Describe("RefScan Job", func() {
 				panic("unexpected counter name! " + name)
 			}
 		}
-		decoder = &mimetypefakes.FakeDecoder{}
-		decoder.TypeByBufferReturns("text/some-text", nil)
+		expander = &inflatorfakes.FakeInflator{}
 	})
 
 	JustBeforeEach(func() {
-		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, decoder, id)
+		tmpPath = filepath.Join(os.TempDir(), fmt.Sprintf("ref-scan-test-%d", GinkgoParallelNode()))
+		scratchSpace = inflator.NewDeterministicScratch(tmpPath)
+
+		files = []fileInfo{
+			{"readme.txt", "password: thisisapassword"},
+			{"go/gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
+			{"todo/todo.txt", "Get animal handling licence.\nWrite more examples."},
+		}
+
+		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, expander, scratchSpace)
+	})
+
+	AfterEach(func() {
+		Expect(os.RemoveAll(tmpPath)).To(Succeed())
 	})
 
 	Describe("Run", func() {
-		filePath := "some/file/path"
-		fileContent := []byte("content")
-		lineNumber := 2
-
 		BeforeEach(func() {
 			serverUrl, _ := url.Parse(server.URL())
 			client.ArchiveLinkReturns(serverUrl, nil)
-			someZip := createZip(logger, files)
+			someZip := createZip(files)
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/"),
 					ghttp.RespondWith(http.StatusOK, someZip.Bytes(), http.Header{}),
 				),
 			)
-			sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation sniff.ViolationHandlerFunc) error {
-				return handleViolation(logger, scanners.Line{
-					Path:       filePath,
-					LineNumber: lineNumber,
-					Content:    fileContent,
-				})
+
+			expander.InflateStub = func(lgr lager.Logger, archivePath, destination string) error {
+				e := inflator.New()
+				return e.Inflate(lgr, archivePath, destination)
 			}
 		})
 
@@ -126,27 +128,32 @@ var _ = Describe("RefScan Job", func() {
 			Expect(returnedRef).To(Equal(ref))
 		})
 
-		It("Scans the archive", func() {
-			err := job.Run(logger)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(sniffer.SniffCallCount()).To(BeNumerically(">", 0))
-		})
-
 		It("sends a notification when it finds a match", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(notifier.SendNotificationCallCount()).To(Equal(len(files)))
-			_, repository, sha, line, private := notifier.SendNotificationArgsForCall(0)
+			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
 
-			Expect(repository).To(Equal(repoFullName))
-			Expect(sha).To(Equal(ref))
-			Expect(line).To(Equal(scanners.Line{
-				Path:       filePath,
-				LineNumber: lineNumber,
-				Content:    fileContent,
-			}))
-			Expect(private).To(Equal(plan.Private))
+			_, notification := notifier.SendNotificationArgsForCall(0)
+			Expect(notification.Owner).To(Equal(plan.Owner))
+			Expect(notification.Repository).To(Equal(plan.Repository))
+			Expect(notification.SHA).To(Equal(ref))
+			Expect(notification.Path).To(Equal("readme.txt"))
+			Expect(notification.LineNumber).To(Equal(1))
+			Expect(notification.Private).To(Equal(plan.Private))
+		})
+
+		Context("when the inflator fails", func() {
+			BeforeEach(func() {
+				expander = &inflatorfakes.FakeInflator{}
+				expander.InflateReturns(errors.New("disaster"))
+			})
+
+			It("logs and returns an error", func() {
+				err := job.Run(logger)
+				Expect(err).To(HaveOccurred())
+				Expect(logger).To(gbytes.Say("failed"))
+			})
 		})
 
 		Context("when the notification fails to send", func() {
@@ -164,7 +171,7 @@ var _ = Describe("RefScan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(credentialCounter.IncCallCount()).To(Equal(len(files)))
+			Expect(credentialCounter.IncCallCount()).To(Equal(1))
 			_, tags := credentialCounter.IncArgsForCall(0)
 			Expect(tags).To(HaveLen(1))
 			Expect(tags).To(ConsistOf("private"))
@@ -175,15 +182,6 @@ var _ = Describe("RefScan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(logger).To(gbytes.Say("handle-violation"))
-			Expect(logger).To(gbytes.Say("handle-violation"))
-			Expect(logger).To(gbytes.Say("handle-violation"))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"line-number":%d`, lineNumber)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"private":%v`, plan.Private)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"ref":"%s"`, ref)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, id)))
 		})
 
 		Context("when the repo is public", func() {
@@ -194,18 +192,20 @@ var _ = Describe("RefScan Job", func() {
 			It("emits count with the public tag", func() {
 				job.Run(logger)
 
-				Expect(credentialCounter.IncCallCount()).To(Equal(len(files)))
+				Expect(credentialCounter.IncCallCount()).To(Equal(1))
 				_, tags := credentialCounter.IncArgsForCall(0)
 				Expect(tags).To(HaveLen(1))
 				Expect(tags).To(ConsistOf("public"))
 			})
 
 			It("sends a notification with private set to false", func() {
-				job.Run(logger)
+				err := job.Run(logger)
+				Expect(err).NotTo(HaveOccurred())
 
-				Expect(notifier.SendNotificationCallCount()).To(Equal(len(files)))
-				_, _, _, _, private := notifier.SendNotificationArgsForCall(0)
-				Expect(private).To(Equal(false))
+				Expect(notifier.SendNotificationCallCount()).To(Equal(1))
+
+				_, notification := notifier.SendNotificationArgsForCall(0)
+				Expect(notification.Private).To(Equal(plan.Private))
 			})
 		})
 
@@ -230,51 +230,23 @@ var _ = Describe("RefScan Job", func() {
 			})
 		})
 
-		Context("when file is not text", func() {
-			BeforeEach(func() {
-				decoder.TypeByBufferReturns("application/octet-stream", nil)
-			})
-
-			It("should not perform a scan", func() {
-				job.Run(logger)
-				Expect(sniffer.SniffCallCount()).To(Equal(0))
-			})
-
-			Context("when there is an error getting the type", func() {
-				BeforeEach(func() {
-					decoder.TypeByBufferReturns("unknown", errors.New("disaster"))
-				})
-
-				It("logs an error", func() {
-					job.Run(logger)
-					Expect(logger).To(gbytes.Say("consider-skipping.failed"))
-				})
-
-				It("scans the file", func() {
-					job.Run(logger)
-					Expect(sniffer.SniffCallCount()).To(BeNumerically(">", 0))
-				})
-			})
-		})
-
-		Context("when the githubapi returns not found", func() {
+		Context("when the github API returns not found", func() {
 			BeforeEach(func() {
 				client.ArchiveLinkReturns(nil, githubclient.ErrNotFound)
 			})
-			It("Logs an error", func() {
+
+			It("logs an error", func() {
 				job.Run(logger)
 				Expect(logger.Buffer()).To(gbytes.Say("archive-link.failed"))
 			})
-			It("Does not return an error", func() {
+
+			It("does not return an error", func() {
 				err := job.Run(logger)
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("Does not scan anything", func() {
-				job.Run(logger)
-				Expect(sniffer.SniffCallCount()).To(Equal(0))
-			})
 		})
-		Context("When the archive url is nil", func() {
+
+		Context("when the archive URL is nil", func() {
 			BeforeEach(func() {
 				client.ArchiveLinkReturns(nil, nil)
 			})
@@ -292,28 +264,21 @@ type fileInfo struct {
 	Body string
 }
 
-func createZip(logger *lagertest.TestLogger, files []fileInfo) *bytes.Buffer {
+func createZip(files []fileInfo) *bytes.Buffer {
 	buf := new(bytes.Buffer)
 
 	w := zip.NewWriter(buf)
 
 	for _, file := range files {
 		f, err := w.Create(file.Name)
-		if err != nil {
-			logger.Fatal("zip-create-file-error", err)
-		}
+		Expect(err).NotTo(HaveOccurred())
+
 		_, err = f.Write([]byte(file.Body))
-		if err != nil {
-			logger.Fatal("zip-write-file-error", err)
-			log.Fatal(err)
-		}
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	err := w.Close()
-	if err != nil {
-		logger.Fatal("zip-write-close-error", err)
-		log.Fatal(err)
-	}
+	Expect(err).NotTo(HaveOccurred())
 
 	return buf
 }

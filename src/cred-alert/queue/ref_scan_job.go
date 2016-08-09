@@ -1,14 +1,12 @@
 package queue
 
 import (
-	"archive/zip"
-	"bytes"
 	"cred-alert/githubclient"
+	"cred-alert/inflator"
 	"cred-alert/metrics"
-	"cred-alert/mimetype"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
-	"cred-alert/scanners/filescanner"
+	"cred-alert/scanners/dirscanner"
 	"cred-alert/sniff"
 	"errors"
 	"io"
@@ -16,7 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
+	"path/filepath"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -30,8 +28,8 @@ type RefScanJob struct {
 	notifier          notifications.Notifier
 	emitter           metrics.Emitter
 	credentialCounter metrics.Counter
-	mimetype          mimetype.Decoder
-	id                string
+	expander          inflator.Inflator
+	scratchSpace      inflator.ScratchSpace
 }
 
 func NewRefScanJob(
@@ -40,8 +38,8 @@ func NewRefScanJob(
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
 	emitter metrics.Emitter,
-	mimetype mimetype.Decoder,
-	id string,
+	expander inflator.Inflator,
+	scratchSpace inflator.ScratchSpace,
 ) *RefScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
@@ -52,8 +50,8 @@ func NewRefScanJob(
 		notifier:          notifier,
 		emitter:           emitter,
 		credentialCounter: credentialCounter,
-		mimetype:          mimetype,
-		id:                id,
+		expander:          expander,
+		scratchSpace:      scratchSpace,
 	}
 
 	return job
@@ -64,7 +62,6 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"owner":      j.Owner,
 		"repository": j.Repository,
 		"ref":        j.Ref,
-		"task-id":    j.id,
 		"private":    j.Private,
 	})
 	logger.Debug("starting")
@@ -84,58 +81,48 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	archiveFile, err := downloadArchive(logger, downloadURL)
+	tempDir, err := ioutil.TempDir("", "download-archive")
 	if err != nil {
 		logger.Error("failed", err)
 		return err
 	}
-	defer os.Remove(archiveFile.Name())
-	defer archiveFile.Close()
+	defer os.RemoveAll(tempDir)
 
-	archiveReader, err := zip.OpenReader(archiveFile.Name())
+	archiveFile, err := downloadArchive(logger, downloadURL, tempDir)
 	if err != nil {
-		logger.Session("zip-open-reader").Error("failed", err)
+		logger.Error("failed", err)
 		return err
 	}
-	defer archiveReader.Close()
+	defer archiveFile.Close()
 
-	logger.Info("unzipped-archive", lager.Data{
-		"file-count": len(archiveReader.File),
-	})
+	destination, err := j.scratchSpace.Make()
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+	defer os.RemoveAll(destination)
 
-	logger.Info("scanning-unzipped-files")
+	err = j.expander.Inflate(logger, archiveFile.Name(), destination)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
 
-	for _, f := range archiveReader.File {
-		l := logger.Session("archive-reader-file", lager.Data{"filename": f.Name})
+	path := filepath.Join(destination, "archive.zip-contents")
+	handleViolation := j.createHandleViolation(path)
+	scanner := dirscanner.New(handleViolation, j.sniffer)
 
-		if j.shouldSkip(l, f) {
-			logger.Info("skipped")
-			continue
-		}
-
-		unzippedReader, err := f.Open()
-		if err != nil {
-			logger.Error("failed", err)
-			continue
-		}
-		defer unzippedReader.Close()
-
-		bufioScanner := filescanner.New(unzippedReader, f.Name)
-		handleViolation := j.createHandleViolation(j.Ref, j.Owner+"/"+j.Repository)
-
-		err = j.sniffer.Sniff(l, bufioScanner, handleViolation)
-		if err != nil {
-			l.Error("failed", err)
-			return err
-		}
+	err = scanner.Scan(logger, destination)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
 	}
 
 	logger.Debug("done")
-
 	return nil
 }
 
-func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
+func downloadArchive(logger lager.Logger, link *url.URL, dest string) (*os.File, error) {
 	logger = logger.Session("downloading-archive")
 
 	if link == nil {
@@ -146,7 +133,7 @@ func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
 
 	logger.Debug("starting")
 
-	tempFile, err := ioutil.TempFile("", "downloaded-git-archive")
+	f, err := os.Create(filepath.Join(dest, "archive.zip"))
 	if err != nil {
 		logger.Error("failed", err)
 		return nil, err
@@ -159,26 +146,42 @@ func downloadArchive(logger lager.Logger, link *url.URL) (*os.File, error) {
 		return nil, err
 	}
 
-	_, err = io.Copy(tempFile, resp.Body)
+	_, err = io.Copy(f, resp.Body)
 	if err != nil {
 		logger.Error("failed", err)
 		return nil, err
 	}
 
 	logger.Debug("done")
-	return tempFile, nil
+	return f, nil
 }
 
-func (j *RefScanJob) createHandleViolation(ref string, repoName string) func(lager.Logger, scanners.Line) error {
+func (j *RefScanJob) createHandleViolation(stripPath string) func(lager.Logger, scanners.Line) error {
 	return func(logger lager.Logger, line scanners.Line) error {
 		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,
-			"ref":         ref,
+			"ref":         j.Ref,
 		})
 		logger.Debug("starting")
 
-		err := j.notifier.SendNotification(logger, repoName, ref, line, j.Private)
+		var err error
+		line.Path, err = filepath.Rel(stripPath, line.Path)
+		if err != nil {
+			logger.Error("making-relative-path-failed", err)
+			return err
+		}
+
+		notification := notifications.Notification{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			Private:    j.Private,
+			SHA:        j.Ref,
+			Path:       line.Path,
+			LineNumber: line.LineNumber,
+		}
+
+		err = j.notifier.SendNotification(logger, notification)
 		if err != nil {
 			logger.Error("failed", err)
 			return err
@@ -194,41 +197,4 @@ func (j *RefScanJob) createHandleViolation(ref string, repoName string) func(lag
 		logger.Debug("done")
 		return nil
 	}
-}
-
-func (j *RefScanJob) shouldSkip(logger lager.Logger, f *zip.File) bool {
-	logger = logger.Session("consider-skipping")
-
-	unzippedReader, err := f.Open()
-	if err != nil {
-		logger.Error("failed", err)
-		return false
-	}
-	defer unzippedReader.Close()
-
-	buf := new(bytes.Buffer)
-	numBytes, err := buf.ReadFrom(unzippedReader)
-	if err != nil {
-		logger.Error("failed", err)
-		return false
-	}
-	if numBytes <= 0 {
-		logger.Debug("done")
-		return true
-	}
-	bytes := buf.Bytes()
-
-	mime, err := j.mimetype.TypeByBuffer(bytes)
-	if err != nil {
-		logger.Error("failed", err)
-		return false
-	}
-
-	if strings.HasPrefix(mime, "text") {
-		logger.Debug("done")
-		return false
-	}
-
-	logger.Debug("done")
-	return true
 }

@@ -3,21 +3,17 @@ package notificationsfakes
 
 import (
 	"cred-alert/notifications"
-	"cred-alert/scanners"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
 )
 
 type FakeNotifier struct {
-	SendNotificationStub        func(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error
+	SendNotificationStub        func(lager.Logger, notifications.Notification) error
 	sendNotificationMutex       sync.RWMutex
 	sendNotificationArgsForCall []struct {
-		logger     lager.Logger
-		repository string
-		sha        string
-		line       scanners.Line
-		private    bool
+		arg1 lager.Logger
+		arg2 notifications.Notification
 	}
 	sendNotificationReturns struct {
 		result1 error
@@ -26,19 +22,16 @@ type FakeNotifier struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeNotifier) SendNotification(logger lager.Logger, repository string, sha string, line scanners.Line, private bool) error {
+func (fake *FakeNotifier) SendNotification(arg1 lager.Logger, arg2 notifications.Notification) error {
 	fake.sendNotificationMutex.Lock()
 	fake.sendNotificationArgsForCall = append(fake.sendNotificationArgsForCall, struct {
-		logger     lager.Logger
-		repository string
-		sha        string
-		line       scanners.Line
-		private    bool
-	}{logger, repository, sha, line, private})
-	fake.recordInvocation("SendNotification", []interface{}{logger, repository, sha, line, private})
+		arg1 lager.Logger
+		arg2 notifications.Notification
+	}{arg1, arg2})
+	fake.recordInvocation("SendNotification", []interface{}{arg1, arg2})
 	fake.sendNotificationMutex.Unlock()
 	if fake.SendNotificationStub != nil {
-		return fake.SendNotificationStub(logger, repository, sha, line, private)
+		return fake.SendNotificationStub(arg1, arg2)
 	} else {
 		return fake.sendNotificationReturns.result1
 	}
@@ -50,10 +43,10 @@ func (fake *FakeNotifier) SendNotificationCallCount() int {
 	return len(fake.sendNotificationArgsForCall)
 }
 
-func (fake *FakeNotifier) SendNotificationArgsForCall(i int) (lager.Logger, string, string, scanners.Line, bool) {
+func (fake *FakeNotifier) SendNotificationArgsForCall(i int) (lager.Logger, notifications.Notification) {
 	fake.sendNotificationMutex.RLock()
 	defer fake.sendNotificationMutex.RUnlock()
-	return fake.sendNotificationArgsForCall[i].logger, fake.sendNotificationArgsForCall[i].repository, fake.sendNotificationArgsForCall[i].sha, fake.sendNotificationArgsForCall[i].line, fake.sendNotificationArgsForCall[i].private
+	return fake.sendNotificationArgsForCall[i].arg1, fake.sendNotificationArgsForCall[i].arg2
 }
 
 func (fake *FakeNotifier) SendNotificationReturns(result1 error) {
