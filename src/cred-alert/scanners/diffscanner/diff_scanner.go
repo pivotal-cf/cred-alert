@@ -17,14 +17,12 @@ var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d+?\s@@`)
 
 type DiffScanner struct {
 	scanner           *bufio.Scanner
-	cursor            int
 	currentPath       string
 	currentLineNumber int
 }
 
 func NewDiffScanner(diff io.Reader) *DiffScanner {
 	return &DiffScanner{
-		cursor:  -1,
 		scanner: bufio.NewScanner(diff),
 	}
 }
@@ -35,8 +33,6 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 	defer logger.Debug("done")
 
 	for d.scanner.Scan() {
-		d.cursor++
-
 		line := d.scanner.Text()
 
 		matches := fileHeaderPattern.FindStringSubmatch(line)
