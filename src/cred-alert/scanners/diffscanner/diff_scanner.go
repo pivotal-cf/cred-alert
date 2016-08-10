@@ -62,14 +62,7 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 	return false
 }
 
-func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
-	logger = logger.Session("line", lager.Data{
-		"line-number": d.currentLineNumber,
-		"path":        d.currentPath,
-	})
-	logger.Debug("starting")
-	defer logger.Debug("done")
-
+func (d *DiffScanner) Line(lager.Logger) *scanners.Line {
 	var content []byte
 	matches := plusMinusSpacePattern.FindSubmatchIndex(d.scanner.Bytes())
 	if len(matches) == 4 {
