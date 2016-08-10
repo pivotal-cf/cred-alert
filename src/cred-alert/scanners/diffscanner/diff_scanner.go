@@ -39,15 +39,15 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 			break
 		}
 
-		rawLine := d.diff[d.cursor]
+		line := d.diff[d.cursor]
 
-		matches := fileHeaderPattern.FindStringSubmatch(rawLine)
+		matches := fileHeaderPattern.FindStringSubmatch(line)
 		if len(matches) == 2 {
 			d.currentPath = matches[1]
 			continue
 		}
 
-		matches = hunkHeaderRegexp.FindStringSubmatch(rawLine)
+		matches = hunkHeaderRegexp.FindStringSubmatch(line)
 		if len(matches) == 2 {
 			startLine, err := strconv.Atoi(matches[1])
 			if err != nil {
@@ -58,7 +58,7 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 			continue
 		}
 
-		matches = contextAddedLinePattern.FindStringSubmatch(rawLine)
+		matches = contextAddedLinePattern.FindStringSubmatch(line)
 		if len(matches) == 1 {
 			d.currentLineNumber++
 			return true
