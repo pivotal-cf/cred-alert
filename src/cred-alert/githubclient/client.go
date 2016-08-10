@@ -4,18 +4,15 @@ import (
 	"bytes"
 	"cred-alert/metrics"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/gunk/urljoiner"
-	"github.com/google/go-github/github"
 )
 
 const DefaultGitHubURL = "https://api.github.com/"
@@ -58,13 +55,21 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "compare", base+"..."+head)
 
-	response, err := c.responseFrom(logger, url, map[string]string{"Accept": "application/vnd.github.diff"})
+	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		logger.Error("failed", err)
 		return nil, err
 	}
+	request.Header.Set("Accept", "application/vnd.github.diff")
 
-	body, err := c.bodyFromResponse(logger, response)
+	response, err := c.doRequest(logger, request)
+	if err != nil {
+		logger.Error("failed", err)
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		logger.Error("failed", err)
 		return nil, err
@@ -129,13 +134,20 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 
 	url := urljoiner.Join(c.baseURL, "repos", owner, repo, "commits", sha)
 
-	response, err := c.responseFrom(logger, url, map[string]string{})
+	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		logger.Error("failed", err)
 		return CommitInfo{}, err
 	}
 
-	body, err := c.bodyFromResponse(logger, response)
+	response, err := c.doRequest(logger, request)
+	if err != nil {
+		logger.Error("failed", err)
+		return CommitInfo{}, err
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		logger.Error("failed", err)
 		return CommitInfo{}, err
@@ -172,68 +184,15 @@ func (c *client) CommitInfo(logger lager.Logger, owner, repo, sha string) (Commi
 	}, nil
 }
 
-func (c *client) rateFromResponse(logger lager.Logger, response *http.Response) (github.Rate, error) {
-	logger = logger.Session("rate-from-response")
-	logger.Debug("starting")
-
-	header := response.Header
-	reset, err := strconv.ParseInt(header.Get("X-Ratelimit-Reset"), 10, 64)
-	if err != nil {
-		logger.Error("failed", err)
-		return github.Rate{}, err
-	}
-
-	timestamp := github.Timestamp{Time: time.Unix(reset, 0)}
-
-	remain, err := strconv.Atoi(header.Get("X-Ratelimit-Remaining"))
-	if err != nil {
-		logger.Error("failed", err)
-		return github.Rate{}, err
-	}
-
-	logger.Debug("done")
-	return github.Rate{
-		Remaining: remain,
-		Reset:     timestamp,
-	}, nil
-}
-
-func (c *client) bodyFromResponse(logger lager.Logger, response *http.Response) ([]byte, error) {
-	defer response.Body.Close()
-	if response == nil {
-		return []byte{}, errors.New("nil-response")
-	}
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		logger.Error("failed", err)
-		return []byte{}, err
-	}
-
-	if ratelimit, err := c.rateFromResponse(logger, response); err == nil {
-		c.rateLimitGauge.Update(logger, float32(ratelimit.Remaining))
-	}
-
-	logger.Debug("done")
-	return body, nil
-}
-
-func (c *client) responseFrom(logger lager.Logger, url string, headers map[string]string) (*http.Response, error) {
-	logger = logger.Session("response-body-from")
-	logger.Info("starting", lager.Data{"url": url})
-
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	for headerName, headerValue := range headers {
-		request.Header.Set(headerName, headerValue)
-	}
-
+func (c *client) doRequest(logger lager.Logger, request *http.Request) (*http.Response, error) {
 	response, err := c.httpClient.Do(request)
 	if err != nil {
-		logger.Error("failed", err)
 		return nil, err
+	}
+
+	remain, err := strconv.Atoi(response.Header.Get("X-RateLimit-Remaining"))
+	if err == nil {
+		c.rateLimitGauge.Update(logger, float32(remain))
 	}
 
 	return response, nil
