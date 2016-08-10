@@ -70,14 +70,14 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 	logger.Debug("starting")
 	defer logger.Debug("done")
 
-	var content string
-	matches := plusMinusSpacePattern.FindStringSubmatch(d.scanner.Text())
-	if len(matches) == 2 {
-		content = matches[1]
+	var content []byte
+	matches := plusMinusSpacePattern.FindSubmatchIndex(d.scanner.Bytes())
+	if len(matches) == 4 {
+		content = d.scanner.Bytes()[matches[2]:matches[3]]
 	}
 
 	return &scanners.Line{
-		Content:    []byte(content),
+		Content:    content,
 		LineNumber: d.currentLineNumber,
 		Path:       d.currentPath,
 	}
