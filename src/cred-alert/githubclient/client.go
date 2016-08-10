@@ -221,7 +221,10 @@ func (c *client) responseFrom(logger lager.Logger, url string, headers map[strin
 	logger = logger.Session("response-body-from")
 	logger.Info("starting", lager.Data{"url": url})
 
-	request, _ := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	for headerName, headerValue := range headers {
 		request.Header.Set(headerName, headerValue)
