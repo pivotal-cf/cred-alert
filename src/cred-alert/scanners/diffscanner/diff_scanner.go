@@ -10,7 +10,7 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-var fileHeaderPattern = regexp.MustCompile(`^\+\+\+\s\w\/(.*)$`)
+var fileHeaderRegexp = regexp.MustCompile(`^\+\+\+\s\w\/(.*)$`)
 var addedLineRegexp = regexp.MustCompile(`^(?:\s|\+)(.*)`)
 var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d+?\s@@`)
 
@@ -35,7 +35,7 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 	for d.scanner.Scan() {
 		line := d.scanner.Text()
 
-		matches := fileHeaderPattern.FindStringSubmatch(line)
+		matches := fileHeaderRegexp.FindStringSubmatch(line)
 		if len(matches) == 2 {
 			d.currentPath = matches[1]
 			continue
