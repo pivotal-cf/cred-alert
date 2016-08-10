@@ -108,9 +108,9 @@ var _ = Describe("RefScan Job", func() {
 			client.ArchiveLinkReturns(serverUrl, nil)
 
 			files = []fileInfo{
-				{"readme.txt", "password: thisisapassword"},
-				{"go/gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-				{"todo/todo.txt", "Get animal handling licence.\nWrite more examples."},
+				{"github-dir-abc123/readme.txt", "password: thisisapassword"},
+				{"github-dir-abc123/go/gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
+				{"github-dir-abc123/todo/todo.txt", "Get animal handling licence.\nWrite more examples."},
 			}
 
 			someZip := createZip(files)

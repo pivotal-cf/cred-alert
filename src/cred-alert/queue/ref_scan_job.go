@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -165,8 +166,14 @@ func (j *RefScanJob) createHandleViolation(stripPath string) func(lager.Logger, 
 		})
 		logger.Debug("starting")
 
-		var err error
-		line.Path, err = filepath.Rel(stripPath, line.Path)
+		relPath, err := filepath.Rel(stripPath, line.Path)
+		if err != nil {
+			logger.Error("making-relative-path-failed", err)
+			return err
+		}
+
+		parts := strings.Split(relPath, string(os.PathSeparator))
+		path, err := filepath.Rel(parts[0], relPath)
 		if err != nil {
 			logger.Error("making-relative-path-failed", err)
 			return err
@@ -177,7 +184,7 @@ func (j *RefScanJob) createHandleViolation(stripPath string) func(lager.Logger, 
 			Repository: j.Repository,
 			Private:    j.Private,
 			SHA:        j.Ref,
-			Path:       line.Path,
+			Path:       path,
 			LineNumber: line.LineNumber,
 		}
 
