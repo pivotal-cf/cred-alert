@@ -56,6 +56,8 @@ var _ = Describe("RefScan Job", func() {
 	ref := "reference"
 
 	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("ref-scan-test")
+
 		server = ghttp.NewServer()
 		plan = queue.RefScanPlan{
 			Owner:      owner,
@@ -64,13 +66,13 @@ var _ = Describe("RefScan Job", func() {
 			Private:    true,
 		}
 
-		logger = lagertest.NewTestLogger("ref-scan-test")
-
 		sniffer = sniff.NewDefaultSniffer()
 		client = &githubclientfakes.FakeClient{}
 		notifier = &notificationsfakes.FakeNotifier{}
-		emitter = &metricsfakes.FakeEmitter{}
 		credentialCounter = &metricsfakes.FakeCounter{}
+		expander = &inflatorfakes.FakeInflator{}
+
+		emitter = &metricsfakes.FakeEmitter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
 			case "cred_alert.violations":
@@ -79,30 +81,38 @@ var _ = Describe("RefScan Job", func() {
 				panic("unexpected counter name! " + name)
 			}
 		}
-		expander = &inflatorfakes.FakeInflator{}
+
+		expander.InflateStub = func(lgr lager.Logger, archivePath, destination string) error {
+			e := inflator.New()
+			return e.Inflate(lgr, archivePath, destination)
+		}
 	})
 
 	JustBeforeEach(func() {
 		tmpPath = filepath.Join(os.TempDir(), fmt.Sprintf("ref-scan-test-%d", GinkgoParallelNode()))
 		scratchSpace = inflator.NewDeterministicScratch(tmpPath)
 
-		files = []fileInfo{
-			{"readme.txt", "password: thisisapassword"},
-			{"go/gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-			{"todo/todo.txt", "Get animal handling licence.\nWrite more examples."},
-		}
-
 		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, expander, scratchSpace)
 	})
 
 	AfterEach(func() {
+		server.Close()
 		Expect(os.RemoveAll(tmpPath)).To(Succeed())
 	})
 
 	Describe("Run", func() {
 		BeforeEach(func() {
-			serverUrl, _ := url.Parse(server.URL())
+			serverUrl, err := url.Parse(server.URL())
+			Expect(err).NotTo(HaveOccurred())
+
 			client.ArchiveLinkReturns(serverUrl, nil)
+
+			files = []fileInfo{
+				{"readme.txt", "password: thisisapassword"},
+				{"go/gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
+				{"todo/todo.txt", "Get animal handling licence.\nWrite more examples."},
+			}
+
 			someZip := createZip(files)
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -110,11 +120,6 @@ var _ = Describe("RefScan Job", func() {
 					ghttp.RespondWith(http.StatusOK, someZip.Bytes(), http.Header{}),
 				),
 			)
-
-			expander.InflateStub = func(lgr lager.Logger, archivePath, destination string) error {
-				e := inflator.New()
-				return e.Inflate(lgr, archivePath, destination)
-			}
 		})
 
 		It("fetches a link from GitHub", func() {
