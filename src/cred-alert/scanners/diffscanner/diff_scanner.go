@@ -11,12 +11,12 @@ import (
 )
 
 var fileHeaderPattern = regexp.MustCompile(`^\+\+\+\s\w\/(.*)$`)
-var contextAddedLinePattern = regexp.MustCompile(`^(?:\s|\+)`)
-var plusMinusSpacePattern = regexp.MustCompile(`^(?:\s|\+|\-)(.*)`)
+var addedLineRegexp = regexp.MustCompile(`^(?:\s|\+)(.*)`)
 var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d+?\s@@`)
 
 type DiffScanner struct {
 	scanner           *bufio.Scanner
+	content           []byte
 	currentPath       string
 	currentLineNumber int
 }
@@ -52,9 +52,10 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 			continue
 		}
 
-		matches = contextAddedLinePattern.FindStringSubmatch(line)
-		if len(matches) == 1 {
+		matches = addedLineRegexp.FindStringSubmatch(line)
+		if len(matches) == 2 {
 			d.currentLineNumber++
+			d.content = []byte(matches[1])
 			return true
 		}
 	}
@@ -63,14 +64,8 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 }
 
 func (d *DiffScanner) Line(lager.Logger) *scanners.Line {
-	var content []byte
-	matches := plusMinusSpacePattern.FindSubmatchIndex(d.scanner.Bytes())
-	if len(matches) == 4 {
-		content = d.scanner.Bytes()[matches[2]:matches[3]]
-	}
-
 	return &scanners.Line{
-		Content:    content,
+		Content:    d.content,
 		LineNumber: d.currentLineNumber,
 		Path:       d.currentPath,
 	}
