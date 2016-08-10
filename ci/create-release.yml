@@ -1,0 +1,17 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+
+inputs:
+- name: cred-alert
+- name: cred-alert-cli-bundle
+
+outputs:
+- name: release-params
+
+run:
+  path: cred-alert/ci/scripts/create-release

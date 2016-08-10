@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -e -u
+
+# set tag name
+date +%Y-%m-%d-%H-%M-%S > release-params/tag-name
+
+# set tag commit
+pushd cred-alert
+  git log --format=%H | head -1 > ../release-params/commit-sha
+popd

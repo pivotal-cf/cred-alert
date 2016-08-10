@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -e -u
+
+INPUT="${PWD}/cred-alert-cli"
+OUTPUT="${PWD}/cred-alert-cli-bundle"
+
+for os in linux; do
+  pushd "${INPUT}/${os}"
+    tar czvf "${OUTPUT}/cred-alert-cli_${os}.tgz" cred-alert-*
+  popd
+done
