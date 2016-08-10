@@ -83,7 +83,7 @@ var _ = Describe("Diff Scan Job", func() {
 	It("scans a commit", func() {
 		job.Run(logger)
 
-		fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
+		fakeGithubClient.CompareRefsReturns(nil, errors.New("disaster"))
 		Expect(fakeGithubClient.CompareRefsCallCount()).To(Equal(1))
 		_, _, _, sha0, sha1 := fakeGithubClient.CompareRefsArgsForCall(0)
 		Expect(sha0).To(Equal(fromGitSha))
@@ -218,7 +218,7 @@ var _ = Describe("Diff Scan Job", func() {
 
 	Context("when we fail to fetch the diff", func() {
 		BeforeEach(func() {
-			fakeGithubClient.CompareRefsReturns("", errors.New("disaster"))
+			fakeGithubClient.CompareRefsReturns(nil, errors.New("disaster"))
 		})
 
 		It("does not try to scan the diff", func() {

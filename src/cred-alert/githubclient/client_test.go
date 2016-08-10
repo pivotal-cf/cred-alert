@@ -1,6 +1,7 @@
 package githubclient_test
 
 import (
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -183,7 +184,7 @@ var _ = Describe("Client", func() {
 
 			diff, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(diff).To(Equal("THIS IS THE DIFF"))
+			Expect(ioutil.ReadAll(diff)).To(Equal([]byte("THIS IS THE DIFF")))
 		})
 
 		It("returns an error if the API returns an error", func() {

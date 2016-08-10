@@ -1,10 +1,11 @@
 package diffscanner
 
 import (
+	"bufio"
 	"cred-alert/scanners"
+	"io"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -15,16 +16,16 @@ var plusMinusSpacePattern = regexp.MustCompile(`^(?:\s|\+|\-)(.*)`)
 var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d+?\s@@`)
 
 type DiffScanner struct {
-	diff              []string
+	scanner           *bufio.Scanner
 	cursor            int
 	currentPath       string
 	currentLineNumber int
 }
 
-func NewDiffScanner(diff string) *DiffScanner {
+func NewDiffScanner(diff io.Reader) *DiffScanner {
 	return &DiffScanner{
-		cursor: -1,
-		diff:   strings.Split(diff, "\n"),
+		cursor:  -1,
+		scanner: bufio.NewScanner(diff),
 	}
 }
 
@@ -33,13 +34,10 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 	logger.Debug("starting")
 	defer logger.Debug("done")
 
-	for {
+	for d.scanner.Scan() {
 		d.cursor++
-		if d.cursor >= len(d.diff) {
-			break
-		}
 
-		line := d.diff[d.cursor]
+		line := d.scanner.Text()
 
 		matches := fileHeaderPattern.FindStringSubmatch(line)
 		if len(matches) == 2 {
@@ -77,7 +75,7 @@ func (d *DiffScanner) Line(logger lager.Logger) *scanners.Line {
 	defer logger.Debug("done")
 
 	var content string
-	matches := plusMinusSpacePattern.FindStringSubmatch(d.diff[d.cursor])
+	matches := plusMinusSpacePattern.FindStringSubmatch(d.scanner.Text())
 	if len(matches) == 2 {
 		content = matches[1]
 	}

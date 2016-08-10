@@ -3,6 +3,7 @@ package githubclientfakes
 
 import (
 	"cred-alert/githubclient"
+	"io"
 	"net/url"
 	"sync"
 
@@ -10,7 +11,7 @@ import (
 )
 
 type FakeClient struct {
-	CompareRefsStub        func(logger lager.Logger, owner, repo, base, head string) (string, error)
+	CompareRefsStub        func(logger lager.Logger, owner, repo, base, head string) (io.Reader, error)
 	compareRefsMutex       sync.RWMutex
 	compareRefsArgsForCall []struct {
 		logger lager.Logger
@@ -20,7 +21,7 @@ type FakeClient struct {
 		head   string
 	}
 	compareRefsReturns struct {
-		result1 string
+		result1 io.Reader
 		result2 error
 	}
 	ArchiveLinkStub        func(owner, repo, ref string) (*url.URL, error)
@@ -50,7 +51,7 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) CompareRefs(logger lager.Logger, owner string, repo string, base string, head string) (string, error) {
+func (fake *FakeClient) CompareRefs(logger lager.Logger, owner string, repo string, base string, head string) (io.Reader, error) {
 	fake.compareRefsMutex.Lock()
 	fake.compareRefsArgsForCall = append(fake.compareRefsArgsForCall, struct {
 		logger lager.Logger
@@ -80,10 +81,10 @@ func (fake *FakeClient) CompareRefsArgsForCall(i int) (lager.Logger, string, str
 	return fake.compareRefsArgsForCall[i].logger, fake.compareRefsArgsForCall[i].owner, fake.compareRefsArgsForCall[i].repo, fake.compareRefsArgsForCall[i].base, fake.compareRefsArgsForCall[i].head
 }
 
-func (fake *FakeClient) CompareRefsReturns(result1 string, result2 error) {
+func (fake *FakeClient) CompareRefsReturns(result1 io.Reader, result2 error) {
 	fake.CompareRefsStub = nil
 	fake.compareRefsReturns = struct {
-		result1 string
+		result1 io.Reader
 		result2 error
 	}{result1, result2}
 }

@@ -1,10 +1,12 @@
 package githubclient
 
 import (
+	"bytes"
 	"cred-alert/metrics"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -26,7 +28,7 @@ func (e Error) Error() string { return string(e) }
 //go:generate counterfeiter . Client
 
 type Client interface {
-	CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error)
+	CompareRefs(logger lager.Logger, owner, repo, base, head string) (io.Reader, error)
 	ArchiveLink(owner, repo, ref string) (*url.URL, error)
 	CommitInfo(logger lager.Logger, owner, repo, sha string) (CommitInfo, error)
 }
@@ -50,7 +52,7 @@ func NewClient(baseURL string, httpClient *http.Client, emitter metrics.Emitter)
 	}
 }
 
-func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string) (string, error) {
+func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string) (io.Reader, error) {
 	logger = logger.Session("compare-refs")
 	logger.Debug("starting")
 
@@ -59,13 +61,13 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 	response, err := c.responseFrom(logger, url, map[string]string{"Accept": "application/vnd.github.diff"})
 	if err != nil {
 		logger.Error("failed", err)
-		return "", err
+		return nil, err
 	}
 
 	body, err := c.bodyFromResponse(logger, response)
 	if err != nil {
 		logger.Error("failed", err)
-		return "", err
+		return nil, err
 	}
 
 	if response.StatusCode != http.StatusOK {
@@ -74,11 +76,11 @@ func (c *client) CompareRefs(logger lager.Logger, owner, repo, base, head string
 			"status": fmt.Sprintf("%s (%d)", http.StatusText(response.StatusCode), response.StatusCode),
 			"body":   body,
 		})
-		return "", err
+		return nil, err
 	}
 
 	logger.Debug("done")
-	return string(body), nil
+	return bytes.NewReader(body), nil
 }
 
 func (c *client) ArchiveLink(owner, repo string, ref string) (*url.URL, error) {

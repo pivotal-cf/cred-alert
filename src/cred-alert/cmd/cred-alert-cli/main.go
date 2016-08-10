@@ -167,12 +167,7 @@ func scanFile(
 
 func handleDiff(logger lager.Logger, handler sniff.ViolationHandlerFunc, opts Opts) {
 	logger.Session("handle-diff")
-	diff, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		logger.Error("read-error", err)
-	}
-
-	scanner := diffscanner.NewDiffScanner(string(diff))
+	scanner := diffscanner.NewDiffScanner(os.Stdin)
 	sniffer := sniff.NewDefaultSniffer()
 
 	sniffer.Sniff(logger, scanner, handler)
