@@ -1,6 +1,9 @@
 package matchers
 
-import "regexp"
+import (
+	"cred-alert/scanners"
+	"regexp"
+)
 
 type formatMatcher struct {
 	r *regexp.Regexp
@@ -12,6 +15,6 @@ func Format(format string) Matcher {
 	}
 }
 
-func (m *formatMatcher) Match(line []byte) bool {
-	return m.r.Match(line)
+func (m *formatMatcher) Match(line *scanners.Line) bool {
+	return m.r.Match(line.Content)
 }

@@ -1,7 +1,9 @@
 package matchers
 
+import "cred-alert/scanners"
+
 //go:generate counterfeiter . Matcher
 
 type Matcher interface {
-	Match([]byte) bool
+	Match(*scanners.Line) bool
 }

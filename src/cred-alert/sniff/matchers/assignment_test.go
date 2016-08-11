@@ -1,10 +1,13 @@
 package matchers_test
 
 import (
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 )
 
@@ -16,8 +19,19 @@ var _ = Describe("Assignment Matcher", func() {
 	})
 
 	DescribeTable("not matching other assignments",
-		func(line string) {
-			Expect(matcher.Match([]byte(line))).To(BeFalse())
+		func(content string, name ...string) {
+			fileName := "a-file.txt"
+			if len(name) > 0 {
+				fileName = name[0]
+			}
+
+			line := &scanners.Line{
+				Content:    []byte(content),
+				Path:       filepath.Join("this", "is", "a", "path", "to", fileName),
+				LineNumber: 42,
+			}
+
+			Expect(matcher.Match(line)).To(BeFalse())
 		},
 		Entry("not an assignment", "package not_an_assignment"),
 		Entry("RHS is too short", "password too-short"),
@@ -26,8 +40,19 @@ var _ = Describe("Assignment Matcher", func() {
 	)
 
 	DescribeTable("matching secret assignments",
-		func(line string) {
-			Expect(matcher.Match([]byte(line))).To(BeTrue())
+		func(content string, name ...string) {
+			fileName := "a-file.txt"
+			if len(name) > 0 {
+				fileName = name[0]
+			}
+
+			line := &scanners.Line{
+				Content:    []byte(content),
+				Path:       filepath.Join("this", "is", "a", "path", "to", fileName),
+				LineNumber: 42,
+			}
+
+			Expect(matcher.Match(line)).To(BeTrue())
 		},
 		Entry("simple assignment with no operator", "password 'should_match'"),
 		Entry("simple assignment with colon", "password: 'should_match'"),
@@ -44,6 +69,7 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("simple assignment with a strange cased variable names", "PaSSwoRD = 'should_match'"),
 		Entry("simple assignment with a comment", `private_key = "should_match" # COMMENT: comments shouldn't have an effect`),
 		Entry("simple assignment with strange characters", `password = '.$+=&/\\should_match' # comment`),
-		Entry("YAML assignment", "password: should_match"),
+		Entry("YAML assignment", "password: should_match", "manifest.yml"),
+		Entry("YAML assignment with a silly extension", "password: should_match", "manifest.yaml"),
 	)
 })

@@ -76,7 +76,7 @@ var _ = Describe("Sniffer", func() {
 
 		Context("when the regular matcher returns true", func() {
 			BeforeEach(func() {
-				matcher.MatchStub = func([]byte) bool {
+				matcher.MatchStub = func(*scanners.Line) bool {
 					return matcher.MatchCallCount() != 1 // 2 should match
 				}
 			})

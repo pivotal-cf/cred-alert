@@ -2,6 +2,8 @@ package matchers
 
 import (
 	"bytes"
+	"cred-alert/scanners"
+	"path/filepath"
 	"regexp"
 )
 
@@ -26,8 +28,8 @@ type assignmentMatcher struct {
 	guidPattern       *regexp.Regexp
 }
 
-func (m *assignmentMatcher) Match(line []byte) bool {
-	upcasedLine := bytes.ToUpper(line)
+func (m *assignmentMatcher) Match(line *scanners.Line) bool {
+	upcasedLine := bytes.ToUpper(line.Content)
 	matchIndexPairs := m.pattern.FindSubmatchIndex(upcasedLine)
 	if matchIndexPairs == nil {
 		return false
@@ -37,19 +39,10 @@ func (m *assignmentMatcher) Match(line []byte) bool {
 		return false
 	}
 
-	if isYAMLAssignment(matchIndexPairs, line) {
+	ext := filepath.Ext(line.Path)
+	if ext == ".yml" || ext == ".yaml" {
 		return m.yamlPattern.Match(upcasedLine)
 	}
 
 	return m.assignmentPattern.Match(upcasedLine)
-}
-
-func isYAMLAssignment(matchIndexPairs []int, line []byte) bool {
-	startMatch := matchIndexPairs[2]
-	endMatch := matchIndexPairs[3]
-	if startMatch != -1 && endMatch != 1 {
-		return bytes.Compare(line[startMatch:endMatch], []byte(":")) == 0
-	}
-
-	return false
 }

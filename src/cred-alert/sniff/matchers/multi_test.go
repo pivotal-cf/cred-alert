@@ -1,6 +1,7 @@
 package matchers_test
 
 import (
+	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 	"cred-alert/sniff/matchers/matchersfakes"
 
@@ -12,6 +13,8 @@ var _ = Describe("UpcasedMulti", func() {
 	var (
 		matcher      *matchersfakes.FakeMatcher
 		multimatcher matchers.Matcher
+
+		matches bool
 	)
 
 	BeforeEach(func() {
@@ -19,40 +22,40 @@ var _ = Describe("UpcasedMulti", func() {
 		multimatcher = matchers.UpcasedMulti(matcher)
 	})
 
-	It("calls each matcher with the line", func() {
-		multimatcher.Match([]byte("this is a line"))
+	JustBeforeEach(func() {
+		matches = multimatcher.Match(&scanners.Line{
+			Content:    []byte("this is a line"),
+			LineNumber: 42,
+			Path:       "the/path",
+		})
+	})
 
+	It("calls each matcher with the upcased line", func() {
 		Expect(matcher.MatchCallCount()).To(Equal(1))
-		Expect(matcher.MatchArgsForCall(0)).To(Equal([]byte("THIS IS A LINE")))
+
+		line := matcher.MatchArgsForCall(0)
+		Expect(line.Content).To(Equal([]byte("THIS IS A LINE")))
+		Expect(line.LineNumber).To(Equal(42))
+		Expect(line.Path).To(Equal("the/path"))
 	})
 
 	It("returns false", func() {
-		matches := multimatcher.Match([]byte("this is a line"))
-
 		Expect(matches).To(BeFalse())
 	})
 
 	Context("when at least one of the matchers returns true", func() {
-		var (
-			trueMatcher *matchersfakes.FakeMatcher
-		)
-
 		BeforeEach(func() {
-			trueMatcher = new(matchersfakes.FakeMatcher)
+			trueMatcher := new(matchersfakes.FakeMatcher)
 			trueMatcher.MatchReturns(true)
 
 			multimatcher = matchers.UpcasedMulti(trueMatcher, matcher)
 		})
 
 		It("returns true", func() {
-			matches := multimatcher.Match([]byte("this is a line"))
-
 			Expect(matches).To(BeTrue())
 		})
 
 		It("doesn't call the later matchers", func() {
-			multimatcher.Match([]byte("this is a line"))
-
 			Expect(matcher.MatchCallCount()).To(BeZero())
 		})
 	})

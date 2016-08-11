@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 	"cred-alert/sniff/matchers/matchersfakes"
 )
@@ -14,12 +15,14 @@ var _ = Describe("Filter", func() {
 		submatcher *matchersfakes.FakeMatcher
 
 		filters []string
+		line    *scanners.Line
 	)
 
 	BeforeEach(func() {
 		filters = []string{}
 
 		submatcher = &matchersfakes.FakeMatcher{}
+		line = &scanners.Line{Content: []byte("this is a very expensive string to scan")}
 	})
 
 	JustBeforeEach(func() {
@@ -27,15 +30,12 @@ var _ = Describe("Filter", func() {
 	})
 
 	Context("when none of the filters match", func() {
-		var line string
-
 		BeforeEach(func() {
 			filters = []string{"word", "$"}
-			line = "this is a very expensive string to scan"
 		})
 
 		It("returns false", func() {
-			result := filter.Match([]byte(line))
+			result := filter.Match(line)
 			Expect(result).To(BeFalse())
 		})
 
@@ -45,17 +45,14 @@ var _ = Describe("Filter", func() {
 	})
 
 	Context("when at least one of the filters match", func() {
-		var line string
-
 		BeforeEach(func() {
 			filters = []string{"string", "$"}
-			line = "this is a very expensive string to scan"
 		})
 
 		It("returns whatever the submatcher returns", func() {
 			submatcher.MatchReturns(true)
 
-			result := filter.Match([]byte(line))
+			result := filter.Match(line)
 			Expect(result).To(BeTrue())
 		})
 	})

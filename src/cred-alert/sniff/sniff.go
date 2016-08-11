@@ -76,14 +76,14 @@ func (s *sniffer) Sniff(
 	var result error
 
 	for scanner.Scan(logger) {
-		line := *scanner.Line(logger)
+		line := scanner.Line(logger)
 
-		if s.exclusionMatcher.Match(line.Content) {
+		if s.exclusionMatcher.Match(line) {
 			continue
 		}
 
-		if s.matcher.Match(line.Content) {
-			err := handleViolation(logger, line)
+		if s.matcher.Match(line) {
+			err := handleViolation(logger, *line)
 			if err != nil {
 				logger.Error("failed", err)
 				result = multierror.Append(result, err)

@@ -2,15 +2,16 @@
 package matchersfakes
 
 import (
+	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 	"sync"
 )
 
 type FakeMatcher struct {
-	MatchStub        func([]byte) bool
+	MatchStub        func(*scanners.Line) bool
 	matchMutex       sync.RWMutex
 	matchArgsForCall []struct {
-		arg1 []byte
+		arg1 *scanners.Line
 	}
 	matchReturns struct {
 		result1 bool
@@ -19,17 +20,12 @@ type FakeMatcher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMatcher) Match(arg1 []byte) bool {
-	var arg1Copy []byte
-	if arg1 != nil {
-		arg1Copy = make([]byte, len(arg1))
-		copy(arg1Copy, arg1)
-	}
+func (fake *FakeMatcher) Match(arg1 *scanners.Line) bool {
 	fake.matchMutex.Lock()
 	fake.matchArgsForCall = append(fake.matchArgsForCall, struct {
-		arg1 []byte
-	}{arg1Copy})
-	fake.recordInvocation("Match", []interface{}{arg1Copy})
+		arg1 *scanners.Line
+	}{arg1})
+	fake.recordInvocation("Match", []interface{}{arg1})
 	fake.matchMutex.Unlock()
 	if fake.MatchStub != nil {
 		return fake.MatchStub(arg1)
@@ -44,7 +40,7 @@ func (fake *FakeMatcher) MatchCallCount() int {
 	return len(fake.matchArgsForCall)
 }
 
-func (fake *FakeMatcher) MatchArgsForCall(i int) []byte {
+func (fake *FakeMatcher) MatchArgsForCall(i int) *scanners.Line {
 	fake.matchMutex.RLock()
 	defer fake.matchMutex.RUnlock()
 	return fake.matchArgsForCall[i].arg1
