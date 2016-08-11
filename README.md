@@ -75,6 +75,13 @@ Use --help to see all options.
 
     $ cat src/cred-alert/sniff/patterns/samples_for_test.go | ./cred-alert-cli
 
+##### Scanning git diffs
+
+Cred alert supports scanning diffs on standard input. When scanning a diff use the
+`--diff` flag.
+
+    $ git diff | ./cred-alert-cli --diff
+
 
 #### Exit status
 
