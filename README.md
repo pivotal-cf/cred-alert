@@ -102,10 +102,12 @@ count the violations in Datadog.
 
 ### Building
 
-The server can be built with the following command. Your `$GOPATH` should
+The server has two components which need to be built: the ingestor and the worker. They can be built with the following commands. Your `$GOPATH` should
 already be set correctly by `direnv`.
 
-    $ go build cred-alert/cmd/cred-alert
+    $ go build cred-alert/cmd/cred-alert-ingestor
+    $ go build cred-alert/cmd/cred-alert-worker
+
 
 ### Pushing to CF
 
@@ -114,14 +116,16 @@ already be set correctly by `direnv`.
 We can use Concourse to build an application package that is identical to the
 one that we build in CI.
 
-    $ fly -t ci execute -x -c ci/build-app.yml -o cred-alert-app=/tmp/app
+    $ fly -t ci execute -x -c ci/compile-components.yml -o cred-alert-components=/tmp/app
+
 
 #### Deploying the Application
 
-    $ cf push cred-alert -b binary_buildpack -p /tmp/app
+    $ cf push cred-alert-ingestor -b binary_buildpack -p /tmp/app -c ./cred-alert-ingestor --no-start
+    $ cf push cred-alert-worker -b binary_buildpack -p /tmp/app -c ./cred-alert-worker --no-start
 
-When you push the application for the first time it will fail since the
-necessary environment variables are not set and MySQL is not available.
+Before you can run the application you'll need to bind `cred-alert-worker` to a mysql service
+and set necessary environment variables on both apps.
 
 #### Binding MySQL
 
@@ -137,17 +141,31 @@ For local development the worker can be started with the following command line 
 | --mysql-port=PORT         | MySQL port          |
 | --mysql-dbname=DBNAME     | MySQL database name |
 
-### Environment Variables
+#### Environment Variables
+
+##### Common to both Ingestor and Worker
 
 | Name                        | Description                                                                      |
 | --------------------------- | -------------------------------------------------------------------------------- |
-| `DATA_DOG_ENVIRONMENT_TAG`  | Tag to use in emitted events (eg. `production`, `staging`)                       |
-| `DATA_DOG_API_KEY`          | API key to use for Data Dog API access                                           |
-| `GITHUB_WEBHOOK_SECRET_KEY` | Shared secret configured on github webhooks                                      |
+| `ENVIRONMENT`               | Tag to use in emitted events (eg. `production`, `staging`)                       |
+| `DATA_DOG_API_KEY`          | API key to use for Datadog API access                                            |
+| `AWS_ACCESS_KEY`            | Access key for AWS SQS service                                                   |
+| `AWS_SECRET_ACCESS_KEY`     | Secret access key for AWS SQS service                                            |
+| `AWS_REGION`                | AWS region for SQS service                                                       |
+| `SQS_QUEUE_NAME`            | Queue name to use with SQS                                                       |
+| `YELLER_API_KEY`            | Key for emitting to Yeller                                                       |
+
+##### Ingestor
+
+| Name                        | Description                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `GITHUB_WEBHOOK_SECRET_KEY` | Shared secret configured on Github webhooks                                      |
 | `PORT`                      | Port on which to listen for webhook requests for (set automatically if using CF) |
 | `IGNORED_REPOS`             | A comma-separated list of patterns for repos to ignore (eg. `.*-credentials$`)   |
-| `GITHUB_WEBHOOK_SECRET_KEY` | Shared secret configured on github webhooks                                      |
-| `AWS_ACCESS_KEY`            | access key for aws SQS service                                                   |
-| `AWS_SECRET_ACCESS_KEY`     | secret access key for aws SQS service                                            |
-| `AWS_REGION`                | aws region for SQS service                                                       |
-| `SQS_QUEUE_NAME`            | queue name to use with SQS                                                       |
+
+##### Worker
+
+| Name                        | Description                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `GITHUB_ACCESS_TOKEN`       | Access token used to access the Github API                                       |
+| `SLACK_WEBHOOK_URL`         | URL for sending Slack notifications                                              |
