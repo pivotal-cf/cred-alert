@@ -156,8 +156,8 @@ func main() {
 	})
 
 	runner := sigmon.New(grouper.NewOrdered(os.Interrupt, grouper.Members{
-		{"main", grouper.NewParallel(os.Interrupt, members)},
 		{"dbCloser", dbCloser},
+		{"main", grouper.NewParallel(os.Interrupt, members)},
 	}))
 
 	err = <-ifrit.Invoke(runner).Wait()
