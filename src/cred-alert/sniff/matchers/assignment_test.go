@@ -2,6 +2,7 @@ package matchers_test
 
 import (
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -26,7 +27,7 @@ var _ = Describe("Assignment Matcher", func() {
 			}
 
 			line := &scanners.Line{
-				Content:    []byte(content),
+				Content:    []byte(strings.ToUpper(content)),
 				Path:       filepath.Join("this", "is", "a", "path", "to", fileName),
 				LineNumber: 42,
 			}
@@ -47,7 +48,7 @@ var _ = Describe("Assignment Matcher", func() {
 			}
 
 			line := &scanners.Line{
-				Content:    []byte(content),
+				Content:    []byte(strings.ToUpper(content)),
 				Path:       filepath.Join("this", "is", "a", "path", "to", fileName),
 				LineNumber: 42,
 			}
