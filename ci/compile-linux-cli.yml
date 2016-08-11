@@ -1,6 +1,5 @@
 ---
 platform: linux
-
 image_resource:
   type: docker-image
   source:
@@ -10,8 +9,10 @@ inputs:
 - name: cred-alert
 
 outputs:
-- name: cred-alert-cli
+- name: cred-alert-linux-cli
+
+params:
+  OS: linux
 
 run:
   path: cred-alert/ci/scripts/compile-cli
-

@@ -1,0 +1,15 @@
+---
+platform: darwin
+
+inputs:
+- name: cred-alert
+
+outputs:
+- name: cred-alert-darwin-cli
+
+
+params:
+  OS: darwin
+
+run:
+  path: cred-alert/ci/scripts/compile-cli

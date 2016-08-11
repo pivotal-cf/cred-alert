@@ -8,7 +8,8 @@ image_resource:
 
 inputs:
 - name: cred-alert
-- name: cred-alert-cli
+- name: cred-alert-linux-cli
+- name: cred-alert-darwin-cli
 
 outputs:
 - name: cred-alert-cli-bundle

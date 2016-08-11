@@ -2,11 +2,10 @@
 
 set -e -u
 
-INPUT="${PWD}/cred-alert-cli"
 OUTPUT="${PWD}/cred-alert-cli-bundle"
 
-for os in linux; do
-  pushd "${INPUT}/${os}"
+for os in linux darwin; do
+  pushd "${PWD}/cred-alert-${os}-cli"
     tar czvf "${OUTPUT}/cred-alert-cli_${os}.tgz" cred-alert-*
   popd
 done

@@ -5,11 +5,7 @@ set -e -u
 export GOPATH="${PWD}/cred-alert"
 export PATH="${GOPATH}/bin:${PATH}"
 
-OUTPUT="${PWD}/cred-alert-cli"
+OUTPUT="${PWD}/cred-alert-${OS}-cli"
 
-for os in linux; do
-  echo "Building cli for OS ${os}..."
-  mkdir -p "${OUTPUT}/${os}"
-  GOARCH=amd64 GOOS=${os} go build -v -o "${OUTPUT}/${os}/cred-alert-cli" "cred-alert/cmd/cred-alert-cli"
-done
+go build -v -o "${OUTPUT}/cred-alert-cli" "cred-alert/cmd/cred-alert-cli"
 
