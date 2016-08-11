@@ -98,7 +98,7 @@ func main() {
 			}
 
 			inflateStart := time.Now()
-			fmt.Printf("Inflating archive into %s\n", inflateDir)
+			fmt.Printf("Inflating archive... ")
 			err = inflate.Inflate(logger, opts.File, inflateDir)
 			if err != nil {
 				fmt.Printf("%s\n", red("FAILED"))
