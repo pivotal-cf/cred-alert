@@ -3,32 +3,18 @@ package mimetype
 import (
 	"bufio"
 	"io"
-	"log"
 	"strings"
 
+	"bitbucket.org/taruti/mimemagic"
+
 	"code.cloudfoundry.org/lager"
-
-	"github.com/rakyll/magicmime"
 )
-
-//go:generate counterfeiter . Decoder
-
-type Decoder interface {
-	TypeByBuffer([]byte) (string, error)
-}
 
 var archiveMimetypes = []string{
 	"application/x-gzip",
 	"application/gzip",
 	"application/x-tar",
 	"application/zip",
-}
-
-func init() {
-	err := magicmime.Open(magicmime.MAGIC_MIME_TYPE | magicmime.MAGIC_SYMLINK | magicmime.MAGIC_ERROR)
-	if err != nil {
-		log.Fatalf("failed to make new decoder: %s", err.Error())
-	}
 }
 
 func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
@@ -43,10 +29,7 @@ func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
 		return "", false
 	}
 
-	mime, err := magicmime.TypeByBuffer(bs)
-	if err != nil {
-		logger.Error("failed-to-get-mimetype", err)
-	}
+	mime := mimemagic.Match("", bs)
 
 	for i := range archiveMimetypes {
 		if strings.HasPrefix(mime, archiveMimetypes[i]) {

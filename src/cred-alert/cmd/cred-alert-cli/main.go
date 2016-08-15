@@ -16,7 +16,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -61,8 +60,7 @@ func main() {
 		}
 
 		br := bufio.NewReader(fh)
-		mime, isArchive := mimetype.IsArchive(logger, br)
-		if isArchive {
+		if _, isArchive := mimetype.IsArchive(logger, br); isArchive {
 			inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
 			if err != nil {
 				log.Fatalln(err.Error())
@@ -121,9 +119,7 @@ func main() {
 			fmt.Println()
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
 		} else {
-			if strings.HasPrefix(mime, "text") {
-				scanFile(logger, handler, sniffer, br, opts.File)
-			}
+			scanFile(logger, handler, sniffer, br, opts.File)
 		}
 	} else if opts.Diff {
 		handleDiff(logger, handler, opts)
