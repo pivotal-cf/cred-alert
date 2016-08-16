@@ -32,10 +32,6 @@ func init() {
 }
 
 func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
-	if r == nil {
-		return "", false
-	}
-
 	bs, err := r.Peek(512)
 	if err != nil && err != io.EOF {
 		logger.Error("failed-to-peek", err, lager.Data{
