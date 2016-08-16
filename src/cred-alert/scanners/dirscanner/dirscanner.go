@@ -77,7 +77,7 @@ func (s *dirScanner) scan(
 			}
 		} else {
 			br := bufio.NewReader(f)
-			mime, _ := mimetype.IsArchive(logger, br)
+			mime := mimetype.Mimetype(logger, br)
 			if mime == "" || strings.HasPrefix(mime, "text") {
 				scanner := filescanner.New(br, wholePath)
 				err := s.sniffer.Sniff(logger, scanner, s.handler)

@@ -17,7 +17,7 @@ var archiveMimetypes = []string{
 	"application/zip",
 }
 
-func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
+func Mimetype(logger lager.Logger, r *bufio.Reader) string {
 	bs, err := r.Peek(512)
 	if err != nil && err != io.EOF {
 		logger.Error("failed-to-peek", err, lager.Data{
@@ -26,11 +26,14 @@ func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
 	}
 
 	if len(bs) == 0 {
-		return "", false
+		return ""
 	}
 
-	mime := mimemagic.Match("", bs)
+	return mimemagic.Match("", bs)
+}
 
+func IsArchive(logger lager.Logger, r *bufio.Reader) (string, bool) {
+	mime := Mimetype(logger, r)
 	for i := range archiveMimetypes {
 		if strings.HasPrefix(mime, archiveMimetypes[i]) {
 			return archiveMimetypes[i], true
