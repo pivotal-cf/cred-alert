@@ -116,7 +116,7 @@ func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir stri
 			}
 
 			if isArchive {
-				extractDir := filepath.Join(dir, basename+"-contents")
+				extractDir := absPath + "-contents"
 				i.extractFile(mime, absPath, extractDir)
 
 				err = os.RemoveAll(absPath)
