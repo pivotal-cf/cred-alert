@@ -43,7 +43,7 @@ func (i *inflator) Close() error {
 
 func (i *inflator) Inflate(logger lager.Logger, mime, archivePath, destination string) error {
 	i.extractFile(mime, archivePath, destination)
-	return i.recursivelyExtractArchivesInDir(logger, destination, destination)
+	return i.recursivelyExtractArchivesInDir(logger, destination)
 }
 
 func (i *inflator) extractFile(mime, path, destination string) {
@@ -80,18 +80,18 @@ func (i *inflator) extractFile(mime, path, destination string) {
 	}
 }
 
-func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, path, destination string) error {
-	children, err := ioutil.ReadDir(path)
+func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir string) error {
+	children, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
 	}
 
 	for c := range children {
 		basename := children[c].Name()
-		wholeName := filepath.Join(path, basename)
+		absPath := filepath.Join(dir, basename)
 
 		if children[c].IsDir() {
-			err := i.recursivelyExtractArchivesInDir(logger, wholeName, wholeName)
+			err := i.recursivelyExtractArchivesInDir(logger, absPath)
 			if err != nil {
 				return err
 			}
@@ -104,22 +104,22 @@ func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, path, de
 
 		_, found := nonArchiveExtensions[filepath.Ext(basename)]
 		if !found {
-			fh, err := os.Open(wholeName)
+			fh, err := os.Open(absPath)
 			if err != nil {
 				return err
 			}
 
 			br := bufio.NewReader(fh)
 			if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
-				nextLevelDestination := filepath.Join(destination, basename+"-contents")
-				i.extractFile(mime, wholeName, nextLevelDestination)
+				extractDir := filepath.Join(dir, basename+"-contents")
+				i.extractFile(mime, absPath, extractDir)
 
-				err = os.RemoveAll(wholeName)
+				err = os.RemoveAll(absPath)
 				if err != nil {
 					return err
 				}
 
-				err = i.recursivelyExtractArchivesInDir(logger, nextLevelDestination, nextLevelDestination)
+				err = i.recursivelyExtractArchivesInDir(logger, extractDir)
 				if err != nil {
 					return err
 				}
