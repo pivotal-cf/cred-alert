@@ -110,6 +110,7 @@ func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir stri
 			}
 
 			mime, isArchive := mimetype.IsArchive(logger, bufio.NewReader(fh))
+
 			err = fh.Close()
 			if err != nil {
 				return err
