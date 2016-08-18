@@ -9,12 +9,13 @@ import (
 )
 
 type FakeInflator struct {
-	InflateStub        func(lager.Logger, string, string) error
+	InflateStub        func(lager.Logger, string, string, string) error
 	inflateMutex       sync.RWMutex
 	inflateArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
+		arg4 string
 	}
 	inflateReturns struct {
 		result1 error
@@ -23,17 +24,18 @@ type FakeInflator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeInflator) Inflate(arg1 lager.Logger, arg2 string, arg3 string) error {
+func (fake *FakeInflator) Inflate(arg1 lager.Logger, arg2 string, arg3 string, arg4 string) error {
 	fake.inflateMutex.Lock()
 	fake.inflateArgsForCall = append(fake.inflateArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("Inflate", []interface{}{arg1, arg2, arg3})
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("Inflate", []interface{}{arg1, arg2, arg3, arg4})
 	fake.inflateMutex.Unlock()
 	if fake.InflateStub != nil {
-		return fake.InflateStub(arg1, arg2, arg3)
+		return fake.InflateStub(arg1, arg2, arg3, arg4)
 	} else {
 		return fake.inflateReturns.result1
 	}
@@ -45,10 +47,10 @@ func (fake *FakeInflator) InflateCallCount() int {
 	return len(fake.inflateArgsForCall)
 }
 
-func (fake *FakeInflator) InflateArgsForCall(i int) (lager.Logger, string, string) {
+func (fake *FakeInflator) InflateArgsForCall(i int) (lager.Logger, string, string, string) {
 	fake.inflateMutex.RLock()
 	defer fake.inflateMutex.RUnlock()
-	return fake.inflateArgsForCall[i].arg1, fake.inflateArgsForCall[i].arg2, fake.inflateArgsForCall[i].arg3
+	return fake.inflateArgsForCall[i].arg1, fake.inflateArgsForCall[i].arg2, fake.inflateArgsForCall[i].arg3, fake.inflateArgsForCall[i].arg4
 }
 
 func (fake *FakeInflator) InflateReturns(result1 error) {

@@ -60,7 +60,7 @@ func main() {
 		}
 
 		br := bufio.NewReader(fh)
-		if _, isArchive := mimetype.IsArchive(logger, br); isArchive {
+		if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
 			inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
 			if err != nil {
 				log.Fatalln(err.Error())
@@ -97,7 +97,7 @@ func main() {
 
 			inflateStart := time.Now()
 			fmt.Printf("Inflating archive... ")
-			err = inflate.Inflate(logger, opts.File, inflateDir)
+			err = inflate.Inflate(logger, mime, opts.File, inflateDir)
 			if err != nil {
 				fmt.Printf("%s\n", red("FAILED"))
 				log.Fatalln(err.Error())

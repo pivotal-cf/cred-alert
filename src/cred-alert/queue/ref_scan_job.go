@@ -103,14 +103,13 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	}
 	defer os.RemoveAll(destination)
 
-	err = j.expander.Inflate(logger, archiveFile.Name(), destination)
+	err = j.expander.Inflate(logger, "application/zip", archiveFile.Name(), destination)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
 	}
 
-	path := filepath.Join(destination, "archive.zip-contents")
-	handleViolation := j.createHandleViolation(path)
+	handleViolation := j.createHandleViolation(destination)
 	scanner := dirscanner.New(handleViolation, j.sniffer)
 
 	err = scanner.Scan(logger, destination)

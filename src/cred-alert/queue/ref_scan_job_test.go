@@ -82,9 +82,9 @@ var _ = Describe("RefScan Job", func() {
 			}
 		}
 
-		expander.InflateStub = func(lgr lager.Logger, archivePath, destination string) error {
+		expander.InflateStub = func(lgr lager.Logger, mime, archivePath, destination string) error {
 			e := inflator.New()
-			return e.Inflate(lgr, archivePath, destination)
+			return e.Inflate(lgr, mime, archivePath, destination)
 		}
 	})
 
