@@ -44,6 +44,7 @@ index 940393e..fa5a232 100644
 	})
 
 	JustBeforeEach(func() {
+		cmdArgs = append([]string{"scan"}, cmdArgs...)
 		cmd := exec.Command(cliPath, cmdArgs...)
 		if stdin != "" {
 			cmd.Stdin = strings.NewReader(stdin)
