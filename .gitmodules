@@ -117,3 +117,7 @@
 	path = src/code.cloudfoundry.org/clock
 	url = https://github.com/cloudfoundry/clock
 	branch = master
+[submodule "src/github.com/inconshreveable/go-update"]
+	path = src/github.com/inconshreveable/go-update
+	url = https://github.com/inconshreveable/go-update
+	branch = master
