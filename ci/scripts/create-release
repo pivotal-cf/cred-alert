@@ -7,5 +7,5 @@ date +%Y-%m-%d-%H-%M-%S > release-params/tag-name
 
 # set tag commit
 pushd cred-alert
-  git log --format=%H | head -1 > ../release-params/commit-sha
+  git rev-parse HEAD > ../release-params/commit-sha
 popd
