@@ -5,8 +5,7 @@ inputs:
 - name: cred-alert
 
 outputs:
-- name: cred-alert-darwin-cli
-
+- name: cred-alert-cli
 
 params:
   OS: darwin
