@@ -1,4 +1,4 @@
-FROM golang:1.6
+FROM golang:1.7
 MAINTAINER PCF Security Enablement <pcf-security-enablement@pivotal.io>
 
 ENV TERM dumb
