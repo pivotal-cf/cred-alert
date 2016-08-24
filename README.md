@@ -67,20 +67,20 @@ Use --help to see all options.
 #### Scan a file
 
 
-    $ ./cred-alert-cli -f src/cred-alert/product.zip
+    $ ./cred-alert-cli scan -f src/cred-alert/product.zip
 
 
 #### Scan from standard input
 
 
-    $ cat src/cred-alert/sniff/patterns/samples_for_test.go | ./cred-alert-cli
+    $ cat src/cred-alert/sniff/patterns/samples_for_test.go | ./cred-alert-cli scan
 
 ##### Scanning git diffs
 
 Cred alert supports scanning diffs on standard input. When scanning a diff use the
 `--diff` flag.
 
-    $ git diff | ./cred-alert-cli --diff
+    $ git diff | ./cred-alert-cli scan --diff
 
 
 #### Exit status
