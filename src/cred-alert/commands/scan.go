@@ -30,7 +30,10 @@ func (command *ScanCommand) Execute(args []string) error {
 	logger := kolsch.NewLogger()
 	sniffer := sniff.NewDefaultSniffer()
 	inflate := inflator.New()
-	defer inflate.Close()
+
+	exitFuncs := []func(){
+		func() { inflate.Close() },
+	}
 
 	var credsFound int
 	handler := func(logger lager.Logger, line scanners.Line) error {
@@ -52,7 +55,7 @@ func (command *ScanCommand) Execute(args []string) error {
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
-			defer os.RemoveAll(inflateDir)
+			exitFuncs = append(exitFuncs, func() { os.RemoveAll(inflateDir) })
 
 			violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
 			if err != nil {
@@ -116,7 +119,13 @@ func (command *ScanCommand) Execute(args []string) error {
 	}
 
 	if credsFound > 0 {
-		os.Exit(3)
+		exitFuncs = append(exitFuncs, func() {
+			os.Exit(3)
+		})
+	}
+
+	for _, f := range exitFuncs {
+		f()
 	}
 
 	return nil
