@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"time"
 
@@ -34,6 +35,21 @@ func (command *ScanCommand) Execute(args []string) error {
 	exitFuncs := []func(){
 		func() { inflate.Close() },
 	}
+
+	signalsCh := make(chan os.Signal, 1)
+	signal.Notify(signalsCh, os.Interrupt)
+
+	go func() {
+		for {
+			select {
+			case <-signalsCh:
+				for _, f := range exitFuncs {
+					f()
+				}
+				os.Exit(1)
+			}
+		}
+	}()
 
 	var credsFound int
 	handler := func(logger lager.Logger, line scanners.Line) error {
