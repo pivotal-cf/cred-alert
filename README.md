@@ -2,20 +2,6 @@
 
 > scans repos for credentials and then shouts if it finds them
 
-## Dependencies
-
-Cred-alert depends on `libmagic` being installed on the system in order
-to run. For building you'll need the `libmagic` header as well, usually
-provided by a development package of the library.
-
-On Mac OS:
-
-    $ brew install libmagic
-
-On a Debian flavoured linux:
-
-    $ apt-get install -y libmagic-dev
-
 ## Set Up
 
 You'll need to install `gosub` in order to manage the submodules of this
