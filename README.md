@@ -2,39 +2,6 @@
 
 > scans repos for credentials and then shouts if it finds them
 
-## Set Up
-
-You'll need to install `gosub` in order to manage the submodules of this
-project. It can be installed by running the following command (try to install
-this in an outer $GOPATH so that you do not clutter up this directory with the
-tooling):
-
-    $ go get github.com/vito/gosub
-
-In order to have your $GOPATH and $PATH set up properly when you enter this
-directory you should install `direnv`. On macOS you can install this by running
-this command and following the instructions to set up your shell:
-
-    $ brew install direnv
-
-The tests can be run using the `ginkgo` command line tool. This can be
-installed with:
-
-    $ go install github.com/onsi/ginkgo/ginkgo
-
-The fakes can be generated using the `counterfeiter` tool. This can be
-installed with:
-
-    $ go get github.com/maxbrunsfeld/counterfeiter
-
-## Workflow
-
-You can `go get` and edit the files like normal in this repository. If any
-dependencies have changed them make sure to run `scripts/sync-submodules` in
-order to make sure that the submodules are updated correctly.
-
-You can generate a pretty commit message by running `scripts/commit-with-log`.
-
 ## CLI
 
 ### Building
@@ -52,12 +19,9 @@ Use --help to see all options.
 
 #### Scan a file
 
-
     $ ./cred-alert-cli scan -f src/cred-alert/product.zip
 
-
 #### Scan from standard input
-
 
     $ cat src/cred-alert/sniff/patterns/samples_for_test.go | ./cred-alert-cli scan
 
@@ -67,7 +31,6 @@ Cred alert supports scanning diffs on standard input. When scanning a diff use t
 `--diff` flag.
 
     $ git diff | ./cred-alert-cli scan --diff
-
 
 #### Exit status
 
@@ -94,7 +57,6 @@ already be set correctly by `direnv`.
     $ go build cred-alert/cmd/cred-alert-ingestor
     $ go build cred-alert/cmd/cred-alert-worker
 
-
 ### Pushing to CF
 
 #### Building with Concourse
@@ -103,7 +65,6 @@ We can use Concourse to build an application package that is identical to the
 one that we build in CI.
 
     $ fly -t ci execute -x -c ci/compile-components.yml -o cred-alert-components=/tmp/app
-
 
 #### Deploying the Application
 
@@ -155,3 +116,34 @@ For local development the worker can be started with the following command line 
 | --------------------------- | -------------------------------------------------------------------------------- |
 | `GITHUB_ACCESS_TOKEN`       | Access token used to access the Github API                                       |
 | `SLACK_WEBHOOK_URL`         | URL for sending Slack notifications                                              |
+
+## Development
+
+You'll need to install `gosub` in order to manage the submodules of this
+project. It can be installed by running the following command (try to install
+this in an outer $GOPATH so that you do not clutter up this directory with the
+tooling):
+
+    $ go get github.com/vito/gosub
+
+In order to have your $GOPATH and $PATH set up properly when you enter this
+directory you should install `direnv`. On macOS you can install this by running
+this command and following the instructions to set up your shell:
+
+    $ brew install direnv
+
+The tests can be run using the `ginkgo` command line tool. This can be
+installed with:
+
+    $ go install github.com/onsi/ginkgo/ginkgo
+
+The fakes can be generated using the `counterfeiter` tool. This can be
+installed with:
+
+    $ go get github.com/maxbrunsfeld/counterfeiter
+
+You can `go get` and edit the files like normal in this repository. If any
+dependencies have changed them make sure to run `scripts/sync-submodules` in
+order to make sure that the submodules are updated correctly.
+
+You can generate a pretty commit message by running `scripts/commit-with-log`.
