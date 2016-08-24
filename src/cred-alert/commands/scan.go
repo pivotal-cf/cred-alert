@@ -102,7 +102,7 @@ func (command *ScanCommand) Execute(args []string) error {
 			}
 
 			inflateStart := time.Now()
-			fmt.Printf("Inflating archive... ")
+			fmt.Print("Inflating archive... ")
 			err = inflate.Inflate(logger, mime, command.File, inflateDir)
 			if err != nil {
 				fmt.Printf("%s\n", red("FAILED"))
