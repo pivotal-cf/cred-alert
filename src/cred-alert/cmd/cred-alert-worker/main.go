@@ -116,7 +116,7 @@ func main() {
 
 	diffScanRepository := db.NewDiffScanRepository(database)
 	commitRepository := db.NewCommitRepository(database)
-	credentialRepository := db.NewCredentialRepository(database)
+	scanRepository := db.NewScanRepository(database, clock)
 
 	taskQueue, err := createQueue(opts, logger)
 	if err != nil {
@@ -132,8 +132,8 @@ func main() {
 		emitter,
 		notifier,
 		diffScanRepository,
-		credentialRepository,
 		commitRepository,
+		scanRepository,
 		taskQueue,
 		expander,
 		scratch,

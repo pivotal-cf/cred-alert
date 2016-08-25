@@ -26,16 +26,16 @@ type Foreman interface {
 }
 
 type foreman struct {
-	client               githubclient.Client
-	sniffer              sniff.Sniffer
-	emitter              metrics.Emitter
-	notifier             notifications.Notifier
-	diffScanRepository   db.DiffScanRepository
-	credentialRepository db.CredentialRepository
-	commitRepository     db.CommitRepository
-	taskQueue            Queue
-	expander             inflator.Inflator
-	scratchSpace         inflator.ScratchSpace
+	client             githubclient.Client
+	sniffer            sniff.Sniffer
+	emitter            metrics.Emitter
+	notifier           notifications.Notifier
+	diffScanRepository db.DiffScanRepository
+	scanRepository     db.ScanRepository
+	commitRepository   db.CommitRepository
+	taskQueue          Queue
+	expander           inflator.Inflator
+	scratchSpace       inflator.ScratchSpace
 }
 
 func NewForeman(
@@ -44,23 +44,23 @@ func NewForeman(
 	emitter metrics.Emitter,
 	notifier notifications.Notifier,
 	diffScanRepository db.DiffScanRepository,
-	credentialRepository db.CredentialRepository,
 	commitRepository db.CommitRepository,
+	scanRepository db.ScanRepository,
 	taskQueue Queue,
 	expander inflator.Inflator,
 	scratchSpace inflator.ScratchSpace,
 ) *foreman {
 	foreman := &foreman{
-		client:               client,
-		sniffer:              sniffer,
-		emitter:              emitter,
-		notifier:             notifier,
-		diffScanRepository:   diffScanRepository,
-		credentialRepository: credentialRepository,
-		commitRepository:     commitRepository,
-		taskQueue:            taskQueue,
-		expander:             expander,
-		scratchSpace:         scratchSpace,
+		client:             client,
+		sniffer:            sniffer,
+		emitter:            emitter,
+		notifier:           notifier,
+		diffScanRepository: diffScanRepository,
+		commitRepository:   commitRepository,
+		scanRepository:     scanRepository,
+		taskQueue:          taskQueue,
+		expander:           expander,
+		scratchSpace:       scratchSpace,
 	}
 
 	return foreman
@@ -109,7 +109,7 @@ func (f *foreman) buildCommitMessageJob(payload string) (*CommitMessageJob, erro
 		f.sniffer,
 		f.emitter,
 		f.notifier,
-		f.credentialRepository,
+		f.scanRepository,
 		plan,
 	), nil
 }
@@ -127,7 +127,7 @@ func (f *foreman) buildDiffScan(id, payload string) (*DiffScanJob, error) {
 		f.emitter,
 		f.notifier,
 		f.diffScanRepository,
-		f.credentialRepository,
+		f.scanRepository,
 		diffScanPlan,
 		id,
 	), nil
@@ -145,7 +145,7 @@ func (f *foreman) buildRefScan(id, payload string) (*RefScanJob, error) {
 		f.client,
 		f.sniffer,
 		f.notifier,
-		f.credentialRepository,
+		f.scanRepository,
 		f.emitter,
 		f.expander,
 		f.scratchSpace,

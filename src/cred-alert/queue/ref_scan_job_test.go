@@ -39,18 +39,19 @@ var _ = Describe("RefScan Job", func() {
 
 		files []fileInfo
 
-		job                  *queue.RefScanJob
-		server               *ghttp.Server
-		sniffer              sniff.Sniffer
-		plan                 queue.RefScanPlan
-		notifier             *notificationsfakes.FakeNotifier
-		credentialRepository *dbfakes.FakeCredentialRepository
-		emitter              *metricsfakes.FakeEmitter
-		credentialCounter    *metricsfakes.FakeCounter
-		expander             *inflatorfakes.FakeInflator
-		scratchSpace         inflator.ScratchSpace
+		job               *queue.RefScanJob
+		server            *ghttp.Server
+		sniffer           sniff.Sniffer
+		plan              queue.RefScanPlan
+		notifier          *notificationsfakes.FakeNotifier
+		scanRepository    *dbfakes.FakeScanRepository
+		emitter           *metricsfakes.FakeEmitter
+		credentialCounter *metricsfakes.FakeCounter
+		expander          *inflatorfakes.FakeInflator
+		scratchSpace      inflator.ScratchSpace
 
-		tmpPath string
+		activeScan *dbfakes.FakeActiveScan
+		tmpPath    string
 	)
 
 	owner := "repo-owner"
@@ -71,9 +72,12 @@ var _ = Describe("RefScan Job", func() {
 		sniffer = sniff.NewDefaultSniffer()
 		client = &githubclientfakes.FakeClient{}
 		notifier = &notificationsfakes.FakeNotifier{}
-		credentialRepository = &dbfakes.FakeCredentialRepository{}
+		scanRepository = &dbfakes.FakeScanRepository{}
 		credentialCounter = &metricsfakes.FakeCounter{}
 		expander = &inflatorfakes.FakeInflator{}
+
+		activeScan = &dbfakes.FakeActiveScan{}
+		scanRepository.StartReturns(activeScan)
 
 		emitter = &metricsfakes.FakeEmitter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
@@ -95,7 +99,16 @@ var _ = Describe("RefScan Job", func() {
 		tmpPath = filepath.Join(os.TempDir(), fmt.Sprintf("ref-scan-test-%d", GinkgoParallelNode()))
 		scratchSpace = inflator.NewDeterministicScratch(tmpPath)
 
-		job = queue.NewRefScanJob(plan, client, sniffer, notifier, credentialRepository, emitter, expander, scratchSpace)
+		job = queue.NewRefScanJob(
+			plan,
+			client,
+			sniffer,
+			notifier,
+			scanRepository,
+			emitter,
+			expander,
+			scratchSpace,
+		)
 	})
 
 	AfterEach(func() {
@@ -140,16 +153,19 @@ var _ = Describe("RefScan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(credentialRepository.RegisterCredentialCallCount()).To(Equal(1))
+			Expect(scanRepository.StartCallCount()).To(Equal(1))
+			_, typee := scanRepository.StartArgsForCall(0)
+			Expect(typee).To(Equal("ref-scan"))
 
-			_, credential := credentialRepository.RegisterCredentialArgsForCall(0)
+			Expect(activeScan.RecordCredentialCallCount()).To(Equal(1))
+			Expect(activeScan.FinishCallCount()).To(Equal(1))
+
+			credential := activeScan.RecordCredentialArgsForCall(0)
 			Expect(credential.Owner).To(Equal(plan.Owner))
 			Expect(credential.Repository).To(Equal(plan.Repository))
 			Expect(credential.SHA).To(Equal(ref))
 			Expect(credential.Path).To(Equal("readme.txt"))
 			Expect(credential.LineNumber).To(Equal(1))
-			Expect(credential.ScanningMethod).To(Equal("ref-scan"))
-			Expect(credential.RulesVersion).To(Equal(sniff.RulesVersion))
 		})
 
 		It("sends a notification when it finds a match", func() {

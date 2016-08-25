@@ -24,14 +24,26 @@ type Commit struct {
 	SHA        string
 }
 
+type Scan struct {
+	Model
+
+	Type         string
+	RulesVersion int
+
+	ScanStart time.Time
+	ScanEnd   time.Time
+
+	Credentials []Credential
+}
+
 type Credential struct {
 	Model
+
+	ScanID uint
+
 	Owner      string
 	Repository string
 	SHA        string
 	Path       string
 	LineNumber int
-
-	ScanningMethod string
-	RulesVersion   int
 }

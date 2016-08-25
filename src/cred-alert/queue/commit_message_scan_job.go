@@ -14,18 +14,18 @@ import (
 type CommitMessageJob struct {
 	CommitMessageScanPlan
 
-	sniffer              sniff.Sniffer
-	credentialCounter    metrics.Counter
-	notifier             notifications.Notifier
-	credentialRepository db.CredentialRepository
-	id                   string
+	sniffer           sniff.Sniffer
+	credentialCounter metrics.Counter
+	notifier          notifications.Notifier
+	scanRepository    db.ScanRepository
+	id                string
 }
 
 func NewCommitMessageJob(
 	sniffer sniff.Sniffer,
 	emitter metrics.Emitter,
 	notifier notifications.Notifier,
-	credentialRepository db.CredentialRepository,
+	scanRepository db.ScanRepository,
 	plan CommitMessageScanPlan,
 ) *CommitMessageJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
@@ -35,7 +35,7 @@ func NewCommitMessageJob(
 		sniffer:               sniffer,
 		credentialCounter:     credentialCounter,
 		notifier:              notifier,
-		credentialRepository:  credentialRepository,
+		scanRepository:        scanRepository,
 	}
 }
 
@@ -49,9 +49,17 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 
 	logger.Debug("starting")
 
+	scan := j.scanRepository.Start(logger, "commit-message-scan")
+
 	textScanner := textscanner.New(j.Message)
 
-	err := j.sniffer.Sniff(logger, textScanner, j.createHandleViolation())
+	err := j.sniffer.Sniff(logger, textScanner, j.createHandleViolation(scan))
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	err = scan.Finish()
 	if err != nil {
 		logger.Error("failed", err)
 		return err
@@ -62,7 +70,7 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 	return nil
 }
 
-func (j *CommitMessageJob) createHandleViolation() func(lager.Logger, scanners.Line) error {
+func (j *CommitMessageJob) createHandleViolation(scan db.ActiveScan) func(lager.Logger, scanners.Line) error {
 	return func(logger lager.Logger, line scanners.Line) error {
 		logger = logger.Session("handle-violation")
 		logger.Debug("starting")
@@ -74,21 +82,15 @@ func (j *CommitMessageJob) createHandleViolation() func(lager.Logger, scanners.L
 
 		j.credentialCounter.Inc(logger, privacyTag, "commit-message")
 
-		credential := &db.Credential{
-			Owner:          j.Owner,
-			Repository:     j.Repository,
-			SHA:            j.SHA,
-			Path:           line.Path,
-			LineNumber:     line.LineNumber,
-			ScanningMethod: "commit-message-scan",
-			RulesVersion:   sniff.RulesVersion,
+		credential := db.Credential{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			SHA:        j.SHA,
+			Path:       line.Path,
+			LineNumber: line.LineNumber,
 		}
 
-		err := j.credentialRepository.RegisterCredential(logger, credential)
-		if err != nil {
-			logger.Error("failed", err)
-			return err
-		}
+		scan.RecordCredential(credential)
 
 		notification := notifications.Notification{
 			Owner:      j.Owner,
@@ -99,7 +101,7 @@ func (j *CommitMessageJob) createHandleViolation() func(lager.Logger, scanners.L
 			LineNumber: line.LineNumber,
 		}
 
-		if err = j.notifier.SendNotification(logger, notification); err != nil {
+		if err := j.notifier.SendNotification(logger, notification); err != nil {
 			return err
 		}
 

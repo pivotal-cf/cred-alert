@@ -22,16 +22,18 @@ import (
 
 var _ = Describe("Diff Scan Job", func() {
 	var (
-		job                  *queue.DiffScanJob
-		emitter              *metricsfakes.FakeEmitter
-		notifier             *notificationsfakes.FakeNotifier
-		fakeGithubClient     *githubclientfakes.FakeClient
-		credentialRepository *dbfakes.FakeCredentialRepository
-		diffScanRepository   *dbfakes.FakeDiffScanRepository
-		plan                 queue.DiffScanPlan
-		sniffer              *snifffakes.FakeSniffer
-		logger               lager.Logger
-		credentialCounter    *metricsfakes.FakeCounter
+		job                *queue.DiffScanJob
+		emitter            *metricsfakes.FakeEmitter
+		notifier           *notificationsfakes.FakeNotifier
+		fakeGithubClient   *githubclientfakes.FakeClient
+		scanRepository     *dbfakes.FakeScanRepository
+		diffScanRepository *dbfakes.FakeDiffScanRepository
+		plan               queue.DiffScanPlan
+		sniffer            *snifffakes.FakeSniffer
+		logger             lager.Logger
+		credentialCounter  *metricsfakes.FakeCounter
+
+		activeScan *dbfakes.FakeActiveScan
 	)
 
 	var owner = "rad-co"
@@ -55,9 +57,12 @@ var _ = Describe("Diff Scan Job", func() {
 		emitter = &metricsfakes.FakeEmitter{}
 		notifier = &notificationsfakes.FakeNotifier{}
 		fakeGithubClient = new(githubclientfakes.FakeClient)
-		credentialRepository = &dbfakes.FakeCredentialRepository{}
+		scanRepository = &dbfakes.FakeScanRepository{}
 		diffScanRepository = &dbfakes.FakeDiffScanRepository{}
 		logger = lagertest.NewTestLogger("diff-scan-job-test")
+
+		activeScan = &dbfakes.FakeActiveScan{}
+		scanRepository.StartReturns(activeScan)
 
 		credentialCounter = &metricsfakes.FakeCounter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
@@ -77,7 +82,7 @@ var _ = Describe("Diff Scan Job", func() {
 			emitter,
 			notifier,
 			diffScanRepository,
-			credentialRepository,
+			scanRepository,
 			plan,
 			id,
 		)
@@ -130,20 +135,23 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(tags).To(ConsistOf("private"))
 		})
 
-		It("register a credential", func() {
+		It("registers a credential", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(credentialRepository.RegisterCredentialCallCount()).To(Equal(1))
+			Expect(scanRepository.StartCallCount()).To(Equal(1))
+			_, typee := scanRepository.StartArgsForCall(0)
+			Expect(typee).To(Equal("diff-scan"))
 
-			_, credential := credentialRepository.RegisterCredentialArgsForCall(0)
+			Expect(activeScan.RecordCredentialCallCount()).To(Equal(1))
+			Expect(activeScan.FinishCallCount()).To(Equal(1))
+
+			credential := activeScan.RecordCredentialArgsForCall(0)
 			Expect(credential.Owner).To(Equal(plan.Owner))
 			Expect(credential.Repository).To(Equal(plan.Repository))
 			Expect(credential.SHA).To(Equal(toGitSha))
 			Expect(credential.Path).To(Equal("some/file/path"))
 			Expect(credential.LineNumber).To(Equal(lineNumber))
-			Expect(credential.ScanningMethod).To(Equal("diff-scan"))
-			Expect(credential.RulesVersion).To(Equal(sniff.RulesVersion))
 		})
 
 		It("sends a notification", func() {

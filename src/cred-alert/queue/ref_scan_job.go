@@ -25,14 +25,14 @@ const initialCommitParentHash = "0000000000000000000000000000000000000000"
 
 type RefScanJob struct {
 	RefScanPlan
-	client               githubclient.Client
-	sniffer              sniff.Sniffer
-	notifier             notifications.Notifier
-	credentialRepository db.CredentialRepository
-	emitter              metrics.Emitter
-	credentialCounter    metrics.Counter
-	expander             inflator.Inflator
-	scratchSpace         inflator.ScratchSpace
+	client            githubclient.Client
+	sniffer           sniff.Sniffer
+	notifier          notifications.Notifier
+	scanRepository    db.ScanRepository
+	emitter           metrics.Emitter
+	credentialCounter metrics.Counter
+	expander          inflator.Inflator
+	scratchSpace      inflator.ScratchSpace
 }
 
 func NewRefScanJob(
@@ -40,7 +40,7 @@ func NewRefScanJob(
 	client githubclient.Client,
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
-	credentialRepository db.CredentialRepository,
+	scanRepository db.ScanRepository,
 	emitter metrics.Emitter,
 	expander inflator.Inflator,
 	scratchSpace inflator.ScratchSpace,
@@ -48,15 +48,15 @@ func NewRefScanJob(
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &RefScanJob{
-		RefScanPlan:          plan,
-		client:               client,
-		sniffer:              sniffer,
-		notifier:             notifier,
-		credentialRepository: credentialRepository,
-		emitter:              emitter,
-		credentialCounter:    credentialCounter,
-		expander:             expander,
-		scratchSpace:         scratchSpace,
+		RefScanPlan:       plan,
+		client:            client,
+		sniffer:           sniffer,
+		notifier:          notifier,
+		scanRepository:    scanRepository,
+		emitter:           emitter,
+		credentialCounter: credentialCounter,
+		expander:          expander,
+		scratchSpace:      scratchSpace,
 	}
 
 	return job
@@ -70,6 +70,8 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		"private":    j.Private,
 	})
 	logger.Debug("starting")
+
+	scan := j.scanRepository.Start(logger, "ref-scan")
 
 	if j.Ref == initialCommitParentHash {
 		logger.Info("skipped-initial-nil-ref")
@@ -113,10 +115,16 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	handleViolation := j.createHandleViolation(destination)
+	handleViolation := j.createHandleViolation(destination, scan)
 	scanner := dirscanner.New(handleViolation, j.sniffer)
 
 	err = scanner.Scan(logger, destination)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	err = scan.Finish()
 	if err != nil {
 		logger.Error("failed", err)
 		return err
@@ -160,7 +168,7 @@ func downloadArchive(logger lager.Logger, link *url.URL, dest string) (*os.File,
 	return f, nil
 }
 
-func (j *RefScanJob) createHandleViolation(stripPath string) func(lager.Logger, scanners.Line) error {
+func (j *RefScanJob) createHandleViolation(stripPath string, scan db.ActiveScan) func(lager.Logger, scanners.Line) error {
 	return func(logger lager.Logger, line scanners.Line) error {
 		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
@@ -182,21 +190,15 @@ func (j *RefScanJob) createHandleViolation(stripPath string) func(lager.Logger, 
 			return err
 		}
 
-		credential := &db.Credential{
-			Owner:          j.Owner,
-			Repository:     j.Repository,
-			SHA:            j.Ref,
-			Path:           path,
-			LineNumber:     line.LineNumber,
-			ScanningMethod: "ref-scan",
-			RulesVersion:   sniff.RulesVersion,
+		credential := db.Credential{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			SHA:        j.Ref,
+			Path:       path,
+			LineNumber: line.LineNumber,
 		}
 
-		err = j.credentialRepository.RegisterCredential(logger, credential)
-		if err != nil {
-			logger.Error("failed", err)
-			return err
-		}
+		scan.RecordCredential(credential)
 
 		notification := notifications.Notification{
 			Owner:      j.Owner,

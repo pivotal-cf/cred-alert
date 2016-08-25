@@ -6,5 +6,5 @@ var Migrations = []migration.Migrator{
 	InitialSchema,
 	AddAutoIncrement,
 	DropCommitTimestamp,
-	AddCredentialsTable,
+	AddCredentialsAndScansTable,
 }

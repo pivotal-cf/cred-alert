@@ -15,13 +15,13 @@ import (
 type DiffScanJob struct {
 	DiffScanPlan
 
-	diffScanRepository   db.DiffScanRepository
-	credentialRepository db.CredentialRepository
-	githubClient         githubclient.Client
-	sniffer              sniff.Sniffer
-	credentialCounter    metrics.Counter
-	notifier             notifications.Notifier
-	id                   string
+	diffScanRepository db.DiffScanRepository
+	scanRepository     db.ScanRepository
+	githubClient       githubclient.Client
+	sniffer            sniff.Sniffer
+	credentialCounter  metrics.Counter
+	notifier           notifications.Notifier
+	id                 string
 }
 
 func NewDiffScanJob(
@@ -30,18 +30,18 @@ func NewDiffScanJob(
 	emitter metrics.Emitter,
 	notifier notifications.Notifier,
 	diffScanRepository db.DiffScanRepository,
-	credentialRepository db.CredentialRepository,
+	scanRepository db.ScanRepository,
 	plan DiffScanPlan,
 	id string,
 ) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{
-		DiffScanPlan:         plan,
-		diffScanRepository:   diffScanRepository,
-		credentialRepository: credentialRepository,
-		githubClient:         githubClient,
-		sniffer:              sniffer,
+		DiffScanPlan:       plan,
+		diffScanRepository: diffScanRepository,
+		scanRepository:     scanRepository,
+		githubClient:       githubClient,
+		sniffer:            sniffer,
 
 		credentialCounter: credentialCounter,
 		notifier:          notifier,
@@ -62,6 +62,8 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 	})
 	logger.Debug("starting")
 
+	scan := j.scanRepository.Start(logger, "diff-scan")
+
 	diff, err := j.githubClient.CompareRefs(logger, j.Owner, j.Repository, j.From, j.To)
 	if err != nil {
 		logger.Error("failed", err)
@@ -70,9 +72,15 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 
 	scanner := diffscanner.NewDiffScanner(diff)
 	credentialsFound := false
-	handleViolation := j.createHandleViolation(j.To, j.Owner+"/"+j.Repository, &credentialsFound)
+	handleViolation := j.createHandleViolation(j.To, j.Owner+"/"+j.Repository, &credentialsFound, scan)
 
 	err = j.sniffer.Sniff(logger, scanner, handleViolation)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	err = scan.Finish()
 	if err != nil {
 		logger.Error("failed", err)
 		return err
@@ -94,7 +102,12 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 	return nil
 }
 
-func (j *DiffScanJob) createHandleViolation(sha string, repoName string, credentialsFound *bool) func(lager.Logger, scanners.Line) error {
+func (j *DiffScanJob) createHandleViolation(
+	sha string,
+	repoName string,
+	credentialsFound *bool,
+	scan db.ActiveScan,
+) func(lager.Logger, scanners.Line) error {
 	return func(logger lager.Logger, line scanners.Line) error {
 		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
@@ -103,21 +116,15 @@ func (j *DiffScanJob) createHandleViolation(sha string, repoName string, credent
 		})
 		logger.Debug("starting")
 
-		credential := &db.Credential{
-			Owner:          j.Owner,
-			Repository:     j.Repository,
-			SHA:            sha,
-			Path:           line.Path,
-			LineNumber:     line.LineNumber,
-			ScanningMethod: "diff-scan",
-			RulesVersion:   sniff.RulesVersion,
+		credential := db.Credential{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			SHA:        sha,
+			Path:       line.Path,
+			LineNumber: line.LineNumber,
 		}
 
-		err := j.credentialRepository.RegisterCredential(logger, credential)
-		if err != nil {
-			logger.Error("failed", err)
-			return err
-		}
+		scan.RecordCredential(credential)
 
 		notification := notifications.Notification{
 			Owner:      j.Owner,
@@ -128,7 +135,7 @@ func (j *DiffScanJob) createHandleViolation(sha string, repoName string, credent
 			LineNumber: line.LineNumber,
 		}
 
-		err = j.notifier.SendNotification(logger, notification)
+		err := j.notifier.SendNotification(logger, notification)
 		if err != nil {
 			logger.Error("failed", err)
 			return err

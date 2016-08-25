@@ -80,7 +80,11 @@ func (runner *Runner) Truncate() {
 		err := rows.Scan(&truncateSQL)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = runner.dbConn.Exec(fmt.Sprintf("TRUNCATE TABLE %s.%s", runner.DBName, truncateSQL))
+		_, err = runner.dbConn.Exec(fmt.Sprintf(`
+			SET FOREIGN_KEY_CHECKS = 0;
+			TRUNCATE TABLE %s.%s;
+			SET FOREIGN_KEY_CHECKS = 1`,
+			runner.DBName, truncateSQL))
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
