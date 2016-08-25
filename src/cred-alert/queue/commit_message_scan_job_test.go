@@ -1,6 +1,7 @@
 package queue_test
 
 import (
+	"cred-alert/db/dbfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/notifications/notificationsfakes"
@@ -23,13 +24,14 @@ var _ = Describe("Commit Message Scan Job", func() {
 
 	Describe("Run", func() {
 		var (
-			job               *queue.CommitMessageJob
-			logger            *lagertest.TestLogger
-			plan              queue.CommitMessageScanPlan
-			emitter           *metricsfakes.FakeEmitter
-			notifier          *notificationsfakes.FakeNotifier
-			sniffer           *snifffakes.FakeSniffer
-			credentialCounter *metricsfakes.FakeCounter
+			job                  *queue.CommitMessageJob
+			logger               *lagertest.TestLogger
+			plan                 queue.CommitMessageScanPlan
+			emitter              *metricsfakes.FakeEmitter
+			notifier             *notificationsfakes.FakeNotifier
+			credentialRepository *dbfakes.FakeCredentialRepository
+			sniffer              *snifffakes.FakeSniffer
+			credentialCounter    *metricsfakes.FakeCounter
 		)
 
 		BeforeEach(func() {
@@ -44,6 +46,7 @@ var _ = Describe("Commit Message Scan Job", func() {
 			sniffer = new(snifffakes.FakeSniffer)
 			emitter = &metricsfakes.FakeEmitter{}
 			notifier = &notificationsfakes.FakeNotifier{}
+			credentialRepository = &dbfakes.FakeCredentialRepository{}
 			credentialCounter = &metricsfakes.FakeCounter{}
 			emitter.CounterStub = func(name string) metrics.Counter {
 				switch name {
@@ -56,7 +59,7 @@ var _ = Describe("Commit Message Scan Job", func() {
 		})
 
 		JustBeforeEach(func() {
-			job = queue.NewCommitMessageJob(sniffer, emitter, notifier, plan)
+			job = queue.NewCommitMessageJob(sniffer, emitter, notifier, credentialRepository, plan)
 		})
 
 		It("logs basic info", func() {
@@ -79,6 +82,22 @@ var _ = Describe("Commit Message Scan Job", func() {
 				sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation sniff.ViolationHandlerFunc) error {
 					return handleViolation(logger, violatingLine)
 				}
+			})
+
+			It("register a credential", func() {
+				err := job.Run(logger)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(credentialRepository.RegisterCredentialCallCount()).To(Equal(1))
+
+				_, credential := credentialRepository.RegisterCredentialArgsForCall(0)
+				Expect(credential.Owner).To(Equal(plan.Owner))
+				Expect(credential.Repository).To(Equal(plan.Repository))
+				Expect(credential.SHA).To(Equal(plan.SHA))
+				Expect(credential.Path).To(Equal(violatingLine.Path))
+				Expect(credential.LineNumber).To(Equal(violatingLine.LineNumber))
+				Expect(credential.ScanningMethod).To(Equal("commit-message-scan"))
+				Expect(credential.RulesVersion).To(Equal(sniff.RulesVersion))
 			})
 
 			It("logs the violation", func() {

@@ -92,6 +92,7 @@ func main() {
 	tokenSource := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
 	)
+
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &oauth2.Transport{
@@ -115,6 +116,7 @@ func main() {
 
 	diffScanRepository := db.NewDiffScanRepository(database)
 	commitRepository := db.NewCommitRepository(database)
+	credentialRepository := db.NewCredentialRepository(database)
 
 	taskQueue, err := createQueue(opts, logger)
 	if err != nil {
@@ -130,6 +132,7 @@ func main() {
 		emitter,
 		notifier,
 		diffScanRepository,
+		credentialRepository,
 		commitRepository,
 		taskQueue,
 		expander,

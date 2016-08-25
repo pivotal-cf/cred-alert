@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"cred-alert/db"
 	"cred-alert/githubclient"
 	"cred-alert/inflator"
 	"cred-alert/metrics"
@@ -24,13 +25,14 @@ const initialCommitParentHash = "0000000000000000000000000000000000000000"
 
 type RefScanJob struct {
 	RefScanPlan
-	client            githubclient.Client
-	sniffer           sniff.Sniffer
-	notifier          notifications.Notifier
-	emitter           metrics.Emitter
-	credentialCounter metrics.Counter
-	expander          inflator.Inflator
-	scratchSpace      inflator.ScratchSpace
+	client               githubclient.Client
+	sniffer              sniff.Sniffer
+	notifier             notifications.Notifier
+	credentialRepository db.CredentialRepository
+	emitter              metrics.Emitter
+	credentialCounter    metrics.Counter
+	expander             inflator.Inflator
+	scratchSpace         inflator.ScratchSpace
 }
 
 func NewRefScanJob(
@@ -38,6 +40,7 @@ func NewRefScanJob(
 	client githubclient.Client,
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
+	credentialRepository db.CredentialRepository,
 	emitter metrics.Emitter,
 	expander inflator.Inflator,
 	scratchSpace inflator.ScratchSpace,
@@ -45,14 +48,15 @@ func NewRefScanJob(
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &RefScanJob{
-		RefScanPlan:       plan,
-		client:            client,
-		sniffer:           sniffer,
-		notifier:          notifier,
-		emitter:           emitter,
-		credentialCounter: credentialCounter,
-		expander:          expander,
-		scratchSpace:      scratchSpace,
+		RefScanPlan:          plan,
+		client:               client,
+		sniffer:              sniffer,
+		notifier:             notifier,
+		credentialRepository: credentialRepository,
+		emitter:              emitter,
+		credentialCounter:    credentialCounter,
+		expander:             expander,
+		scratchSpace:         scratchSpace,
 	}
 
 	return job
@@ -175,6 +179,22 @@ func (j *RefScanJob) createHandleViolation(stripPath string) func(lager.Logger, 
 		path, err := filepath.Rel(parts[0], relPath)
 		if err != nil {
 			logger.Error("making-relative-path-failed", err)
+			return err
+		}
+
+		credential := &db.Credential{
+			Owner:          j.Owner,
+			Repository:     j.Repository,
+			SHA:            j.Ref,
+			Path:           path,
+			LineNumber:     line.LineNumber,
+			ScanningMethod: "ref-scan",
+			RulesVersion:   sniff.RulesVersion,
+		}
+
+		err = j.credentialRepository.RegisterCredential(logger, credential)
+		if err != nil {
+			logger.Error("failed", err)
 			return err
 		}
 

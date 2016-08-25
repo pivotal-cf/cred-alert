@@ -15,22 +15,33 @@ import (
 type DiffScanJob struct {
 	DiffScanPlan
 
-	diffScanRepository db.DiffScanRepository
-	githubClient       githubclient.Client
-	sniffer            sniff.Sniffer
-	credentialCounter  metrics.Counter
-	notifier           notifications.Notifier
-	id                 string
+	diffScanRepository   db.DiffScanRepository
+	credentialRepository db.CredentialRepository
+	githubClient         githubclient.Client
+	sniffer              sniff.Sniffer
+	credentialCounter    metrics.Counter
+	notifier             notifications.Notifier
+	id                   string
 }
 
-func NewDiffScanJob(githubClient githubclient.Client, sniffer sniff.Sniffer, emitter metrics.Emitter, notifier notifications.Notifier, diffScanRepository db.DiffScanRepository, plan DiffScanPlan, id string) *DiffScanJob {
+func NewDiffScanJob(
+	githubClient githubclient.Client,
+	sniffer sniff.Sniffer,
+	emitter metrics.Emitter,
+	notifier notifications.Notifier,
+	diffScanRepository db.DiffScanRepository,
+	credentialRepository db.CredentialRepository,
+	plan DiffScanPlan,
+	id string,
+) *DiffScanJob {
 	credentialCounter := emitter.Counter("cred_alert.violations")
 
 	job := &DiffScanJob{
-		DiffScanPlan:       plan,
-		diffScanRepository: diffScanRepository,
-		githubClient:       githubClient,
-		sniffer:            sniffer,
+		DiffScanPlan:         plan,
+		diffScanRepository:   diffScanRepository,
+		credentialRepository: credentialRepository,
+		githubClient:         githubClient,
+		sniffer:              sniffer,
 
 		credentialCounter: credentialCounter,
 		notifier:          notifier,
@@ -92,6 +103,22 @@ func (j *DiffScanJob) createHandleViolation(sha string, repoName string, credent
 		})
 		logger.Debug("starting")
 
+		credential := &db.Credential{
+			Owner:          j.Owner,
+			Repository:     j.Repository,
+			SHA:            sha,
+			Path:           line.Path,
+			LineNumber:     line.LineNumber,
+			ScanningMethod: "diff-scan",
+			RulesVersion:   sniff.RulesVersion,
+		}
+
+		err := j.credentialRepository.RegisterCredential(logger, credential)
+		if err != nil {
+			logger.Error("failed", err)
+			return err
+		}
+
 		notification := notifications.Notification{
 			Owner:      j.Owner,
 			Repository: j.Repository,
@@ -101,7 +128,7 @@ func (j *DiffScanJob) createHandleViolation(sha string, repoName string, credent
 			LineNumber: line.LineNumber,
 		}
 
-		err := j.notifier.SendNotification(logger, notification)
+		err = j.notifier.SendNotification(logger, notification)
 		if err != nil {
 			logger.Error("failed", err)
 			return err

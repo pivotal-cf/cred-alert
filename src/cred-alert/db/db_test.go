@@ -1,17 +1,17 @@
 package db_test
 
 import (
-	"cred-alert/db"
 	"errors"
 	"fmt"
 
-	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/jinzhu/gorm"
 	"github.com/onsi/gomega/gbytes"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"cred-alert/db"
 )
 
 var _ = Describe("Database Connections", func() {

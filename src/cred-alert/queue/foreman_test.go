@@ -26,6 +26,7 @@ var _ = Describe("Foreman", func() {
 			&metricsfakes.FakeEmitter{},
 			&notificationsfakes.FakeNotifier{},
 			&dbfakes.FakeDiffScanRepository{},
+			&dbfakes.FakeCredentialRepository{},
 			&dbfakes.FakeCommitRepository{},
 			&queuefakes.FakeQueue{},
 			&inflatorfakes.FakeInflator{},

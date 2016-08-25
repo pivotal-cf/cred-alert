@@ -22,15 +22,16 @@ import (
 
 var _ = Describe("Diff Scan Job", func() {
 	var (
-		job                *queue.DiffScanJob
-		emitter            *metricsfakes.FakeEmitter
-		notifier           *notificationsfakes.FakeNotifier
-		fakeGithubClient   *githubclientfakes.FakeClient
-		diffScanRepository *dbfakes.FakeDiffScanRepository
-		plan               queue.DiffScanPlan
-		sniffer            *snifffakes.FakeSniffer
-		logger             lager.Logger
-		credentialCounter  *metricsfakes.FakeCounter
+		job                  *queue.DiffScanJob
+		emitter              *metricsfakes.FakeEmitter
+		notifier             *notificationsfakes.FakeNotifier
+		fakeGithubClient     *githubclientfakes.FakeClient
+		credentialRepository *dbfakes.FakeCredentialRepository
+		diffScanRepository   *dbfakes.FakeDiffScanRepository
+		plan                 queue.DiffScanPlan
+		sniffer              *snifffakes.FakeSniffer
+		logger               lager.Logger
+		credentialCounter    *metricsfakes.FakeCounter
 	)
 
 	var owner = "rad-co"
@@ -54,6 +55,7 @@ var _ = Describe("Diff Scan Job", func() {
 		emitter = &metricsfakes.FakeEmitter{}
 		notifier = &notificationsfakes.FakeNotifier{}
 		fakeGithubClient = new(githubclientfakes.FakeClient)
+		credentialRepository = &dbfakes.FakeCredentialRepository{}
 		diffScanRepository = &dbfakes.FakeDiffScanRepository{}
 		logger = lagertest.NewTestLogger("diff-scan-job-test")
 
@@ -75,6 +77,7 @@ var _ = Describe("Diff Scan Job", func() {
 			emitter,
 			notifier,
 			diffScanRepository,
+			credentialRepository,
 			plan,
 			id,
 		)
@@ -125,6 +128,22 @@ var _ = Describe("Diff Scan Job", func() {
 			_, tags := credentialCounter.IncArgsForCall(0)
 			Expect(tags).To(HaveLen(1))
 			Expect(tags).To(ConsistOf("private"))
+		})
+
+		It("register a credential", func() {
+			err := job.Run(logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(credentialRepository.RegisterCredentialCallCount()).To(Equal(1))
+
+			_, credential := credentialRepository.RegisterCredentialArgsForCall(0)
+			Expect(credential.Owner).To(Equal(plan.Owner))
+			Expect(credential.Repository).To(Equal(plan.Repository))
+			Expect(credential.SHA).To(Equal(toGitSha))
+			Expect(credential.Path).To(Equal("some/file/path"))
+			Expect(credential.LineNumber).To(Equal(lineNumber))
+			Expect(credential.ScanningMethod).To(Equal("diff-scan"))
+			Expect(credential.RulesVersion).To(Equal(sniff.RulesVersion))
 		})
 
 		It("sends a notification", func() {

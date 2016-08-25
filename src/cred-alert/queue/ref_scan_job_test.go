@@ -19,6 +19,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/ghttp"
 
+	"cred-alert/db/dbfakes"
 	"cred-alert/githubclient"
 	"cred-alert/githubclient/githubclientfakes"
 	"cred-alert/inflator"
@@ -38,15 +39,16 @@ var _ = Describe("RefScan Job", func() {
 
 		files []fileInfo
 
-		job               *queue.RefScanJob
-		server            *ghttp.Server
-		sniffer           sniff.Sniffer
-		plan              queue.RefScanPlan
-		notifier          *notificationsfakes.FakeNotifier
-		emitter           *metricsfakes.FakeEmitter
-		credentialCounter *metricsfakes.FakeCounter
-		expander          *inflatorfakes.FakeInflator
-		scratchSpace      inflator.ScratchSpace
+		job                  *queue.RefScanJob
+		server               *ghttp.Server
+		sniffer              sniff.Sniffer
+		plan                 queue.RefScanPlan
+		notifier             *notificationsfakes.FakeNotifier
+		credentialRepository *dbfakes.FakeCredentialRepository
+		emitter              *metricsfakes.FakeEmitter
+		credentialCounter    *metricsfakes.FakeCounter
+		expander             *inflatorfakes.FakeInflator
+		scratchSpace         inflator.ScratchSpace
 
 		tmpPath string
 	)
@@ -69,6 +71,7 @@ var _ = Describe("RefScan Job", func() {
 		sniffer = sniff.NewDefaultSniffer()
 		client = &githubclientfakes.FakeClient{}
 		notifier = &notificationsfakes.FakeNotifier{}
+		credentialRepository = &dbfakes.FakeCredentialRepository{}
 		credentialCounter = &metricsfakes.FakeCounter{}
 		expander = &inflatorfakes.FakeInflator{}
 
@@ -92,7 +95,7 @@ var _ = Describe("RefScan Job", func() {
 		tmpPath = filepath.Join(os.TempDir(), fmt.Sprintf("ref-scan-test-%d", GinkgoParallelNode()))
 		scratchSpace = inflator.NewDeterministicScratch(tmpPath)
 
-		job = queue.NewRefScanJob(plan, client, sniffer, notifier, emitter, expander, scratchSpace)
+		job = queue.NewRefScanJob(plan, client, sniffer, notifier, credentialRepository, emitter, expander, scratchSpace)
 	})
 
 	AfterEach(func() {
@@ -131,6 +134,22 @@ var _ = Describe("RefScan Job", func() {
 			Expect(returnedOwner).To(Equal(owner))
 			Expect(returnedRepo).To(Equal(repo))
 			Expect(returnedRef).To(Equal(ref))
+		})
+
+		It("register a credential", func() {
+			err := job.Run(logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(credentialRepository.RegisterCredentialCallCount()).To(Equal(1))
+
+			_, credential := credentialRepository.RegisterCredentialArgsForCall(0)
+			Expect(credential.Owner).To(Equal(plan.Owner))
+			Expect(credential.Repository).To(Equal(plan.Repository))
+			Expect(credential.SHA).To(Equal(ref))
+			Expect(credential.Path).To(Equal("readme.txt"))
+			Expect(credential.LineNumber).To(Equal(1))
+			Expect(credential.ScanningMethod).To(Equal("ref-scan"))
+			Expect(credential.RulesVersion).To(Equal(sniff.RulesVersion))
 		})
 
 		It("sends a notification when it finds a match", func() {

@@ -23,3 +23,15 @@ type Commit struct {
 	Repository string
 	SHA        string
 }
+
+type Credential struct {
+	Model
+	Owner      string
+	Repository string
+	SHA        string
+	Path       string
+	LineNumber int
+
+	ScanningMethod string
+	RulesVersion   int
+}
