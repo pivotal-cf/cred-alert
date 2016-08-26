@@ -108,7 +108,7 @@ func (command *ScanCommand) Execute(args []string) error {
 				fmt.Printf("%s\n", red("FAILED"))
 				log.Fatalln(err.Error())
 			}
-			fmt.Printf("%s (%s)\n", green("DONE"), time.Since(inflateStart))
+			fmt.Printf("%s\n", green("DONE"))
 
 			scanStart := time.Now()
 			dirScanner := dirscanner.New(archiveViolationHandler, sniffer)
@@ -120,7 +120,8 @@ func (command *ScanCommand) Execute(args []string) error {
 			fmt.Println()
 			fmt.Println("Scan complete!")
 			fmt.Println()
-			fmt.Println("Time taken:", time.Since(scanStart))
+			fmt.Println("Time taken (inflating):", scanStart.Sub(inflateStart))
+			fmt.Println("Time taken (scanning):", time.Since(scanStart))
 			fmt.Println("Credentials found:", credsFound)
 			fmt.Println()
 			fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())

@@ -105,8 +105,12 @@ index 940393e..fa5a232 100644
 		})
 
 		var ItShowsHowLongItTookAndHowManyCredentialsWereFound = func() {
+			It("shows how long the inflating took", func() {
+				Eventually(session.Out).Should(gbytes.Say(`Time taken \(inflating\):`))
+			})
+
 			It("shows how long the scan took", func() {
-				Eventually(session.Out).Should(gbytes.Say("Time taken:"))
+				Eventually(session.Out).Should(gbytes.Say(`Time taken \(scanning\):`))
 			})
 
 			It("shows show many credentials were found", func() {
