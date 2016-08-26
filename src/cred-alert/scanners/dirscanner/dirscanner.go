@@ -210,12 +210,21 @@ var probablyTextExtensions = map[string]struct{}{
 	".thor":         struct{}{},
 	".tmpl":         struct{}{},
 	".tsv":          struct{}{},
-	".txt":          struct{}{},
-	".utf8":         struct{}{},
-	".xhtml":        struct{}{},
-	".xml":          struct{}{},
-	".xsd":          struct{}{},
-	".yaml":         struct{}{},
-	".yardopts":     struct{}{},
-	".yml":          struct{}{},
+	// .txt seems like the one extension you can count on to be text.
+	//
+	// Unfortunately not.
+	//
+	// There is a file in the Go codebase that is used to test the `tar` package
+	// in the standard library. It's called `16gb.txt` and it contains 16
+	// gigabytes of null bytes. We assume this is text and try to read the lines
+	// into memory which ends poorly.
+	//
+	// ".txt":          struct{}{},
+	".utf8":     struct{}{},
+	".xhtml":    struct{}{},
+	".xml":      struct{}{},
+	".xsd":      struct{}{},
+	".yaml":     struct{}{},
+	".yardopts": struct{}{},
+	".yml":      struct{}{},
 }
