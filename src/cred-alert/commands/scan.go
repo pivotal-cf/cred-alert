@@ -130,12 +130,30 @@ func (command *ScanCommand) Execute(args []string) error {
 		}
 	} else if command.Diff {
 		handleDiff(logger, handler)
-
 	} else {
 		scanFile(logger, handler, sniffer, os.Stdin, "STDIN")
 	}
 
 	if credsFound > 0 {
+		fmt.Println()
+		fmt.Println("Yikes! Looks like we found some credentials.")
+		fmt.Println()
+		fmt.Println("There are a few cases for what this may be:")
+		fmt.Println()
+		fmt.Println("1. An actual credential in a repository which shouldn't be")
+		fmt.Println("   committed! Remove it and try committing again.")
+		fmt.Println()
+		fmt.Println("2. An example credential in tests or documentation. You can")
+		fmt.Println("   use the words 'fake' and/or 'example' in your credential so it is")
+		fmt.Println("   ignored.")
+		fmt.Println()
+		fmt.Println("3. An actual credential in a credential repository. If you are calling this")
+		fmt.Println("   via Git hook and if you want the false positive to go away, you can pass `-n`")
+		fmt.Println("   to skip the hook for now.")
+		fmt.Println()
+		fmt.Println("4. A false positive which isn't a credential at all! Please let us know about ")
+		fmt.Println("   the this case in our Slack channel (#pcf-sec-enablement).")
+
 		exitFuncs = append(exitFuncs, func() {
 			os.Exit(3)
 		})

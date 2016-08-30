@@ -55,6 +55,20 @@ index 940393e..fa5a232 100644
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	ItTellsPeopleHowToRemoveTheirCredentials := func() {
+		It("tells people how to add example credentials to their tests or documentation", func() {
+			Eventually(session.Out).Should(gbytes.Say("fake"))
+		})
+
+		It("tells people how to skip git hooks running for other false positives", func() {
+			Eventually(session.Out).Should(gbytes.Say("-n"))
+		})
+
+		It("tells people how to reach us", func() {
+			Eventually(session.Out).Should(gbytes.Say("Slack channel"))
+		})
+	}
+
 	Context("when given content on stdin", func() {
 		BeforeEach(func() {
 			stdin = offendingText
@@ -69,6 +83,8 @@ index 940393e..fa5a232 100644
 			Eventually(session).Should(gexec.Exit(3))
 		})
 
+		ItTellsPeopleHowToRemoveTheirCredentials()
+
 		Context("when given a --diff flag", func() {
 			BeforeEach(func() {
 				cmdArgs = []string{"--diff"}
@@ -79,6 +95,7 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt:28"))
 			})
 
+			ItTellsPeopleHowToRemoveTheirCredentials()
 		})
 	})
 
@@ -121,6 +138,8 @@ index 940393e..fa5a232 100644
 		It("exits with status 3", func() {
 			Eventually(session).Should(gexec.Exit(3))
 		})
+
+		ItTellsPeopleHowToRemoveTheirCredentials()
 
 		Context("when the file is a zip file", func() {
 			var (
@@ -269,6 +288,7 @@ index 940393e..fa5a232 100644
 			AfterEach(func() {
 				os.RemoveAll(tmpFile.Name())
 			})
+
 			It("exits with status 0", func() {
 				Eventually(session).Should(gexec.Exit(0))
 			})
