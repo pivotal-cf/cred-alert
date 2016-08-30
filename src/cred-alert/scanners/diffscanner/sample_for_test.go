@@ -51,3 +51,19 @@ index 940393e..fa5a232 100644
  private_key: "should_match"
  some_password: "should_match"
 `
+
+var renameDiff = `diff --git a/README.md b/README.md
+deleted file mode 100644
+index cc5d86f..0000000
+--- a/README.md
++++ /dev/null
+@@ -1 +0,0 @@
+-password = thisisapassword
+diff --git a/README.yml b/README.yml
+new file mode 100644
+index 0000000..0fd8d0e
+--- /dev/null
++++ b/README.yml
+@@ -0,0 +1 @@
++secret_password: thisisapassword
+`

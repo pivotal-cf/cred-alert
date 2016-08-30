@@ -180,4 +180,16 @@ index 1e13fe8..06b14f8 100644
 		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`hard_coded_salt: "should_match"`)))
 		Expect(diffScanner.Line(logger).Path).To(Equal("spec/integration/git-secrets-pattern-tests.txt"))
 	})
+
+	It("handles file renames", func() {
+		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(renameDiff))
+
+		diffScanner.Scan(logger)
+
+		line := diffScanner.Line(logger)
+
+		Expect(line.Path).To(Equal("README.yml"))
+		Expect(line.LineNumber).To(Equal(1))
+		Expect(line.Content).To(Equal([]byte("secret_password: thisisapassword")))
+	})
 })

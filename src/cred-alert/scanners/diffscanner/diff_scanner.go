@@ -10,9 +10,9 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-var fileHeaderRegexp = regexp.MustCompile(`^\+\+\+\s\w\/(.*)$`)
+var fileHeaderRegexp = regexp.MustCompile(`^\+\+\+\s(?:\w\/(.*)|/dev/null)$`)
+var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d*\s@@`)
 var addedLineRegexp = regexp.MustCompile(`^(?:\s|\+)(.*)`)
-var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d+?\s@@`)
 
 type DiffScanner struct {
 	scanner           *bufio.Scanner
