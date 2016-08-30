@@ -2,6 +2,10 @@
 
 > scans repos for credentials and then shouts if it finds them
 
+## Getting Help
+
+Come visit us in [Slack](https://pivotal.slack.com/messages/pcf-sec-enablement/)!
+
 ## CLI
 
 ### Building
