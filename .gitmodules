@@ -101,14 +101,6 @@
 	path = src/code.cloudfoundry.org/lager
 	url = https://github.com/cloudfoundry/lager
 	branch = master
-[submodule "src/github.com/contraband/zest"]
-	path = src/github.com/contraband/zest
-	url = https://github.com/contraband/zest
-	branch = master
-[submodule "src/github.com/contraband/holler"]
-	path = src/github.com/contraband/holler
-	url = https://github.com/contraband/holler
-	branch = master
 [submodule "src/github.com/mgutz/ansi"]
 	path = src/github.com/mgutz/ansi
 	url = https://github.com/mgutz/ansi

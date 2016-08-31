@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/contraband/zest"
 	"github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -42,7 +41,6 @@ type Opts struct {
 
 	Metrics struct {
 		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
-		YellerAPIKey  string `long:"yeller-api-key" description:"key to emit to yeller" env:"YELLER_API_KEY" value-name:"KEY"`
 		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
 	} `group:"Metrics Options"`
 
@@ -61,11 +59,6 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed", err)
 		os.Exit(1)
-	}
-
-	if opts.Metrics.YellerAPIKey != "" {
-		sink := zest.NewYellerSink(opts.Metrics.YellerAPIKey, opts.Metrics.Environment)
-		logger.RegisterSink(sink)
 	}
 
 	taskQueue, err := createQueue(opts, logger)

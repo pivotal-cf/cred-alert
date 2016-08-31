@@ -104,7 +104,6 @@ For local development the worker can be started with the following command line 
 | `AWS_SECRET_ACCESS_KEY`     | Secret access key for AWS SQS service                                            |
 | `AWS_REGION`                | AWS region for SQS service                                                       |
 | `SQS_QUEUE_NAME`            | Queue name to use with SQS                                                       |
-| `YELLER_API_KEY`            | Key for emitting to Yeller                                                       |
 
 ##### Ingestor
 

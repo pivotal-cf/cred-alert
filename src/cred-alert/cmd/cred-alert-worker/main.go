@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/contraband/zest"
 	"github.com/jessevdk/go-flags"
 	"github.com/jinzhu/gorm"
 	"github.com/tedsuo/ifrit"
@@ -51,7 +50,6 @@ type Opts struct {
 
 	Metrics struct {
 		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
-		YellerAPIKey  string `long:"yeller-api-key" description:"key to emit to yeller" env:"YELLER_API_KEY" value-name:"KEY"`
 		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
 	} `group:"Metrics Options"`
 
@@ -75,11 +73,6 @@ func main() {
 
 	logger := lager.NewLogger("cred-alert-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
-
-	if opts.Metrics.YellerAPIKey != "" {
-		sink := zest.NewYellerSink(opts.Metrics.YellerAPIKey, opts.Metrics.Environment)
-		logger.RegisterSink(sink)
-	}
 
 	logger.Debug("starting")
 
