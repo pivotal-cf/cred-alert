@@ -51,6 +51,230 @@ var _ = Describe("Notifications", func() {
 		})
 	})
 
+	Describe("sending batch slack notifications", func() {
+		var (
+			server *ghttp.Server
+
+			batch   []notifications.Notification
+			sendErr error
+		)
+
+		BeforeEach(func() {
+			server = ghttp.NewServer()
+			slackNotifier = notifications.NewSlackNotifier(server.URL(), clock)
+		})
+
+		AfterEach(func() {
+			server.Close()
+		})
+
+		JustBeforeEach(func() {
+			sendErr = slackNotifier.SendBatchNotification(logger, batch)
+		})
+
+		Context("when there is none notification in the batch", func() {
+			BeforeEach(func() {
+				batch = []notifications.Notification{}
+			})
+
+			It("does not error", func() {
+				Expect(sendErr).NotTo(HaveOccurred())
+			})
+
+			It("doesn't send anything to slack", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(0))
+			})
+		})
+
+		// {
+		// "attachments": [
+		// 	{
+		// 		"title": "Possible credentials found in <https://google.com|pivotal-cf/cred-alert / e2e4e3c>!",
+		// 		"text": "• <https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt> on line <https://google.com|34>, <https://google.com|46>, and <https://google.com|93>\n• <https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt> on line <https://google.com|34>, <https://google.com|46>, and <https://google.com|93>",
+		// 		"color": "danger"
+		// 	}
+		//"fallback": "Possible credentials found in https://google.com|pivotal-cf/cred-alert/commit/abc123456790!",
+		// ]
+		// }
+
+		Context("when there is one notifications in the batch", func() {
+			BeforeEach(func() {
+				batch = []notifications.Notification{
+					{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    false,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 123,
+					},
+				}
+
+				commitLink := "https://github.com/owner/repo/commit/abc1234567890"
+				fileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file.txt"
+				lineLink := fmt.Sprintf("%s#L123", fileLink)
+				expectedJSON := fmt.Sprintf(`
+				{
+					"attachments": [
+						{
+							"title": "Possible credentials found in <%s|owner/repo / abc1234>!",
+							"text": "• <%s|path/to/file.txt> on line <%s|123>",
+							"color": "danger",
+							"fallback": "Possible credentials found in %s!"
+						}
+					]
+				}
+				`, commitLink, fileLink, lineLink, commitLink)
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+					),
+				)
+			})
+
+			It("does not error", func() {
+				Expect(sendErr).NotTo(HaveOccurred())
+			})
+
+			It("sends a message to slack", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+		})
+
+		Context("when there are multiple notifications in the batch in the same file", func() {
+			BeforeEach(func() {
+				batch = []notifications.Notification{
+					{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    false,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 123,
+					},
+					{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    false,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 346,
+					},
+					{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    false,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 3932,
+					},
+				}
+
+				commitLink := "https://github.com/owner/repo/commit/abc1234567890"
+				fileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file.txt"
+				lineLink := fmt.Sprintf("%s#L123", fileLink)
+				otherLineLink := fmt.Sprintf("%s#L346", fileLink)
+				yetAnotherLineLink := fmt.Sprintf("%s#L3932", fileLink)
+
+				expectedJSON := fmt.Sprintf(`
+				{
+					"attachments": [
+						{
+							"title": "Possible credentials found in <%s|owner/repo / abc1234>!",
+							"text": "• <%s|path/to/file.txt> on lines <%s|123>, <%s|346>, and <%s|3932>",
+							"color": "danger",
+							"fallback": "Possible credentials found in %s!"
+						}
+					]
+				}
+				`, commitLink, fileLink, lineLink, otherLineLink, yetAnotherLineLink, commitLink)
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+					),
+				)
+			})
+
+			It("does not error", func() {
+				Expect(sendErr).NotTo(HaveOccurred())
+			})
+
+			It("sends a message with all of them in to slack", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+		})
+
+		Context("when there are multiple notifications in the batch in different files", func() {
+			BeforeEach(func() {
+				batch = []notifications.Notification{
+					{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    false,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 123,
+					},
+					{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    false,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file2.txt",
+						LineNumber: 346,
+					},
+					{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    false,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 3932,
+					},
+				}
+
+				commitLink := "https://github.com/owner/repo/commit/abc1234567890"
+				fileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file.txt"
+				otherFileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file2.txt"
+				lineLink := fmt.Sprintf("%s#L123", fileLink)
+				otherLineLink := fmt.Sprintf("%s#L346", otherFileLink)
+				yetAnotherLineLink := fmt.Sprintf("%s#L3932", fileLink)
+
+				expectedJSON := fmt.Sprintf(`
+				{
+					"attachments": [
+						{
+							"title": "Possible credentials found in <%s|owner/repo / abc1234>!",
+							"text": "• <%s|path/to/file.txt> on lines <%s|123> and <%s|3932>\n• <%s|path/to/file2.txt> on line <%s|346>",
+							"color": "danger",
+							"fallback": "Possible credentials found in %s!"
+						}
+					]
+				}
+				`, commitLink, fileLink, lineLink, yetAnotherLineLink, otherFileLink, otherLineLink, commitLink)
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+					),
+				)
+			})
+
+			It("does not error", func() {
+				Expect(sendErr).NotTo(HaveOccurred())
+			})
+
+			It("sends a message with all of them in to slack", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+		})
+	})
+
 	Context("Slack notifications", func() {
 		var server *ghttp.Server
 
