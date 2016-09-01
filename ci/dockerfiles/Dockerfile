@@ -11,10 +11,7 @@ RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a
     debconf-set-selections << 'mariadb-server-10.1 mysql-server/root_password_again password root' && \
     apt-get update && \
     apt-get install -y --no-install-recommends mariadb-server && \
-    apt-get clean && apt-get autoremove --purge && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && \
     apt-get install -y --no-install-recommends unzip && \
+    apt-get install -y --no-install-recommends libgit2-dev && \
     apt-get clean && apt-get autoremove --purge && \
     rm -rf /var/lib/apt/lists/*
