@@ -112,6 +112,7 @@ func (n *slackNotifier) send(logger lager.Logger, body []byte) error {
 			}
 
 			afterStr := resp.Header.Get("Retry-After")
+			logger.Info("told-to-wait", lager.Data{"after": afterStr})
 			after, err := strconv.Atoi(afterStr)
 			if err != nil {
 				logger.Error("failed", err)
