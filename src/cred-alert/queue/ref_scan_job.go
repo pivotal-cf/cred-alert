@@ -88,48 +88,19 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	tempDir, err := ioutil.TempDir("", "download-archive")
+	destination, err := j.downloadArchiveFrom(logger, downloadURL)
 	if err != nil {
-		logger.Error("failed", err)
-		return err
-	}
-	defer os.RemoveAll(tempDir)
-
-	archiveFile, err := downloadArchive(logger, downloadURL, tempDir)
-	if err != nil {
-		logger.Error("failed", err)
-		return err
-	}
-	defer archiveFile.Close()
-
-	destination, err := j.scratchSpace.Make()
-	if err != nil {
-		logger.Error("failed", err)
 		return err
 	}
 	defer os.RemoveAll(destination)
 
-	err = j.expander.Inflate(logger, "application/zip", archiveFile.Name(), destination)
+	alerts, err := j.scanFilesIn(logger, scan, destination)
 	if err != nil {
-		logger.Error("failed", err)
 		return err
 	}
 
-	alerts := []notifications.Notification{}
-
-	handleViolation := j.createHandleViolation(destination, scan, &alerts)
-
-	scanner := dirscanner.New(handleViolation, j.sniffer)
-
-	err = scanner.Scan(logger, destination)
+	err = j.report(logger, alerts)
 	if err != nil {
-		logger.Error("failed", err)
-		return err
-	}
-
-	err = j.notifier.SendBatchNotification(logger, alerts)
-	if err != nil {
-		logger.Error("failed", err)
 		return err
 	}
 
@@ -140,6 +111,107 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	}
 
 	logger.Debug("done")
+	return nil
+}
+
+func (j *RefScanJob) downloadArchiveFrom(logger lager.Logger, downloadURL *url.URL) (string, error) {
+	tempDir, err := ioutil.TempDir("", "download-archive")
+	if err != nil {
+		logger.Error("failed", err)
+		return "", err
+	}
+	defer os.RemoveAll(tempDir)
+
+	archiveFile, err := downloadArchive(logger, downloadURL, tempDir)
+	if err != nil {
+		logger.Error("failed", err)
+		return "", err
+	}
+	defer archiveFile.Close()
+
+	destination, err := j.scratchSpace.Make()
+	if err != nil {
+		logger.Error("failed", err)
+		return "", err
+	}
+
+	err = j.expander.Inflate(logger, "application/zip", archiveFile.Name(), destination)
+	if err != nil {
+		logger.Error("failed", err)
+		return "", err
+	}
+
+	return destination, nil
+}
+
+func (j *RefScanJob) scanFilesIn(logger lager.Logger, scan db.ActiveScan, destination string) ([]notifications.Notification, error) {
+	alerts := []notifications.Notification{}
+
+	scanner := dirscanner.New(func(logger lager.Logger, line scanners.Line) error {
+		logger = logger.Session("handle-violation", lager.Data{
+			"path":        line.Path,
+			"line-number": line.LineNumber,
+			"ref":         j.Ref,
+		})
+		logger.Debug("starting")
+
+		relPath, err := filepath.Rel(destination, line.Path)
+		if err != nil {
+			logger.Error("making-relative-path-failed", err)
+			return err
+		}
+
+		parts := strings.Split(relPath, string(os.PathSeparator))
+		path, err := filepath.Rel(parts[0], relPath)
+		if err != nil {
+			logger.Error("making-relative-path-failed", err)
+			return err
+		}
+
+		scan.RecordCredential(db.Credential{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			SHA:        j.Ref,
+			Path:       path,
+			LineNumber: line.LineNumber,
+		})
+
+		alerts = append(alerts, notifications.Notification{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			Private:    j.Private,
+			SHA:        j.Ref,
+			Path:       path,
+			LineNumber: line.LineNumber,
+		})
+
+		logger.Debug("done")
+		return nil
+	}, j.sniffer)
+
+	err := scanner.Scan(logger, destination)
+	if err != nil {
+		logger.Error("failed", err)
+		return nil, err
+	}
+
+	return alerts, nil
+}
+
+func (j *RefScanJob) report(logger lager.Logger, alerts []notifications.Notification) error {
+	err := j.notifier.SendBatchNotification(logger, alerts)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	tag := "public"
+	if j.Private {
+		tag = "private"
+	}
+
+	j.credentialCounter.IncN(logger, len(alerts), tag)
+
 	return nil
 }
 
@@ -175,61 +247,4 @@ func downloadArchive(logger lager.Logger, link *url.URL, dest string) (*os.File,
 
 	logger.Debug("done")
 	return f, nil
-}
-
-func (j *RefScanJob) createHandleViolation(
-	stripPath string,
-	scan db.ActiveScan,
-	alerts *[]notifications.Notification,
-) func(lager.Logger, scanners.Line) error {
-	return func(logger lager.Logger, line scanners.Line) error {
-		logger = logger.Session("handle-violation", lager.Data{
-			"path":        line.Path,
-			"line-number": line.LineNumber,
-			"ref":         j.Ref,
-		})
-		logger.Debug("starting")
-
-		relPath, err := filepath.Rel(stripPath, line.Path)
-		if err != nil {
-			logger.Error("making-relative-path-failed", err)
-			return err
-		}
-
-		parts := strings.Split(relPath, string(os.PathSeparator))
-		path, err := filepath.Rel(parts[0], relPath)
-		if err != nil {
-			logger.Error("making-relative-path-failed", err)
-			return err
-		}
-
-		credential := db.Credential{
-			Owner:      j.Owner,
-			Repository: j.Repository,
-			SHA:        j.Ref,
-			Path:       path,
-			LineNumber: line.LineNumber,
-		}
-
-		scan.RecordCredential(credential)
-
-		*alerts = append(*alerts, notifications.Notification{
-			Owner:      j.Owner,
-			Repository: j.Repository,
-			Private:    j.Private,
-			SHA:        j.Ref,
-			Path:       path,
-			LineNumber: line.LineNumber,
-		})
-
-		tag := "public"
-		if j.Private {
-			tag = "private"
-		}
-
-		j.credentialCounter.Inc(logger, tag)
-
-		logger.Debug("done")
-		return nil
-	}
 }

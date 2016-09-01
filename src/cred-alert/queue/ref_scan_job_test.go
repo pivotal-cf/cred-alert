@@ -227,11 +227,9 @@ var _ = Describe("RefScan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(credentialCounter.IncCallCount()).To(Equal(2))
-			_, tags := credentialCounter.IncArgsForCall(0)
-			Expect(tags).To(ConsistOf("private"))
-
-			_, tags = credentialCounter.IncArgsForCall(1)
+			Expect(credentialCounter.IncNCallCount()).To(Equal(1))
+			_, amount, tags := credentialCounter.IncNArgsForCall(0)
+			Expect(amount).To(Equal(2))
 			Expect(tags).To(ConsistOf("private"))
 		})
 
@@ -243,11 +241,9 @@ var _ = Describe("RefScan Job", func() {
 			It("emits count with the public tag", func() {
 				job.Run(logger)
 
-				Expect(credentialCounter.IncCallCount()).To(Equal(2))
-				_, tags := credentialCounter.IncArgsForCall(0)
-				Expect(tags).To(ConsistOf("public"))
-
-				_, tags = credentialCounter.IncArgsForCall(1)
+				Expect(credentialCounter.IncNCallCount()).To(Equal(1))
+				_, amount, tags := credentialCounter.IncNArgsForCall(0)
+				Expect(amount).To(Equal(2))
 				Expect(tags).To(ConsistOf("public"))
 			})
 
