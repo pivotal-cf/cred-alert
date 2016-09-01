@@ -71,10 +71,17 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 	}
 
 	scanner := diffscanner.NewDiffScanner(diff)
-	credentialsFound := false
-	handleViolation := j.createHandleViolation(j.To, j.Owner+"/"+j.Repository, &credentialsFound, scan)
+	alerts := []notifications.Notification{}
+
+	handleViolation := j.createHandleViolation(j.To, j.Owner+"/"+j.Repository, scan, &alerts)
 
 	err = j.sniffer.Sniff(logger, scanner, handleViolation)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	err = j.notifier.SendBatchNotification(logger, alerts)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
@@ -91,7 +98,7 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		Repository:      j.Repository,
 		FromCommit:      j.From,
 		ToCommit:        j.To,
-		CredentialFound: credentialsFound,
+		CredentialFound: len(alerts) > 0,
 	})
 	if err != nil {
 		logger.Error("failed", err)
@@ -105,8 +112,8 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 func (j *DiffScanJob) createHandleViolation(
 	sha string,
 	repoName string,
-	credentialsFound *bool,
 	scan db.ActiveScan,
+	alerts *[]notifications.Notification,
 ) func(lager.Logger, scanners.Line) error {
 	return func(logger lager.Logger, line scanners.Line) error {
 		logger = logger.Session("handle-violation", lager.Data{
@@ -126,22 +133,15 @@ func (j *DiffScanJob) createHandleViolation(
 
 		scan.RecordCredential(credential)
 
-		notification := notifications.Notification{
+		*alerts = append(*alerts, notifications.Notification{
 			Owner:      j.Owner,
 			Repository: j.Repository,
 			Private:    j.Private,
 			SHA:        sha,
 			Path:       line.Path,
 			LineNumber: line.LineNumber,
-		}
+		})
 
-		err := j.notifier.SendNotification(logger, notification)
-		if err != nil {
-			logger.Error("failed", err)
-			return err
-		}
-
-		*credentialsFound = true
 		tag := "public"
 		if j.Private {
 			tag = "private"

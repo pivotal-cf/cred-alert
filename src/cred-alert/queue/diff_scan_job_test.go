@@ -11,13 +11,11 @@ import (
 	"cred-alert/sniff"
 	"cred-alert/sniff/snifffakes"
 	"errors"
-	"fmt"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("Diff Scan Job", func() {
@@ -41,7 +39,6 @@ var _ = Describe("Diff Scan Job", func() {
 
 	var fromGitSha string = "from-git-sha"
 	var toGitSha string = "to-git-sha"
-	var lineNumber = 1
 
 	id := "some-id"
 
@@ -117,9 +114,18 @@ var _ = Describe("Diff Scan Job", func() {
 			filePath = "some/file/path"
 
 			sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation sniff.ViolationHandlerFunc) error {
+				err := handleViolation(logger, scanners.Line{
+					Path:       filePath,
+					LineNumber: 6,
+					Content:    []byte("other-content"),
+				})
+				if err != nil {
+					return err
+				}
+
 				return handleViolation(logger, scanners.Line{
 					Path:       filePath,
-					LineNumber: 1,
+					LineNumber: 10,
 					Content:    []byte("content"),
 				})
 			}
@@ -129,8 +135,12 @@ var _ = Describe("Diff Scan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(credentialCounter.IncCallCount()).To(Equal(1))
+			Expect(credentialCounter.IncCallCount()).To(Equal(2))
 			_, tags := credentialCounter.IncArgsForCall(0)
+			Expect(tags).To(HaveLen(1))
+			Expect(tags).To(ConsistOf("private"))
+
+			_, tags = credentialCounter.IncArgsForCall(1)
 			Expect(tags).To(HaveLen(1))
 			Expect(tags).To(ConsistOf("private"))
 		})
@@ -143,7 +153,7 @@ var _ = Describe("Diff Scan Job", func() {
 			_, typee := scanRepository.StartArgsForCall(0)
 			Expect(typee).To(Equal("diff-scan"))
 
-			Expect(activeScan.RecordCredentialCallCount()).To(Equal(1))
+			Expect(activeScan.RecordCredentialCallCount()).To(Equal(2))
 			Expect(activeScan.FinishCallCount()).To(Equal(1))
 
 			credential := activeScan.RecordCredentialArgsForCall(0)
@@ -151,22 +161,38 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(credential.Repository).To(Equal(plan.Repository))
 			Expect(credential.SHA).To(Equal(toGitSha))
 			Expect(credential.Path).To(Equal("some/file/path"))
-			Expect(credential.LineNumber).To(Equal(lineNumber))
+			Expect(credential.LineNumber).To(Equal(6))
+
+			credential = activeScan.RecordCredentialArgsForCall(1)
+			Expect(credential.Owner).To(Equal(plan.Owner))
+			Expect(credential.Repository).To(Equal(plan.Repository))
+			Expect(credential.SHA).To(Equal(toGitSha))
+			Expect(credential.Path).To(Equal("some/file/path"))
+			Expect(credential.LineNumber).To(Equal(10))
 		})
 
 		It("sends a notification", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
+			Expect(notifier.SendBatchNotificationCallCount()).To(Equal(1))
 
-			_, notification := notifier.SendNotificationArgsForCall(0)
-			Expect(notification.Owner).To(Equal(plan.Owner))
-			Expect(notification.Repository).To(Equal(plan.Repository))
-			Expect(notification.SHA).To(Equal(toGitSha))
-			Expect(notification.Path).To(Equal("some/file/path"))
-			Expect(notification.LineNumber).To(Equal(lineNumber))
-			Expect(notification.Private).To(Equal(plan.Private))
+			_, notifications := notifier.SendBatchNotificationArgsForCall(0)
+			Expect(notifications).To(HaveLen(2))
+
+			Expect(notifications[0].Owner).To(Equal(plan.Owner))
+			Expect(notifications[0].Repository).To(Equal(plan.Repository))
+			Expect(notifications[0].SHA).To(Equal(toGitSha))
+			Expect(notifications[0].Path).To(Equal("some/file/path"))
+			Expect(notifications[0].LineNumber).To(Equal(6))
+			Expect(notifications[0].Private).To(Equal(plan.Private))
+
+			Expect(notifications[1].Owner).To(Equal(plan.Owner))
+			Expect(notifications[1].Repository).To(Equal(plan.Repository))
+			Expect(notifications[1].SHA).To(Equal(toGitSha))
+			Expect(notifications[1].Path).To(Equal("some/file/path"))
+			Expect(notifications[1].LineNumber).To(Equal(10))
+			Expect(notifications[1].Private).To(Equal(plan.Private))
 		})
 
 		It("saves a record of the diffscan and that credentials were found", func() {
@@ -181,24 +207,9 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(diffScan.CredentialFound).To(BeTrue())
 		})
 
-		It("logs the violation", func() {
-			err := job.Run(logger)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(logger).To(gbytes.Say("handle-violation"))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"line-number":%d`, lineNumber)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, owner)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"path":"%s"`, filePath)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from":"%s"`, fromGitSha)))
-			Expect(logger).To(gbytes.Say(`"private":true`))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repo)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"task-id":"%s"`, id)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"to":"%s"`, toGitSha)))
-		})
-
 		Context("when the notification fails to send", func() {
 			BeforeEach(func() {
-				notifier.SendNotificationReturns(errors.New("disaster"))
+				notifier.SendBatchNotificationReturns(errors.New("disaster"))
 			})
 
 			It("fails the job", func() {
@@ -207,7 +218,7 @@ var _ = Describe("Diff Scan Job", func() {
 			})
 		})
 
-		Context("When scanning a public repo", func() {
+		Context("when scanning a public repo", func() {
 			BeforeEach(func() {
 				plan.Private = false
 			})
@@ -216,27 +227,30 @@ var _ = Describe("Diff Scan Job", func() {
 				err := job.Run(logger)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(credentialCounter.IncCallCount()).To(Equal(1))
+				Expect(credentialCounter.IncCallCount()).To(Equal(2))
 				_, tags := credentialCounter.IncArgsForCall(0)
 				Expect(tags).To(HaveLen(1))
 				Expect(tags).To(ConsistOf("public"))
-				Expect(logger).To(gbytes.Say(`"private":false`))
 			})
 
 			It("sends a notification with private set to false", func() {
 				job.Run(logger)
 
-				Expect(notifier.SendNotificationCallCount()).To(Equal(1))
-				_, notification := notifier.SendNotificationArgsForCall(0)
-				Expect(notification.Private).To(Equal(plan.Private))
+				Expect(notifier.SendBatchNotificationCallCount()).To(Equal(1))
+				_, notifications := notifier.SendBatchNotificationArgsForCall(0)
+
+				for _, notification := range notifications {
+					Expect(notification.Private).To(Equal(plan.Private))
+				}
 			})
 		})
 	})
 
-	Context("When the diffScanRepository returns an error", func() {
+	Context("when the diffScanRepository returns an error", func() {
 		BeforeEach(func() {
 			diffScanRepository.SaveDiffScanReturns(errors.New("Disaster"))
 		})
+
 		It("fails the job", func() {
 			err := job.Run(logger)
 			Expect(err).To(HaveOccurred())

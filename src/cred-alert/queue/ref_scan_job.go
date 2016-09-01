@@ -115,10 +115,19 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	handleViolation := j.createHandleViolation(destination, scan)
+	alerts := []notifications.Notification{}
+
+	handleViolation := j.createHandleViolation(destination, scan, &alerts)
+
 	scanner := dirscanner.New(handleViolation, j.sniffer)
 
 	err = scanner.Scan(logger, destination)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	err = j.notifier.SendBatchNotification(logger, alerts)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
@@ -168,7 +177,11 @@ func downloadArchive(logger lager.Logger, link *url.URL, dest string) (*os.File,
 	return f, nil
 }
 
-func (j *RefScanJob) createHandleViolation(stripPath string, scan db.ActiveScan) func(lager.Logger, scanners.Line) error {
+func (j *RefScanJob) createHandleViolation(
+	stripPath string,
+	scan db.ActiveScan,
+	alerts *[]notifications.Notification,
+) func(lager.Logger, scanners.Line) error {
 	return func(logger lager.Logger, line scanners.Line) error {
 		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
@@ -200,20 +213,14 @@ func (j *RefScanJob) createHandleViolation(stripPath string, scan db.ActiveScan)
 
 		scan.RecordCredential(credential)
 
-		notification := notifications.Notification{
+		*alerts = append(*alerts, notifications.Notification{
 			Owner:      j.Owner,
 			Repository: j.Repository,
 			Private:    j.Private,
 			SHA:        j.Ref,
 			Path:       path,
 			LineNumber: line.LineNumber,
-		}
-
-		err = j.notifier.SendNotification(logger, notification)
-		if err != nil {
-			logger.Error("failed", err)
-			return err
-		}
+		})
 
 		tag := "public"
 		if j.Private {

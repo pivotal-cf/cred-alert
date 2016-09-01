@@ -126,7 +126,7 @@ var _ = Describe("RefScan Job", func() {
 			files = []fileInfo{
 				{"github-dir-abc123/readme.txt", "password: 'thisisapassword'"},
 				{"github-dir-abc123/go/gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-				{"github-dir-abc123/todo/todo.txt", "Get animal handling licence.\nWrite more examples."},
+				{"github-dir-abc123/todo/todo.txt", "password: 'thisisalsoapassword'"},
 			}
 
 			someZip := createZip(files)
@@ -157,7 +157,7 @@ var _ = Describe("RefScan Job", func() {
 			_, typee := scanRepository.StartArgsForCall(0)
 			Expect(typee).To(Equal("ref-scan"))
 
-			Expect(activeScan.RecordCredentialCallCount()).To(Equal(1))
+			Expect(activeScan.RecordCredentialCallCount()).To(Equal(2))
 			Expect(activeScan.FinishCallCount()).To(Equal(1))
 
 			credential := activeScan.RecordCredentialArgsForCall(0)
@@ -166,21 +166,37 @@ var _ = Describe("RefScan Job", func() {
 			Expect(credential.SHA).To(Equal(ref))
 			Expect(credential.Path).To(Equal("readme.txt"))
 			Expect(credential.LineNumber).To(Equal(1))
+
+			credential = activeScan.RecordCredentialArgsForCall(1)
+			Expect(credential.Owner).To(Equal(plan.Owner))
+			Expect(credential.Repository).To(Equal(plan.Repository))
+			Expect(credential.SHA).To(Equal(ref))
+			Expect(credential.Path).To(Equal("todo/todo.txt"))
+			Expect(credential.LineNumber).To(Equal(1))
 		})
 
 		It("sends a notification when it finds a match", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(notifier.SendNotificationCallCount()).To(Equal(1))
+			Expect(notifier.SendBatchNotificationCallCount()).To(Equal(1))
 
-			_, notification := notifier.SendNotificationArgsForCall(0)
-			Expect(notification.Owner).To(Equal(plan.Owner))
-			Expect(notification.Repository).To(Equal(plan.Repository))
-			Expect(notification.SHA).To(Equal(ref))
-			Expect(notification.Path).To(Equal("readme.txt"))
-			Expect(notification.LineNumber).To(Equal(1))
-			Expect(notification.Private).To(Equal(plan.Private))
+			_, notifications := notifier.SendBatchNotificationArgsForCall(0)
+			Expect(notifications).To(HaveLen(2))
+
+			Expect(notifications[0].Owner).To(Equal(plan.Owner))
+			Expect(notifications[0].Repository).To(Equal(plan.Repository))
+			Expect(notifications[0].SHA).To(Equal(ref))
+			Expect(notifications[0].Path).To(Equal("readme.txt"))
+			Expect(notifications[0].LineNumber).To(Equal(1))
+			Expect(notifications[0].Private).To(Equal(plan.Private))
+
+			Expect(notifications[1].Owner).To(Equal(plan.Owner))
+			Expect(notifications[1].Repository).To(Equal(plan.Repository))
+			Expect(notifications[1].SHA).To(Equal(ref))
+			Expect(notifications[1].Path).To(Equal("todo/todo.txt"))
+			Expect(notifications[1].LineNumber).To(Equal(1))
+			Expect(notifications[1].Private).To(Equal(plan.Private))
 		})
 
 		Context("when the inflator fails", func() {
@@ -198,7 +214,7 @@ var _ = Describe("RefScan Job", func() {
 
 		Context("when the notification fails to send", func() {
 			BeforeEach(func() {
-				notifier.SendNotificationReturns(errors.New("disaster"))
+				notifier.SendBatchNotificationReturns(errors.New("disaster"))
 			})
 
 			It("fails the job", func() {
@@ -211,17 +227,12 @@ var _ = Describe("RefScan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(credentialCounter.IncCallCount()).To(Equal(1))
+			Expect(credentialCounter.IncCallCount()).To(Equal(2))
 			_, tags := credentialCounter.IncArgsForCall(0)
-			Expect(tags).To(HaveLen(1))
 			Expect(tags).To(ConsistOf("private"))
-		})
 
-		It("logs when credential is found", func() {
-			err := job.Run(logger)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(logger).To(gbytes.Say("handle-violation"))
+			_, tags = credentialCounter.IncArgsForCall(1)
+			Expect(tags).To(ConsistOf("private"))
 		})
 
 		Context("when the repo is public", func() {
@@ -232,9 +243,11 @@ var _ = Describe("RefScan Job", func() {
 			It("emits count with the public tag", func() {
 				job.Run(logger)
 
-				Expect(credentialCounter.IncCallCount()).To(Equal(1))
+				Expect(credentialCounter.IncCallCount()).To(Equal(2))
 				_, tags := credentialCounter.IncArgsForCall(0)
-				Expect(tags).To(HaveLen(1))
+				Expect(tags).To(ConsistOf("public"))
+
+				_, tags = credentialCounter.IncArgsForCall(1)
 				Expect(tags).To(ConsistOf("public"))
 			})
 
@@ -242,10 +255,12 @@ var _ = Describe("RefScan Job", func() {
 				err := job.Run(logger)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(notifier.SendNotificationCallCount()).To(Equal(1))
+				Expect(notifier.SendBatchNotificationCallCount()).To(Equal(1))
 
-				_, notification := notifier.SendNotificationArgsForCall(0)
-				Expect(notification.Private).To(Equal(plan.Private))
+				_, notifications := notifier.SendBatchNotificationArgsForCall(0)
+				for _, notification := range notifications {
+					Expect(notification.Private).To(Equal(plan.Private))
+				}
 			})
 		})
 

@@ -18,6 +18,15 @@ type FakeNotifier struct {
 	sendNotificationReturns struct {
 		result1 error
 	}
+	SendBatchNotificationStub        func(lager.Logger, []notifications.Notification) error
+	sendBatchNotificationMutex       sync.RWMutex
+	sendBatchNotificationArgsForCall []struct {
+		arg1 lager.Logger
+		arg2 []notifications.Notification
+	}
+	sendBatchNotificationReturns struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -56,11 +65,52 @@ func (fake *FakeNotifier) SendNotificationReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeNotifier) SendBatchNotification(arg1 lager.Logger, arg2 []notifications.Notification) error {
+	var arg2Copy []notifications.Notification
+	if arg2 != nil {
+		arg2Copy = make([]notifications.Notification, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.sendBatchNotificationMutex.Lock()
+	fake.sendBatchNotificationArgsForCall = append(fake.sendBatchNotificationArgsForCall, struct {
+		arg1 lager.Logger
+		arg2 []notifications.Notification
+	}{arg1, arg2Copy})
+	fake.recordInvocation("SendBatchNotification", []interface{}{arg1, arg2Copy})
+	fake.sendBatchNotificationMutex.Unlock()
+	if fake.SendBatchNotificationStub != nil {
+		return fake.SendBatchNotificationStub(arg1, arg2)
+	} else {
+		return fake.sendBatchNotificationReturns.result1
+	}
+}
+
+func (fake *FakeNotifier) SendBatchNotificationCallCount() int {
+	fake.sendBatchNotificationMutex.RLock()
+	defer fake.sendBatchNotificationMutex.RUnlock()
+	return len(fake.sendBatchNotificationArgsForCall)
+}
+
+func (fake *FakeNotifier) SendBatchNotificationArgsForCall(i int) (lager.Logger, []notifications.Notification) {
+	fake.sendBatchNotificationMutex.RLock()
+	defer fake.sendBatchNotificationMutex.RUnlock()
+	return fake.sendBatchNotificationArgsForCall[i].arg1, fake.sendBatchNotificationArgsForCall[i].arg2
+}
+
+func (fake *FakeNotifier) SendBatchNotificationReturns(result1 error) {
+	fake.SendBatchNotificationStub = nil
+	fake.sendBatchNotificationReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeNotifier) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.sendNotificationMutex.RLock()
 	defer fake.sendNotificationMutex.RUnlock()
+	fake.sendBatchNotificationMutex.RLock()
+	defer fake.sendBatchNotificationMutex.RUnlock()
 	return fake.invocations
 }
 
