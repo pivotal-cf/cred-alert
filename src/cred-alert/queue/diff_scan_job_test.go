@@ -135,13 +135,9 @@ var _ = Describe("Diff Scan Job", func() {
 			err := job.Run(logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(credentialCounter.IncCallCount()).To(Equal(2))
-			_, tags := credentialCounter.IncArgsForCall(0)
-			Expect(tags).To(HaveLen(1))
-			Expect(tags).To(ConsistOf("private"))
-
-			_, tags = credentialCounter.IncArgsForCall(1)
-			Expect(tags).To(HaveLen(1))
+			Expect(credentialCounter.IncNCallCount()).To(Equal(1))
+			_, amount, tags := credentialCounter.IncNArgsForCall(0)
+			Expect(amount).To(Equal(2))
 			Expect(tags).To(ConsistOf("private"))
 		})
 
@@ -227,9 +223,9 @@ var _ = Describe("Diff Scan Job", func() {
 				err := job.Run(logger)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(credentialCounter.IncCallCount()).To(Equal(2))
-				_, tags := credentialCounter.IncArgsForCall(0)
-				Expect(tags).To(HaveLen(1))
+				Expect(credentialCounter.IncNCallCount()).To(Equal(1))
+				_, amount, tags := credentialCounter.IncNArgsForCall(0)
+				Expect(amount).Should(Equal(2))
 				Expect(tags).To(ConsistOf("public"))
 			})
 

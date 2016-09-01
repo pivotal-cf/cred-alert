@@ -8,6 +8,7 @@ import (
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
+	"io"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -70,24 +71,77 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	scanner := diffscanner.NewDiffScanner(diff)
-	alerts := []notifications.Notification{}
-
-	handleViolation := j.createHandleViolation(j.To, j.Owner+"/"+j.Repository, scan, &alerts)
-
-	err = j.sniffer.Sniff(logger, scanner, handleViolation)
+	alerts, err := j.scanDiffForCredentials(logger, scan, diff)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
 	}
 
-	err = j.notifier.SendBatchNotification(logger, alerts)
+	err = j.reportCredentials(logger, alerts)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
 	}
 
 	err = scan.Finish()
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	logger.Debug("done")
+	return nil
+}
+
+func (j *DiffScanJob) scanDiffForCredentials(logger lager.Logger, scan db.ActiveScan, diff io.Reader) ([]notifications.Notification, error) {
+	scanner := diffscanner.NewDiffScanner(diff)
+	alerts := []notifications.Notification{}
+
+	err := j.sniffer.Sniff(logger, scanner, func(logger lager.Logger, line scanners.Line) error {
+		logger = logger.Session("handle-violation", lager.Data{
+			"path":        line.Path,
+			"line-number": line.LineNumber,
+			"sha":         j.To,
+		})
+		logger.Debug("starting")
+
+		scan.RecordCredential(db.Credential{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			SHA:        j.To,
+			Path:       line.Path,
+			LineNumber: line.LineNumber,
+		})
+
+		alerts = append(alerts, notifications.Notification{
+			Owner:      j.Owner,
+			Repository: j.Repository,
+			Private:    j.Private,
+			SHA:        j.To,
+			Path:       line.Path,
+			LineNumber: line.LineNumber,
+		})
+
+		logger.Debug("done")
+
+		return nil
+	})
+	if err != nil {
+		logger.Error("failed", err)
+		return nil, err
+	}
+
+	return alerts, nil
+}
+
+func (j *DiffScanJob) reportCredentials(logger lager.Logger, alerts []notifications.Notification) error {
+	tag := "public"
+	if j.Private {
+		tag = "private"
+	}
+	j.credentialCounter.IncN(logger, len(alerts), tag)
+
+	err := j.notifier.SendBatchNotification(logger, alerts)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
@@ -105,50 +159,5 @@ func (j *DiffScanJob) Run(logger lager.Logger) error {
 		return err
 	}
 
-	logger.Debug("done")
 	return nil
-}
-
-func (j *DiffScanJob) createHandleViolation(
-	sha string,
-	repoName string,
-	scan db.ActiveScan,
-	alerts *[]notifications.Notification,
-) func(lager.Logger, scanners.Line) error {
-	return func(logger lager.Logger, line scanners.Line) error {
-		logger = logger.Session("handle-violation", lager.Data{
-			"path":        line.Path,
-			"line-number": line.LineNumber,
-			"sha":         sha,
-		})
-		logger.Debug("starting")
-
-		credential := db.Credential{
-			Owner:      j.Owner,
-			Repository: j.Repository,
-			SHA:        sha,
-			Path:       line.Path,
-			LineNumber: line.LineNumber,
-		}
-
-		scan.RecordCredential(credential)
-
-		*alerts = append(*alerts, notifications.Notification{
-			Owner:      j.Owner,
-			Repository: j.Repository,
-			Private:    j.Private,
-			SHA:        sha,
-			Path:       line.Path,
-			LineNumber: line.LineNumber,
-		})
-
-		tag := "public"
-		if j.Private {
-			tag = "private"
-		}
-		j.credentialCounter.Inc(logger, tag)
-
-		logger.Debug("done")
-		return nil
-	}
 }
