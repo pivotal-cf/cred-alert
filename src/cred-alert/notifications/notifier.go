@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -248,9 +249,17 @@ func (n *slackNotifier) formatBatchSlackMessages(batch []Notification) []slackMe
 			color = "warning"
 		}
 
+		// Make sure we get a consistent map iteration order.
+		fileNames := []string{}
+		for path, _ := range files {
+			fileNames = append(fileNames, path)
+		}
+		sort.Strings(fileNames)
+
 		fileLines := []string{}
 
-		for path, nots := range files {
+		for _, path := range fileNames {
+			nots := files[path]
 			fileLink := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", repo.Owner, repo.Repository, repo.SHA, path)
 
 			lineLinks := []string{}
