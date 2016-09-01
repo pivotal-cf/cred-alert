@@ -12,7 +12,7 @@ import (
 //go:generate counterfeiter . ScanRepository
 
 type ScanRepository interface {
-	Start(logger lager.Logger, scanType string) ActiveScan
+	Start(logger lager.Logger, scanType string, repository *Repository, fetch *Fetch) ActiveScan
 }
 
 type scanRepository struct {
@@ -27,7 +27,7 @@ func NewScanRepository(db *gorm.DB, clock clock.Clock) ScanRepository {
 	}
 }
 
-func (repo *scanRepository) Start(logger lager.Logger, scanType string) ActiveScan {
+func (repo *scanRepository) Start(logger lager.Logger, scanType string, repository *Repository, fetch *Fetch) ActiveScan {
 	logger = logger.Session("start-scan", lager.Data{
 		"type":          scanType,
 		"rules-version": sniff.RulesVersion,
@@ -40,8 +40,10 @@ func (repo *scanRepository) Start(logger lager.Logger, scanType string) ActiveSc
 		clock:  repo.clock,
 		tx:     repo.db.Begin(),
 
-		typee:     scanType,
-		startTime: repo.clock.Now(),
+		repository: repository,
+		fetch:      fetch,
+		typee:      scanType,
+		startTime:  repo.clock.Now(),
 	}
 }
 
@@ -57,8 +59,10 @@ type activeScan struct {
 	clock  clock.Clock
 	tx     *gorm.DB
 
-	typee     string
-	startTime time.Time
+	typee      string
+	startTime  time.Time
+	repository *Repository
+	fetch      *Fetch
 
 	credentials []Credential
 }
@@ -74,6 +78,15 @@ func (s *activeScan) Finish() error {
 		ScanStart:    s.startTime,
 		ScanEnd:      s.clock.Now(),
 		Credentials:  s.credentials,
+	}
+
+	// don't update the association on save, but actually save it on the scan
+	if s.repository != nil && s.repository.ID != 0 {
+		scan.RepositoryID = &s.repository.ID
+	}
+
+	if s.fetch != nil && s.fetch.ID != 0 {
+		scan.FetchID = &s.fetch.ID
 	}
 
 	if err := s.tx.Save(&scan).Error; err != nil {

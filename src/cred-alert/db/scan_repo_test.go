@@ -3,6 +3,7 @@ package db_test
 import (
 	"cred-alert/db"
 	"cred-alert/sniff"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/jinzhu/gorm"
 )
@@ -45,7 +47,7 @@ var _ = Describe("Scan Repository", func() {
 		It("works with no credentials", func() {
 			startTime := clock.Now()
 
-			scan := scanRepository.Start(logger, "scan-type")
+			scan := scanRepository.Start(logger, "scan-type", nil, nil)
 
 			clock.Increment(time.Second * 5)
 
@@ -64,7 +66,7 @@ var _ = Describe("Scan Repository", func() {
 		})
 
 		It("can record found credentials for a scan", func() {
-			activeScan := scanRepository.Start(logger, "scan-type")
+			activeScan := scanRepository.Start(logger, "scan-type", nil, nil)
 
 			credential := db.Credential{
 				Owner:      "owner",
@@ -122,12 +124,12 @@ var _ = Describe("Scan Repository", func() {
 			})
 
 			It("returns an error", func() {
-				err := scanRepository.Start(logger, "scan-type").Finish()
+				err := scanRepository.Start(logger, "scan-type", nil, nil).Finish()
 				Expect(err).To(MatchError(saveError))
 			})
 
 			It("does not save any of the credentials from the scan", func() {
-				scan := scanRepository.Start(logger, "scan-type")
+				scan := scanRepository.Start(logger, "scan-type", nil, nil)
 
 				credential := db.Credential{
 					Owner:      "owner",
@@ -146,6 +148,70 @@ var _ = Describe("Scan Repository", func() {
 				database.Find(&savedCredentials).Count(&count)
 				Expect(count).To(BeZero())
 
+			})
+		})
+
+		Context("when the scan includes a repository and fetch", func() {
+			var (
+				repository *db.Repository
+				fetch      *db.Fetch
+				scan       db.ActiveScan
+			)
+
+			BeforeEach(func() {
+				repoJSON := map[string]interface{}{
+					"path": "path-to-repo-on-disk",
+					"name": "repo-name",
+					"owner": map[string]interface{}{
+						"login": "owner-name",
+					},
+					"private":        true,
+					"default_branch": "master",
+				}
+
+				repoJSONBytes, err := json.Marshal(repoJSON)
+				Expect(err).NotTo(HaveOccurred())
+				repository = &db.Repository{
+					Name:          uuid.NewV4().String(),
+					Owner:         "owner-name",
+					Path:          "path-to-repo-on-disk",
+					SSHURL:        "repo-ssh-url",
+					Private:       true,
+					DefaultBranch: "master",
+					RawJSON:       repoJSONBytes,
+				}
+
+				err = database.FirstOrCreate(repository, *repository).Error
+				Expect(err).NotTo(HaveOccurred())
+
+				changes := map[string][]string{
+					"change": {"from", "to"},
+				}
+
+				bs, err := json.Marshal(changes)
+				Expect(err).NotTo(HaveOccurred())
+
+				fetch = &db.Fetch{
+					RepositoryID: repository.ID,
+					Path:         "path-to-repo-on-disk",
+					Changes:      bs,
+				}
+
+				err = database.Save(fetch).Error
+				Expect(err).NotTo(HaveOccurred())
+
+				scan = scanRepository.Start(logger, "scan-type", repository, fetch)
+			})
+
+			It("saves both appropriately on Finish", func() {
+				scan.Finish()
+
+				savedScan := db.Scan{}
+				database.Last(&savedScan)
+
+				var count uint
+				database.Model(db.Scan{}).Where("repository_id = ? AND fetch_id = ?", repository.ID, fetch.ID).Count(&count)
+				Expect(count).To(Equal(uint(1)))
 			})
 		})
 	})

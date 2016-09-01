@@ -146,7 +146,7 @@ var _ = Describe("Diff Scan Job", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(scanRepository.StartCallCount()).To(Equal(1))
-			_, typee := scanRepository.StartArgsForCall(0)
+			_, typee, _, _ := scanRepository.StartArgsForCall(0)
 			Expect(typee).To(Equal("diff-scan"))
 
 			Expect(activeScan.RecordCredentialCallCount()).To(Equal(2))

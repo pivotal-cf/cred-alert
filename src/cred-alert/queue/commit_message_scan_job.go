@@ -49,7 +49,7 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 
 	logger.Debug("starting")
 
-	scan := j.scanRepository.Start(logger, "commit-message-scan")
+	scan := j.scanRepository.Start(logger, "commit-message-scan", nil, nil)
 
 	textScanner := textscanner.New(j.Message)
 

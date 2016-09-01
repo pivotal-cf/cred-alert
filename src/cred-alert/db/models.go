@@ -33,6 +33,11 @@ type Scan struct {
 	ScanStart time.Time
 	ScanEnd   time.Time
 
+	Repository   *Repository
+	RepositoryID *uint
+	Fetch        *Fetch
+	FetchID      *uint
+
 	Credentials []Credential
 }
 
@@ -46,4 +51,25 @@ type Credential struct {
 	SHA        string
 	Path       string
 	LineNumber int
+}
+
+type Repository struct {
+	Model
+
+	Name          string
+	Owner         string
+	Path          string
+	SSHURL        string `gorm:"column:ssh_url"`
+	Private       bool
+	DefaultBranch string
+	RawJSON       []byte `gorm:"column:raw_json"`
+}
+
+type Fetch struct {
+	Model
+	Repository   Repository
+	RepositoryID uint
+
+	Path    string
+	Changes []byte
 }

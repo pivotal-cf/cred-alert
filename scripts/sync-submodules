@@ -12,4 +12,5 @@ gosub list \
   -a github.com/golang/protobuf \
   -a github.com/jinzhu/gorm \
   -a github.com/mattn/go-sqlite3 \
+  -a github.com/libgit2/git2go \
   | xargs gosub sync

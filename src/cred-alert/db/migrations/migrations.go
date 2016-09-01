@@ -7,4 +7,5 @@ var Migrations = []migration.Migrator{
 	AddAutoIncrement,
 	DropCommitTimestamp,
 	AddCredentialsAndScansTable,
+	AddRepositoriesAndFetches,
 }
