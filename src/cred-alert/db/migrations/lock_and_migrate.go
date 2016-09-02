@@ -61,7 +61,7 @@ func LockDBAndMigrate(logger lager.Logger, driver, dbURI string) (*gorm.DB, erro
 	}
 
 	db.DB().SetMaxOpenConns(10)
-	db.DB().SetMaxIdleConns(10)
+	db.DB().SetMaxIdleConns(0)
 
 	return db, nil
 }
