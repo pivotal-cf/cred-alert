@@ -3,6 +3,7 @@ package revok
 import (
 	"cred-alert/db"
 	"cred-alert/gitclient"
+	"cred-alert/kolsch"
 	"cred-alert/metrics"
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
@@ -104,6 +105,8 @@ func (w *worker) work(logger lager.Logger) {
 		return
 	}
 
+	quietLogger := kolsch.NewLogger()
+
 	for _, repo := range repos {
 		dest := filepath.Join(w.workdir, *repo.Owner.Login, *repo.Name)
 
@@ -147,7 +150,7 @@ func (w *worker) work(logger lager.Logger) {
 			}
 
 			scan := w.scanRepository.Start(repoLogger, "dir-scan", repository, nil)
-			_ = dirscanner.New(handler(scan, repo), w.sniffer).Scan(repoLogger, dest)
+			_ = dirscanner.New(handler(scan, repo), w.sniffer).Scan(quietLogger, dest)
 			finishScan(repoLogger, scan, w.successCounter, w.failedCounter)
 		} else {
 			changes, err := w.gitClient.Fetch(dest)
@@ -183,7 +186,7 @@ func (w *worker) work(logger lager.Logger) {
 					continue
 				}
 
-				scan := w.scanRepository.Start(repoLogger, "diff-scan", repository, fetch)
+				scan := w.scanRepository.Start(quietLogger, "diff-scan", repository, fetch)
 				scanner := diffscanner.NewDiffScanner(strings.NewReader(diff))
 				w.sniffer.Sniff(repoLogger, scanner, handler(scan, repo))
 				finishScan(repoLogger, scan, w.successCounter, w.failedCounter)

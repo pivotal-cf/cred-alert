@@ -1,0 +1,7 @@
+---
+name: libssh2
+
+dependencies: []
+
+files:
+- libssh2/libssh2-1.7.0.tar.gz

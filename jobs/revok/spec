@@ -1,0 +1,65 @@
+---
+name: revok
+
+description: |
+  Revok clones all GitHub repositories accessible with the provided API token
+  and SSH key and scans them for credentials.
+
+templates:
+  ctl.erb: bin/ctl
+  pre-start.erb: bin/pre-start
+  github_private_key.erb: config/github_private_key
+  github_public_key.erb: config/github_public_key
+
+packages:
+- cred-alert
+- golang
+- libgit2
+- libssh2
+- pid_utils
+
+properties:
+  revok.scan_interval:
+    description: |
+      The interval, in Go duration format (e.g. 1m = 1 minute), on which to
+      query GitHub for repositories.
+    default: 6h
+
+  revok.work_dir:
+    description: |
+      Directory where repositories will be cloned to and scanned in.
+
+  revok.github.private_key:
+    description: |
+      GitHub private key.
+
+  revok.github.public_key:
+    description: |
+      GitHub public key.
+
+  revok.github.access_token:
+    description: |
+      GitHub access token.
+
+  revok.mysql.username:
+    description: |
+      Username to use for connecting to MySQL.
+
+  revok.mysql.password:
+    description: |
+      Password to use for connecting to MySQL. (Optional)
+
+  revok.mysql.hostname:
+    description: |
+      The hostname to use for connecting to MySQL.
+    default: revok
+
+  revok.mysql.port:
+    description: |
+      Port to use for connecting to MySQL.
+    default: 3306
+
+  revok.mysql.db:
+    description: |
+      The name of the database to use.
+    default: revok

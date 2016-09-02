@@ -1,0 +1,20 @@
+set -e
+
+tar xzf libgit2/libgit2-0.24.1.tar.gz
+
+export PKG_CONFIG_PATH=/var/vcap/packages/libssh2/lib/pkgconfig:$PKG_CONFIG_PATH
+
+pushd libgit2-0.24.1
+  mkdir -p build
+  pushd build
+    cmake -DTHREADSAFE=ON \
+          -DBUILD_CLAR=OFF \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_C_FLAGS=-fPIC \
+          -DCMAKE_BUILD_TYPE="RelWithDebInfo" \
+          -DCMAKE_INSTALL_PREFIX=${BOSH_INSTALL_TARGET}/install \
+          ..
+
+    cmake --build . --target install
+  popd
+popd

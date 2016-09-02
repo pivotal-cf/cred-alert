@@ -1,0 +1,42 @@
+---
+name: cred-alert
+
+dependencies:
+  - golang
+  - libgit2
+  - libssh2
+
+files:
+  - bitbucket.org/taruti/mimemagic/*.{go,c} # gosub
+  - code.cloudfoundry.org/clock/*.{go,c} # gosub
+  - code.cloudfoundry.org/lager/*.{go,c} # gosub
+  - cred-alert/cmd/cred-alert-worker-ng/*.{go,c} # gosub
+  - cred-alert/datadog/*.{go,c} # gosub
+  - cred-alert/db/*.{go,c} # gosub
+  - cred-alert/db/migrations/*.{go,c} # gosub
+  - cred-alert/gitclient/*.{go,c} # gosub
+  - cred-alert/kolsch/*.{go,c} # gosub
+  - cred-alert/metrics/*.{go,c} # gosub
+  - cred-alert/mimetype/*.{go,c} # gosub
+  - cred-alert/revok/*.{go,c} # gosub
+  - cred-alert/scanners/*.{go,c} # gosub
+  - cred-alert/scanners/diffscanner/*.{go,c} # gosub
+  - cred-alert/scanners/dirscanner/*.{go,c} # gosub
+  - cred-alert/scanners/filescanner/*.{go,c} # gosub
+  - cred-alert/sniff/*.{go,c} # gosub
+  - cred-alert/sniff/matchers/*.{go,c} # gosub
+  - github.com/BurntSushi/migration/*.{go,c} # gosub
+  - github.com/go-sql-driver/mysql/*.{go,c} # gosub
+  - github.com/google/go-github/github/*.{go,c} # gosub
+  - github.com/google/go-querystring/query/*.{go,c} # gosub
+  - github.com/hashicorp/errwrap/*.{go,c} # gosub
+  - github.com/hashicorp/go-multierror/*.{go,c} # gosub
+  - github.com/jessevdk/go-flags/*.{go,c} # gosub
+  - github.com/jinzhu/gorm/*.{go,c} # gosub
+  - github.com/jinzhu/inflection/*.{go,c} # gosub
+  - github.com/libgit2/git2go/*.{go,c} # gosub
+  - github.com/tedsuo/ifrit/*.{go,c} # gosub
+  - github.com/tedsuo/ifrit/sigmon/*.{go,c} # gosub
+  - golang.org/x/net/context/*.{go,c} # gosub
+  - golang.org/x/oauth2/*.{go,c} # gosub
+  - golang.org/x/oauth2/internal/*.{go,c} # gosub

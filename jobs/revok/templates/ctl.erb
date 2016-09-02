@@ -1,0 +1,57 @@
+#!/bin/bash
+
+set -e
+
+RUN_DIR=/var/vcap/sys/run/revok
+LOG_DIR=/var/vcap/sys/log/revok
+PIDFILE=${RUN_DIR}/revok.pid
+
+source /var/vcap/packages/pid_utils/pid_utils.sh
+
+case $1 in
+
+  start)
+    pid_guard $PIDFILE "revok"
+
+    mkdir -p $RUN_DIR
+    chown -R vcap:vcap $RUN_DIR
+
+    mkdir -p $LOG_DIR
+    chown -R vcap:vcap $LOG_DIR
+
+    mkdir -p <%= p("revok.work_dir") %>
+    chown -R vcap:vcap <%= p("revok.work_dir") %>
+
+    echo $$ > $PIDFILE
+
+    exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/cred-alert-worker-ng \
+      --scan-interval <%= p("revok.scan_interval") %> \
+      --work-dir <%= p("revok.work_dir") %> \
+      <% if p("revok.github.private_key") %> \
+      --github-private-key-path /var/vcap/jobs/revok/config/github_private_key \
+      <% end %> \
+      <% if p("revok.github.public_key") %> \
+      --github-public-key-path /var/vcap/jobs/revok/config/github_public_key \
+      <% end %> \
+      --access-token <%= p("revok.github.access_token") %> \
+      --mysql-username <%= p("revok.mysql.username") %> \
+      --mysql-password <%= p("revok.mysql.password") %> \
+      --mysql-port <%= p("revok.mysql.port") %> \
+      --mysql-dbname <%= p("revok.mysql.db") %> \
+      --mysql-hostname <%= p("revok.mysql.hostname") %> \
+      1>>$LOG_DIR/revok.stdout.log \
+      2>>$LOG_DIR/revok.stderr.log
+
+    ;;
+
+  stop)
+    kill_and_wait $PIDFILE
+
+    ;;
+
+  *)
+    echo "Usage: ctl {start|stop}"
+
+    ;;
+
+esac
