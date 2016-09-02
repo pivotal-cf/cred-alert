@@ -74,7 +74,7 @@ func main() {
 	logger := lager.NewLogger("cred-alert-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
-	logger.Debug("starting")
+	logger.Info("starting")
 
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
