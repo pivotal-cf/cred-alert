@@ -11,7 +11,7 @@ applications:
   services:
   - cred-alert-production-logs
   env:
-    IGNORED_REPOS: ".*-credentials,.*-resource-pool,.*-locks,.*-envs,deployments-.*"
+    IGNORED_REPOS: ".*-credentials"
     ENVIRONMENT: "production"
 
 - name: cred-alert-worker-production
