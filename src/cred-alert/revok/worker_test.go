@@ -293,7 +293,7 @@ var _ = Describe("Worker", func() {
 
 			Eventually(githubServer.ReceivedRequests).Should(HaveLen(2))
 
-			Expect(gitClient.CloneCallCount()).To(Equal(1))
+			Eventually(gitClient.CloneCallCount).Should(Equal(1))
 
 			url, dest := gitClient.CloneArgsForCall(0)
 			Expect(url).To(Equal("git@github.com:cloudfoundry/cf-message-bus.git"))
