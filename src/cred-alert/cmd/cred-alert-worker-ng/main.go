@@ -92,6 +92,8 @@ func workerRunner(logger lager.Logger, opts Opts) ifrit.Runner {
 		log.Fatalf("db error: %s", err)
 	}
 
+	database.LogMode(false)
+
 	clock := clock.NewClock()
 
 	return revok.New(
