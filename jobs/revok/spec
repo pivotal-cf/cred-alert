@@ -16,7 +16,7 @@ packages:
 - golang
 - libgit2
 - libssh2
-- pid_utils
+- pid_utils_revok
 
 properties:
   revok.scan_interval:
