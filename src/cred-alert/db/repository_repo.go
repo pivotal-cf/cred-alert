@@ -17,7 +17,8 @@ func NewRepositoryRepository(db *gorm.DB) *repositoryRepository {
 }
 
 func (r *repositoryRepository) FindOrCreate(repository *Repository) error {
-	err := r.db.FirstOrCreate(repository, *repository).Error
+	r2 := Repository{Name: repository.Name, Owner: repository.Owner}
+	err := r.db.Where(r2).FirstOrCreate(repository).Error
 	if err != nil {
 		return err
 	}
