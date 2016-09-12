@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/github"
-
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
@@ -28,7 +26,7 @@ type worker struct {
 	logger               lager.Logger
 	clock                clock.Clock
 	workdir              string
-	ghClient             *github.Client
+	ghClient             GitHubClient
 	gitClient            gitclient.Client
 	sniffer              sniff.Sniffer
 	interval             time.Duration
@@ -43,7 +41,7 @@ func New(
 	logger lager.Logger,
 	clock clock.Clock,
 	workdir string,
-	ghClient *github.Client,
+	ghClient GitHubClient,
 	gitClient gitclient.Client,
 	sniffer sniff.Sniffer,
 	interval time.Duration,
@@ -99,36 +97,31 @@ func (w *worker) work(logger lager.Logger) {
 	logger = logger.Session("doing-work")
 	defer logger.Info("done")
 
-	repos, _, err := w.ghClient.Repositories.List("", nil)
+	repos, err := w.ghClient.ListRepositories(logger)
 	if err != nil {
-		logger.Error("failed-fetching-repositories", err)
+		logger.Error("failed-listing-repositories", err)
 		return
 	}
 
 	quietLogger := kolsch.NewLogger()
 
 	for _, repo := range repos {
-		dest := filepath.Join(w.workdir, *repo.Owner.Login, *repo.Name)
+		dest := filepath.Join(w.workdir, repo.Owner, repo.Name)
 
 		repoLogger := logger.WithData(lager.Data{
-			"owner":       *repo.Owner.Login,
-			"repository":  *repo.Name,
+			"owner":       repo.Owner,
+			"repository":  repo.Name,
 			"destination": dest,
 		})
 
-		rawJSONBytes, err := json.Marshal(repo)
-		if err != nil {
-			repoLogger.Error("failed-to-marshal-json", err)
-		}
-
 		repository := &db.Repository{
-			Owner:         *repo.Owner.Login,
-			Name:          *repo.Name,
-			SSHURL:        *repo.SSHURL,
-			Private:       *repo.Private,
-			DefaultBranch: *repo.DefaultBranch,
+			Owner:         repo.Owner,
+			Name:          repo.Name,
+			SSHURL:        repo.SSHURL,
+			Private:       repo.Private,
+			DefaultBranch: repo.DefaultBranch,
+			RawJSON:       repo.RawJSON,
 			Path:          dest,
-			RawJSON:       rawJSONBytes,
 		}
 
 		err = w.repositoryRepository.FindOrCreate(repository)
@@ -139,7 +132,7 @@ func (w *worker) work(logger lager.Logger) {
 
 		_, err = os.Lstat(dest)
 		if os.IsNotExist(err) {
-			err = w.gitClient.Clone(*repo.SSHURL, dest)
+			err = w.gitClient.Clone(repo.SSHURL, dest)
 			if err != nil {
 				repoLogger.Error("failed-to-clone", err)
 				err = os.RemoveAll(dest)
@@ -195,11 +188,11 @@ func (w *worker) work(logger lager.Logger) {
 	}
 }
 
-func handler(scan db.ActiveScan, repo *github.Repository) sniff.ViolationHandlerFunc {
+func handler(scan db.ActiveScan, repo GitHubRepository) sniff.ViolationHandlerFunc {
 	return func(logger lager.Logger, line scanners.Line) error {
 		scan.RecordCredential(db.Credential{
-			Owner:      *repo.Owner.Login,
-			Repository: *repo.Name,
+			Owner:      repo.Owner,
+			Repository: repo.Name,
 			Path:       line.Path,
 			LineNumber: line.LineNumber,
 		})

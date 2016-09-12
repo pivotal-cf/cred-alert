@@ -100,7 +100,7 @@ func workerRunner(logger lager.Logger, opts Opts) ifrit.Runner {
 		logger,
 		clock,
 		workdir,
-		github.NewClient(githubHTTPClient),
+		revok.NewGitHubClient(github.NewClient(githubHTTPClient)),
 		gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath),
 		sniff.NewDefaultSniffer(),
 		opts.ScanInterval,

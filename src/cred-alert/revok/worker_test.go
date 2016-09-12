@@ -7,14 +7,12 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/revok"
+	"cred-alert/revok/revokfakes"
 	"cred-alert/sniff"
 	"cred-alert/sniff/snifffakes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,21 +22,19 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 
-	"github.com/google/go-github/github"
 	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Worker", func() {
 	var (
 		logger               *lagertest.TestLogger
 		clock                *fakeclock.FakeClock
-		ghClient             *github.Client
+		ghClient             *revokfakes.FakeGitHubClient
 		gitClient            *gitclientfakes.FakeClient
 		workdir              string
 		sniffer              *snifffakes.FakeSniffer
@@ -56,31 +52,25 @@ var _ = Describe("Worker", func() {
 		currentRepositoryID uint
 		currentFetchID      uint
 
-		githubServer *ghttp.Server
-		runner       ifrit.Runner
-		process      ifrit.Process
+		runner  ifrit.Runner
+		process ifrit.Process
 	)
 
 	BeforeEach(func() {
-		githubServer = ghttp.NewServer()
-		githubServer.AppendHandlers(
-			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/user/repos", ""),
-				ghttp.RespondWith(http.StatusOK, fmt.Sprintf("[%s]", boshSampleReleaseJSON)),
-			),
-			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/user/repos", ""),
-				ghttp.RespondWith(http.StatusOK, fmt.Sprintf("[%s,%s]", boshSampleReleaseJSON, cfMessageBusJSON)),
-			),
-		)
-
 		logger = lagertest.NewTestLogger("revok")
 		clock = fakeclock.NewFakeClock(time.Now())
 
-		ghClient = github.NewClient(nil)
-		serverURL, err := url.Parse(githubServer.URL())
-		Expect(err).NotTo(HaveOccurred())
-		ghClient.BaseURL = serverURL
+		ghClient = &revokfakes.FakeGitHubClient{}
+		ghClient.ListRepositoriesStub = func(lager.Logger) ([]revok.GitHubRepository, error) {
+			if ghClient.ListRepositoriesCallCount() == 1 {
+				return []revok.GitHubRepository{boshSampleReleaseRepository}, nil
+			}
+
+			return []revok.GitHubRepository{
+				boshSampleReleaseRepository,
+				cfMessageBusRepository,
+			}, nil
+		}
 
 		gitClient = &gitclientfakes.FakeClient{}
 		gitClient.CloneStub = func(url, dest string) error {
@@ -140,13 +130,13 @@ var _ = Describe("Worker", func() {
 			return &metricsfakes.FakeCounter{}
 		}
 
+		var err error
 		workdir, err = ioutil.TempDir("", "revok-test")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		ginkgomon.Interrupt(process)
-		githubServer.Close()
 		os.RemoveAll(workdir)
 	})
 
@@ -180,13 +170,13 @@ var _ = Describe("Worker", func() {
 	})
 
 	It("does work immediately on start", func() {
-		Eventually(githubServer.ReceivedRequests).Should(HaveLen(1))
+		Eventually(ghClient.ListRepositoriesCallCount).Should(Equal(1))
 	})
 
 	It("does work once per hour", func() {
-		Eventually(githubServer.ReceivedRequests).Should(HaveLen(1))
+		Eventually(ghClient.ListRepositoriesCallCount).Should(Equal(1))
 		clock.Increment(interval)
-		Eventually(githubServer.ReceivedRequests).Should(HaveLen(2))
+		Eventually(ghClient.ListRepositoriesCallCount).Should(Equal(2))
 	})
 
 	It("tries to clone each repo", func() {
@@ -206,18 +196,7 @@ var _ = Describe("Worker", func() {
 		Expect(repo.SSHURL).To(Equal("git@github.com:cloudfoundry/bosh-sample-release.git"))
 		Expect(repo.Private).To(BeFalse())
 		Expect(repo.DefaultBranch).To(Equal("master"))
-
-		// the github.Repository object doesn't marshal to the same raw JSON we
-		// originally got, but it's close enough. the actual original response is
-		// available to us if we decide we need it for some reason, but that's a
-		// bit more work to manage for not much gain presently.
-		var gr github.Repository
-		err := json.Unmarshal([]byte(boshSampleReleaseJSON), &gr)
-		Expect(err).NotTo(HaveOccurred())
-		bs, err := json.Marshal(gr)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(repo.RawJSON).To(MatchJSON(bs))
+		Expect(repo.RawJSON).To(MatchJSON([]byte(boshSampleReleaseRepositoryJSON)))
 	})
 
 	It("scans each file in the default branch of each cloned repo", func() {
@@ -285,13 +264,13 @@ var _ = Describe("Worker", func() {
 		})
 
 		It("tries to clone only repos it hasn't seen before", func() {
-			Eventually(githubServer.ReceivedRequests).Should(HaveLen(1))
+			Eventually(ghClient.ListRepositoriesCallCount).Should(Equal(1))
 
 			Expect(gitClient.CloneCallCount()).To(BeZero()) // repo from first request already exists
 
 			clock.Increment(interval)
 
-			Eventually(githubServer.ReceivedRequests).Should(HaveLen(2))
+			Eventually(ghClient.ListRepositoriesCallCount).Should(Equal(2))
 
 			Eventually(gitClient.CloneCallCount).Should(Equal(1))
 
@@ -442,7 +421,7 @@ index fa5a232..1e13fe8 100644
 					}
 				})
 
-				It("increments a metric which doesn't exist yet", func() {
+				XIt("increments a metric which doesn't exist yet", func() {
 				})
 			})
 
@@ -562,7 +541,25 @@ index f2e4113..fa5a232 100644
 	})
 })
 
-var boshSampleReleaseJSON = `{
+var boshSampleReleaseRepository = revok.GitHubRepository{
+	Name:          "bosh-sample-release",
+	Owner:         "cloudfoundry",
+	SSHURL:        "git@github.com:cloudfoundry/bosh-sample-release.git",
+	Private:       false,
+	DefaultBranch: "master",
+	RawJSON:       []byte(boshSampleReleaseRepositoryJSON),
+}
+
+var cfMessageBusRepository = revok.GitHubRepository{
+	Name:          "cf-message-bus",
+	Owner:         "cloudfoundry",
+	SSHURL:        "git@github.com:cloudfoundry/cf-message-bus.git",
+	Private:       false,
+	DefaultBranch: "master",
+	RawJSON:       []byte(cfMessageBusJSON),
+}
+
+var boshSampleReleaseRepositoryJSON = `{
 	"id": 3953650,
 	"name": "bosh-sample-release",
 	"full_name": "cloudfoundry/bosh-sample-release",
