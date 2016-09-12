@@ -61,6 +61,7 @@ func (c *client) ListRepositories(logger lager.Logger) ([]GitHubRepository, erro
 
 		repos = append(repos, GitHubRepository{
 			Name:          *r.Name,
+			Owner:         *r.Owner.Login,
 			SSHURL:        *r.SSHURL,
 			Private:       *r.Private,
 			DefaultBranch: *r.DefaultBranch,
