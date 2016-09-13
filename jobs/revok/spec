@@ -63,3 +63,11 @@ properties:
     description: |
       The name of the database to use.
     default: revok
+
+  revok.metrics.datadog_api_key:
+    description: |
+      Datadog API key
+
+  revok.metrics.environment:
+    description: |
+      Environment tag for metrics
