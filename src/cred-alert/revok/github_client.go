@@ -30,7 +30,7 @@ func (c *client) ListRepositories(logger lager.Logger) ([]GitHubRepository, erro
 		ListOptions: github.ListOptions{PerPage: 30},
 	}
 
-	var originalRepos []*github.Repository
+	var repos []GitHubRepository
 
 	for {
 		rs, resp, err := c.ghClient.Repositories.List("", opts)
@@ -41,32 +41,28 @@ func (c *client) ListRepositories(logger lager.Logger) ([]GitHubRepository, erro
 			return nil, err
 		}
 
-		originalRepos = append(originalRepos, rs...)
+		for _, repo := range rs {
+			rawJSONBytes, err := json.Marshal(repo)
+			if err != nil {
+				logger.Error("failed-to-marshal-json", err)
+				return nil, err
+			}
+
+			repos = append(repos, GitHubRepository{
+				Name:          *repo.Name,
+				Owner:         *repo.Owner.Login,
+				SSHURL:        *repo.SSHURL,
+				Private:       *repo.Private,
+				DefaultBranch: *repo.DefaultBranch,
+				RawJSON:       rawJSONBytes,
+			})
+		}
 
 		if resp.NextPage == 0 {
 			break
 		}
 
 		opts.ListOptions.Page = resp.NextPage
-	}
-
-	var repos []GitHubRepository
-
-	for _, r := range originalRepos {
-		rawJSONBytes, err := json.Marshal(r)
-		if err != nil {
-			logger.Error("failed-to-marshal-json", err)
-			return nil, err
-		}
-
-		repos = append(repos, GitHubRepository{
-			Name:          *r.Name,
-			Owner:         *r.Owner.Login,
-			SSHURL:        *r.SSHURL,
-			Private:       *r.Private,
-			DefaultBranch: *r.DefaultBranch,
-			RawJSON:       rawJSONBytes,
-		})
 	}
 
 	return repos, nil
