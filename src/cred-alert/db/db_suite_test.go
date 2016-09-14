@@ -27,3 +27,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	dbRunner.Teardown()
 })
+
+var _ = AfterEach(func() {
+	dbRunner.Truncate()
+})
