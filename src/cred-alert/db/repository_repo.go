@@ -12,6 +12,8 @@ type RepositoryRepository interface {
 	FindOrCreate(*Repository) error
 	Create(*Repository) error
 
+	Find(owner string, name string) (Repository, error)
+
 	All() ([]Repository, error)
 	NotFetchedSince(time.Time) ([]Repository, error)
 
@@ -24,6 +26,15 @@ type repositoryRepository struct {
 
 func NewRepositoryRepository(db *gorm.DB) *repositoryRepository {
 	return &repositoryRepository{db: db}
+}
+
+func (r *repositoryRepository) Find(owner, name string) (Repository, error) {
+	var repository Repository
+	err := r.db.Where(Repository{Owner: owner, Name: name}).First(&repository).Error
+	if err != nil {
+		return Repository{}, err
+	}
+	return repository, nil
 }
 
 func (r *repositoryRepository) FindOrCreate(repository *Repository) error {

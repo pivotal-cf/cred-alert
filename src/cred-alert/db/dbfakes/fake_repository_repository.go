@@ -24,6 +24,16 @@ type FakeRepositoryRepository struct {
 	createReturns struct {
 		result1 error
 	}
+	FindStub        func(owner string, name string) (db.Repository, error)
+	findMutex       sync.RWMutex
+	findArgsForCall []struct {
+		owner string
+		name  string
+	}
+	findReturns struct {
+		result1 db.Repository
+		result2 error
+	}
 	AllStub        func() ([]db.Repository, error)
 	allMutex       sync.RWMutex
 	allArgsForCall []struct{}
@@ -118,6 +128,41 @@ func (fake *FakeRepositoryRepository) CreateReturns(result1 error) {
 	fake.createReturns = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeRepositoryRepository) Find(owner string, name string) (db.Repository, error) {
+	fake.findMutex.Lock()
+	fake.findArgsForCall = append(fake.findArgsForCall, struct {
+		owner string
+		name  string
+	}{owner, name})
+	fake.recordInvocation("Find", []interface{}{owner, name})
+	fake.findMutex.Unlock()
+	if fake.FindStub != nil {
+		return fake.FindStub(owner, name)
+	} else {
+		return fake.findReturns.result1, fake.findReturns.result2
+	}
+}
+
+func (fake *FakeRepositoryRepository) FindCallCount() int {
+	fake.findMutex.RLock()
+	defer fake.findMutex.RUnlock()
+	return len(fake.findArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) FindArgsForCall(i int) (string, string) {
+	fake.findMutex.RLock()
+	defer fake.findMutex.RUnlock()
+	return fake.findArgsForCall[i].owner, fake.findArgsForCall[i].name
+}
+
+func (fake *FakeRepositoryRepository) FindReturns(result1 db.Repository, result2 error) {
+	fake.FindStub = nil
+	fake.findReturns = struct {
+		result1 db.Repository
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeRepositoryRepository) All() ([]db.Repository, error) {
@@ -222,6 +267,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.findOrCreateMutex.RUnlock()
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
+	fake.findMutex.RLock()
+	defer fake.findMutex.RUnlock()
 	fake.allMutex.RLock()
 	defer fake.allMutex.RUnlock()
 	fake.notFetchedSinceMutex.RLock()
