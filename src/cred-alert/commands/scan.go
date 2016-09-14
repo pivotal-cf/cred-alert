@@ -23,8 +23,9 @@ import (
 )
 
 type ScanCommand struct {
-	File string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
-	Diff bool   `long:"diff" description:"content to be scanned is a git diff"`
+	File            string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
+	Diff            bool   `long:"diff" description:"content to be scanned is a git diff"`
+	ShowCredentials bool   `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
 }
 
 func (command *ScanCommand) Execute(args []string) error {
@@ -52,9 +53,13 @@ func (command *ScanCommand) Execute(args []string) error {
 	}()
 
 	var credsFound int
-	handler := func(logger lager.Logger, line scanners.Line) error {
+	handler := func(logger lager.Logger, violation scanners.Violation) error {
 		credsFound++
-		fmt.Printf("%s %s:%d\n", red("[CRED]"), line.Path, line.LineNumber)
+		if command.ShowCredentials {
+			fmt.Printf("%s %s:%d [%s]\n", red("[CRED]"), violation.Line.Path, violation.Line.LineNumber, violation.Credential())
+		} else {
+			fmt.Printf("%s %s:%d\n", red("[CRED]"), violation.Line.Path, violation.Line.LineNumber)
+		}
 
 		return nil
 	}
@@ -78,8 +83,10 @@ func (command *ScanCommand) Execute(args []string) error {
 				log.Fatalln(err.Error())
 			}
 
-			archiveViolationHandler := func(logger lager.Logger, line scanners.Line) error {
+			archiveViolationHandler := func(logger lager.Logger, violation scanners.Violation) error {
+				line := violation.Line
 				credsFound++
+
 				relPath, err := filepath.Rel(inflateDir, line.Path)
 				if err != nil {
 					return err

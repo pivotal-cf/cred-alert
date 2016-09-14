@@ -16,11 +16,11 @@ import (
 )
 
 type dirScanner struct {
-	handler func(lager.Logger, scanners.Line) error
+	handler func(lager.Logger, scanners.Violation) error
 	sniffer sniff.Sniffer
 }
 
-func New(handler func(lager.Logger, scanners.Line) error, sniffer sniff.Sniffer) *dirScanner {
+func New(handler func(lager.Logger, scanners.Violation) error, sniffer sniff.Sniffer) *dirScanner {
 	return &dirScanner{
 		handler: handler,
 		sniffer: sniffer,

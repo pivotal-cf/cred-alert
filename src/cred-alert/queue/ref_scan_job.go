@@ -147,7 +147,9 @@ func (j *RefScanJob) downloadArchiveFrom(logger lager.Logger, downloadURL *url.U
 func (j *RefScanJob) scanFilesIn(logger lager.Logger, scan db.ActiveScan, destination string) ([]notifications.Notification, error) {
 	alerts := []notifications.Notification{}
 
-	scanner := dirscanner.New(func(logger lager.Logger, line scanners.Line) error {
+	scanner := dirscanner.New(func(logger lager.Logger, violation scanners.Violation) error {
+		line := violation.Line
+
 		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,

@@ -15,6 +15,11 @@ func Format(format string) Matcher {
 	}
 }
 
-func (m *formatMatcher) Match(line *scanners.Line) bool {
-	return m.r.Match(line.Content)
+func (m *formatMatcher) Match(line *scanners.Line) (bool, int, int) {
+	index := m.r.FindIndex(line.Content)
+	if index == nil {
+		return false, 0, 0
+	}
+
+	return true, index[0], index[1]
 }

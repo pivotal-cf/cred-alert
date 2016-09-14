@@ -35,7 +35,7 @@ var _ = Describe("Filter", func() {
 		})
 
 		It("returns false", func() {
-			result := filter.Match(line)
+			result, _, _ := filter.Match(line)
 			Expect(result).To(BeFalse())
 		})
 
@@ -50,10 +50,12 @@ var _ = Describe("Filter", func() {
 		})
 
 		It("returns whatever the submatcher returns", func() {
-			submatcher.MatchReturns(true)
+			submatcher.MatchReturns(true, 7, 19)
 
-			result := filter.Match(line)
+			result, start, end := filter.Match(line)
 			Expect(result).To(BeTrue())
+			Expect(start).To(Equal(7))
+			Expect(end).To(Equal(19))
 		})
 	})
 })

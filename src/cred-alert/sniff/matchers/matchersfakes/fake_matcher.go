@@ -8,19 +8,21 @@ import (
 )
 
 type FakeMatcher struct {
-	MatchStub        func(*scanners.Line) bool
+	MatchStub        func(*scanners.Line) (bool, int, int)
 	matchMutex       sync.RWMutex
 	matchArgsForCall []struct {
 		arg1 *scanners.Line
 	}
 	matchReturns struct {
 		result1 bool
+		result2 int
+		result3 int
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMatcher) Match(arg1 *scanners.Line) bool {
+func (fake *FakeMatcher) Match(arg1 *scanners.Line) (bool, int, int) {
 	fake.matchMutex.Lock()
 	fake.matchArgsForCall = append(fake.matchArgsForCall, struct {
 		arg1 *scanners.Line
@@ -30,7 +32,7 @@ func (fake *FakeMatcher) Match(arg1 *scanners.Line) bool {
 	if fake.MatchStub != nil {
 		return fake.MatchStub(arg1)
 	} else {
-		return fake.matchReturns.result1
+		return fake.matchReturns.result1, fake.matchReturns.result2, fake.matchReturns.result3
 	}
 }
 
@@ -46,11 +48,13 @@ func (fake *FakeMatcher) MatchArgsForCall(i int) *scanners.Line {
 	return fake.matchArgsForCall[i].arg1
 }
 
-func (fake *FakeMatcher) MatchReturns(result1 bool) {
+func (fake *FakeMatcher) MatchReturns(result1 bool, result2 int, result3 int) {
 	fake.MatchStub = nil
 	fake.matchReturns = struct {
 		result1 bool
-	}{result1}
+		result2 int
+		result3 int
+	}{result1, result2, result3}
 }
 
 func (fake *FakeMatcher) Invocations() map[string][][]interface{} {

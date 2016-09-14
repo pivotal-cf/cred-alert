@@ -19,7 +19,7 @@ const cryptSHA256Pattern = `\$5\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{43}`
 const cryptSHA512Pattern = `\$6\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{86}`
 const rsaPrivateKeyHeaderPattern = `-----BEGIN RSA PRIVATE KEY-----`
 
-type ViolationHandlerFunc func(lager.Logger, scanners.Line) error
+type ViolationHandlerFunc func(lager.Logger, scanners.Violation) error
 
 //go:generate counterfeiter . Scanner
 
@@ -78,12 +78,18 @@ func (s *sniffer) Sniff(
 	for scanner.Scan(logger) {
 		line := scanner.Line(logger)
 
-		if s.exclusionMatcher.Match(line) {
+		if match, _, _ := s.exclusionMatcher.Match(line); match {
 			continue
 		}
 
-		if s.matcher.Match(line) {
-			err := handleViolation(logger, *line)
+		if match, start, end := s.matcher.Match(line); match {
+			violation := scanners.Violation{
+				Line:  *line,
+				Start: start,
+				End:   end,
+			}
+
+			err := handleViolation(logger, violation)
 			if err != nil {
 				logger.Error("failed", err)
 				result = multierror.Append(result, err)

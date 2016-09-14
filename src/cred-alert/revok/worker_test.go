@@ -8,6 +8,7 @@ import (
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/revok"
 	"cred-alert/revok/revokfakes"
+	"cred-alert/scanners"
 	"cred-alert/sniff"
 	"cred-alert/sniff/snifffakes"
 	"encoding/json"
@@ -146,7 +147,9 @@ var _ = Describe("Worker", func() {
 			for s.Scan(logger) {
 				line := s.Line(logger)
 				if strings.Contains(string(line.Content), "credential") {
-					h(l, *line)
+					h(l, scanners.Violation{
+						Line: *line,
+					})
 				}
 			}
 

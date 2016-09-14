@@ -15,7 +15,7 @@ type multi struct {
 	matchers []Matcher
 }
 
-func (m *multi) Match(line *scanners.Line) bool {
+func (m *multi) Match(line *scanners.Line) (bool, int, int) {
 	upcasedLine := &scanners.Line{
 		Content:    bytes.ToUpper(line.Content),
 		Path:       line.Path,
@@ -23,10 +23,10 @@ func (m *multi) Match(line *scanners.Line) bool {
 	}
 
 	for _, matcher := range m.matchers {
-		if matcher.Match(upcasedLine) {
-			return true
+		if match, start, end := matcher.Match(upcasedLine); match {
+			return true, start, end
 		}
 	}
 
-	return false
+	return false, 0, 0
 }

@@ -19,11 +19,12 @@ import (
 
 var _ = Describe("Sniffer", func() {
 	var (
-		logger           *lagertest.TestLogger
-		matcher          *matchersfakes.FakeMatcher
-		exclusionMatcher *matchersfakes.FakeMatcher
-		scanner          *snifffakes.FakeScanner
-		expectedLine     *scanners.Line
+		logger            *lagertest.TestLogger
+		matcher           *matchersfakes.FakeMatcher
+		exclusionMatcher  *matchersfakes.FakeMatcher
+		scanner           *snifffakes.FakeScanner
+		expectedLine      *scanners.Line
+		expectedViolation scanners.Violation
 
 		sniffer sniff.Sniffer
 	)
@@ -38,24 +39,31 @@ var _ = Describe("Sniffer", func() {
 		scanner.ScanStub = func(lager.Logger) bool {
 			return scanner.ScanCallCount() < 4
 		}
+
 		expectedLine = &scanners.Line{
 			Path:       "some-path",
 			LineNumber: 42,
 			Content:    []byte("some-content"),
 		}
 		scanner.LineReturns(expectedLine)
+
+		expectedViolation = scanners.Violation{
+			Line:  *expectedLine,
+			Start: 8,
+			End:   23,
+		}
 	})
 
 	Describe("Sniff", func() {
 		It("calls the exclusion matcher with each line", func() {
-			sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Line) error {
+			sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Violation) error {
 				return nil
 			})
 			Expect(exclusionMatcher.MatchCallCount()).To(Equal(3))
 		})
 
 		It("calls the regular matcher with each line", func() {
-			sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Line) error {
+			sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Violation) error {
 				return nil
 			})
 			Expect(matcher.MatchCallCount()).To(Equal(3))
@@ -63,11 +71,11 @@ var _ = Describe("Sniffer", func() {
 
 		Context("when the exclusion matcher returns true", func() {
 			BeforeEach(func() {
-				exclusionMatcher.MatchReturns(true)
+				exclusionMatcher.MatchReturns(true, 7, 19)
 			})
 
 			It("does not call the regular matcher", func() {
-				sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Line) error {
+				sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Violation) error {
 					return nil
 				})
 				Expect(matcher.MatchCallCount()).To(BeZero())
@@ -76,31 +84,34 @@ var _ = Describe("Sniffer", func() {
 
 		Context("when the regular matcher returns true", func() {
 			BeforeEach(func() {
-				matcher.MatchStub = func(*scanners.Line) bool {
-					return matcher.MatchCallCount() != 1 // 2 should match
+				matcher.MatchStub = func(*scanners.Line) (bool, int, int) {
+					return matcher.MatchCallCount() != 1, 8, 23 // 2 should match
 				}
 			})
 
 			It("calls the callback with the line", func() {
-				var actualLine *scanners.Line
-				callback := func(logger lager.Logger, line scanners.Line) error {
-					actualLine = &line
+				var actualViolation scanners.Violation
+
+				callback := func(logger lager.Logger, violation scanners.Violation) error {
+					actualViolation = violation
 					return nil
 				}
+
 				sniffer.Sniff(logger, scanner, callback)
-				Expect(actualLine).To(Equal(expectedLine))
+
+				Expect(actualViolation).To(Equal(expectedViolation))
 			})
 
 			Context("when the callback returns an error", func() {
 				var (
 					callCount int
-					callback  func(lager.Logger, scanners.Line) error
+					callback  func(lager.Logger, scanners.Violation) error
 				)
 
 				BeforeEach(func() {
 					callCount = 0
 
-					callback = func(logger lager.Logger, line scanners.Line) error {
+					callback = func(logger lager.Logger, line scanners.Violation) error {
 						callCount++
 						return errors.New("tragedy")
 					}
@@ -157,8 +168,8 @@ var _ = Describe("Sniffer", func() {
 					}
 				}
 
-				sniffer.Sniff(logger, scanner, func(logger lager.Logger, line scanners.Line) error {
-					actuals = append(actuals, string(line.Content))
+				sniffer.Sniff(logger, scanner, func(logger lager.Logger, violation scanners.Violation) error {
+					actuals = append(actuals, string(violation.Line.Content))
 					return nil
 				})
 			}

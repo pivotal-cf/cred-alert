@@ -23,7 +23,7 @@ type filter struct {
 	filters [][]byte
 }
 
-func (f *filter) Match(line *scanners.Line) bool {
+func (f *filter) Match(line *scanners.Line) (bool, int, int) {
 	found := false
 
 	for i := range f.filters {
@@ -34,7 +34,7 @@ func (f *filter) Match(line *scanners.Line) bool {
 	}
 
 	if !found {
-		return false
+		return false, 0, 0
 	}
 
 	return f.matcher.Match(line)

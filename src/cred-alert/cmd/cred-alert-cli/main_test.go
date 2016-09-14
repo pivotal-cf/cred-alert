@@ -95,6 +95,16 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt:28"))
 			})
 
+			Context("shows actual credential if show-suspected-credentials flag is set", func() {
+				BeforeEach(func() {
+					cmdArgs = append(cmdArgs, "--show-suspected-credentials")
+				})
+
+				It("shows credentials", func() {
+					Eventually(session.Out).Should(gbytes.Say(`private_key '\$should_match'`))
+				})
+			})
+
 			ItTellsPeopleHowToRemoveTheirCredentials()
 		})
 	})
@@ -119,6 +129,16 @@ index 940393e..fa5a232 100644
 
 		It("scans the file", func() {
 			Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+		})
+
+		Context("shows actual credential if show-suspected-credentials flag is set", func() {
+			BeforeEach(func() {
+				cmdArgs = append(cmdArgs, "--show-suspected-credentials")
+			})
+
+			It("shows credentials", func() {
+				Eventually(session.Out).Should(gbytes.Say("AKIASOMEMORETEXTHERE"))
+			})
 		})
 
 		var ItShowsHowLongItTookAndHowManyCredentialsWereFound = func() {

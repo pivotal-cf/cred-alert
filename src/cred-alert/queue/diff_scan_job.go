@@ -97,7 +97,9 @@ func (j *DiffScanJob) scanDiffForCredentials(logger lager.Logger, scan db.Active
 	scanner := diffscanner.NewDiffScanner(diff)
 	alerts := []notifications.Notification{}
 
-	err := j.sniffer.Sniff(logger, scanner, func(logger lager.Logger, line scanners.Line) error {
+	err := j.sniffer.Sniff(logger, scanner, func(logger lager.Logger, violation scanners.Violation) error {
+		line := violation.Line
+
 		logger = logger.Session("handle-violation", lager.Data{
 			"path":        line.Path,
 			"line-number": line.LineNumber,

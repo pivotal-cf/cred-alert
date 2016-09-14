@@ -70,8 +70,8 @@ func (j *CommitMessageJob) Run(logger lager.Logger) error {
 	return nil
 }
 
-func (j *CommitMessageJob) createHandleViolation(scan db.ActiveScan) func(lager.Logger, scanners.Line) error {
-	return func(logger lager.Logger, line scanners.Line) error {
+func (j *CommitMessageJob) createHandleViolation(scan db.ActiveScan) func(lager.Logger, scanners.Violation) error {
+	return func(logger lager.Logger, violation scanners.Violation) error {
 		logger = logger.Session("handle-violation")
 		logger.Debug("starting")
 
@@ -86,8 +86,8 @@ func (j *CommitMessageJob) createHandleViolation(scan db.ActiveScan) func(lager.
 			Owner:      j.Owner,
 			Repository: j.Repository,
 			SHA:        j.SHA,
-			Path:       line.Path,
-			LineNumber: line.LineNumber,
+			Path:       violation.Line.Path,
+			LineNumber: violation.Line.LineNumber,
 		}
 
 		scan.RecordCredential(credential)
@@ -97,8 +97,8 @@ func (j *CommitMessageJob) createHandleViolation(scan db.ActiveScan) func(lager.
 			Repository: j.Repository,
 			Private:    j.Private,
 			SHA:        j.SHA,
-			Path:       line.Path,
-			LineNumber: line.LineNumber,
+			Path:       violation.Line.Path,
+			LineNumber: violation.Line.LineNumber,
 		}
 
 		if err := j.notifier.SendNotification(logger, notification); err != nil {

@@ -84,9 +84,13 @@ var _ = Describe("Commit Message Scan Job", func() {
 				LineNumber: 999,
 			}
 
+			violation := scanners.Violation{
+				Line: violatingLine,
+			}
+
 			BeforeEach(func() {
 				sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation sniff.ViolationHandlerFunc) error {
-					return handleViolation(logger, violatingLine)
+					return handleViolation(logger, violation)
 				}
 			})
 

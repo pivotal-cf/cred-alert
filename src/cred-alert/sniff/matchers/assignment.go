@@ -24,22 +24,22 @@ type assignmentMatcher struct {
 	guidPattern       *regexp.Regexp
 }
 
-func (m *assignmentMatcher) Match(line *scanners.Line) bool {
+func (m *assignmentMatcher) Match(line *scanners.Line) (bool, int, int) {
 	matchIndexPairs := m.assignmentPattern.FindSubmatchIndex(line.Content)
 	if matchIndexPairs == nil {
-		return false
+		return false, 0, 0
 	}
 
 	content := line.Content[matchIndexPairs[0]:matchIndexPairs[1]]
 	if m.guidPattern.Match(content) {
-		return false
+		return false, 0, 0
 	}
 
 	ext := filepath.Ext(line.Path)
 	if ext == ".yml" || ext == ".yaml" {
-		return m.yamlPattern.Match(content)
+		return m.yamlPattern.Match(content), matchIndexPairs[0], matchIndexPairs[1]
 	}
 
 	quoteExists := matchIndexPairs[3] != -1
-	return quoteExists
+	return quoteExists, matchIndexPairs[0], matchIndexPairs[1]
 }

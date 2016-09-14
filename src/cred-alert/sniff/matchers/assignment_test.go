@@ -32,7 +32,8 @@ var _ = Describe("Assignment Matcher", func() {
 				LineNumber: 42,
 			}
 
-			Expect(matcher.Match(line)).To(BeFalse())
+			matched, _, _ := matcher.Match(line)
+			Expect(matched).To(BeFalse())
 		},
 		Entry("not an assignment", "package not_an_assignment"),
 		Entry("RHS is too short", "password too-short"),
@@ -41,10 +42,10 @@ var _ = Describe("Assignment Matcher", func() {
 	)
 
 	DescribeTable("matching secret assignments",
-		func(content string, name ...string) {
+		func(content string, expectedStart, expectedEnd int, maybeFilename ...string) {
 			fileName := "a-file.txt"
-			if len(name) > 0 {
-				fileName = name[0]
+			if len(maybeFilename) > 0 {
+				fileName = maybeFilename[0]
 			}
 
 			line := &scanners.Line{
@@ -53,24 +54,27 @@ var _ = Describe("Assignment Matcher", func() {
 				LineNumber: 42,
 			}
 
-			Expect(matcher.Match(line)).To(BeTrue())
+			matched, start, end := matcher.Match(line)
+			Expect(matched).To(BeTrue())
+			Expect(start).To(Equal(expectedStart))
+			Expect(end).To(Equal(expectedEnd))
 		},
-		Entry("simple assignment with no operator", "password 'should_match'"),
-		Entry("simple assignment with colon", "password: 'should_match'"),
-		Entry("simple assignment with equals", "password = 'should_match'"),
-		Entry("simple assignment with colon equals", "password := 'should_match'"),
-		Entry("simple assignment with a rocket", "password => 'should_match'"),
-		Entry("simple assignment with no spaces", "password='should_match'"),
-		Entry("simple assignment with double quotes", `password = "should_match"`),
-		Entry("simple assignment with different variable names (private-key)", "private-key = 'should_match'"),
-		Entry("simple assignment with different variable names (private_key)", "private_key = 'should_match'"),
-		Entry("simple assignment with different variable names (secret)", "secret = 'should_match'"),
-		Entry("simple assignment with different variable names (salt)", "salt = 'should_match'"),
-		Entry("simple assignment with a prefixed variable names", "hello_password = 'should_match'"),
-		Entry("simple assignment with a strange cased variable names", "PaSSwoRD = 'should_match'"),
-		Entry("simple assignment with a comment", `private_key = "should_match" # COMMENT: comments shouldn't have an effect`),
-		Entry("simple assignment with strange characters", `password = '.$+=&/\\should_match' # comment`),
-		Entry("YAML assignment", "password: should_match", "manifest.yml"),
-		Entry("YAML assignment with a silly extension", "password: should_match", "manifest.yaml"),
+		Entry("simple assignment with no operator", "password 'should_match'", 0, 23),
+		Entry("simple assignment with colon", "password: 'should_match'", 0, 24),
+		Entry("simple assignment with equals", "password = 'should_match'", 0, 25),
+		Entry("simple assignment with colon equals", "password := 'should_match'", 0, 26),
+		Entry("simple assignment with a rocket", "password => 'should_match'", 0, 26),
+		Entry("simple assignment with no spaces", "password='should_match'", 0, 23),
+		Entry("simple assignment with double quotes", `password = "should_match"`, 0, 25),
+		Entry("simple assignment with different variable names (private-key)", "private-key = 'should_match'", 0, 28),
+		Entry("simple assignment with different variable names (private_key)", "private_key = 'should_match'", 0, 28),
+		Entry("simple assignment with different variable names (secret)", "secret = 'should_match'", 0, 23),
+		Entry("simple assignment with different variable names (salt)", "salt = 'should_match'", 0, 21),
+		Entry("simple assignment with a prefixed variable names", "hello_password = 'should_match'", 6, 31),
+		Entry("simple assignment with a strange cased variable names", "PaSSwoRD = 'should_match'", 0, 25),
+		Entry("simple assignment with a comment", `private_key = "should_match" # COMMENT: comments shouldn't have an effect`, 0, 28),
+		Entry("simple assignment with strange characters", `password = '.$+=&/\\should_match' # comment`, 0, 33),
+		Entry("YAML assignment", "password: should_match", 0, 22, "manifest.yml"),
+		Entry("YAML assignment with a silly extension", "password: should_match", 0, 22, "manifest.yaml"),
 	)
 })

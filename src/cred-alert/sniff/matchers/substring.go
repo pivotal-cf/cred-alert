@@ -15,6 +15,13 @@ func Substring(s string) Matcher {
 	}
 }
 
-func (m *substringMatcher) Match(line *scanners.Line) bool {
-	return bytes.Contains(line.Content, m.s)
+func (m *substringMatcher) Match(line *scanners.Line) (bool, int, int) {
+	start := bytes.Index(line.Content, m.s)
+	if start == -1 {
+		return false, 0, 0
+	}
+
+	end := start + len(m.s)
+
+	return true, start, end
 }

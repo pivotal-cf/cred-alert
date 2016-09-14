@@ -189,7 +189,9 @@ func (w *worker) work(logger lager.Logger) {
 }
 
 func handler(scan db.ActiveScan, repo GitHubRepository) sniff.ViolationHandlerFunc {
-	return func(logger lager.Logger, line scanners.Line) error {
+	return func(logger lager.Logger, violation scanners.Violation) error {
+		line := violation.Line
+
 		scan.RecordCredential(db.Credential{
 			Owner:      repo.Owner,
 			Repository: repo.Name,

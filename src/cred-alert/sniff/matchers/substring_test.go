@@ -17,7 +17,10 @@ var _ = Describe("Substring", func() {
 
 	It("returns true when the line matches case-sensitively", func() {
 		line := &scanners.Line{Content: []byte("this is an exact match")}
-		Expect(matcher.Match(line)).To(BeTrue())
+		matched, start, end := matcher.Match(line)
+		Expect(matched).To(BeTrue())
+		Expect(start).To(Equal(11))
+		Expect(end).To(Equal(22))
 	})
 
 	It("returns false when the line does not match case-sensitively", func() {

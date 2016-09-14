@@ -114,19 +114,23 @@ var _ = Describe("Diff Scan Job", func() {
 			filePath = "some/file/path"
 
 			sniffer.SniffStub = func(logger lager.Logger, scanner sniff.Scanner, handleViolation sniff.ViolationHandlerFunc) error {
-				err := handleViolation(logger, scanners.Line{
-					Path:       filePath,
-					LineNumber: 6,
-					Content:    []byte("other-content"),
+				err := handleViolation(logger, scanners.Violation{
+					Line: scanners.Line{
+						Path:       filePath,
+						LineNumber: 6,
+						Content:    []byte("other-content"),
+					},
 				})
 				if err != nil {
 					return err
 				}
 
-				return handleViolation(logger, scanners.Line{
-					Path:       filePath,
-					LineNumber: 10,
-					Content:    []byte("content"),
+				return handleViolation(logger, scanners.Violation{
+					Line: scanners.Line{
+						Path:       filePath,
+						LineNumber: 10,
+						Content:    []byte("content"),
+					},
 				})
 			}
 		})

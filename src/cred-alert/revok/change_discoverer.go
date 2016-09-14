@@ -141,7 +141,9 @@ func (c *ChangeDiscoverer) work(logger lager.Logger) error {
 			c.sniffer.Sniff(
 				quietLogger,
 				diffscanner.NewDiffScanner(strings.NewReader(diff)),
-				func(logger lager.Logger, line scanners.Line) error {
+				func(logger lager.Logger, violation scanners.Violation) error {
+					line := violation.Line
+
 					scan.RecordCredential(db.Credential{
 						Owner:      repo.Owner,
 						Repository: repo.Name,

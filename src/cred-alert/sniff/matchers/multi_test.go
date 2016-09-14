@@ -14,7 +14,8 @@ var _ = Describe("UpcasedMulti", func() {
 		matcher      *matchersfakes.FakeMatcher
 		multimatcher matchers.Matcher
 
-		matches bool
+		matches    bool
+		start, end int
 	)
 
 	BeforeEach(func() {
@@ -23,7 +24,7 @@ var _ = Describe("UpcasedMulti", func() {
 	})
 
 	JustBeforeEach(func() {
-		matches = multimatcher.Match(&scanners.Line{
+		matches, start, end = multimatcher.Match(&scanners.Line{
 			Content:    []byte("this is a line"),
 			LineNumber: 42,
 			Path:       "the/path",
@@ -46,13 +47,18 @@ var _ = Describe("UpcasedMulti", func() {
 	Context("when at least one of the matchers returns true", func() {
 		BeforeEach(func() {
 			trueMatcher := new(matchersfakes.FakeMatcher)
-			trueMatcher.MatchReturns(true)
+			trueMatcher.MatchReturns(true, 7, 19)
 
 			multimatcher = matchers.UpcasedMulti(trueMatcher, matcher)
 		})
 
 		It("returns true", func() {
 			Expect(matches).To(BeTrue())
+		})
+
+		It("returns offsets", func() {
+			Expect(start).To(Equal(7))
+			Expect(end).To(Equal(19))
 		})
 
 		It("doesn't call the later matchers", func() {

@@ -5,3 +5,14 @@ type Line struct {
 	LineNumber int
 	Content    []byte
 }
+
+type Violation struct {
+	Line Line
+
+	Start int
+	End   int
+}
+
+func (v Violation) Credential() string {
+	return string((v.Line.Content)[v.Start:v.End])
+}
