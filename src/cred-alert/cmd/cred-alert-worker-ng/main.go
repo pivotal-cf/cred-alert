@@ -19,13 +19,15 @@ import (
 	"github.com/google/go-github/github"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/sigmon"
 )
 
 type Opts struct {
-	LogLevel     string        `long:"log-level" description:"log level to use"`
-	WorkDir      string        `long:"work-dir" description:"directory to work in" value-name:"PATH" required:"true"`
-	ScanInterval time.Duration `long:"scan-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone/fetch and then scan" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
+	LogLevel                    string        `long:"log-level" description:"log level to use"`
+	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" required:"true"`
+	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
+	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
 
 	GitHub struct {
 		AccessToken    string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
@@ -60,16 +62,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	runner := sigmon.New(workerRunner(logger, opts), os.Interrupt)
-	err = <-ifrit.Invoke(runner).Wait()
-	if err != nil {
-		log.Fatal("failed-to-start: %s", err)
-	}
-}
-
-func workerRunner(logger lager.Logger, opts Opts) ifrit.Runner {
 	workdir := opts.WorkDir
-	_, err := os.Lstat(workdir)
+	_, err = os.Lstat(workdir)
 	if err != nil {
 		log.Fatalf("workdir error: %s", err)
 	}
@@ -96,17 +90,51 @@ func workerRunner(logger lager.Logger, opts Opts) ifrit.Runner {
 
 	clock := clock.NewClock()
 
-	return revok.New(
-		logger,
-		clock,
-		workdir,
-		revok.NewGitHubClient(github.NewClient(githubHTTPClient)),
-		gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath),
-		sniff.NewDefaultSniffer(),
-		opts.ScanInterval,
-		db.NewScanRepository(database, clock),
-		db.NewRepositoryRepository(database),
-		db.NewFetchRepository(database),
-		metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment),
-	)
+	cloneMsgCh := make(chan revok.CloneMsg)
+	ghClient := revok.NewGitHubClient(github.NewClient(githubHTTPClient))
+
+	scanRepository := db.NewScanRepository(database, clock)
+	repositoryRepository := db.NewRepositoryRepository(database)
+	fetchRepository := db.NewFetchRepository(database)
+	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
+	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
+	sniffer := sniff.NewDefaultSniffer()
+
+	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
+		{"repo-discoverer", revok.NewRepoDiscoverer(
+			logger,
+			workdir,
+			cloneMsgCh,
+			ghClient,
+			clock,
+			opts.RepositoryDiscoveryInterval,
+			repositoryRepository,
+		)},
+		{"cloner", revok.NewCloner(
+			logger,
+			workdir,
+			cloneMsgCh,
+			gitClient,
+			sniffer,
+			repositoryRepository,
+			scanRepository,
+			emitter,
+		)},
+		{"change-discoverer", revok.NewChangeDiscoverer(
+			logger,
+			workdir,
+			gitClient,
+			clock,
+			opts.ChangeDiscoveryInterval,
+			sniffer,
+			repositoryRepository,
+			fetchRepository,
+			scanRepository,
+			emitter,
+		)},
+	}))
+	err = <-ifrit.Invoke(runner).Wait()
+	if err != nil {
+		log.Fatal("failed-to-start: %s", err)
+	}
 }

@@ -19,11 +19,17 @@ packages:
 - pid_utils_revok
 
 properties:
-  revok.scan_interval:
+  revok.repository_discovery_interval:
     description: |
       The interval, in Go duration format (e.g. 1m = 1 minute), on which to
       query GitHub for repositories.
-    default: 6h
+    default: 1h
+
+  revok.change_discovery_interval:
+    description: |
+      The interval, in Go duration format (e.g. 1m = 1 minute), on which to
+      query Git repositories on disk for changes.
+    default: 1h
 
   revok.work_dir:
     description: |

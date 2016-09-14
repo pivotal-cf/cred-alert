@@ -25,7 +25,8 @@ case $1 in
     echo $$ > $PIDFILE
 
     exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/cred-alert-worker-ng \
-      --scan-interval <%= p("revok.scan_interval") %> \
+      --repository-discovery-interval <%= p("revok.repository_discovery_interval") %> \
+      --change-discovery-interval <%= p("revok.change_discovery_interval") %> \
       --work-dir <%= p("revok.work_dir") %> \
       <% if p("revok.github.private_key") %> \
       --github-private-key-path /var/vcap/jobs/revok/config/github_private_key \
