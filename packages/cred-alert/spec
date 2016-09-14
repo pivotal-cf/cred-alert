@@ -36,6 +36,7 @@ files:
   - github.com/jinzhu/inflection/*.{go,c} # gosub
   - github.com/libgit2/git2go/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/*.{go,c} # gosub
+  - github.com/tedsuo/ifrit/grouper/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/sigmon/*.{go,c} # gosub
   - golang.org/x/net/context/*.{go,c} # gosub
   - golang.org/x/oauth2/*.{go,c} # gosub
