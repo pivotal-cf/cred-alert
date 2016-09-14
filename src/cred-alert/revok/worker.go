@@ -203,6 +203,7 @@ func handler(scan db.ActiveScan, repo GitHubRepository) sniff.ViolationHandlerFu
 func finishScan(logger lager.Logger, scan db.ActiveScan, success, failed metrics.Counter) {
 	err := scan.Finish()
 	if err != nil {
+		logger.Error("failed-to-finish-scan", err)
 		failed.Inc(logger)
 	} else {
 		success.Inc(logger)
