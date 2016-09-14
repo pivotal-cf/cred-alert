@@ -93,68 +93,85 @@ func (c *ChangeDiscoverer) work(logger lager.Logger) error {
 		logger.Error("failed-getting-repos", err)
 	}
 
+	if len(repos) == 0 {
+		return nil
+	}
+
 	quietLogger := kolsch.NewLogger()
 
-	for _, repo := range repos {
-		repoLogger := logger.WithData(lager.Data{
-			"owner":      repo.Owner,
-			"repository": repo.Name,
-			"path":       repo.Path,
-		})
+	c.fetch(quietLogger, repos[0])
 
-		changes, err := c.gitClient.Fetch(repo.Path)
-		if err != nil {
-			repoLogger.Error("failed-to-fetch", err)
-			continue
-		}
-
-		bs, err := json.Marshal(changes)
-		if err != nil {
-			repoLogger.Error("failed-to-marshal-json", err)
-		}
-
-		fetch := db.Fetch{
-			Repository: repo,
-			Path:       repo.Path,
-			Changes:    bs,
-		}
-
-		err = c.fetchRepository.SaveFetch(repoLogger, &fetch)
-		if err != nil {
-			repoLogger.Error("failed-to-save-fetch", err)
-			continue
-		}
-
-		for _, oids := range changes {
-			diff, err := c.gitClient.Diff(repo.Path, oids[0], oids[1])
-			if err != nil {
-				repoLogger.Error("failed-to-get-diff", err, lager.Data{
-					"from": oids[0].String(),
-					"to":   oids[1].String(),
-				})
-				continue
-			}
-
-			scan := c.scanRepository.Start(quietLogger, "diff-scan", &repo, &fetch)
-			defer finishScan(repoLogger, scan, c.successCounter, c.failedCounter)
-
-			c.sniffer.Sniff(
-				quietLogger,
-				diffscanner.NewDiffScanner(strings.NewReader(diff)),
-				func(logger lager.Logger, violation scanners.Violation) error {
-					line := violation.Line
-
-					scan.RecordCredential(db.Credential{
-						Owner:      repo.Owner,
-						Repository: repo.Name,
-						Path:       line.Path,
-						LineNumber: line.LineNumber,
-					})
-					return nil
-				},
-			)
+	if len(repos) > 1 {
+		repoFetchDelay := time.Duration(c.interval.Nanoseconds()/int64(len(repos))) * time.Nanosecond
+		tc := c.clock.NewTicker(repoFetchDelay).C()
+		for _, repo := range repos[1:] {
+			<-tc
+			c.fetch(quietLogger, repo)
 		}
 	}
 
 	return nil
+}
+
+func (c *ChangeDiscoverer) fetch(
+	logger lager.Logger,
+	repo db.Repository,
+) {
+	repoLogger := logger.WithData(lager.Data{
+		"owner":      repo.Owner,
+		"repository": repo.Name,
+		"path":       repo.Path,
+	})
+
+	changes, err := c.gitClient.Fetch(repo.Path)
+	if err != nil {
+		repoLogger.Error("failed-to-fetch", err)
+		return
+	}
+
+	bs, err := json.Marshal(changes)
+	if err != nil {
+		repoLogger.Error("failed-to-marshal-json", err)
+	}
+
+	fetch := db.Fetch{
+		Repository: repo,
+		Path:       repo.Path,
+		Changes:    bs,
+	}
+
+	err = c.fetchRepository.SaveFetch(repoLogger, &fetch)
+	if err != nil {
+		repoLogger.Error("failed-to-save-fetch", err)
+		return
+	}
+
+	for _, oids := range changes {
+		diff, err := c.gitClient.Diff(repo.Path, oids[0], oids[1])
+		if err != nil {
+			repoLogger.Error("failed-to-get-diff", err, lager.Data{
+				"from": oids[0].String(),
+				"to":   oids[1].String(),
+			})
+			continue
+		}
+
+		scan := c.scanRepository.Start(logger, "diff-scan", &repo, &fetch)
+		defer finishScan(repoLogger, scan, c.successCounter, c.failedCounter)
+
+		c.sniffer.Sniff(
+			logger,
+			diffscanner.NewDiffScanner(strings.NewReader(diff)),
+			func(logger lager.Logger, violation scanners.Violation) error {
+				line := violation.Line
+				scan.RecordCredential(db.Credential{
+					Owner:      repo.Owner,
+					Repository: repo.Name,
+					Path:       line.Path,
+					LineNumber: line.LineNumber,
+				})
+				return nil
+			},
+		)
+	}
 }

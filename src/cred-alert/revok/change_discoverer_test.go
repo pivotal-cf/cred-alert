@@ -318,4 +318,46 @@ var _ = Describe("ChangeDiscoverer", func() {
 		})
 	})
 
+	Context("when there are multiple repositories to fetch", func() {
+		var repositories []db.Repository
+
+		BeforeEach(func() {
+			repositories = []db.Repository{
+				{
+					Model: db.Model{
+						ID: 42,
+					},
+					Owner: "some-owner",
+					Name:  "some-repo",
+					Path:  "some-path",
+				},
+				{
+					Model: db.Model{
+						ID: 44,
+					},
+					Owner: "some-other-owner",
+					Name:  "some-other-repo",
+					Path:  "some-other-path",
+				},
+			}
+
+			repositoryRepository.NotFetchedSinceStub = func(time.Time) ([]db.Repository, error) {
+				if repositoryRepository.NotFetchedSinceCallCount() == 1 {
+					return repositories, nil
+				}
+
+				return []db.Repository{}, nil
+			}
+		})
+
+		It("waits between fetches", func() {
+			Eventually(gitClient.FetchCallCount).Should(Equal(1))
+			Consistently(gitClient.FetchCallCount).Should(Equal(1))
+
+			subInterval := time.Duration(interval.Nanoseconds()/int64(len(repositories))) * time.Nanosecond
+			clock.Increment(subInterval)
+
+			Eventually(gitClient.FetchCallCount).Should(Equal(2))
+		})
+	})
 })
