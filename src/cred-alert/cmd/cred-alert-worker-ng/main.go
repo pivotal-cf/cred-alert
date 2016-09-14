@@ -100,39 +100,46 @@ func main() {
 	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
 	sniffer := sniff.NewDefaultSniffer()
 
+	repoDiscoverer := revok.NewRepoDiscoverer(
+		logger,
+		workdir,
+		cloneMsgCh,
+		ghClient,
+		clock,
+		opts.RepositoryDiscoveryInterval,
+		repositoryRepository,
+	)
+
+	cloner := revok.NewCloner(
+		logger,
+		workdir,
+		cloneMsgCh,
+		gitClient,
+		sniffer,
+		repositoryRepository,
+		scanRepository,
+		emitter,
+	)
+
+	changeDiscoverer := revok.NewChangeDiscoverer(
+		logger,
+		workdir,
+		gitClient,
+		clock,
+		opts.ChangeDiscoveryInterval,
+		sniffer,
+		repositoryRepository,
+		fetchRepository,
+		scanRepository,
+		emitter,
+	)
+
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
-		{"repo-discoverer", revok.NewRepoDiscoverer(
-			logger,
-			workdir,
-			cloneMsgCh,
-			ghClient,
-			clock,
-			opts.RepositoryDiscoveryInterval,
-			repositoryRepository,
-		)},
-		{"cloner", revok.NewCloner(
-			logger,
-			workdir,
-			cloneMsgCh,
-			gitClient,
-			sniffer,
-			repositoryRepository,
-			scanRepository,
-			emitter,
-		)},
-		{"change-discoverer", revok.NewChangeDiscoverer(
-			logger,
-			workdir,
-			gitClient,
-			clock,
-			opts.ChangeDiscoveryInterval,
-			sniffer,
-			repositoryRepository,
-			fetchRepository,
-			scanRepository,
-			emitter,
-		)},
+		{"repo-discoverer", repoDiscoverer},
+		{"cloner", cloner},
+		{"change-discoverer", changeDiscoverer},
 	}))
+
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
 		log.Fatal("failed-to-start: %s", err)
