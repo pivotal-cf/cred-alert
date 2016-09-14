@@ -76,15 +76,15 @@ func (runner *Runner) Truncate() {
 	defer rows.Close()
 
 	for rows.Next() {
-		var truncateSQL string
-		err := rows.Scan(&truncateSQL)
+		var tableName string
+		err := rows.Scan(&tableName)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = runner.dbConn.Exec(fmt.Sprintf(`
 			SET FOREIGN_KEY_CHECKS = 0;
 			TRUNCATE TABLE %s.%s;
 			SET FOREIGN_KEY_CHECKS = 1`,
-			runner.DBName, truncateSQL))
+			runner.DBName, tableName))
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
