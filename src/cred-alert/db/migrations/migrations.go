@@ -8,4 +8,5 @@ var Migrations = []migration.Migrator{
 	DropCommitTimestamp,
 	AddCredentialsAndScansTable,
 	AddRepositoriesAndFetches,
+	AddClonedToRepositories,
 }

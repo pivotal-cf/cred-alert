@@ -4,6 +4,7 @@ package dbfakes
 import (
 	"cred-alert/db"
 	"sync"
+	"time"
 )
 
 type FakeRepositoryRepository struct {
@@ -13,6 +14,40 @@ type FakeRepositoryRepository struct {
 		arg1 *db.Repository
 	}
 	findOrCreateReturns struct {
+		result1 error
+	}
+	CreateStub        func(*db.Repository) error
+	createMutex       sync.RWMutex
+	createArgsForCall []struct {
+		arg1 *db.Repository
+	}
+	createReturns struct {
+		result1 error
+	}
+	AllStub        func() ([]db.Repository, error)
+	allMutex       sync.RWMutex
+	allArgsForCall []struct{}
+	allReturns     struct {
+		result1 []db.Repository
+		result2 error
+	}
+	NotFetchedSinceStub        func(time.Time) ([]db.Repository, error)
+	notFetchedSinceMutex       sync.RWMutex
+	notFetchedSinceArgsForCall []struct {
+		arg1 time.Time
+	}
+	notFetchedSinceReturns struct {
+		result1 []db.Repository
+		result2 error
+	}
+	MarkAsClonedStub        func(string, string, string) error
+	markAsClonedMutex       sync.RWMutex
+	markAsClonedArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}
+	markAsClonedReturns struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -52,11 +87,147 @@ func (fake *FakeRepositoryRepository) FindOrCreateReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeRepositoryRepository) Create(arg1 *db.Repository) error {
+	fake.createMutex.Lock()
+	fake.createArgsForCall = append(fake.createArgsForCall, struct {
+		arg1 *db.Repository
+	}{arg1})
+	fake.recordInvocation("Create", []interface{}{arg1})
+	fake.createMutex.Unlock()
+	if fake.CreateStub != nil {
+		return fake.CreateStub(arg1)
+	} else {
+		return fake.createReturns.result1
+	}
+}
+
+func (fake *FakeRepositoryRepository) CreateCallCount() int {
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
+	return len(fake.createArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) CreateArgsForCall(i int) *db.Repository {
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
+	return fake.createArgsForCall[i].arg1
+}
+
+func (fake *FakeRepositoryRepository) CreateReturns(result1 error) {
+	fake.CreateStub = nil
+	fake.createReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepositoryRepository) All() ([]db.Repository, error) {
+	fake.allMutex.Lock()
+	fake.allArgsForCall = append(fake.allArgsForCall, struct{}{})
+	fake.recordInvocation("All", []interface{}{})
+	fake.allMutex.Unlock()
+	if fake.AllStub != nil {
+		return fake.AllStub()
+	} else {
+		return fake.allReturns.result1, fake.allReturns.result2
+	}
+}
+
+func (fake *FakeRepositoryRepository) AllCallCount() int {
+	fake.allMutex.RLock()
+	defer fake.allMutex.RUnlock()
+	return len(fake.allArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) AllReturns(result1 []db.Repository, result2 error) {
+	fake.AllStub = nil
+	fake.allReturns = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepositoryRepository) NotFetchedSince(arg1 time.Time) ([]db.Repository, error) {
+	fake.notFetchedSinceMutex.Lock()
+	fake.notFetchedSinceArgsForCall = append(fake.notFetchedSinceArgsForCall, struct {
+		arg1 time.Time
+	}{arg1})
+	fake.recordInvocation("NotFetchedSince", []interface{}{arg1})
+	fake.notFetchedSinceMutex.Unlock()
+	if fake.NotFetchedSinceStub != nil {
+		return fake.NotFetchedSinceStub(arg1)
+	} else {
+		return fake.notFetchedSinceReturns.result1, fake.notFetchedSinceReturns.result2
+	}
+}
+
+func (fake *FakeRepositoryRepository) NotFetchedSinceCallCount() int {
+	fake.notFetchedSinceMutex.RLock()
+	defer fake.notFetchedSinceMutex.RUnlock()
+	return len(fake.notFetchedSinceArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) NotFetchedSinceArgsForCall(i int) time.Time {
+	fake.notFetchedSinceMutex.RLock()
+	defer fake.notFetchedSinceMutex.RUnlock()
+	return fake.notFetchedSinceArgsForCall[i].arg1
+}
+
+func (fake *FakeRepositoryRepository) NotFetchedSinceReturns(result1 []db.Repository, result2 error) {
+	fake.NotFetchedSinceStub = nil
+	fake.notFetchedSinceReturns = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepositoryRepository) MarkAsCloned(arg1 string, arg2 string, arg3 string) error {
+	fake.markAsClonedMutex.Lock()
+	fake.markAsClonedArgsForCall = append(fake.markAsClonedArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("MarkAsCloned", []interface{}{arg1, arg2, arg3})
+	fake.markAsClonedMutex.Unlock()
+	if fake.MarkAsClonedStub != nil {
+		return fake.MarkAsClonedStub(arg1, arg2, arg3)
+	} else {
+		return fake.markAsClonedReturns.result1
+	}
+}
+
+func (fake *FakeRepositoryRepository) MarkAsClonedCallCount() int {
+	fake.markAsClonedMutex.RLock()
+	defer fake.markAsClonedMutex.RUnlock()
+	return len(fake.markAsClonedArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) MarkAsClonedArgsForCall(i int) (string, string, string) {
+	fake.markAsClonedMutex.RLock()
+	defer fake.markAsClonedMutex.RUnlock()
+	return fake.markAsClonedArgsForCall[i].arg1, fake.markAsClonedArgsForCall[i].arg2, fake.markAsClonedArgsForCall[i].arg3
+}
+
+func (fake *FakeRepositoryRepository) MarkAsClonedReturns(result1 error) {
+	fake.MarkAsClonedStub = nil
+	fake.markAsClonedReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.findOrCreateMutex.RLock()
 	defer fake.findOrCreateMutex.RUnlock()
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
+	fake.allMutex.RLock()
+	defer fake.allMutex.RUnlock()
+	fake.notFetchedSinceMutex.RLock()
+	defer fake.notFetchedSinceMutex.RUnlock()
+	fake.markAsClonedMutex.RLock()
+	defer fake.markAsClonedMutex.RUnlock()
 	return fake.invocations
 }
 

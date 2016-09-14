@@ -56,6 +56,8 @@ type Credential struct {
 type Repository struct {
 	Model
 
+	Cloned bool
+
 	Name          string
 	Owner         string
 	Path          string
