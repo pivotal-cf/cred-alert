@@ -63,13 +63,13 @@ func NewChangeDiscoverer(
 		fetchRepository:      fetchRepository,
 		scanRepository:       scanRepository,
 
-		fetchTimer:             emitter.Timer("fetch_time"),
-		fetchedRepositoryGauge: emitter.Gauge("fetched_repositories"),
-		runCounter:             emitter.Counter("change_discoverer_runs"),
-		successCounter:         emitter.Counter("change_discoverer_success"),
-		failedCounter:          emitter.Counter("change_discoverer_failed"),
-		failedDiffCounter:      emitter.Counter("change_discoverer_failed_diffs"),
-		failedScanCounter:      emitter.Counter("change_discoverer_failed_scans"),
+		fetchTimer:             emitter.Timer("revok.fetch_time"),
+		fetchedRepositoryGauge: emitter.Gauge("revok.fetched_repositories"),
+		runCounter:             emitter.Counter("revok.change_discoverer_runs"),
+		successCounter:         emitter.Counter("revok.change_discoverer_success"),
+		failedCounter:          emitter.Counter("revok.change_discoverer_failed"),
+		failedDiffCounter:      emitter.Counter("revok.change_discoverer_failed_diffs"),
+		failedScanCounter:      emitter.Counter("revok.change_discoverer_failed_scans"),
 	}
 }
 
@@ -106,7 +106,7 @@ func (c *ChangeDiscoverer) work(logger lager.Logger) {
 	repos, err := c.repositoryRepository.NotFetchedSince(c.clock.Now().Add(-c.interval))
 	if err != nil {
 		logger.Error("failed-getting-repos", err)
-		// return
+		return
 	}
 
 	c.fetchedRepositoryGauge.Update(logger, float32(len(repos)))

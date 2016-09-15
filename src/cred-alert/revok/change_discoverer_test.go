@@ -46,7 +46,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 		currentFetchID uint
 
 		fetchTimer        *metricsfakes.FakeTimer
-		fetchedRepos      *metricsfakes.FakeGauge
+		reposToFetch      *metricsfakes.FakeGauge
 		runCounter        *metricsfakes.FakeCounter
 		successCounter    *metricsfakes.FakeCounter
 		failedCounter     *metricsfakes.FakeCounter
@@ -96,15 +96,15 @@ var _ = Describe("ChangeDiscoverer", func() {
 		failedDiffCounter = &metricsfakes.FakeCounter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
-			case "change_discoverer_runs":
+			case "revok.change_discoverer_runs":
 				return runCounter
-			case "change_discoverer_success":
+			case "revok.change_discoverer_success":
 				return successCounter
-			case "change_discoverer_failed":
+			case "revok.change_discoverer_failed":
 				return failedCounter
-			case "change_discoverer_failed_scans":
+			case "revok.change_discoverer_failed_scans":
 				return failedScanCounter
-			case "change_discoverer_failed_diffs":
+			case "revok.change_discoverer_failed_diffs":
 				return failedDiffCounter
 			default:
 				return &metricsfakes.FakeCounter{}
@@ -115,8 +115,8 @@ var _ = Describe("ChangeDiscoverer", func() {
 			f()
 		}
 		emitter.TimerReturns(fetchTimer)
-		fetchedRepos = &metricsfakes.FakeGauge{}
-		emitter.GaugeReturns(fetchedRepos)
+		reposToFetch = &metricsfakes.FakeGauge{}
+		emitter.GaugeReturns(reposToFetch)
 	})
 
 	JustBeforeEach(func() {
@@ -191,6 +191,10 @@ var _ = Describe("ChangeDiscoverer", func() {
 		It("fetches updates for the repo", func() {
 			Eventually(gitClient.FetchCallCount).Should(Equal(1))
 			Expect(gitClient.FetchArgsForCall(0)).To(Equal("some-path"))
+		})
+
+		It("increments the repositories to fetch metric", func() {
+			Eventually(reposToFetch.UpdateCallCount).Should(Equal(1))
 		})
 
 		It("increments the success metric", func() {
@@ -410,6 +414,24 @@ var _ = Describe("ChangeDiscoverer", func() {
 			clock.Increment(subInterval)
 
 			Eventually(gitClient.FetchCallCount).Should(Equal(2))
+		})
+	})
+
+	Context("when there is an error getting repositories to fetch", func() {
+		BeforeEach(func() {
+			repositoryRepository.NotFetchedSinceReturns(nil, errors.New("an-error"))
+		})
+
+		It("does not increment the repositories to fetch metric", func() {
+			Consistently(reposToFetch.UpdateCallCount).Should(BeZero())
+		})
+
+		It("does not do any fetches", func() {
+			Consistently(gitClient.FetchCallCount).Should(BeZero())
+		})
+
+		It("does not save any fetches", func() {
+			Consistently(fetchRepository.SaveFetchCallCount).Should(BeZero())
 		})
 	})
 })
