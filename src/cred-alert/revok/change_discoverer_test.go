@@ -44,8 +44,14 @@ var _ = Describe("ChangeDiscoverer", func() {
 		firstScan      *dbfakes.FakeActiveScan
 		secondScan     *dbfakes.FakeActiveScan
 		currentFetchID uint
-		successMetric  *metricsfakes.FakeCounter
-		failedMetric   *metricsfakes.FakeCounter
+
+		fetchTimer        *metricsfakes.FakeTimer
+		fetchedRepos      *metricsfakes.FakeGauge
+		runCounter        *metricsfakes.FakeCounter
+		successCounter    *metricsfakes.FakeCounter
+		failedCounter     *metricsfakes.FakeCounter
+		failedScanCounter *metricsfakes.FakeCounter
+		failedDiffCounter *metricsfakes.FakeCounter
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -82,17 +88,35 @@ var _ = Describe("ChangeDiscoverer", func() {
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
-		successMetric = &metricsfakes.FakeCounter{}
-		failedMetric = &metricsfakes.FakeCounter{}
+
+		runCounter = &metricsfakes.FakeCounter{}
+		successCounter = &metricsfakes.FakeCounter{}
+		failedCounter = &metricsfakes.FakeCounter{}
+		failedScanCounter = &metricsfakes.FakeCounter{}
+		failedDiffCounter = &metricsfakes.FakeCounter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
-			case "revok.success_jobs":
-				return successMetric
-			case "revok.failed_jobs":
-				return failedMetric
+			case "change_discoverer_runs":
+				return runCounter
+			case "change_discoverer_success":
+				return successCounter
+			case "change_discoverer_failed":
+				return failedCounter
+			case "change_discoverer_failed_scans":
+				return failedScanCounter
+			case "change_discoverer_failed_diffs":
+				return failedDiffCounter
+			default:
+				return &metricsfakes.FakeCounter{}
 			}
-			return &metricsfakes.FakeCounter{}
 		}
+		fetchTimer = &metricsfakes.FakeTimer{}
+		fetchTimer.TimeStub = func(logger lager.Logger, f func(), tags ...string) {
+			f()
+		}
+		emitter.TimerReturns(fetchTimer)
+		fetchedRepos = &metricsfakes.FakeGauge{}
+		emitter.GaugeReturns(fetchedRepos)
 	})
 
 	JustBeforeEach(func() {
@@ -130,6 +154,10 @@ var _ = Describe("ChangeDiscoverer", func() {
 		os.RemoveAll(workdir)
 	})
 
+	It("increments the run metric", func() {
+		Eventually(runCounter.IncCallCount).Should(Equal(1))
+	})
+
 	It("tries to get repositories from the database immediately on start", func() {
 		Eventually(repositoryRepository.NotFetchedSinceCallCount).Should(Equal(1))
 		actualTime := repositoryRepository.NotFetchedSinceArgsForCall(0)
@@ -163,6 +191,10 @@ var _ = Describe("ChangeDiscoverer", func() {
 		It("fetches updates for the repo", func() {
 			Eventually(gitClient.FetchCallCount).Should(Equal(1))
 			Expect(gitClient.FetchArgsForCall(0)).To(Equal("some-path"))
+		})
+
+		It("increments the success metric", func() {
+			Eventually(successCounter.IncCallCount).Should(Equal(1))
 		})
 
 		Context("when the remote has changes", func() {
@@ -266,10 +298,6 @@ var _ = Describe("ChangeDiscoverer", func() {
 				Eventually(secondScan.FinishCallCount).Should(Equal(1))
 			})
 
-			It("increments the success metric", func() {
-				Eventually(successMetric.IncCallCount).Should(Equal(2))
-			})
-
 			Context("when there is an error saving the fetch to the database", func() {
 				BeforeEach(func() {
 					fetchRepository.SaveFetchReturns(errors.New("an-error"))
@@ -277,6 +305,10 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 				It("does not try to diff anything", func() {
 					Consistently(gitClient.DiffCallCount).Should(BeZero())
+				})
+
+				It("increments the failed metric", func() {
+					Eventually(failedCounter.IncCallCount).Should(Equal(1))
 				})
 			})
 
@@ -310,10 +342,30 @@ var _ = Describe("ChangeDiscoverer", func() {
 					firstScan.FinishReturns(errors.New("an-error"))
 				})
 
-				It("increments the failed metric", func() {
+				It("increments the failed scan metric", func() {
 					Eventually(firstScan.FinishCallCount).Should(Equal(1))
-					Expect(failedMetric.IncCallCount()).To(Equal(1))
+					Expect(failedScanCounter.IncCallCount()).To(Equal(1))
 				})
+			})
+
+			Context("when there is an error getting a diff from Git", func() {
+				BeforeEach(func() {
+					gitClient.DiffReturns("diff", errors.New("an-error"))
+				})
+
+				It("increments the failed diff metric", func() {
+					Eventually(failedDiffCounter.IncCallCount).Should(Equal(2)) // 2 changes
+				})
+			})
+		})
+
+		Context("when there is an error fetching changes", func() {
+			BeforeEach(func() {
+				gitClient.FetchReturns(nil, errors.New("an-error"))
+			})
+
+			It("increments the failed metric", func() {
+				Eventually(failedCounter.IncCallCount).Should(Equal(1))
 			})
 		})
 	})

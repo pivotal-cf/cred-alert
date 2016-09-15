@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 
 	"code.cloudfoundry.org/clock"
@@ -29,8 +30,14 @@ type ChangeDiscoverer struct {
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
 	scanRepository       db.ScanRepository
-	successCounter       metrics.Counter
-	failedCounter        metrics.Counter
+
+	fetchTimer             metrics.Timer
+	fetchedRepositoryGauge metrics.Gauge
+	runCounter             metrics.Counter
+	failedCounter          metrics.Counter
+	failedScanCounter      metrics.Counter
+	failedDiffCounter      metrics.Counter
+	successCounter         metrics.Counter
 }
 
 func NewChangeDiscoverer(
@@ -55,8 +62,14 @@ func NewChangeDiscoverer(
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
 		scanRepository:       scanRepository,
-		successCounter:       emitter.Counter(successMetric),
-		failedCounter:        emitter.Counter(failedMetric),
+
+		fetchTimer:             emitter.Timer("fetch_time"),
+		fetchedRepositoryGauge: emitter.Gauge("fetched_repositories"),
+		runCounter:             emitter.Counter("change_discoverer_runs"),
+		successCounter:         emitter.Counter("change_discoverer_success"),
+		failedCounter:          emitter.Counter("change_discoverer_failed"),
+		failedDiffCounter:      emitter.Counter("change_discoverer_failed_diffs"),
+		failedScanCounter:      emitter.Counter("change_discoverer_failed_scans"),
 	}
 }
 
@@ -65,6 +78,8 @@ func (c *ChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	logger.Info("started")
 
 	close(ready)
+
+	c.runCounter.Inc(logger)
 
 	timer := c.clock.NewTicker(c.interval)
 
@@ -87,51 +102,67 @@ func (c *ChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	return nil
 }
 
-func (c *ChangeDiscoverer) work(logger lager.Logger) error {
+func (c *ChangeDiscoverer) work(logger lager.Logger) {
 	repos, err := c.repositoryRepository.NotFetchedSince(c.clock.Now().Add(-c.interval))
 	if err != nil {
 		logger.Error("failed-getting-repos", err)
+		// return
 	}
 
+	c.fetchedRepositoryGauge.Update(logger, float32(len(repos)))
+
 	if len(repos) == 0 {
-		return nil
+		return
 	}
 
 	quietLogger := kolsch.NewLogger()
 
-	c.fetch(quietLogger, repos[0])
+	err = c.fetch(quietLogger, repos[0])
+	if err != nil {
+		c.failedCounter.Inc(logger)
+		return
+	}
 
 	if len(repos) > 1 {
 		repoFetchDelay := time.Duration(c.interval.Nanoseconds()/int64(len(repos))) * time.Nanosecond
 		tc := c.clock.NewTicker(repoFetchDelay).C()
 		for _, repo := range repos[1:] {
 			<-tc
-			c.fetch(quietLogger, repo)
+			err := c.fetch(quietLogger, repo)
+			if err != nil {
+				c.failedCounter.Inc(logger)
+			}
 		}
 	}
 
-	return nil
+	return
 }
 
 func (c *ChangeDiscoverer) fetch(
 	logger lager.Logger,
 	repo db.Repository,
-) {
+) error {
 	repoLogger := logger.WithData(lager.Data{
 		"owner":      repo.Owner,
 		"repository": repo.Name,
 		"path":       repo.Path,
 	})
 
-	changes, err := c.gitClient.Fetch(repo.Path)
-	if err != nil {
-		repoLogger.Error("failed-to-fetch", err)
-		return
+	var changes map[string][]*git.Oid
+	var fetchErr error
+	c.fetchTimer.Time(repoLogger, func() {
+		changes, fetchErr = c.gitClient.Fetch(repo.Path)
+	})
+
+	if fetchErr != nil {
+		repoLogger.Error("failed-to-fetch", fetchErr)
+		return fetchErr
 	}
 
 	bs, err := json.Marshal(changes)
 	if err != nil {
 		repoLogger.Error("failed-to-marshal-json", err)
+		return err
 	}
 
 	fetch := db.Fetch{
@@ -143,7 +174,7 @@ func (c *ChangeDiscoverer) fetch(
 	err = c.fetchRepository.SaveFetch(repoLogger, &fetch)
 	if err != nil {
 		repoLogger.Error("failed-to-save-fetch", err)
-		return
+		return err
 	}
 
 	for _, oids := range changes {
@@ -153,12 +184,11 @@ func (c *ChangeDiscoverer) fetch(
 				"from": oids[0].String(),
 				"to":   oids[1].String(),
 			})
+			c.failedDiffCounter.Inc(repoLogger)
 			continue
 		}
 
 		scan := c.scanRepository.Start(logger, "diff-scan", &repo, &fetch)
-		defer finishScan(repoLogger, scan, c.successCounter, c.failedCounter)
-
 		c.sniffer.Sniff(
 			logger,
 			diffscanner.NewDiffScanner(strings.NewReader(diff)),
@@ -173,5 +203,15 @@ func (c *ChangeDiscoverer) fetch(
 				return nil
 			},
 		)
+
+		err = scan.Finish()
+		if err != nil {
+			repoLogger.Error("failed-to-finish-scan", err)
+			c.failedScanCounter.Inc(repoLogger)
+		}
 	}
+
+	c.successCounter.Inc(repoLogger)
+
+	return nil
 }
