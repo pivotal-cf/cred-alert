@@ -1,6 +1,7 @@
 package db
 
 import (
+	"cred-alert/sniff"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -16,6 +17,7 @@ type RepositoryRepository interface {
 
 	All() ([]Repository, error)
 	NotFetchedSince(time.Time) ([]Repository, error)
+	NotScannedWithVersion(int) ([]Repository, error)
 
 	MarkAsCloned(string, string, string) error
 }
@@ -83,6 +85,45 @@ func (r *repositoryRepository) NotFetchedSince(since time.Time) ([]Repository, e
                 AND f.repository_id = latest_fetches.r_id
     WHERE  r.cloned = true
       AND  latest_fetches.created_at < ?`, since).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int
+	for rows.Next() {
+		var id int
+		scanErr := rows.Scan(&id)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		ids = append(ids, id)
+	}
+
+	var repositories []Repository
+	err = r.db.Model(&Repository{}).Where("id IN (?)", ids).Find(&repositories).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return repositories, nil
+}
+
+func (r *repositoryRepository) NotScannedWithVersion(version int) ([]Repository, error) {
+	rows, err := r.db.Raw(`
+    SELECT r.id
+    FROM   scans s
+           JOIN repositories r
+             ON r.id = s.repository_id
+           JOIN (SELECT repository_id   AS r_id,
+                        MAX(rules_version) AS rules_version
+                 FROM   scans
+                 GROUP  BY repository_id
+                ) latest_scans
+             ON s.rules_version = latest_scans.rules_version
+                AND s.repository_id = latest_scans.r_id
+    WHERE  r.cloned = true
+      AND  latest_scans.rules_version != ?`, sniff.RulesVersion).Rows()
 	if err != nil {
 		return nil, err
 	}

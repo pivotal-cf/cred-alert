@@ -50,6 +50,15 @@ type FakeRepositoryRepository struct {
 		result1 []db.Repository
 		result2 error
 	}
+	NotScannedWithVersionStub        func(int) ([]db.Repository, error)
+	notScannedWithVersionMutex       sync.RWMutex
+	notScannedWithVersionArgsForCall []struct {
+		arg1 int
+	}
+	notScannedWithVersionReturns struct {
+		result1 []db.Repository
+		result2 error
+	}
 	MarkAsClonedStub        func(string, string, string) error
 	markAsClonedMutex       sync.RWMutex
 	markAsClonedArgsForCall []struct {
@@ -225,6 +234,40 @@ func (fake *FakeRepositoryRepository) NotFetchedSinceReturns(result1 []db.Reposi
 	}{result1, result2}
 }
 
+func (fake *FakeRepositoryRepository) NotScannedWithVersion(arg1 int) ([]db.Repository, error) {
+	fake.notScannedWithVersionMutex.Lock()
+	fake.notScannedWithVersionArgsForCall = append(fake.notScannedWithVersionArgsForCall, struct {
+		arg1 int
+	}{arg1})
+	fake.recordInvocation("NotScannedWithVersion", []interface{}{arg1})
+	fake.notScannedWithVersionMutex.Unlock()
+	if fake.NotScannedWithVersionStub != nil {
+		return fake.NotScannedWithVersionStub(arg1)
+	} else {
+		return fake.notScannedWithVersionReturns.result1, fake.notScannedWithVersionReturns.result2
+	}
+}
+
+func (fake *FakeRepositoryRepository) NotScannedWithVersionCallCount() int {
+	fake.notScannedWithVersionMutex.RLock()
+	defer fake.notScannedWithVersionMutex.RUnlock()
+	return len(fake.notScannedWithVersionArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) NotScannedWithVersionArgsForCall(i int) int {
+	fake.notScannedWithVersionMutex.RLock()
+	defer fake.notScannedWithVersionMutex.RUnlock()
+	return fake.notScannedWithVersionArgsForCall[i].arg1
+}
+
+func (fake *FakeRepositoryRepository) NotScannedWithVersionReturns(result1 []db.Repository, result2 error) {
+	fake.NotScannedWithVersionStub = nil
+	fake.notScannedWithVersionReturns = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepositoryRepository) MarkAsCloned(arg1 string, arg2 string, arg3 string) error {
 	fake.markAsClonedMutex.Lock()
 	fake.markAsClonedArgsForCall = append(fake.markAsClonedArgsForCall, struct {
@@ -273,6 +316,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.allMutex.RUnlock()
 	fake.notFetchedSinceMutex.RLock()
 	defer fake.notFetchedSinceMutex.RUnlock()
+	fake.notScannedWithVersionMutex.RLock()
+	defer fake.notScannedWithVersionMutex.RUnlock()
 	fake.markAsClonedMutex.RLock()
 	defer fake.markAsClonedMutex.RUnlock()
 	return fake.invocations

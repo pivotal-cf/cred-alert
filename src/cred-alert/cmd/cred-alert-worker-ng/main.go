@@ -134,10 +134,19 @@ func main() {
 		emitter,
 	)
 
+	dirscanUpdater := revok.NewDirscanUpdater(
+		logger,
+		sniffer,
+		repositoryRepository,
+		scanRepository,
+		emitter,
+	)
+
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
 		{"repo-discoverer", repoDiscoverer},
 		{"cloner", cloner},
 		{"change-discoverer", changeDiscoverer},
+		{"dirscan-updater", dirscanUpdater},
 	}))
 
 	err = <-ifrit.Invoke(runner).Wait()

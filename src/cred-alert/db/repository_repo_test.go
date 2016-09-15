@@ -274,4 +274,45 @@ var _ = Describe("RepositoryRepo", func() {
 			})
 		})
 	})
+
+	Describe("NotScannedWithVersion", func() {
+		var repository *db.Repository
+
+		BeforeEach(func() {
+			repository = &db.Repository{
+				Name:          "some-repo",
+				Owner:         "some-owner",
+				SSHURL:        "some-url",
+				Private:       true,
+				DefaultBranch: "some-branch",
+				RawJSON:       []byte("some-json"),
+				Cloned:        true,
+			}
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns an empty slice", func() {
+			repos, err := repo.NotScannedWithVersion(42)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(repos).To(BeEmpty())
+		})
+
+		Context("when the repository has scans for the specified version", func() {
+			BeforeEach(func() {
+				err := database.Create(&db.Scan{
+					RepositoryID: &repository.ID,
+				}).Error
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns a slice with the repository", func() {
+				repos, err := repo.NotScannedWithVersion(42)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(repos).To(HaveLen(1))
+				Expect(repos[0].Name).To(Equal("some-repo"))
+				Expect(repos[0].Owner).To(Equal("some-owner"))
+			})
+		})
+	})
 })
