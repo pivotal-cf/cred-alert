@@ -115,9 +115,7 @@ func (c *ChangeDiscoverer) work(logger lager.Logger) {
 		return
 	}
 
-	quietLogger := kolsch.NewLogger()
-
-	err = c.fetch(quietLogger, repos[0])
+	err = c.fetch(logger, repos[0])
 	if err != nil {
 		c.failedCounter.Inc(logger)
 		return
@@ -177,6 +175,8 @@ func (c *ChangeDiscoverer) fetch(
 		return err
 	}
 
+	quietLogger := kolsch.NewLogger()
+
 	for _, oids := range changes {
 		diff, err := c.gitClient.Diff(repo.Path, oids[0], oids[1])
 		if err != nil {
@@ -188,7 +188,7 @@ func (c *ChangeDiscoverer) fetch(
 			continue
 		}
 
-		scan := c.scanRepository.Start(logger, "diff-scan", &repo, &fetch)
+		scan := c.scanRepository.Start(quietLogger, "diff-scan", &repo, &fetch)
 		c.sniffer.Sniff(
 			logger,
 			diffscanner.NewDiffScanner(strings.NewReader(diff)),
