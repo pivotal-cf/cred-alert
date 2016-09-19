@@ -43,7 +43,7 @@ var _ = Describe("Notifications", func() {
 				Owner:      "owner",
 				Repository: "repo",
 				Private:    private,
-				SHA:        "123abc",
+				SHA:        "12345abcdef",
 				Path:       "a/path/to/a/file",
 				LineNumber: 42,
 			})
@@ -85,17 +85,6 @@ var _ = Describe("Notifications", func() {
 				Expect(server.ReceivedRequests()).Should(HaveLen(0))
 			})
 		})
-
-		// {
-		// "attachments": [
-		// 	{
-		// 		"title": "Possible credentials found in <https://google.com|pivotal-cf/cred-alert / e2e4e3c>!",
-		// 		"text": "• <https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt> on line <https://google.com|34>, <https://google.com|46>, and <https://google.com|93>\n• <https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt> on line <https://google.com|34>, <https://google.com|46>, and <https://google.com|93>",
-		// 		"color": "danger"
-		// 	}
-		//"fallback": "Possible credentials found in https://google.com|pivotal-cf/cred-alert/commit/abc123456790!",
-		// ]
-		// }
 
 		Context("when there is one notifications in the batch", func() {
 			BeforeEach(func() {
@@ -297,7 +286,7 @@ var _ = Describe("Notifications", func() {
 				Owner:      "owner",
 				Repository: "repo",
 				Private:    private,
-				SHA:        "abc123",
+				SHA:        "abc123456",
 				Path:       "path/to/file.txt",
 				LineNumber: 123,
 			})
@@ -338,7 +327,7 @@ var _ = Describe("Notifications", func() {
 							Owner:      "owner",
 							Repository: "repo",
 							Private:    private,
-							SHA:        "abc123",
+							SHA:        "abc123456",
 							Path:       "path/to/file.txt",
 							LineNumber: 123,
 						},
@@ -400,7 +389,7 @@ var _ = Describe("Notifications", func() {
 							Owner:      "owner",
 							Repository: "repo",
 							Private:    private,
-							SHA:        "abc123",
+							SHA:        "abc123456",
 							Path:       "path/to/file.txt",
 							LineNumber: 123,
 						},
@@ -445,7 +434,7 @@ var _ = Describe("Notifications", func() {
 						Owner:      "owner",
 						Repository: "repo",
 						Private:    private,
-						SHA:        "abc123",
+						SHA:        "abc123456",
 						Path:       "path/to/file.txt",
 						LineNumber: 123,
 					},
@@ -463,10 +452,10 @@ func notificationJSON(color string) string {
 	return fmt.Sprintf(`{
 				"attachments": [
 					{
-						"title": "Credential detected in owner/repo!",
-						"text": "<https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123|path/to/file.txt:123>",
+						"title": "Possible credentials found in <https://github.com/owner/repo/commit/abc123456|owner/repo / abc1234>!",
+						"text": "• <https://github.com/owner/repo/blob/abc123456/path/to/file.txt|path/to/file.txt> on line <https://github.com/owner/repo/blob/abc123456/path/to/file.txt#L123|123>",
 						"color": "%s",
-						"fallback": "https://github.com/owner/repo/blob/abc123/path/to/file.txt#L123"
+						"fallback": "Possible credentials found in https://github.com/owner/repo/commit/abc123456!"
 					}
 				]
 			}

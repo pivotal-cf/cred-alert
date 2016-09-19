@@ -81,15 +81,7 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, notification Notif
 	logger = logger.Session("send-notification")
 	logger.Debug("starting")
 
-	message := n.formatSlackMessage(notification)
-
-	body, err := json.Marshal(message)
-	if err != nil {
-		logger.Error("unmarshal-faiiled", err)
-		return err
-	}
-
-	return n.send(logger, body)
+	return n.SendBatchNotification(logger, []Notification{notification})
 }
 
 func (n *slackNotifier) SendBatchNotification(logger lager.Logger, batch []Notification) error {
