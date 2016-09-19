@@ -1,6 +1,7 @@
 package revok
 
 import (
+	"context"
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
@@ -82,19 +83,21 @@ func (c *ChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	c.runCounter.Inc(logger)
 
 	timer := c.clock.NewTicker(c.interval)
+	firstTickCh := c.clock.NewTimer(0).C()
 
-	defer func() {
-		logger.Info("done")
-		timer.Stop()
-	}()
-
-	c.work(logger)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	for {
 		select {
+		case <-firstTickCh:
+			firstTickCh = nil
+			c.work(ctx, logger)
 		case <-timer.C():
-			c.work(logger)
+			c.work(ctx, logger)
 		case <-signals:
+			cancel()
+			logger.Info("done")
+			timer.Stop()
 			return nil
 		}
 	}
@@ -102,7 +105,7 @@ func (c *ChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	return nil
 }
 
-func (c *ChangeDiscoverer) work(logger lager.Logger) {
+func (c *ChangeDiscoverer) work(ctx context.Context, logger lager.Logger) {
 	repos, err := c.repositoryRepository.NotFetchedSince(c.clock.Now().Add(-c.interval))
 	if err != nil {
 		logger.Error("failed-getting-repos", err)
@@ -123,12 +126,21 @@ func (c *ChangeDiscoverer) work(logger lager.Logger) {
 
 	if len(repos) > 1 {
 		repoFetchDelay := time.Duration(c.interval.Nanoseconds()/int64(len(repos))) * time.Nanosecond
-		tc := c.clock.NewTicker(repoFetchDelay).C()
+		waitCh := c.clock.NewTicker(repoFetchDelay).C()
+		errCh := make(chan error)
+
 		for _, repo := range repos[1:] {
-			<-tc
-			err := c.fetch(quietLogger, repo)
-			if err != nil {
-				c.failedCounter.Inc(logger)
+			<-waitCh
+
+			go func() { errCh <- c.fetch(logger, repo) }()
+
+			select {
+			case err := <-errCh:
+				if err != nil {
+					c.failedCounter.Inc(logger)
+				}
+			case <-ctx.Done():
+				return
 			}
 		}
 	}
