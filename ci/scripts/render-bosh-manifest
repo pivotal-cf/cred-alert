@@ -16,4 +16,4 @@ revok-datadog-api-key: $DATADOG_API_KEY
 revok-papertrail-address: $PAPERTRAIL_ADDRESS
 EOF
 
-bosh-init build-manifest sec-red-deployments/gcp/revok/bosh.yml -l credentials.yml > manifest/manifest.yml
+bosh-cli build-manifest sec-red-deployments/gcp/revok/bosh.yml -l credentials.yml > manifest/manifest.yml
