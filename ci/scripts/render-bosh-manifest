@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -e
+
+cat > credentials.yml <<EOF
+revok-github-private-key: $GITHUB_PRIVATE_KEY
+revok-github-public-key: $GITHUB_PUBLIC_KEY
+revok-github-access-token: $GITHUB_ACCESS_TOKEN
+
+revok-mysql-username: $MYSQL_USERNAME
+revok-mysql-password: $MYSQL_PASSWORD
+revok-mysql-hostname: $MYSQL_HOSTNAME
+
+revok-datadog-api-key: $DATADOG_API_KEY
+
+revok-papertrail-address: $PAPERTRAIL_ADDRESS
+EOF
+
+bosh-init build-manifest sec-red-deployments/gcp/revok/bosh.yml -l credentials.yml > manifest/manifest.yml

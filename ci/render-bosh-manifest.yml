@@ -1,0 +1,27 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: pivotalcf/cred-alert-ci
+
+inputs:
+- name: sec-red-deployments
+- name: cred-alert
+
+outputs:
+- name: manifest
+
+params:
+  GITHUB_PRIVATE_KEY:
+  GITHUB_PUBLIC_KEY:
+  GITHUB_ACCESS_TOKEN:
+  MYSQL_USERNAME:
+  MYSQL_PASSWORD:
+  MYSQL_HOSTNAME:
+  DATADOG_API_KEY:
+  PAPERTRAIL_ADDRESS:
+
+run:
+  path: cred-alert/ci/scripts/render-bosh-manifest
