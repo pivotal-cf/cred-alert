@@ -3,8 +3,10 @@
 set -e
 
 cat > credentials.yml <<EOF
-revok-github-private-key: $GITHUB_PRIVATE_KEY
-revok-github-public-key: $GITHUB_PUBLIC_KEY
+revok-github-private-key: |
+  $GITHUB_PRIVATE_KEY
+revok-github-public-key: |
+  $GITHUB_PUBLIC_KEY
 revok-github-access-token: $GITHUB_ACCESS_TOKEN
 
 revok-mysql-username: $MYSQL_USERNAME
