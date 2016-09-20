@@ -15,5 +15,11 @@ RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a
     apt-get install -y --no-install-recommends unzip && \
     apt-get install -y --no-install-recommends libgit2-dev && \
     apt-get install -y --no-install-recommends pkg-config && \
-    apt-get clean && apt-get autoremove --purge && \
+
+    wget http://snapshot.debian.org/archive/debian/20160809T044933Z/pool/main/g/gnutls28/libgnutls30_3.5.2-3_amd64.deb && \
+    dpkg -i libgnutls30_3.5.2-3_amd64.deb && \
+    go get github.com/cloudfoundry/bosh-cli && \
+    rm -rf $GOPATH/src/github.com/cloudfoundry/bosh-cli libgnutls30_3.5.2-3_amd64.deb && \
+
+    apt-get -y clean && apt-get -y autoremove --purge && \
     rm -rf /var/lib/apt/lists/*
