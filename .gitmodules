@@ -117,3 +117,7 @@
 	path = src/github.com/libgit2/git2go
 	url = https://github.com/libgit2/git2go
 	branch = master
+[submodule "src/github.com/kardianos/osext"]
+	path = src/github.com/kardianos/osext
+	url = https://github.com/kardianos/osext
+	branch = master

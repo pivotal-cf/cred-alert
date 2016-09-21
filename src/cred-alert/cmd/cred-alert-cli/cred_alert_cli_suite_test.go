@@ -1,6 +1,10 @@
 package main_test
 
 import (
+	"os"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -15,15 +19,26 @@ func TestCredAlertCli(t *testing.T) {
 }
 
 var cliPath string
+var oldCliPath string
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	var err error
 	cliPath, err = gexec.Build("cred-alert/cmd/cred-alert-cli")
 	Expect(err).NotTo(HaveOccurred())
 
-	return []byte(cliPath)
+	oldCliPath, err = gexec.Build("cred-alert/cmd/cred-alert-cli")
+	Expect(err).NotTo(HaveOccurred())
+
+	fifteenDaysAgo := time.Now().Add(-15 * 24 * time.Hour)
+	err = os.Chtimes(oldCliPath, fifteenDaysAgo, fifteenDaysAgo)
+	Expect(err).NotTo(HaveOccurred())
+
+	return []byte(cliPath + "," + oldCliPath)
 }, func(data []byte) {
-	cliPath = string(data)
+	parts := strings.Split(string(data), ",")
+
+	cliPath = parts[0]
+	oldCliPath = parts[1]
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {

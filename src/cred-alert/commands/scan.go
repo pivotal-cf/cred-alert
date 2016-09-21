@@ -2,14 +2,6 @@ package commands
 
 import (
 	"bufio"
-	"cred-alert/inflator"
-	"cred-alert/kolsch"
-	"cred-alert/mimetype"
-	"cred-alert/scanners"
-	"cred-alert/scanners/diffscanner"
-	"cred-alert/scanners/dirscanner"
-	"cred-alert/scanners/filescanner"
-	"cred-alert/sniff"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,7 +11,18 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kardianos/osext"
+
 	"code.cloudfoundry.org/lager"
+
+	"cred-alert/inflator"
+	"cred-alert/kolsch"
+	"cred-alert/mimetype"
+	"cred-alert/scanners"
+	"cred-alert/scanners/diffscanner"
+	"cred-alert/scanners/dirscanner"
+	"cred-alert/scanners/filescanner"
+	"cred-alert/sniff"
 )
 
 type ScanCommand struct {
@@ -29,6 +32,8 @@ type ScanCommand struct {
 }
 
 func (command *ScanCommand) Execute(args []string) error {
+	warnIfOldExecutable()
+
 	logger := kolsch.NewLogger()
 	sniffer := sniff.NewDefaultSniffer()
 	inflate := inflator.New()
@@ -207,4 +212,24 @@ func handleDiff(logger lager.Logger, handler sniff.ViolationHandlerFunc) {
 	sniffer := sniff.NewDefaultSniffer()
 
 	sniffer.Sniff(logger, scanner, handler)
+}
+
+var twoWeeks = 14 * 24 * time.Hour
+
+func warnIfOldExecutable() {
+	exePath, err := osext.Executable()
+	if err != nil {
+		return
+	}
+
+	info, err := os.Stat(exePath)
+	if err != nil {
+		return
+	}
+
+	mtime := info.ModTime()
+
+	if time.Now().Sub(mtime) > twoWeeks {
+		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Executable is old! Please consider running `cred-alert-cli update`.")
+	}
 }
