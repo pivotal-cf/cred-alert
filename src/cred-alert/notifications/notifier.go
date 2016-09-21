@@ -41,12 +41,6 @@ func (n Notification) ShortSHA() string {
 	return n.SHA[:7]
 }
 
-type slackNotifier struct {
-	webhookURL string
-	client     *http.Client
-	clock      clock.Clock
-}
-
 type slackMessage struct {
 	Attachments []slackAttachment `json:"attachments"`
 }
@@ -58,7 +52,14 @@ type slackAttachment struct {
 	Text     string `json:"text"`
 }
 
-func NewSlackNotifier(webhookURL string, clock clock.Clock) Notifier {
+type slackNotifier struct {
+	webhookURL string
+	client     *http.Client
+	clock      clock.Clock
+	whitelist  Whitelist
+}
+
+func NewSlackNotifier(webhookURL string, clock clock.Clock, whitelist Whitelist) Notifier {
 	if webhookURL == "" {
 		return &nullSlackNotifier{}
 	}
@@ -66,6 +67,7 @@ func NewSlackNotifier(webhookURL string, clock clock.Clock) Notifier {
 	return &slackNotifier{
 		webhookURL: webhookURL,
 		clock:      clock,
+		whitelist:  whitelist,
 		client: &http.Client{
 			Timeout: 3 * time.Second,
 			Transport: &http.Transport{
@@ -86,7 +88,6 @@ func (n *slackNotifier) SendNotification(logger lager.Logger, notification Notif
 
 func (n *slackNotifier) SendBatchNotification(logger lager.Logger, batch []Notification) error {
 	logger = logger.Session("send-batch-notification", lager.Data{"batch-size": len(batch)})
-
 	logger.Debug("starting")
 
 	if len(batch) == 0 {
@@ -211,24 +212,31 @@ func (n *slackNotifier) formatBatchSlackMessages(batch []Notification) []slackMe
 	messages := []slackMessage{}
 
 	messageMap := make(map[slackBatchRepo]map[string][]Notification)
+	repos := []slackBatchRepo{}
 
-	for _, not := range batch {
+	for _, note := range batch {
+		if n.whitelist.ShouldSkipNotification(note.Private, note.Repository) {
+			continue
+		}
+
 		repo := slackBatchRepo{
-			Owner:      not.Owner,
-			Repository: not.Repository,
-			SHA:        not.SHA,
-			Private:    not.Private,
+			Owner:      note.Owner,
+			Repository: note.Repository,
+			SHA:        note.SHA,
+			Private:    note.Private,
 		}
 
 		_, found := messageMap[repo]
 		if !found {
+			repos = append(repos, repo)
 			messageMap[repo] = make(map[string][]Notification)
 		}
 
-		messageMap[repo][not.Path] = append(messageMap[repo][not.Path], not)
+		messageMap[repo][note.Path] = append(messageMap[repo][note.Path], note)
 	}
 
-	for repo, files := range messageMap {
+	for _, repo := range repos {
+		files := messageMap[repo]
 		commitLink := fmt.Sprintf("https://github.com/%s/%s/commit/%s", repo.Owner, repo.Repository, repo.SHA)
 		title := fmt.Sprintf("Possible credentials found in %s!", slackLink{
 			Text: fmt.Sprintf("%s / %s", repo.FullName(), repo.ShortSHA()),

@@ -21,7 +21,6 @@ var _ = Describe("Ingestor", func() {
 
 		emitter   *metricsfakes.FakeEmitter
 		taskQueue *queuefakes.FakeQueue
-		whitelist *ingestor.Whitelist
 		generator *queuefakes.FakeUUIDGenerator
 
 		logger *lagertest.TestLogger
@@ -42,8 +41,6 @@ var _ = Describe("Ingestor", func() {
 
 		requestCounter = &metricsfakes.FakeCounter{}
 		ignoredEventCounter = &metricsfakes.FakeCounter{}
-
-		whitelist = ingestor.BuildWhitelist()
 
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
@@ -68,7 +65,7 @@ var _ = Describe("Ingestor", func() {
 	})
 
 	JustBeforeEach(func() {
-		in = ingestor.NewIngestor(taskQueue, emitter, whitelist, generator)
+		in = ingestor.NewIngestor(taskQueue, emitter, generator)
 		ingestErr = in.IngestPushScan(logger, scan, "github-id")
 	})
 
@@ -115,30 +112,4 @@ var _ = Describe("Ingestor", func() {
 		})
 	})
 
-	Context("when the repo is whitelisted", func() {
-		BeforeEach(func() {
-			whitelist = ingestor.BuildWhitelist("repo")
-		})
-
-		It("does not enqueue a task", func() {
-			Expect(taskQueue.EnqueueCallCount()).To(BeZero())
-		})
-
-		It("increments cred_alert.ignored_requests", func() {
-			Expect(ignoredEventCounter.IncCallCount()).To(Equal(1))
-		})
-
-		It("does not return an error", func() {
-			Expect(ingestErr).NotTo(HaveOccurred())
-		})
-
-		Context("when the repo is public", func() {
-			BeforeEach(func() {
-				scan.Private = false
-			})
-			It("does enqueue a task", func() {
-				Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
-			})
-		})
-	})
 })

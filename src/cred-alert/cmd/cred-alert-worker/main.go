@@ -44,6 +44,8 @@ type AWSOpts struct {
 }
 
 type Opts struct {
+	Whitelist []string `short:"i" long:"ignore-repos" description:"comma separated list of repo names to ignore. The names may be regex patterns." env:"IGNORED_REPOS" env-delim:"," value-name:"REPO_LIST"`
+
 	GitHub struct {
 		AccessToken string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
 	} `group:"GitHub Options"`
@@ -98,7 +100,8 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	client := githubclient.NewClient(githubclient.DefaultGitHubURL, httpClient, emitter)
 	clock := clock.NewClock()
-	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl, clock)
+	repoWhitelist := notifications.BuildWhitelist(opts.Whitelist...)
+	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl, clock, repoWhitelist)
 	sniffer := sniff.NewDefaultSniffer()
 
 	database, err := createDB(logger, opts)

@@ -18,56 +18,64 @@ import (
 var _ = Describe("Notifications", func() {
 	var (
 		slackNotifier notifications.Notifier
-		clock         *fakeclock.FakeClock
-		logger        *lagertest.TestLogger
-		private       bool
+
+		clock  *fakeclock.FakeClock
+		server *ghttp.Server
+		logger *lagertest.TestLogger
+
+		whitelist      notifications.Whitelist
+		whitelistRules []string
+
+		batch   []notifications.Notification
+		sendErr error
 	)
 
+	//==================================================================================
+
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("slack-notifier")
+		server = ghttp.NewServer()
+		whitelistRules = []string{}
 		clock = fakeclock.NewFakeClock(time.Now())
-		private = true
 	})
 
-	Context("nil webhookUrl", func() {
-		BeforeEach(func() {
-			slackNotifier = notifications.NewSlackNotifier("", clock)
+	AfterEach(func() {
+		server.Close()
+	})
+
+	JustBeforeEach(func() {
+		whitelist = notifications.BuildWhitelist(whitelistRules...)
+		slackNotifier = notifications.NewSlackNotifier(server.URL(), clock, whitelist)
+		logger = lagertest.NewTestLogger("slack-notifier")
+	})
+
+	appendVerifyJson := func(expectedJSON string) {
+		server.AppendHandlers(
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("POST", "/"),
+				ghttp.VerifyJSON(expectedJSON),
+			),
+		)
+	}
+
+	//=================================================================================
+
+	Describe("with an empty webhook URL", func() {
+		JustBeforeEach(func() {
+			slackNotifier = notifications.NewSlackNotifier("", clock, whitelist)
 		})
 
-		It("Returns a nullNotifier", func() {
+		It("returns a nullNotifier", func() {
 			Expect(slackNotifier).NotTo(BeNil())
 		})
 
 		It("handles sending notifications", func() {
-			err := slackNotifier.SendNotification(logger, notifications.Notification{
-				Owner:      "owner",
-				Repository: "repo",
-				Private:    private,
-				SHA:        "12345abcdef",
-				Path:       "a/path/to/a/file",
-				LineNumber: 42,
-			})
+			err := slackNotifier.SendNotification(logger, createNotificationType1("repo", true, "file", 42))
+
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
 	Describe("sending batch slack notifications", func() {
-		var (
-			server *ghttp.Server
-
-			batch   []notifications.Notification
-			sendErr error
-		)
-
-		BeforeEach(func() {
-			server = ghttp.NewServer()
-			slackNotifier = notifications.NewSlackNotifier(server.URL(), clock)
-		})
-
-		AfterEach(func() {
-			server.Close()
-		})
-
 		JustBeforeEach(func() {
 			sendErr = slackNotifier.SendBatchNotification(logger, batch)
 		})
@@ -86,45 +94,51 @@ var _ = Describe("Notifications", func() {
 			})
 		})
 
-		Context("when there is one notifications in the batch", func() {
+		Context("when there is one private notification in the batch", func() {
+			var expectedJSON string
+
 			BeforeEach(func() {
 				batch = []notifications.Notification{
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    false,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
+					createNotificationType1("repo", true, "file.txt", 123),
 				}
 
-				commitLink := "https://github.com/owner/repo/commit/abc1234567890"
-				fileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file.txt"
-				lineLink := fmt.Sprintf("%s#L123", fileLink)
-				expectedJSON := fmt.Sprintf(`
-				{
-					"attachments": [
-						{
-							"title": "Possible credentials found in <%s|owner/repo / abc1234>!",
-							"text": "• <%s|path/to/file.txt> on line <%s|123>",
-							"color": "danger",
-							"fallback": "Possible credentials found in %s!"
-						}
-					]
-				}
-				`, commitLink, fileLink, lineLink, commitLink)
+				expectedJSON = calculateExpectedJSON(batch[0])
 
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/"),
-						ghttp.VerifyJSON(expectedJSON),
-					),
-				)
+				appendVerifyJson(expectedJSON)
 			})
 
-			It("does not error", func() {
-				Expect(sendErr).NotTo(HaveOccurred())
+			Context("single warning response", func() {
+				It("does not error", func() {
+					Expect(sendErr).NotTo(HaveOccurred())
+				})
+
+				It("sends a message to slack", func() {
+					Expect(server.ReceivedRequests()).Should(HaveLen(1))
+				})
+
+				Context("when the notification matches a white listed repository", func() {
+					BeforeEach(func() {
+						whitelistRules = []string{".*repo.*"}
+					})
+
+					It("doesn't send anything to slack", func() {
+						Expect(server.ReceivedRequests()).Should(BeEmpty())
+					})
+				})
+			})
+		})
+
+		Context("when the notification matches a public white listed repository", func() {
+			BeforeEach(func() {
+				whitelistRules = []string{".*repo.*"}
+
+				batch = []notifications.Notification{
+					createNotificationType1("repo", false, "file.txt", 123),
+				}
+
+				expectedJSON := calculateExpectedJSON(batch[0])
+
+				appendVerifyJson(expectedJSON)
 			})
 
 			It("sends a message to slack", func() {
@@ -134,35 +148,10 @@ var _ = Describe("Notifications", func() {
 
 		Context("when there are multiple notifications in the batch in the same file", func() {
 			BeforeEach(func() {
-				batch = []notifications.Notification{
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    false,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    false,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 346,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    false,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 3932,
-					},
-				}
+				batch = createBatch1()
 
 				commitLink := "https://github.com/owner/repo/commit/abc1234567890"
-				fileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file.txt"
+				fileLink := createFileLink1("path/to/file.txt")
 				lineLink := fmt.Sprintf("%s#L123", fileLink)
 				otherLineLink := fmt.Sprintf("%s#L346", fileLink)
 				yetAnotherLineLink := fmt.Sprintf("%s#L3932", fileLink)
@@ -180,12 +169,8 @@ var _ = Describe("Notifications", func() {
 				}
 				`, commitLink, fileLink, lineLink, otherLineLink, yetAnotherLineLink, commitLink)
 
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/"),
-						ghttp.VerifyJSON(expectedJSON),
-					),
-				)
+				appendVerifyJson(expectedJSON)
+
 			})
 
 			It("does not error", func() {
@@ -199,36 +184,11 @@ var _ = Describe("Notifications", func() {
 
 		Context("when there are multiple notifications in the batch in different files", func() {
 			BeforeEach(func() {
-				batch = []notifications.Notification{
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    false,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    false,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file2.txt",
-						LineNumber: 346,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    false,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 3932,
-					},
-				}
+				batch = createBatch2()
 
 				commitLink := "https://github.com/owner/repo/commit/abc1234567890"
-				fileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file.txt"
-				otherFileLink := "https://github.com/owner/repo/blob/abc1234567890/path/to/file2.txt"
+				fileLink := createFileLink1("path/to/file.txt")
+				otherFileLink := createFileLink1("path/to/file2.txt")
 				lineLink := fmt.Sprintf("%s#L123", fileLink)
 				otherLineLink := fmt.Sprintf("%s#L346", otherFileLink)
 				yetAnotherLineLink := fmt.Sprintf("%s#L3932", fileLink)
@@ -246,12 +206,7 @@ var _ = Describe("Notifications", func() {
 				}
 				`, commitLink, fileLink, lineLink, yetAnotherLineLink, otherFileLink, otherLineLink, commitLink)
 
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/"),
-						ghttp.VerifyJSON(expectedJSON),
-					),
-				)
+				appendVerifyJson(expectedJSON)
 			})
 
 			It("does not error", func() {
@@ -262,42 +217,57 @@ var _ = Describe("Notifications", func() {
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 		})
+
+		Context("when there are multiple notifications in the batch in different repositories", func() {
+			BeforeEach(func() {
+				batch = createBatch3()
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(calculateExpectedJSON(batch[0])),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(calculateExpectedJSON(batch[1])),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(calculateExpectedJSON(batch[2])),
+					),
+				)
+			})
+
+			It("does not error", func() {
+				Expect(sendErr).NotTo(HaveOccurred())
+			})
+
+			It("sends a message with all of them in to slack", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(3))
+			})
+		})
 	})
 
-	Context("Slack notifications", func() {
-		var server *ghttp.Server
+	Describe("sending slack notifications", func() {
+		Context("when everything goes to plan", func() {
+			BeforeEach(func() {
+				expectedJSON := notificationJSON(true)
 
-		BeforeEach(func() {
-			server = ghttp.NewServer()
-			slackNotifier = notifications.NewSlackNotifier(server.URL(), clock)
-		})
+				appendVerifyJson(expectedJSON)
 
-		It("POSTs a message to the fake slack webhook", func() {
-			expectedJSON := notificationJSON("warning")
-
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/"),
-					ghttp.VerifyJSON(expectedJSON),
-				),
-			)
-
-			err := slackNotifier.SendNotification(logger, notifications.Notification{
-				Owner:      "owner",
-				Repository: "repo",
-				Private:    private,
-				SHA:        "abc123456",
-				Path:       "path/to/file.txt",
-				LineNumber: 123,
 			})
-			Expect(err).NotTo(HaveOccurred())
 
-			Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			It("POSTs a message to the fake slack webhook", func() {
+				err := slackNotifier.SendNotification(logger, createNotificationType1("repo", true, "file.txt", 123))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
 		})
 
 		Context("when Slack responds with an 429 Too Many Requests", func() {
 			BeforeEach(func() {
-				expectedJSON := notificationJSON("warning")
+				expectedJSON := notificationJSON(true)
 				header := http.Header{}
 				header.Add("Retry-After", "5")
 
@@ -323,14 +293,7 @@ var _ = Describe("Notifications", func() {
 
 					err := slackNotifier.SendNotification(
 						logger,
-						notifications.Notification{
-							Owner:      "owner",
-							Repository: "repo",
-							Private:    private,
-							SHA:        "abc123456",
-							Path:       "path/to/file.txt",
-							LineNumber: 123,
-						},
+						createNotificationType1("repo", true, "file.txt", 123),
 					)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -354,7 +317,7 @@ var _ = Describe("Notifications", func() {
 
 		Context("when Slack responds with an 429 Too Many Requests more than 3 times", func() {
 			BeforeEach(func() {
-				expectedJSON := notificationJSON("warning")
+				expectedJSON := notificationJSON(true)
 				header := http.Header{}
 				header.Add("Retry-After", "5")
 
@@ -385,14 +348,7 @@ var _ = Describe("Notifications", func() {
 
 					err := slackNotifier.SendNotification(
 						logger,
-						notifications.Notification{
-							Owner:      "owner",
-							Repository: "repo",
-							Private:    private,
-							SHA:        "abc123456",
-							Path:       "path/to/file.txt",
-							LineNumber: 123,
-						},
+						createNotificationType1("repo", true, "file.txt", 123),
 					)
 					Expect(err).To(HaveOccurred())
 
@@ -416,28 +372,19 @@ var _ = Describe("Notifications", func() {
 
 		Context("when the repo is public", func() {
 			BeforeEach(func() {
-				private = false
-			})
-
-			It("notifies with the danger color", func() {
-				expectedJSON := notificationJSON("danger")
+				expectedJSON := notificationJSON(false)
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("POST", "/"),
 						ghttp.VerifyJSON(expectedJSON),
 					),
 				)
+			})
 
+			It("notifies with the danger color", func() {
 				err := slackNotifier.SendNotification(
 					logger,
-					notifications.Notification{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    private,
-						SHA:        "abc123456",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
+					createNotificationType1("repo", false, "file.txt", 123),
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -448,17 +395,91 @@ var _ = Describe("Notifications", func() {
 
 })
 
-func notificationJSON(color string) string {
-	return fmt.Sprintf(`{
-				"attachments": [
-					{
-						"title": "Possible credentials found in <https://github.com/owner/repo/commit/abc123456|owner/repo / abc1234>!",
-						"text": "• <https://github.com/owner/repo/blob/abc123456/path/to/file.txt|path/to/file.txt> on line <https://github.com/owner/repo/blob/abc123456/path/to/file.txt#L123|123>",
-						"color": "%s",
-						"fallback": "Possible credentials found in https://github.com/owner/repo/commit/abc123456!"
-					}
-				]
-			}
-			`,
-		color)
+//========================================================================================================
+
+//========================================================================================================
+//Sample test data functions
+
+func createNotificationType1(repo string, isPrivate bool, file string, lineNumber int) notifications.Notification {
+	return notifications.Notification{
+		Owner:      "owner",
+		Repository: repo,
+		Private:    isPrivate,
+		SHA:        "abc1234567890",
+		Path:       "path/to/" + file,
+		LineNumber: lineNumber,
+	}
+}
+
+func createBatchType1(repo2, file2 string, repo3, file3 string) []notifications.Notification {
+
+	batch := []notifications.Notification{
+		createNotificationType1("repo", false, "file.txt", 123),
+		createNotificationType1(repo2, false, file2, 346),
+		createNotificationType1(repo3, false, file3, 3932),
+	}
+
+	return batch
+}
+
+func createBatch1() []notifications.Notification {
+	return createBatchType1("repo", "file.txt", "repo", "file.txt")
+}
+
+func createBatch2() []notifications.Notification {
+	return createBatchType1("repo", "file2.txt", "repo", "file.txt")
+}
+
+func createBatch3() []notifications.Notification {
+	return createBatchType1("repo2", "file.txt", "repo3", "file.txt")
+}
+
+func createFileLink1(path string) string {
+	return "https://github.com/owner/repo/blob/abc1234567890/" + path
+}
+
+func calculateExpectedJSON(notification notifications.Notification) string {
+	commitLink := fmt.Sprintf(
+		"https://github.com/%s/%s/commit/%s",
+		notification.Owner,
+		notification.Repository,
+		notification.SHA,
+	)
+	fileLink := fmt.Sprintf(
+		"https://github.com/%s/%s/blob/%s/%s",
+		notification.Owner,
+		notification.Repository,
+		notification.SHA,
+		notification.Path,
+	)
+	lineLink := fmt.Sprintf("%s#L%d", fileLink, notification.LineNumber)
+	color := "danger"
+	if notification.Private {
+		color = "warning"
+	}
+
+	return fmt.Sprintf(`
+				{
+					"attachments": [
+						{
+							"title": "Possible credentials found in <%s|%s/%s / abc1234>!",
+							"text": "• <%s|path/to/file.txt> on line <%s|%d>",
+							"color": "%s",
+							"fallback": "Possible credentials found in %s!"
+						}
+					]
+				}
+				`, commitLink, notification.Owner, notification.Repository, fileLink,
+		lineLink, notification.LineNumber, color, commitLink)
+}
+
+func notificationJSON(isPrivate bool) string {
+	return calculateExpectedJSON(notifications.Notification{
+		Owner:      "owner",
+		Repository: "repo",
+		Private:    isPrivate,
+		SHA:        "abc1234567890",
+		Path:       "path/to/file.txt",
+		LineNumber: 123,
+	})
 }

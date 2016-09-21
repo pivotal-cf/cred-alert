@@ -68,10 +68,9 @@ func main() {
 	}
 
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
-	repoWhitelist := ingestor.BuildWhitelist(opts.Whitelist...)
 	generator := queue.NewGenerator()
 
-	in := ingestor.NewIngestor(taskQueue, emitter, repoWhitelist, generator)
+	in := ingestor.NewIngestor(taskQueue, emitter, generator)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))

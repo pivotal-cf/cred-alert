@@ -14,29 +14,23 @@ type Ingestor interface {
 }
 
 type ingestor struct {
-	whitelist *Whitelist
 	taskQueue queue.Queue
 	generator queue.UUIDGenerator
 
-	requestCounter      metrics.Counter
-	ignoredEventCounter metrics.Counter
+	requestCounter metrics.Counter
 }
 
 func NewIngestor(
 	taskQueue queue.Queue,
 	emitter metrics.Emitter,
-	whitelist *Whitelist,
 	generator queue.UUIDGenerator,
 ) *ingestor {
 	requestCounter := emitter.Counter("cred_alert.ingestor_requests")
-	ignoredEventCounter := emitter.Counter("cred_alert.ignored_events")
 
 	handler := &ingestor{
-		taskQueue:           taskQueue,
-		whitelist:           whitelist,
-		generator:           generator,
-		requestCounter:      requestCounter,
-		ignoredEventCounter: ignoredEventCounter,
+		taskQueue:      taskQueue,
+		generator:      generator,
+		requestCounter: requestCounter,
 	}
 
 	return handler
@@ -45,17 +39,6 @@ func NewIngestor(
 func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID string) error {
 	logger = logger.Session("ingest-push-scan")
 	logger.Debug("starting")
-
-	if scan.Private && s.whitelist.IsIgnored(scan.Repository) {
-		logger.Info("ignoring-repo", lager.Data{
-			"repo": scan.Repository,
-		})
-
-		s.ignoredEventCounter.Inc(logger)
-
-		logger.Debug("done")
-		return nil
-	}
 
 	s.requestCounter.Inc(logger)
 
