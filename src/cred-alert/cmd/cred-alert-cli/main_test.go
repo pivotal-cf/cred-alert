@@ -32,8 +32,8 @@ diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/g
 index 940393e..fa5a232 100644
 --- a/spec/integration/git-secrets-pattern-tests.txt
 +++ b/spec/integration/git-secrets-pattern-tests.txt
-@@ -28,7 +28,7 @@ private_key = "should_match" # COMMENT: comments shouldn't have an effect
- private_key '$should_match'
+@@ -28,7 +28,7 @@ header line goes here
++private_key '$should_match'
 
  ## Suspicious Variable Names
 `

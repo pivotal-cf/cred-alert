@@ -13,8 +13,8 @@ import (
 var _ = Describe("DiffScanner", func() {
 	shortFile := `+++ b/our/path/somefile.txt
 @@ -4,7 +5,7 @@ some hint line
- first line of content
- second line of content`
++first line of content
++second line of content`
 
 	sneakyFile := `+++ b/our/path/somefile.txt
 @@ -4,7 +5,7 @@ some hint line
@@ -29,6 +29,7 @@ index f2e4113..fa5a232 100644
 +++ b/stuff.txt
 @@ -1 +1,2 @@
 -stuff
+ stuff
 +blah
 +lol`
 
@@ -82,17 +83,10 @@ index 1e13fe8..06b14f8 100644
 		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
 	})
 
-	It("Is not fooled by lines that look like file headers", func() {
+	It("is not fooled by lines that look like file headers", func() {
 		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(sneakyFile))
 		diffScanner.Scan(logger)
-
 		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("first line of content")))
-
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("second line of content")))
-
-		diffScanner.Scan(logger)
 		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("++sneaky line of content")))
 	})
 
@@ -117,19 +111,19 @@ index 1e13fe8..06b14f8 100644
 			)
 		}
 
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(36))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("## Special Characters")))
+		Expect(diffScanner.Line(logger).LineNumber).To(Equal(45))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`PRIVATE_KEY: "should_match"`)))
 	})
 
 	It("scans single line hunks", func() {
 		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(singleLineRemovedFile))
 
 		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(1))
+		Expect(diffScanner.Line(logger).LineNumber).To(Equal(2))
 		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("blah")))
 
 		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(2))
+		Expect(diffScanner.Line(logger).LineNumber).To(Equal(3))
 		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("lol")))
 		Expect(diffScanner.Scan(logger)).To(BeFalse())
 
@@ -149,7 +143,7 @@ index 1e13fe8..06b14f8 100644
 
 	It("keeps track of the filename in sections of a unified diff", func() {
 		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(sampleDiff))
-		for i := 0; i < 30; i++ {
+		for i := 0; i < 12; i++ {
 			diffScanner.Scan(logger)
 			fmt.Fprintf(
 				GinkgoWriter,
@@ -159,26 +153,9 @@ index 1e13fe8..06b14f8 100644
 			)
 		}
 
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(28))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("private_key '$should_match'")))
+		Expect(diffScanner.Line(logger).LineNumber).To(Equal(31))
+		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`some_secret: "should_match"`)))
 		Expect(diffScanner.Line(logger).Path).To(Equal("spec/integration/git-secrets-pattern-tests2.txt"))
-	})
-
-	It("keeps track of line numbers in sections of a unified diff", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(sampleDiff))
-		for i := 0; i < 5; i++ {
-			diffScanner.Scan(logger)
-			fmt.Fprintf(
-				GinkgoWriter,
-				"%d: %s\n",
-				diffScanner.Line(logger).LineNumber,
-				diffScanner.Line(logger).Content,
-			)
-		}
-
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(32))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`hard_coded_salt: "should_match"`)))
-		Expect(diffScanner.Line(logger).Path).To(Equal("spec/integration/git-secrets-pattern-tests.txt"))
 	})
 
 	It("handles file renames", func() {

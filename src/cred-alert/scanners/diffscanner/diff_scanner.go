@@ -12,7 +12,7 @@ import (
 
 var fileHeaderRegexp = regexp.MustCompile(`^\+\+\+\s(?:\w\/(.*)|/dev/null)$`)
 var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d*\s@@`)
-var addedLineRegexp = regexp.MustCompile(`^(?:\s|\+)(.*)`)
+var addedOrExistingLineRegexp = regexp.MustCompile(`^([\s\+])(.*)`)
 
 type DiffScanner struct {
 	scanner           *bufio.Scanner
@@ -52,11 +52,13 @@ func (d *DiffScanner) Scan(logger lager.Logger) bool {
 			continue
 		}
 
-		matches = addedLineRegexp.FindStringSubmatch(line)
-		if len(matches) == 2 {
+		matches = addedOrExistingLineRegexp.FindStringSubmatch(line)
+		if len(matches) == 3 {
 			d.currentLineNumber++
-			d.content = []byte(matches[1])
-			return true
+			if matches[1] == "+" {
+				d.content = []byte(matches[2])
+				return true
+			}
 		}
 	}
 

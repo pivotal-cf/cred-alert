@@ -231,23 +231,23 @@ var _ = Describe("ChangeDiscoverer", func() {
 				gitClient.DiffStub = func(repositoryPath string, a, b *git.Oid) (string, error) {
 					if gitClient.DiffCallCount() == 1 {
 						return `diff --git a/stuff.txt b/stuff.txt
-	index f2e4113..fa5a232 100644
-	--- a/stuff.txt
-	+++ b/stuff.txt
-	@@ -1 +1,2 @@
-	-old
-	+credential
-	+something-else`, nil
+index f2e4113..fa5a232 100644
+--- a/stuff.txt
++++ b/stuff.txt
+@@ -1 +1,2 @@
+-old
++credential
++something-else`, nil
 					}
 
 					return `--git a/stuff.txt b/stuff.txt
-	index fa5a232..1e13fe8 100644
-	--- a/stuff.txt
-	+++ b/stuff.txt
-	@@ -1,2 +1 @@
-	-old
-	-content
-	+credential`, nil
+index fa5a232..1e13fe8 100644
+--- a/stuff.txt
++++ b/stuff.txt
+@@ -1,2 +1 @@
+-old
+-content
++credential`, nil
 				}
 			})
 
@@ -275,7 +275,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 				Expect(actualOids).To(Equal(expectedOids))
 
-				Expect(secondScan.RecordCredentialCallCount()).To(Equal(1))
+				Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
 			})
 
 			It("tries to store information in the database about the fetch", func() {
