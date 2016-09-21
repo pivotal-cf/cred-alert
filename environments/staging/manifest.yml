@@ -11,7 +11,6 @@ applications:
   services:
   - cred-alert-staging-logs
   env:
-    IGNORED_REPOS: ".*-credentials$"
     ENVIRONMENT: "staging"
 
 - name: cred-alert-worker-staging
@@ -27,4 +26,5 @@ applications:
   - cred-alert-staging-logs
   - cred-alert-mysql
   env:
+    IGNORED_REPOS: ".*-credentials$"
     ENVIRONMENT: "staging"

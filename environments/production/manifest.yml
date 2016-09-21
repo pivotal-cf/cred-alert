@@ -11,7 +11,6 @@ applications:
   services:
   - cred-alert-production-logs
   env:
-    IGNORED_REPOS: ".*-credentials"
     ENVIRONMENT: "production"
 
 - name: cred-alert-worker-production
@@ -27,4 +26,5 @@ applications:
   - cred-alert-mysql
   - cred-alert-production-logs
   env:
+    IGNORED_REPOS: ".*-credentials"
     ENVIRONMENT: "production"
