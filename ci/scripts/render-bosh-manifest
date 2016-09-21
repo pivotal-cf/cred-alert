@@ -3,10 +3,6 @@
 set -e
 
 cat > credentials.yml <<EOF
-revok-github-private-key: |
-  $GITHUB_PRIVATE_KEY
-revok-github-public-key: |
-  $GITHUB_PUBLIC_KEY
 revok-github-access-token: $GITHUB_ACCESS_TOKEN
 
 revok-mysql-username: $MYSQL_USERNAME
@@ -17,5 +13,16 @@ revok-datadog-api-key: $DATADOG_API_KEY
 
 revok-papertrail-address: $PAPERTRAIL_ADDRESS
 EOF
+
+
+echo "revok-github-private-key: |" >> credentials.yml
+for line in $GITHUB_PRIVATE_KEY; do
+  echo "  $line"
+done
+
+echo "revok-github-public-key: |" >> credentials.yml
+for line in $GITHUB_PUBLIC_KEY; do
+  echo "  $line"
+done
 
 bosh-cli build-manifest sec-red-deployments/gcp/revok/bosh.yml -l credentials.yml > manifest/manifest.yml
