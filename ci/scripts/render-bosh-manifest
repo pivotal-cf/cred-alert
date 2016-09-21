@@ -15,14 +15,15 @@ revok-papertrail-address: $PAPERTRAIL_ADDRESS
 EOF
 
 
+IFS=$'\n'
 echo "revok-github-private-key: |" >> credentials.yml
 for line in $GITHUB_PRIVATE_KEY; do
-  echo "  $line"
+  echo "  $line" >> credentials.yml
 done
 
 echo "revok-github-public-key: |" >> credentials.yml
 for line in $GITHUB_PUBLIC_KEY; do
-  echo "  $line"
+  echo "  $line" >> credentials.yml
 done
 
 bosh-cli build-manifest sec-red-deployments/gcp/revok/bosh.yml -l credentials.yml > manifest/manifest.yml
