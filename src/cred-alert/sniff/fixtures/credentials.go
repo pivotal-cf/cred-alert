@@ -28,6 +28,7 @@ private static String PrivateKey = 'should_match'
   private_key = "should_match"
 private_key = "should_match" # COMMENT: comments shouldn't have an effect
 private_key '$should_match'
+private_key = 'should match' # should_match
 
 ## Suspicious Variable Names
 some_secret: "should_match"
@@ -75,13 +76,10 @@ variable_with_password_in_it: "should_not_match"
 ## Special Character Exclusions
 ### Bash
 private_key: "${should_not_match}"
-### Ruby
-private_key: "{{should_not_match}}"
 ### Misc.
 private_key: "%%%_should_not_match"
 
 ## Content Exclusions
-private_key: "should not match"
 private_key: "too-short" # should_not_match
 private_key: "fake_should_not_match"
 private_key: "example_should_not_match"

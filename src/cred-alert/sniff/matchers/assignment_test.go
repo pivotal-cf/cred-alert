@@ -38,7 +38,11 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("not an assignment", "package not_an_assignment"),
 		Entry("RHS is too short", "password too-short"),
 		Entry("no quotes with equals sign", "password = should_match"),
-		Entry("YAML assignment with a GUID", "v5_private_key: 6392b811-01d8-5c72-a68c-6d85f2a4b02b"),
+		Entry("YAML assignment with a GUID", "v5_private_key: 6392b811-01d8-5c72-a68c-6d85f2a4b02b", "manifest.yml"),
+		Entry("YAML assignment that is 10 characters", "password: should_mat", "manifest.yml"),
+		Entry("YAML assignment with placeholder", "suspect_password: ((placeholder-for-anything))", "manifest.yml"),
+		Entry("YAML assignment with placeholder with no whitespace", "suspect_password:((placeholder-for-anything))", "manifest.yml"),
+		Entry("YAML assignment with fly placeholder", "suspect_password: {{placeholder-for-anything}}", "manifest.yml"),
 	)
 
 	DescribeTable("matching secret assignments",
@@ -60,6 +64,7 @@ var _ = Describe("Assignment Matcher", func() {
 			Expect(end).To(Equal(expectedEnd))
 		},
 		Entry("simple assignment with no operator", "password 'should_match'", 0, 23),
+		Entry("simple assignment with a dash on the RHS", "password = 'should-match'", 0, 25),
 		Entry("simple assignment with colon", "password: 'should_match'", 0, 24),
 		Entry("simple assignment with equals", "password = 'should_match'", 0, 25),
 		Entry("simple assignment with colon equals", "password := 'should_match'", 0, 26),
@@ -76,5 +81,7 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("simple assignment with strange characters", `password = '.$+=&/\\should_match' # comment`, 0, 33),
 		Entry("YAML assignment", "password: should_match", 0, 22, "manifest.yml"),
 		Entry("YAML assignment with a silly extension", "password: should_match", 0, 22, "manifest.yaml"),
+		Entry("YAML assignment with mismatched placeholder values", "password: {(should_match)}", 0, 26, "manifest.yaml"),
+		Entry("YAML assignment with whitespace around the placeholder values", "password: (( should_match ))", 0, 28, "manifest.yaml"),
 	)
 })

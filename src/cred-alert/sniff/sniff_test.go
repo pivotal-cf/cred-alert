@@ -174,7 +174,11 @@ var _ = Describe("Sniffer", func() {
 				})
 			}
 
-			Expect(actuals).To(ConsistOf(expectations))
+			for _, actual := range actuals {
+				Expect(expectations).To(ContainElement(actual))
+			}
+
+			Expect(actuals).To(HaveLen(len(expectations)))
 		})
 	})
 })
