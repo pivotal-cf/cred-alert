@@ -26,5 +26,5 @@ applications:
   - cred-alert-mysql
   - cred-alert-production-logs
   env:
-    IGNORED_REPOS: ".*-credentials"
+    IGNORED_REPOS: ".*-credentials$,.*-pool$,.*deployments.*,.*envs.*,.*-locks$"
     ENVIRONMENT: "production"
