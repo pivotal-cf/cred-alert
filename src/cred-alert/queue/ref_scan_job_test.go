@@ -166,6 +166,8 @@ var _ = Describe("RefScan Job", func() {
 			Expect(credential.SHA).To(Equal(ref))
 			Expect(credential.Path).To(Equal("readme.txt"))
 			Expect(credential.LineNumber).To(Equal(1))
+			Expect(credential.MatchStart).To(Equal(0))
+			Expect(credential.MatchEnd).To(Equal(27))
 
 			credential = activeScan.RecordCredentialArgsForCall(1)
 			Expect(credential.Owner).To(Equal(plan.Owner))

@@ -170,13 +170,15 @@ func (j *RefScanJob) scanFilesIn(logger lager.Logger, scan db.ActiveScan, destin
 			return err
 		}
 
-		scan.RecordCredential(db.Credential{
-			Owner:      j.Owner,
-			Repository: j.Repository,
-			SHA:        j.Ref,
-			Path:       path,
-			LineNumber: line.LineNumber,
-		})
+		scan.RecordCredential(db.NewCredential(
+			j.Owner,
+			j.Repository,
+			j.Ref,
+			path,
+			line.LineNumber,
+			violation.Start,
+			violation.End,
+		))
 
 		alerts = append(alerts, notifications.Notification{
 			Owner:      j.Owner,

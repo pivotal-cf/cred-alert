@@ -108,12 +108,15 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 	scanner := dirscanner.New(
 		func(logger lager.Logger, violation scanners.Violation) error {
 			line := violation.Line
-			scan.RecordCredential(db.Credential{
-				Owner:      msg.Owner,
-				Repository: msg.Repository,
-				Path:       line.Path,
-				LineNumber: line.LineNumber,
-			})
+			scan.RecordCredential(db.NewCredential(
+				msg.Owner,
+				msg.Repository,
+				"",
+				line.Path,
+				line.LineNumber,
+				violation.Start,
+				violation.End,
+			))
 			return nil
 		},
 		c.sniffer,

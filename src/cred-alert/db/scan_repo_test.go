@@ -68,27 +68,26 @@ var _ = Describe("Scan Repository", func() {
 		It("can record found credentials for a scan", func() {
 			activeScan := scanRepository.Start(logger, "scan-type", nil, nil)
 
-			credential := db.Credential{
-				Owner:      "owner",
-				Repository: "repo",
-				SHA:        "sha",
-				Path:       "this/is/a/path",
-				LineNumber: 42,
-				MatchStart: 1,
-				MatchEnd:   8,
-			}
+			credential := db.NewCredential("owner",
+				"repo",
+				"sha",
+				"this/is/a/path",
+				42,
+				1,
+				8,
+			)
 
 			activeScan.RecordCredential(credential)
 
-			otherCredential := db.Credential{
-				Owner:      "owner",
-				Repository: "repo",
-				SHA:        "sha",
-				Path:       "this/is/an/other/path",
-				LineNumber: 92,
-				MatchStart: 31,
-				MatchEnd:   38,
-			}
+			otherCredential := db.NewCredential(
+				"owner",
+				"repo",
+				"sha",
+				"this/is/an/other/path",
+				92,
+				31,
+				38,
+			)
 
 			activeScan.RecordCredential(otherCredential)
 
@@ -139,13 +138,15 @@ var _ = Describe("Scan Repository", func() {
 			It("does not save any of the credentials from the scan", func() {
 				scan := scanRepository.Start(logger, "scan-type", nil, nil)
 
-				credential := db.Credential{
-					Owner:      "owner",
-					Repository: "repo",
-					SHA:        "sha",
-					Path:       "this/is/a/path",
-					LineNumber: 42,
-				}
+				credential := db.NewCredential(
+					"owner",
+					"repo",
+					"sha",
+					"this/is/a/path",
+					42,
+					22,
+					33,
+				)
 
 				scan.RecordCredential(credential)
 

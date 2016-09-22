@@ -107,13 +107,15 @@ func (j *DiffScanJob) scanDiffForCredentials(logger lager.Logger, scan db.Active
 		})
 		logger.Debug("starting")
 
-		scan.RecordCredential(db.Credential{
-			Owner:      j.Owner,
-			Repository: j.Repository,
-			SHA:        j.To,
-			Path:       line.Path,
-			LineNumber: line.LineNumber,
-		})
+		scan.RecordCredential(db.NewCredential(
+			j.Owner,
+			j.Repository,
+			j.To,
+			line.Path,
+			line.LineNumber,
+			violation.Start,
+			violation.End,
+		))
 
 		alerts = append(alerts, notifications.Notification{
 			Owner:      j.Owner,

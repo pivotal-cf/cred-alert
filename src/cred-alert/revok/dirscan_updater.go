@@ -67,12 +67,15 @@ func (d *DirscanUpdater) work(logger lager.Logger) error {
 		scanner := dirscanner.New(
 			func(logger lager.Logger, violation scanners.Violation) error {
 				line := violation.Line
-				scan.RecordCredential(db.Credential{
-					Owner:      repo.Owner,
-					Repository: repo.Name,
-					Path:       line.Path,
-					LineNumber: line.LineNumber,
-				})
+				scan.RecordCredential(db.NewCredential(
+					repo.Owner,
+					repo.Name,
+					"",
+					line.Path,
+					line.LineNumber,
+					violation.Start,
+					violation.End,
+				))
 				return nil
 			},
 			d.sniffer,

@@ -82,13 +82,15 @@ func (j *CommitMessageJob) createHandleViolation(scan db.ActiveScan) func(lager.
 
 		j.credentialCounter.Inc(logger, privacyTag, "commit-message")
 
-		credential := db.Credential{
-			Owner:      j.Owner,
-			Repository: j.Repository,
-			SHA:        j.SHA,
-			Path:       violation.Line.Path,
-			LineNumber: violation.Line.LineNumber,
-		}
+		credential := db.NewCredential(
+			j.Owner,
+			j.Repository,
+			j.SHA,
+			violation.Line.Path,
+			violation.Line.LineNumber,
+			violation.Start,
+			violation.End,
+		)
 
 		scan.RecordCredential(credential)
 
