@@ -60,11 +60,17 @@ func (command *ScanCommand) Execute(args []string) error {
 	var credsFound int
 	handler := func(logger lager.Logger, violation scanners.Violation) error {
 		credsFound++
-		if command.ShowCredentials {
-			fmt.Printf("%s %s:%d [%s]\n", red("[CRED]"), violation.Line.Path, violation.Line.LineNumber, violation.Credential())
+		output := fmt.Sprintf("%s ", red("[CRED]"))
+		if violation.Line.Path == ".git/COMMIT_EDITMSG" {
+			output = output + "line "
 		} else {
-			fmt.Printf("%s %s:%d\n", red("[CRED]"), violation.Line.Path, violation.Line.LineNumber)
+			output = output + fmt.Sprintf("%s:", violation.Line.Path)
 		}
+		output = output + fmt.Sprintf("%d", violation.Line.LineNumber)
+		if command.ShowCredentials {
+			output = output + fmt.Sprintf(" [%s]", violation.Credential())
+		}
+		fmt.Println(output)
 
 		return nil
 	}
