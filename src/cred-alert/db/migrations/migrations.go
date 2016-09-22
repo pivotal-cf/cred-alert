@@ -9,4 +9,5 @@ var Migrations = []migration.Migrator{
 	AddCredentialsAndScansTable,
 	AddRepositoriesAndFetches,
 	AddClonedToRepositories,
+	AddMatchLocation,
 }

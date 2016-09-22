@@ -74,6 +74,8 @@ var _ = Describe("Scan Repository", func() {
 				SHA:        "sha",
 				Path:       "this/is/a/path",
 				LineNumber: 42,
+				MatchStart: 1,
+				MatchEnd:   8,
 			}
 
 			activeScan.RecordCredential(credential)
@@ -84,6 +86,8 @@ var _ = Describe("Scan Repository", func() {
 				SHA:        "sha",
 				Path:       "this/is/an/other/path",
 				LineNumber: 92,
+				MatchStart: 31,
+				MatchEnd:   38,
 			}
 
 			activeScan.RecordCredential(otherCredential)
@@ -104,6 +108,8 @@ var _ = Describe("Scan Repository", func() {
 			Expect(firstSavedCredential.SHA).To(Equal(credential.SHA))
 			Expect(firstSavedCredential.Path).To(Equal(credential.Path))
 			Expect(firstSavedCredential.LineNumber).To(Equal(credential.LineNumber))
+			Expect(firstSavedCredential.MatchStart).To(Equal(credential.MatchStart))
+			Expect(firstSavedCredential.MatchEnd).To(Equal(credential.MatchEnd))
 
 			secondSavedCredential := savedCredentials[1]
 			Expect(secondSavedCredential.Owner).To(Equal(otherCredential.Owner))
@@ -111,6 +117,8 @@ var _ = Describe("Scan Repository", func() {
 			Expect(secondSavedCredential.SHA).To(Equal(otherCredential.SHA))
 			Expect(secondSavedCredential.Path).To(Equal(otherCredential.Path))
 			Expect(secondSavedCredential.LineNumber).To(Equal(otherCredential.LineNumber))
+			Expect(secondSavedCredential.MatchStart).To(Equal(otherCredential.MatchStart))
+			Expect(secondSavedCredential.MatchEnd).To(Equal(otherCredential.MatchEnd))
 		})
 
 		Context("when there is an error saving the scan", func() {

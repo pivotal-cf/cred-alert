@@ -51,6 +51,8 @@ type Credential struct {
 	SHA        string
 	Path       string
 	LineNumber int
+	MatchStart int
+	MatchEnd   int
 }
 
 type Repository struct {
