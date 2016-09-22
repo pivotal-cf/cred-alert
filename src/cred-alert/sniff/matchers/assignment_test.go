@@ -85,5 +85,6 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("YAML assignment with mismatched placeholder values", "password: {(should_match)}", 0, 26, "manifest.yaml"),
 		Entry("YAML assignment with whitespace around the placeholder values", "password: (( should_match ))", 0, 28, "manifest.yaml"),
 		Entry("YAML assignment with non-placeholder", "suspect_password: placeholder-for-anything", 8, 42, "manifest.yml"),
+		Entry("YAML assignment with non-placeholder", "secret_password: this-is-a-placeholder", 7, 38, "manifest.yml"),
 	)
 })
