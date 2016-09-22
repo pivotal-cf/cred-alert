@@ -75,7 +75,7 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 		"task-id":   task.ID(),
 		"task-type": task.Type(),
 	})
-	logger.Debug("starting")
+	logger.Info("starting")
 
 	job, err := w.foreman.BuildJob(task)
 	if err != nil {
@@ -101,5 +101,5 @@ func (w *worker) processTask(logger lager.Logger, task queue.AckTask) {
 		return
 	}
 
-	logger.Debug("done")
+	logger.Info("done")
 }

@@ -135,6 +135,9 @@ func main() {
 		scratch,
 	)
 
+	//Could add a little worker that hits Github periodically to get the
+	//X-RateLimit-Remaining and other statistics
+
 	backgroundWorker := worker.New(logger, foreman, taskQueue, emitter)
 
 	members := []grouper.Member{
