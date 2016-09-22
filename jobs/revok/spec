@@ -74,6 +74,10 @@ properties:
     description: |
       Datadog API key
 
+  revok.metrics.sentry_dsn:
+    description: |
+      Sentry DSN
+
   revok.metrics.environment:
     description: |
       Environment tag for metrics

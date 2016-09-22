@@ -10,6 +10,7 @@ revok-mysql-password: $MYSQL_PASSWORD
 revok-mysql-hostname: $MYSQL_HOSTNAME
 
 revok-datadog-api-key: $DATADOG_API_KEY
+revok-sentry-dsn: $SENTRY_DSN
 
 revok-papertrail-address: $PAPERTRAIL_ADDRESS
 EOF

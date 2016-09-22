@@ -43,6 +43,9 @@ case $1 in
       <% if p("revok.metrics.datadog_api_key") %> \
       --datadog-api-key <%= p("revok.metrics.datadog_api_key") %> \
       <% end %> \
+      <% if p("revok.metrics.sentry_dsn") %> \
+      --sentry-dsn <%= p("revok.metrics.sentry_dsn") %> \
+      <% end %> \
       <% if p("revok.metrics.environment") %> \
       --environment <%= p("revok.metrics.environment") %> \
       <% end %> \
