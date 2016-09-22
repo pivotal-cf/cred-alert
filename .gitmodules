@@ -121,3 +121,11 @@
 	path = src/github.com/kardianos/osext
 	url = https://github.com/kardianos/osext
 	branch = master
+[submodule "src/github.com/getsentry/raven-go"]
+	path = src/github.com/getsentry/raven-go
+	url = https://github.com/getsentry/raven-go
+	branch = master
+[submodule "src/github.com/certifi/gocertifi"]
+	path = src/github.com/certifi/gocertifi
+	url = https://github.com/certifi/gocertifi
+	branch = master

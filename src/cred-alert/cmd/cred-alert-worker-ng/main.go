@@ -36,6 +36,7 @@ type Opts struct {
 	} `group:"GitHub Options"`
 
 	Metrics struct {
+		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN"`
 		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
 		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
 	} `group:"Metrics Options"`
@@ -60,6 +61,10 @@ func main() {
 	_, err := flags.Parse(&opts)
 	if err != nil {
 		os.Exit(1)
+	}
+
+	if opts.Metrics.SentryDSN != "" {
+		logger.RegisterSink(revok.NewSentrySink(opts.Metrics.SentryDSN, opts.Metrics.Environment))
 	}
 
 	workdir := opts.WorkDir
