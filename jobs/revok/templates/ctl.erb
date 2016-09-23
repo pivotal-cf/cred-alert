@@ -36,14 +36,14 @@ case $1 in
       --mysql-port <%= p("revok.mysql.port") %> \
       --mysql-dbname <%= p("revok.mysql.db") %> \
       --mysql-hostname <%= p("revok.mysql.hostname") %> \
-      <% if p("revok.metrics.datadog_api_key") %> \
-      --datadog-api-key <%= p("revok.metrics.datadog_api_key") %> \
+      <% if_p("revok.metrics.datadog_api_key") do |api_key| %> \
+      --datadog-api-key <%= api_key %> \
       <% end %> \
-      <% if p("revok.metrics.sentry_dsn") %> \
-      --sentry-dsn <%= p("revok.metrics.sentry_dsn") %> \
+      <% if_p("revok.metrics.sentry_dsn") do |dsn| %> \
+      --sentry-dsn <%= dsn %> \
       <% end %> \
-      <% if p("revok.metrics.environment") %> \
-      --environment <%= p("revok.metrics.environment") %> \
+      <% if_p("revok.metrics.environment") do |env| %> \
+      --environment <%= env %> \
       <% end %> \
       1>>$LOG_DIR/revok.stdout.log \
       2>>$LOG_DIR/revok.stderr.log
