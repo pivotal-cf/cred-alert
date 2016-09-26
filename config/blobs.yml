@@ -1,1 +1,13 @@
---- {}
+---
+golang/go1.7.1.linux-amd64.tar.gz:
+  object_id: 0b46e114-7129-4ae5-b471-7d4fbf15dee5
+  sha: 919ab01305ada0078a9fdf8a12bb56fb0b8a1444
+  size: 81618401
+libssh2/libssh2-1.7.0.tar.gz:
+  object_id: 0ad299de-3a95-4c29-a9b1-3d8ee2578bb4
+  sha: 02fef9bdafce3da466b36581a4ff53d519637aca
+  size: 811714
+libgit2/libgit2-0.24.1.tar.gz:
+  object_id: 4c81ee3d-d170-48d3-b897-c7dd23851304
+  sha: 198ac53d713c521d940951ab5d6b90b75b941918
+  size: 4173317
