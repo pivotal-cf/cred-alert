@@ -13,6 +13,6 @@ pushd cred-alert/
   # into release dir, which is invalid cross-device link
   export HOME=$PWD
 
-  bosh -n create-release --tarball --name $RELEASE_NAME --version "$VERSION"
-  mv releases/$RELEASE_NAME/revok-*.tgz "$OUTPUT"
+  bosh -n create-release --tarball --name revok --version "$VERSION"
+  mv releases/revok/revok-*.tgz "$OUTPUT"
 popd
