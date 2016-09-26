@@ -10,6 +10,9 @@ inputs:
 - name: cred-alert
 - name: version
 
+params:
+  RELEASE_NAME:
+
 outputs:
 - name: bosh-rc
 
