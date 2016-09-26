@@ -3,7 +3,6 @@ package githubclient_test
 import (
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,41 +12,23 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	"cred-alert/githubclient"
-	"cred-alert/metrics"
-	"cred-alert/metrics/metricsfakes"
 )
 
 var _ = Describe("Client", func() {
 	var (
-		client              githubclient.Client
-		server              *ghttp.Server
-		fakeEmitter         *metricsfakes.FakeEmitter
-		remainingCallsGauge *metricsfakes.FakeGauge
-		logger              *lagertest.TestLogger
-		header              http.Header
+		client githubclient.Client
+		server *ghttp.Server
+		logger *lagertest.TestLogger
 	)
-
-	var remainingApiBudget = 43
 
 	BeforeEach(func() {
 		server = ghttp.NewServer()
-		header = http.Header{
-			"X-RateLimit-Limit":     []string{"60"},
-			"X-RateLimit-Remaining": []string{strconv.Itoa(remainingApiBudget)},
-			"X-RateLimit-Reset":     []string{"1467645800"},
-		}
-		fakeEmitter = new(metricsfakes.FakeEmitter)
 		httpClient := &http.Client{
 			Transport: &http.Transport{},
 		}
 
 		logger = lagertest.NewTestLogger("client")
-
-		remainingCallsGauge = new(metricsfakes.FakeGauge)
-		fakeEmitter.GaugeStub = func(name string) metrics.Gauge {
-			return remainingCallsGauge
-		}
-		client = githubclient.NewClient(server.URL(), httpClient, fakeEmitter)
+		client = githubclient.NewClient(server.URL(), httpClient)
 	})
 
 	AfterEach(func() {
@@ -84,7 +65,7 @@ var _ = Describe("Client", func() {
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-					ghttp.RespondWith(http.StatusOK, commitInfoJSON, header),
+					ghttp.RespondWith(http.StatusOK, commitInfoJSON),
 				),
 			)
 			commitInfo, err := client.CommitInfo(logger, "owner", "repo", "someSha")
@@ -94,25 +75,12 @@ var _ = Describe("Client", func() {
 			Expect(commitInfo.Message).To(Equal("this is a commit message"))
 		})
 
-		It("updates the remaining api calls gauge", func() {
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-					ghttp.RespondWith(http.StatusOK, commitInfoJSON, header),
-				),
-			)
-			client.CommitInfo(logger, "owner", "repo", "someSha")
-			Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
-			_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
-			Expect(value).To(Equal(float32(remainingApiBudget)))
-		})
-
 		Context("the api request to github fails", func() {
 			It("returns and logs an error", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-						ghttp.RespondWith(http.StatusInternalServerError, commitInfoJSON, header),
+						ghttp.RespondWith(http.StatusInternalServerError, commitInfoJSON),
 					),
 				)
 
@@ -127,7 +95,7 @@ var _ = Describe("Client", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-						ghttp.RespondWith(http.StatusOK, commitInfoJSON, header),
+						ghttp.RespondWith(http.StatusOK, commitInfoJSON),
 					),
 				)
 				server.Close()
@@ -143,7 +111,7 @@ var _ = Describe("Client", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-						ghttp.RespondWith(http.StatusNotFound, commitInfoJSON, header),
+						ghttp.RespondWith(http.StatusNotFound, commitInfoJSON),
 					),
 				)
 				_, err := client.CommitInfo(logger, "owner", "repo", "someSha")
@@ -158,7 +126,7 @@ var _ = Describe("Client", func() {
 				server.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("GET", "/repos/owner/repo/commits/someSha"),
-						ghttp.RespondWith(http.StatusOK, `badjson: [unbalanced: parens}`, header),
+						ghttp.RespondWith(http.StatusOK, `badjson: [unbalanced: parens}`),
 					),
 				)
 
@@ -178,7 +146,7 @@ var _ = Describe("Client", func() {
 					ghttp.VerifyHeader(http.Header{
 						"Accept": []string{"application/vnd.github.diff"},
 					}),
-					ghttp.RespondWith(http.StatusOK, `THIS IS THE DIFF`, header),
+					ghttp.RespondWith(http.StatusOK, `THIS IS THE DIFF`),
 				),
 			)
 
@@ -194,7 +162,7 @@ var _ = Describe("Client", func() {
 					ghttp.VerifyHeader(http.Header{
 						"Accept": []string{"application/vnd.github.diff"},
 					}),
-					ghttp.RespondWith(http.StatusInternalServerError, "", header),
+					ghttp.RespondWith(http.StatusInternalServerError, ""),
 				),
 			)
 
@@ -209,28 +177,17 @@ var _ = Describe("Client", func() {
 			_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
 			Expect(err).To(HaveOccurred())
 		})
-
-		It("logs remaining api requests", func() {
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
-					ghttp.VerifyHeader(http.Header{
-						"Accept": []string{"application/vnd.github.diff"},
-					}),
-					ghttp.RespondWith(http.StatusOK, "", header),
-				),
-			)
-			_, err := client.CompareRefs(logger, "owner", "repo", "a", "b")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(remainingCallsGauge.UpdateCallCount()).To(Equal(1))
-			_, value, _ := remainingCallsGauge.UpdateArgsForCall(0)
-			Expect(value).To(Equal(float32(remainingApiBudget)))
-		})
 	})
 
 	Describe("GetArchiveLink", func() {
-		zipLocation := "https://github.example.com/there/is/a/file/here.zip"
+		var (
+			header      http.Header
+			zipLocation string
+		)
+
 		BeforeEach(func() {
+			zipLocation = "https://github.example.com/there/is/a/file/here.zip"
+			header = http.Header{}
 			header.Set("Location", zipLocation)
 		})
 

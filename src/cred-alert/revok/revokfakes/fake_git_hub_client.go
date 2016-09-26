@@ -18,6 +18,15 @@ type FakeGitHubClient struct {
 		result1 []revok.GitHubRepository
 		result2 error
 	}
+	RemainingRequestsStub        func(lager.Logger) (int, error)
+	remainingRequestsMutex       sync.RWMutex
+	remainingRequestsArgsForCall []struct {
+		arg1 lager.Logger
+	}
+	remainingRequestsReturns struct {
+		result1 int
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -56,11 +65,47 @@ func (fake *FakeGitHubClient) ListRepositoriesReturns(result1 []revok.GitHubRepo
 	}{result1, result2}
 }
 
+func (fake *FakeGitHubClient) RemainingRequests(arg1 lager.Logger) (int, error) {
+	fake.remainingRequestsMutex.Lock()
+	fake.remainingRequestsArgsForCall = append(fake.remainingRequestsArgsForCall, struct {
+		arg1 lager.Logger
+	}{arg1})
+	fake.recordInvocation("RemainingRequests", []interface{}{arg1})
+	fake.remainingRequestsMutex.Unlock()
+	if fake.RemainingRequestsStub != nil {
+		return fake.RemainingRequestsStub(arg1)
+	} else {
+		return fake.remainingRequestsReturns.result1, fake.remainingRequestsReturns.result2
+	}
+}
+
+func (fake *FakeGitHubClient) RemainingRequestsCallCount() int {
+	fake.remainingRequestsMutex.RLock()
+	defer fake.remainingRequestsMutex.RUnlock()
+	return len(fake.remainingRequestsArgsForCall)
+}
+
+func (fake *FakeGitHubClient) RemainingRequestsArgsForCall(i int) lager.Logger {
+	fake.remainingRequestsMutex.RLock()
+	defer fake.remainingRequestsMutex.RUnlock()
+	return fake.remainingRequestsArgsForCall[i].arg1
+}
+
+func (fake *FakeGitHubClient) RemainingRequestsReturns(result1 int, result2 error) {
+	fake.RemainingRequestsStub = nil
+	fake.remainingRequestsReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeGitHubClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.listRepositoriesMutex.RLock()
 	defer fake.listRepositoriesMutex.RUnlock()
+	fake.remainingRequestsMutex.RLock()
+	defer fake.remainingRequestsMutex.RUnlock()
 	return fake.invocations
 }
 

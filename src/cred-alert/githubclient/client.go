@@ -2,14 +2,12 @@ package githubclient
 
 import (
 	"bytes"
-	"cred-alert/metrics"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/gunk/urljoiner"
@@ -36,16 +34,14 @@ type CommitInfo struct {
 }
 
 type client struct {
-	baseURL        string
-	httpClient     *http.Client
-	rateLimitGauge metrics.Gauge
+	baseURL    string
+	httpClient *http.Client
 }
 
-func NewClient(baseURL string, httpClient *http.Client, emitter metrics.Emitter) *client {
+func NewClient(baseURL string, httpClient *http.Client) *client {
 	return &client{
-		baseURL:        baseURL,
-		httpClient:     httpClient,
-		rateLimitGauge: emitter.Gauge("cred_alert.github_remaining_requests"),
+		baseURL:    baseURL,
+		httpClient: httpClient,
 	}
 }
 
@@ -188,11 +184,6 @@ func (c *client) doRequest(logger lager.Logger, request *http.Request) (*http.Re
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return nil, err
-	}
-
-	remain, err := strconv.Atoi(response.Header.Get("X-RateLimit-Remaining"))
-	if err == nil {
-		c.rateLimitGauge.Update(logger, float32(remain))
 	}
 
 	return response, nil

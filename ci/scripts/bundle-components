@@ -6,5 +6,5 @@ INPUT="${PWD}/cred-alert-components"
 OUTPUT="${PWD}/cred-alert-bundle"
 
 pushd "${INPUT}"
-  tar czvf "${OUTPUT}/cred-alert-bundle.tgz" cred-alert-*
+  tar czvf "${OUTPUT}/cred-alert-bundle.tgz" cred-alert-* stats-monitor
 popd

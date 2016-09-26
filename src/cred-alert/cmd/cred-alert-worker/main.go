@@ -98,7 +98,7 @@ func main() {
 		},
 	}
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
-	client := githubclient.NewClient(githubclient.DefaultGitHubURL, httpClient, emitter)
+	client := githubclient.NewClient(githubclient.DefaultGitHubURL, httpClient)
 	clock := clock.NewClock()
 	repoWhitelist := notifications.BuildWhitelist(opts.Whitelist...)
 	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl, clock, repoWhitelist)
@@ -134,9 +134,6 @@ func main() {
 		expander,
 		scratch,
 	)
-
-	//Could add a little worker that hits Github periodically to get the
-	//X-RateLimit-Remaining and other statistics
 
 	backgroundWorker := worker.New(logger, foreman, taskQueue, emitter)
 

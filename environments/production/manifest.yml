@@ -28,3 +28,17 @@ applications:
   env:
     IGNORED_REPOS: ".*-credentials$,.*-pool$,.*deployments.*,.*envs.*,.*-locks$"
     ENVIRONMENT: "production"
+
+- name: stats-monitor-production
+  instances: 1
+  memory: 128M
+  disk_quota: 1024M
+  no-route: true
+  health-check-type: none
+  buildpack: binary_buildpack
+  stack: cflinuxfs2
+  command: ./stats-monitor
+  services:
+  - cred-alert-production-logs
+  env:
+    ENVIRONMENT: "production"
