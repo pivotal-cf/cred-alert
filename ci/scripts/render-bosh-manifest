@@ -15,7 +15,6 @@ revok-sentry-dsn: $SENTRY_DSN
 revok-papertrail-address: $PAPERTRAIL_ADDRESS
 EOF
 
-
 IFS=$'\n'
 echo "revok-github-private-key: |" >> credentials.yml
 for line in $GITHUB_PRIVATE_KEY; do
