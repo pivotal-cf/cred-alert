@@ -27,4 +27,4 @@ for line in $GITHUB_PUBLIC_KEY; do
   echo "  $line" >> credentials.yml
 done
 
-bosh-cli build-manifest sec-red-deployments/gcp/revok/bosh.yml -l credentials.yml > manifest/manifest.yml
+bosh-cli build-manifest $MANIFEST_PATH -l credentials.yml > manifest/manifest.yml
