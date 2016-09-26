@@ -6,15 +6,21 @@ import (
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
+	"github.com/google/go-github/github"
 	"github.com/tedsuo/ifrit"
 
 	"cred-alert/metrics"
-	"cred-alert/revok"
 )
+
+//go:generate counterfeiter . RateClient
+
+type RateClient interface {
+	RateLimits() (*github.RateLimits, *github.Response, error)
+}
 
 type monitor struct {
 	logger                lager.Logger
-	ghClient              revok.GitHubClient
+	ghClient              RateClient
 	clock                 clock.Clock
 	interval              time.Duration
 	remainingRequestGauge metrics.Gauge
@@ -22,7 +28,7 @@ type monitor struct {
 
 func NewMonitor(
 	logger lager.Logger,
-	ghClient revok.GitHubClient,
+	ghClient RateClient,
 	emitter metrics.Emitter,
 	clock clock.Clock,
 	interval time.Duration,
@@ -46,12 +52,12 @@ func (m *monitor) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	for {
 		select {
 		case <-timer.C():
-			remaining, err := m.ghClient.RemainingRequests(m.logger)
+			rates, _, err := m.ghClient.RateLimits()
 			if err != nil {
 				m.logger.Error("failed-to-get-remaining-requests", err)
 				continue
 			}
-			m.remainingRequestGauge.Update(m.logger, float32(remaining))
+			m.remainingRequestGauge.Update(m.logger, float32(rates.Core.Remaining))
 		case <-signals:
 			return nil
 		}

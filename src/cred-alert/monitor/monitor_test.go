@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/go-github/github"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -15,7 +16,7 @@ import (
 
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/monitor"
-	"cred-alert/revok/revokfakes"
+	"cred-alert/monitor/monitorfakes"
 )
 
 var _ = Describe("Monitor", func() {
@@ -23,7 +24,7 @@ var _ = Describe("Monitor", func() {
 		process ifrit.Process
 
 		logger   *lagertest.TestLogger
-		ghClient *revokfakes.FakeGitHubClient
+		ghClient *monitorfakes.FakeRateClient
 		clock    *fakeclock.FakeClock
 		emitter  *metricsfakes.FakeEmitter
 
@@ -35,7 +36,7 @@ var _ = Describe("Monitor", func() {
 		interval = 60 * time.Second
 
 		logger = lagertest.NewTestLogger("monitor")
-		ghClient = &revokfakes.FakeGitHubClient{}
+		ghClient = &monitorfakes.FakeRateClient{}
 		clock = fakeclock.NewFakeClock(time.Now())
 		emitter = &metricsfakes.FakeEmitter{}
 		gauge = &metricsfakes.FakeGauge{}
@@ -52,7 +53,7 @@ var _ = Describe("Monitor", func() {
 
 	Context("after the process has just started", func() {
 		It("has not asked GitHub for the remaining requests", func() {
-			Consistently(ghClient.RemainingRequestsCallCount).Should(BeZero())
+			Consistently(ghClient.RateLimitsCallCount).Should(BeZero())
 		})
 
 		It("has not sent anything", func() {
@@ -62,7 +63,7 @@ var _ = Describe("Monitor", func() {
 
 	Context("after the process has been running for one interval", func() {
 		BeforeEach(func() {
-			ghClient.RemainingRequestsReturns(772, nil)
+			ghClient.RateLimitsReturns(rateLimit(772), nil, nil)
 			clock.WaitForNWatchersAndIncrement(interval, 1)
 		})
 
@@ -75,7 +76,7 @@ var _ = Describe("Monitor", func() {
 
 	Context("after the process has been running for many intervals", func() {
 		BeforeEach(func() {
-			ghClient.RemainingRequestsReturns(72, nil)
+			ghClient.RateLimitsReturns(rateLimit(72), nil, nil)
 
 			clock.WaitForNWatchersAndIncrement(interval, 1)
 		})
@@ -95,7 +96,7 @@ var _ = Describe("Monitor", func() {
 
 	Context("if getting the rate from github fails", func() {
 		BeforeEach(func() {
-			ghClient.RemainingRequestsReturns(0, errors.New("some-error"))
+			ghClient.RateLimitsReturns(nil, nil, errors.New("some-error"))
 			clock.WaitForNWatchersAndIncrement(interval, 1)
 		})
 
@@ -108,3 +109,11 @@ var _ = Describe("Monitor", func() {
 		})
 	})
 })
+
+func rateLimit(limit int) *github.RateLimits {
+	return &github.RateLimits{
+		Core: &github.Rate{
+			Remaining: limit,
+		},
+	}
+}

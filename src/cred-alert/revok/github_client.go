@@ -11,7 +11,6 @@ import (
 
 type GitHubClient interface {
 	ListRepositories(lager.Logger) ([]GitHubRepository, error)
-	RemainingRequests(lager.Logger) (int, error)
 }
 
 type client struct {
@@ -24,15 +23,6 @@ func NewGitHubClient(
 	return &client{
 		ghClient: ghClient,
 	}
-}
-
-func (c *client) RemainingRequests(logger lager.Logger) (int, error) {
-	rate, _, err := c.ghClient.RateLimits()
-	if err != nil {
-		logger.Error("failed-getting-stats", err)
-		return 0, err
-	}
-	return rate.Core.Remaining, nil
 }
 
 func (c *client) ListRepositories(logger lager.Logger) ([]GitHubRepository, error) {

@@ -1,22 +1,21 @@
 package main
 
 import (
-	"cred-alert/metrics"
-	"cred-alert/monitor"
-	"cred-alert/revok"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"code.cloudfoundry.org/clock"
+	"code.cloudfoundry.org/lager"
 	"github.com/google/go-github/github"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/sigmon"
 	"golang.org/x/oauth2"
 
-	"code.cloudfoundry.org/clock"
-	"code.cloudfoundry.org/lager"
+	"cred-alert/metrics"
+	"cred-alert/monitor"
 )
 
 type Opts struct {
@@ -64,7 +63,7 @@ func main() {
 	clock := clock.NewClock()
 
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
-	ghClient := revok.NewGitHubClient(github.NewClient(httpClient))
+	ghClient := github.NewClient(httpClient)
 	monitor := monitor.NewMonitor(logger, ghClient, emitter, clock, opts.MonitoringInterval)
 
 	runner := sigmon.New(monitor)
