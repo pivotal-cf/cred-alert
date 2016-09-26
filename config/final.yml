@@ -1,4 +1,4 @@
-final_name: cred-alert
+final_name: revok
 blobstore:
   provider: s3
   options:
