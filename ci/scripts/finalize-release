@@ -18,9 +18,12 @@ fi
 
 git clone $BOSH_RELEASE_DIR $FINAL_RELEASE_REPO
 
-for line in $BLOBSTORE_PRIVATE_YML; do
-  echo $line >> $FINAL_RELEASE_REPO/config/private.yml
-done
+{
+  IFS=''
+  for line in $BLOBSTORE_PRIVATE_YML; do
+    echo $line >> $FINAL_RELEASE_REPO/config/private.yml
+  done
+}
 
 cd $FINAL_RELEASE_REPO
 
