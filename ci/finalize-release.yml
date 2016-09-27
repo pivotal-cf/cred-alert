@@ -7,10 +7,9 @@ image_resource:
     repository: concourse/bosh-cli
 
 inputs:
-- name: cred-alert
-  path: bosh-release
-- name: version
+- name: bosh-release
 - name: bosh-rc
+- name: version
 - name: sec-red-deployments
   path: deployments
 
@@ -22,4 +21,4 @@ params:
   RELEASE_NAME:
 
 run:
-  path: cred-alert/ci/scripts/finalize-release
+  path: bosh-release/ci/scripts/finalize-release
