@@ -28,17 +28,15 @@ cd $FINAL_RELEASE_REPO
 RELEASE_YML=$PWD/releases/$RELEASE_NAME/$RELEASE_NAME-${VERSION}.yml
 RELEASE_TGZ=$PWD/releases/$RELEASE_NAME/$RELEASE_NAME-${VERSION}.tgz
 
-git config --global user.email "ci@localhost"
-git config --global user.name "CI Bot"
-
-# work-around Go BOSH CLI trying to rename blobs downloaded into ~/.root/tmp
-# into release dir, which is invalid cross-device link
-export HOME=$PWD
-
 # be idempotent
 if ! [ -e ${RELEASE_YML} ]; then
   echo "finalizing release"
-  bosh -n finalize-release --version "$VERSION" ${CANDIDATE_DIR}/$RELEASE_NAME-*.tgz
+  {
+    # work-around Go BOSH CLI trying to rename blobs downloaded into ~/.root/tmp
+    # into release dir, which is invalid cross-device link
+    HOME=$PWD
+    bosh -n finalize-release --version "$VERSION" ${CANDIDATE_DIR}/$RELEASE_NAME-*.tgz
+  }
   git add -A
   git commit -m "release v${VERSION}"
 fi
