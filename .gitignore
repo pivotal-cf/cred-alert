@@ -5,6 +5,7 @@
 # BOSH
 config/private.yml
 blobs
+.blobs
 dev_releases
 releases/*.tgz
 releases/**/*.tgz
