@@ -10,8 +10,6 @@ inputs:
 - name: bosh-release
 - name: bosh-rc
 - name: version
-- name: sec-red-deployments
-  path: deployments
 
 outputs:
 - name: final-release-repo
@@ -19,7 +17,7 @@ outputs:
 
 params:
   RELEASE_NAME:
-  BLOBSTORE_PRIVATE_YML_PATH:
+  BLOBSTORE_PRIVATE_YML:
 
 run:
   path: bosh-release/ci/scripts/finalize-release
