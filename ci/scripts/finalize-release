@@ -18,7 +18,7 @@ fi
 
 git clone $BOSH_RELEASE_DIR $FINAL_RELEASE_REPO
 
-cp deployments/ci/config/private.yml $FINAL_RELEASE_REPO/config/private.yml
+cp $BLOBSTORE_PRIVATE_YML_PATH $FINAL_RELEASE_REPO/config/private.yml
 
 cd $FINAL_RELEASE_REPO
 

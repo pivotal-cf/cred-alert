@@ -19,6 +19,7 @@ outputs:
 
 params:
   RELEASE_NAME:
+  BLOBSTORE_PRIVATE_YML_PATH:
 
 run:
   path: bosh-release/ci/scripts/finalize-release
