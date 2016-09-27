@@ -8,6 +8,7 @@ blobs
 dev_releases
 releases/*.tgz
 releases/**/*.tgz
+.bosh
 .dev_builds
 .final_builds/jobs/**/*.tgz
 .final_builds/packages/**/*.tgz
