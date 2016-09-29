@@ -155,6 +155,7 @@ func (c *Cloner) scanAncestors(
 			}
 		}
 	}
+
 	return nil
 }
 
