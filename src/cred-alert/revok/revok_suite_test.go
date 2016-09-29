@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	git "github.com/libgit2/git2go"
 	. "github.com/onsi/ginkgo"
@@ -54,8 +55,11 @@ func createCommit(repoPath, filePath string, contents []byte, commitMsg string) 
 	Expect(err).NotTo(HaveOccurred())
 	defer tree.Free()
 
-	sig, err := repo.DefaultSignature()
-	Expect(err).NotTo(HaveOccurred())
+	sig := &git.Signature{
+		Name:  "revok-test",
+		Email: "revok-test@localhost",
+		When:  time.Now(),
+	}
 
 	if parent != nil {
 		_, err = repo.CreateCommit("HEAD", sig, sig, commitMsg, tree, parent)
