@@ -94,6 +94,7 @@ var _ = Describe("RepoDiscoverer", func() {
 
 	AfterEach(func() {
 		ginkgomon.Interrupt(process)
+		<-process.Wait()
 		os.RemoveAll(workdir)
 	})
 

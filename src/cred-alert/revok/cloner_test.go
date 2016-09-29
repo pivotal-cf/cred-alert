@@ -86,6 +86,13 @@ var _ = Describe("Cloner", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	AfterEach(func() {
+		ginkgomon.Interrupt(process)
+		<-process.Wait()
+
+		os.RemoveAll(workdir)
+	})
+
 	JustBeforeEach(func() {
 		sniffer = &snifffakes.FakeSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
@@ -110,11 +117,6 @@ var _ = Describe("Cloner", func() {
 			emitter,
 		)
 		process = ginkgomon.Invoke(runner)
-	})
-
-	AfterEach(func() {
-		ginkgomon.Interrupt(process)
-		os.RemoveAll(workdir)
 	})
 
 	Context("when there is a message on the clone message channel", func() {

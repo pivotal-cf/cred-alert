@@ -151,6 +151,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 	AfterEach(func() {
 		ginkgomon.Interrupt(process)
+		<-process.Wait()
 		os.RemoveAll(workdir)
 	})
 

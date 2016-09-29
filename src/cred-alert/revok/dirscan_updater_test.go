@@ -37,6 +37,7 @@ var _ = Describe("DirscanUpdater", func() {
 		successMetric *metricsfakes.FakeCounter
 		failedMetric  *metricsfakes.FakeCounter
 
+		tempdir string
 		runner  ifrit.Runner
 		process ifrit.Process
 	)
@@ -78,7 +79,8 @@ var _ = Describe("DirscanUpdater", func() {
 			return secondScan
 		}
 
-		tempdir, err := ioutil.TempDir("", "dirscan-updater-test")
+		var err error
+		tempdir, err = ioutil.TempDir("", "dirscan-updater-test")
 		Expect(err).NotTo(HaveOccurred())
 
 		err = os.MkdirAll(filepath.Join(tempdir, "some-owner", "some-repo"), os.ModePerm)
@@ -112,7 +114,12 @@ var _ = Describe("DirscanUpdater", func() {
 				Path:  filepath.Join(tempdir, "some-other-owner", "some-other-repo"),
 			},
 		}, nil)
+	})
 
+	AfterEach(func() {
+		ginkgomon.Interrupt(process)
+		<-process.Wait()
+		os.RemoveAll(tempdir)
 	})
 
 	JustBeforeEach(func() {
@@ -124,10 +131,6 @@ var _ = Describe("DirscanUpdater", func() {
 			emitter,
 		)
 		process = ginkgomon.Invoke(runner)
-	})
-
-	AfterEach(func() {
-		ginkgomon.Interrupt(process)
 	})
 
 	It("gets the repositories from the RepositoryRepository", func() {
