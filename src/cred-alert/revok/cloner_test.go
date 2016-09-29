@@ -42,6 +42,7 @@ var _ = Describe("Cloner", func() {
 		secondScan    *dbfakes.FakeActiveScan
 		successMetric *metricsfakes.FakeCounter
 		failedMetric  *metricsfakes.FakeCounter
+		repoPath      string
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -82,14 +83,24 @@ var _ = Describe("Cloner", func() {
 		}
 
 		var err error
+		repoPath, err = ioutil.TempDir("", "revok-test-base-repo")
+		Expect(err).NotTo(HaveOccurred())
+
+		repo, err := git.InitRepository(repoPath, false)
+		Expect(err).NotTo(HaveOccurred())
+		defer repo.Free()
+
 		workdir, err = ioutil.TempDir("", "revok-test")
 		Expect(err).NotTo(HaveOccurred())
+
+		createCommit(repoPath, "some-file", []byte("credential"), "Initial commit")
 	})
 
 	AfterEach(func() {
 		ginkgomon.Interrupt(process)
 		<-process.Wait()
 
+		os.RemoveAll(repoPath)
 		os.RemoveAll(workdir)
 	})
 
@@ -128,23 +139,31 @@ var _ = Describe("Cloner", func() {
 			}
 		})
 
-		It("tries to clone when it receives a message", func() {
-			Eventually(filepath.Join(workdir, "some-owner", "some-repo")).Should(BeADirectory())
+		It("clones the repository to workdir/owner/repo", func() {
+			Eventually(filepath.Join(workdir, "some-owner", "some-repo", ".git")).Should(BeADirectory())
+			Eventually(func() error {
+				_, err := git.OpenRepository(filepath.Join(workdir, "some-owner", "some-repo"))
+				return err
+			}).ShouldNot(HaveOccurred())
 		})
 
-		It("updates the repository in the database", func() {
-			Eventually(repositoryRepository.MarkAsClonedCallCount).Should(Equal(1))
-		})
-
-		It("finds the repository in the database", func() {
+		It("finds the repository in the database that matches the owner and repo", func() {
 			Eventually(repositoryRepository.FindCallCount).Should(Equal(1))
 			owner, name := repositoryRepository.FindArgsForCall(0)
 			Expect(owner).To(Equal("some-owner"))
 			Expect(name).To(Equal("some-repo"))
 		})
 
-		It("scans each file in the default branch of the cloned repo", func() {
+		It("marks the repository in the database as cloned", func() {
+			Eventually(repositoryRepository.MarkAsClonedCallCount).Should(Equal(1))
+		})
+
+		It("sniffs", func() {
 			Eventually(sniffer.SniffCallCount).Should(Equal(1))
+		})
+
+		It("records credentials found in the repository", func() {
+			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 		})
 
 		It("tries to store information in the database about found credentials", func() {
@@ -158,16 +177,13 @@ var _ = Describe("Cloner", func() {
 			Eventually(firstScan.FinishCallCount).Should(Equal(1))
 		})
 
-		It("does a diff-scan of every commit in the repository", func() {
-			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
-		})
-
 		Context("when the repository has multiple commits", func() {
 			BeforeEach(func() {
 				createCommit(repoPath, "some-other-file", []byte("credential"), "second commit")
 			})
 
 			It("scans all commits in the repository", func() {
+				Eventually(sniffer.SniffCallCount).Should(Equal(2))
 				Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 				Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
 			})

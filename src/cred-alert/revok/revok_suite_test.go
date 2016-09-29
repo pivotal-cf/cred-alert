@@ -18,27 +18,6 @@ func TestRevok(t *testing.T) {
 	RunSpecs(t, "Revok Suite")
 }
 
-var repoPath string
-
-var _ = SynchronizedBeforeSuite(func() []byte {
-	tmpDir, err := ioutil.TempDir("", "revok-test")
-	Expect(err).NotTo(HaveOccurred())
-
-	repo, err := git.InitRepository(tmpDir, false)
-	Expect(err).NotTo(HaveOccurred())
-	defer repo.Free()
-
-	createCommit(tmpDir, "some-file", []byte("credential"), "Initial commit")
-
-	return []byte(tmpDir)
-}, func(path []byte) {
-	repoPath = string(path)
-})
-
-var _ = SynchronizedAfterSuite(func() {}, func() {
-	os.RemoveAll(repoPath)
-})
-
 func createCommit(repoPath, filePath string, contents []byte, commitMsg string) {
 	err := ioutil.WriteFile(filepath.Join(repoPath, filePath), contents, os.ModePerm)
 
