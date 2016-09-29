@@ -6,13 +6,15 @@ import (
 	"cred-alert/kolsch"
 	"cred-alert/metrics"
 	"cred-alert/scanners"
-	"cred-alert/scanners/dirscanner"
+	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"code.cloudfoundry.org/lager"
 
+	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 )
 
@@ -82,7 +84,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 	})
 	defer workLogger.Info("done")
 
-	err := c.gitClient.Clone(msg.URL, dest)
+	repo, err := c.gitClient.Clone(msg.URL, dest)
 	if err != nil {
 		workLogger.Error("failed-to-clone", err)
 		err = os.RemoveAll(dest)
@@ -104,13 +106,78 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	scan := c.scanRepository.Start(workLogger, "dir-scan", &dbRepository, nil)
-	scanner := dirscanner.New(
+	head, err := repo.Head()
+	if err != nil {
+		workLogger.Error("failed-to-get-head-of-repo", err)
+		return
+	}
+
+	err = c.scanAncestors(kolsch.NewLogger(), workLogger, repo, dest, dbRepository, head.Target())
+	if err != nil {
+		workLogger.Error("failed-to-scan", err)
+	}
+}
+
+func (c *Cloner) scanAncestors(
+	quietLogger lager.Logger,
+	workLogger lager.Logger,
+	repo *git.Repository,
+	repoPath string,
+	dbRepository db.Repository,
+	child *git.Oid,
+) error {
+	parents, err := c.gitClient.GetParents(repo, child)
+	if err != nil {
+		return err
+	}
+
+	if len(parents) == 0 {
+		err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child)
+		if err != nil {
+			return err
+		}
+	} else {
+		for _, parent := range parents {
+			err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, parent)
+			if err != nil {
+				return err
+			}
+			err = c.scanAncestors(quietLogger, workLogger, repo, repoPath, dbRepository, parent)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Cloner) scan(
+	quietLogger lager.Logger,
+	workLogger lager.Logger,
+	repoPath string,
+	dbRepository db.Repository,
+	child *git.Oid,
+	parents ...*git.Oid,
+) error {
+	var parent *git.Oid
+	if len(parents) == 1 {
+		parent = parents[0]
+	}
+
+	diff, err := c.gitClient.Diff(repoPath, parent, child)
+	if err != nil {
+		return err
+	}
+
+	scan := c.scanRepository.Start(quietLogger, "diff-scan", &dbRepository, nil)
+	c.sniffer.Sniff(
+		workLogger,
+		diffscanner.NewDiffScanner(strings.NewReader(diff)),
 		func(logger lager.Logger, violation scanners.Violation) error {
 			line := violation.Line
 			scan.RecordCredential(db.NewCredential(
-				msg.Owner,
-				msg.Repository,
+				dbRepository.Owner,
+				dbRepository.Name,
 				"",
 				line.Path,
 				line.LineNumber,
@@ -119,8 +186,9 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 			))
 			return nil
 		},
-		c.sniffer,
 	)
-	_ = scanner.Scan(kolsch.NewLogger(), dest)
+
 	finishScan(workLogger, scan, c.successCounter, c.failedCounter)
+
+	return nil
 }

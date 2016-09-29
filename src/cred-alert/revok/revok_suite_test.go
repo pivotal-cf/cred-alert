@@ -2,7 +2,11 @@ package revok_test
 
 import (
 	"cred-alert/revok"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
+	git "github.com/libgit2/git2go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -12,6 +16,78 @@ import (
 func TestRevok(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Revok Suite")
+}
+
+var repoPath string
+
+var _ = SynchronizedBeforeSuite(func() []byte {
+	tmpDir, err := ioutil.TempDir("", "revok-test")
+	Expect(err).NotTo(HaveOccurred())
+
+	repo, err := git.InitRepository(tmpDir, false)
+	Expect(err).NotTo(HaveOccurred())
+	defer repo.Free()
+
+	createCommit(tmpDir, "some-file", []byte("credential"), "Initial commit")
+
+	return []byte(tmpDir)
+}, func(path []byte) {
+	repoPath = string(path)
+})
+
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	os.RemoveAll(repoPath)
+})
+
+func createCommit(repoPath, filePath string, contents []byte, commitMsg string) {
+	err := ioutil.WriteFile(filepath.Join(repoPath, filePath), contents, os.ModePerm)
+
+	repo, err := git.OpenRepository(repoPath)
+	Expect(err).NotTo(HaveOccurred())
+	defer repo.Free()
+
+	var parent *git.Commit
+	head, _ := repo.Head()
+	if head != nil {
+		defer head.Free()
+		parentId := head.Target()
+
+		object, err := repo.Lookup(parentId)
+		Expect(err).NotTo(HaveOccurred())
+		defer object.Free()
+
+		parent, err = object.AsCommit()
+		Expect(err).NotTo(HaveOccurred())
+		defer parent.Free()
+	}
+
+	index, err := repo.Index()
+	Expect(err).NotTo(HaveOccurred())
+	defer index.Free()
+
+	err = index.AddByPath(filePath)
+	Expect(err).NotTo(HaveOccurred())
+
+	treeOid, err := index.WriteTree()
+	Expect(err).NotTo(HaveOccurred())
+
+	tree, err := repo.LookupTree(treeOid)
+	Expect(err).NotTo(HaveOccurred())
+	defer tree.Free()
+
+	sig, err := repo.DefaultSignature()
+	Expect(err).NotTo(HaveOccurred())
+
+	if parent != nil {
+		_, err = repo.CreateCommit("HEAD", sig, sig, commitMsg, tree, parent)
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		_, err = repo.CreateCommit("HEAD", sig, sig, commitMsg, tree)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	err = index.Write()
+	Expect(err).NotTo(HaveOccurred())
 }
 
 var boshSampleReleaseRepository = revok.GitHubRepository{

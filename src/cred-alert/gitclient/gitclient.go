@@ -16,7 +16,8 @@ type client struct {
 //go:generate counterfeiter . Client
 
 type Client interface {
-	Clone(string, string) error
+	Clone(string, string) (*git.Repository, error)
+	GetParents(*git.Repository, *git.Oid) ([]*git.Oid, error)
 	Fetch(string) (map[string][]*git.Oid, error)
 	HardReset(string, *git.Oid) error
 	Diff(repositoryPath string, a, b *git.Oid) (string, error)
@@ -37,13 +38,30 @@ func New(privateKeyPath, publicKeyPath string) *client {
 	}
 }
 
-func (c *client) Clone(sshURL, dest string) error {
-	_, err := git.Clone(sshURL, dest, c.cloneOptions)
+func (c *client) Clone(sshURL, dest string) (*git.Repository, error) {
+	return git.Clone(sshURL, dest, c.cloneOptions)
+}
+
+func (c *client) GetParents(repo *git.Repository, child *git.Oid) ([]*git.Oid, error) {
+	object, err := repo.Lookup(child)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	defer object.Free()
+
+	commit, err := object.AsCommit()
+	if err != nil {
+		return nil, err
+	}
+	defer commit.Free()
+
+	var parents []*git.Oid
+	var i uint
+	for i = 0; i < commit.ParentCount(); i++ {
+		parents = append(parents, commit.ParentId(i))
 	}
 
-	return nil
+	return parents, nil
 }
 
 func (c *client) Fetch(repositoryPath string) (map[string][]*git.Oid, error) {
@@ -117,20 +135,24 @@ func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string
 	return 0
 }
 
-func (c *client) Diff(repositoryPath string, a, b *git.Oid) (string, error) {
+func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, error) {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
 		return "", err
 	}
 	defer repo.Free()
 
-	aTree, err := objectToTree(repo, a)
-	if err != nil {
-		return "", err
+	var aTree *git.Tree
+	if parent != nil {
+		var err error
+		aTree, err = objectToTree(repo, parent)
+		if err != nil {
+			return "", err
+		}
+		defer aTree.Free()
 	}
-	defer aTree.Free()
 
-	bTree, err := objectToTree(repo, b)
+	bTree, err := objectToTree(repo, child)
 	if err != nil {
 		return "", err
 	}

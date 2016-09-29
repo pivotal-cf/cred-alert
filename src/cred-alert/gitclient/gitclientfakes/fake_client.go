@@ -9,14 +9,25 @@ import (
 )
 
 type FakeClient struct {
-	CloneStub        func(string, string) error
+	CloneStub        func(string, string) (*git.Repository, error)
 	cloneMutex       sync.RWMutex
 	cloneArgsForCall []struct {
 		arg1 string
 		arg2 string
 	}
 	cloneReturns struct {
-		result1 error
+		result1 *git.Repository
+		result2 error
+	}
+	GetParentsStub        func(*git.Repository, *git.Oid) ([]*git.Oid, error)
+	getParentsMutex       sync.RWMutex
+	getParentsArgsForCall []struct {
+		arg1 *git.Repository
+		arg2 *git.Oid
+	}
+	getParentsReturns struct {
+		result1 []*git.Oid
+		result2 error
 	}
 	FetchStub        func(string) (map[string][]*git.Oid, error)
 	fetchMutex       sync.RWMutex
@@ -51,7 +62,7 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) Clone(arg1 string, arg2 string) error {
+func (fake *FakeClient) Clone(arg1 string, arg2 string) (*git.Repository, error) {
 	fake.cloneMutex.Lock()
 	fake.cloneArgsForCall = append(fake.cloneArgsForCall, struct {
 		arg1 string
@@ -62,7 +73,7 @@ func (fake *FakeClient) Clone(arg1 string, arg2 string) error {
 	if fake.CloneStub != nil {
 		return fake.CloneStub(arg1, arg2)
 	} else {
-		return fake.cloneReturns.result1
+		return fake.cloneReturns.result1, fake.cloneReturns.result2
 	}
 }
 
@@ -78,11 +89,47 @@ func (fake *FakeClient) CloneArgsForCall(i int) (string, string) {
 	return fake.cloneArgsForCall[i].arg1, fake.cloneArgsForCall[i].arg2
 }
 
-func (fake *FakeClient) CloneReturns(result1 error) {
+func (fake *FakeClient) CloneReturns(result1 *git.Repository, result2 error) {
 	fake.CloneStub = nil
 	fake.cloneReturns = struct {
-		result1 error
-	}{result1}
+		result1 *git.Repository
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetParents(arg1 *git.Repository, arg2 *git.Oid) ([]*git.Oid, error) {
+	fake.getParentsMutex.Lock()
+	fake.getParentsArgsForCall = append(fake.getParentsArgsForCall, struct {
+		arg1 *git.Repository
+		arg2 *git.Oid
+	}{arg1, arg2})
+	fake.recordInvocation("GetParents", []interface{}{arg1, arg2})
+	fake.getParentsMutex.Unlock()
+	if fake.GetParentsStub != nil {
+		return fake.GetParentsStub(arg1, arg2)
+	} else {
+		return fake.getParentsReturns.result1, fake.getParentsReturns.result2
+	}
+}
+
+func (fake *FakeClient) GetParentsCallCount() int {
+	fake.getParentsMutex.RLock()
+	defer fake.getParentsMutex.RUnlock()
+	return len(fake.getParentsArgsForCall)
+}
+
+func (fake *FakeClient) GetParentsArgsForCall(i int) (*git.Repository, *git.Oid) {
+	fake.getParentsMutex.RLock()
+	defer fake.getParentsMutex.RUnlock()
+	return fake.getParentsArgsForCall[i].arg1, fake.getParentsArgsForCall[i].arg2
+}
+
+func (fake *FakeClient) GetParentsReturns(result1 []*git.Oid, result2 error) {
+	fake.GetParentsStub = nil
+	fake.getParentsReturns = struct {
+		result1 []*git.Oid
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeClient) Fetch(arg1 string) (map[string][]*git.Oid, error) {
@@ -194,6 +241,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.cloneMutex.RLock()
 	defer fake.cloneMutex.RUnlock()
+	fake.getParentsMutex.RLock()
+	defer fake.getParentsMutex.RUnlock()
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	fake.hardResetMutex.RLock()

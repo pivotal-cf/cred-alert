@@ -3,6 +3,7 @@ package revok_test
 import (
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
+	"cred-alert/gitclient"
 	"cred-alert/gitclient/gitclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
@@ -18,6 +19,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
@@ -30,7 +32,7 @@ var _ = Describe("Cloner", func() {
 		workdir              string
 		workCh               chan revok.CloneMsg
 		logger               *lagertest.TestLogger
-		gitClient            *gitclientfakes.FakeClient
+		gitClient            gitclient.Client
 		sniffer              *snifffakes.FakeSniffer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		scanRepository       *dbfakes.FakeScanRepository
@@ -48,7 +50,7 @@ var _ = Describe("Cloner", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
 		workCh = make(chan revok.CloneMsg, 10)
-		gitClient = &gitclientfakes.FakeClient{}
+		gitClient = gitclient.New("private-key-path", "public-key-path")
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 		repositoryRepository.FindReturns(db.Repository{
 			Model: db.Model{
@@ -81,12 +83,6 @@ var _ = Describe("Cloner", func() {
 
 		var err error
 		workdir, err = ioutil.TempDir("", "revok-test")
-		Expect(err).NotTo(HaveOccurred())
-
-		err = os.MkdirAll(filepath.Join(workdir, "some-owner", "some-repo"), os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = ioutil.WriteFile(filepath.Join(workdir, "some-owner", "some-repo", "some-file"), []byte("credential"), os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -124,17 +120,14 @@ var _ = Describe("Cloner", func() {
 	Context("when there is a message on the clone message channel", func() {
 		BeforeEach(func() {
 			workCh <- revok.CloneMsg{
-				URL:        "some-url",
+				URL:        repoPath,
 				Repository: "some-repo",
 				Owner:      "some-owner",
 			}
 		})
 
 		It("tries to clone when it receives a message", func() {
-			Eventually(gitClient.CloneCallCount).Should(Equal(1))
-			url, dest := gitClient.CloneArgsForCall(0)
-			Expect(url).To(Equal("some-url"))
-			Expect(dest).To(Equal(filepath.Join(workdir, "some-owner", "some-repo")))
+			Eventually(filepath.Join(workdir, "some-owner", "some-repo")).Should(BeADirectory())
 		})
 
 		It("updates the repository in the database", func() {
@@ -155,7 +148,7 @@ var _ = Describe("Cloner", func() {
 		It("tries to store information in the database about found credentials", func() {
 			Eventually(scanRepository.StartCallCount).Should(Equal(1))
 			_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
-			Expect(scanType).To(Equal("dir-scan"))
+			Expect(scanType).To(Equal("diff-scan"))
 			Expect(repository.ID).To(BeNumerically("==", 42))
 			Expect(fetch).To(BeNil())
 
@@ -163,18 +156,38 @@ var _ = Describe("Cloner", func() {
 			Eventually(firstScan.FinishCallCount).Should(Equal(1))
 		})
 
+		It("does a diff-scan of every commit in the repository", func() {
+			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
+		})
+
+		Context("when the repository has multiple commits", func() {
+			BeforeEach(func() {
+				createCommit(repoPath, "some-other-file", []byte("credential"), "second commit")
+			})
+
+			It("scans all commits in the repository", func() {
+				Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
+				Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
+			})
+		})
+
 		Context("when cloning fails", func() {
 			BeforeEach(func() {
-				gitClient.CloneStub = func(url, dest string) error {
+				fakeGitClient := &gitclientfakes.FakeClient{}
+				fakeGitClient.CloneStub = func(url, dest string) (*git.Repository, error) {
 					err := os.MkdirAll(dest, os.ModePerm)
 					Expect(err).NotTo(HaveOccurred())
-					return errors.New("an-error")
+					return nil, errors.New("an-error")
 				}
+				gitClient = fakeGitClient
 			})
 
 			It("cleans up the failed clone destination, if any", func() {
-				Eventually(gitClient.CloneCallCount).Should(Equal(1))
-				_, dest := gitClient.CloneArgsForCall(0)
+				fakeGitClient, ok := gitClient.(*gitclientfakes.FakeClient)
+				Expect(ok).To(BeTrue())
+
+				Eventually(fakeGitClient.CloneCallCount).Should(Equal(1))
+				_, dest := fakeGitClient.CloneArgsForCall(0)
 				Eventually(dest).ShouldNot(BeADirectory())
 			})
 
