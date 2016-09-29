@@ -179,7 +179,7 @@ func (c *Cloner) scan(
 
 	scan := c.scanRepository.Start(quietLogger, "diff-scan", &dbRepository, nil)
 	c.sniffer.Sniff(
-		workLogger,
+		quietLogger,
 		diffscanner.NewDiffScanner(strings.NewReader(diff)),
 		func(logger lager.Logger, violation scanners.Violation) error {
 			line := violation.Line
