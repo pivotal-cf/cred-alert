@@ -134,26 +134,20 @@ func (c *Cloner) scanAncestors(
 	}
 
 	if len(parents) == 0 {
-		err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids)
+		return c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids)
+	}
+
+	for _, parent := range parents {
+		if _, found := scannedOids[*parent]; found {
+			continue
+		}
+
+		err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids, parent)
 		if err != nil {
 			return err
 		}
-	} else {
-		for _, parent := range parents {
-			if _, found := scannedOids[*parent]; found {
-				continue
-			}
 
-			err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids, parent)
-			if err != nil {
-				return err
-			}
-
-			err = c.scanAncestors(quietLogger, workLogger, repo, repoPath, dbRepository, parent, scannedOids)
-			if err != nil {
-				return err
-			}
-		}
+		return c.scanAncestors(quietLogger, workLogger, repo, repoPath, dbRepository, parent, scannedOids)
 	}
 
 	return nil
