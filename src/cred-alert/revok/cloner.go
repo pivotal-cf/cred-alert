@@ -112,7 +112,8 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	err = c.scanAncestors(kolsch.NewLogger(), workLogger, repo, dest, dbRepository, head.Target())
+	scannedOids := map[git.Oid]struct{}{}
+	err = c.scanAncestors(kolsch.NewLogger(), workLogger, repo, dest, dbRepository, head.Target(), scannedOids)
 	if err != nil {
 		workLogger.Error("failed-to-scan", err)
 	}
@@ -125,6 +126,7 @@ func (c *Cloner) scanAncestors(
 	repoPath string,
 	dbRepository db.Repository,
 	child *git.Oid,
+	scannedOids map[git.Oid]struct{},
 ) error {
 	parents, err := c.gitClient.GetParents(repo, child)
 	if err != nil {
@@ -132,17 +134,22 @@ func (c *Cloner) scanAncestors(
 	}
 
 	if len(parents) == 0 {
-		err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child)
+		err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids)
 		if err != nil {
 			return err
 		}
 	} else {
 		for _, parent := range parents {
-			err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, parent)
+			if _, found := scannedOids[*parent]; found {
+				continue
+			}
+
+			err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids, parent)
 			if err != nil {
 				return err
 			}
-			err = c.scanAncestors(quietLogger, workLogger, repo, repoPath, dbRepository, parent)
+
+			err = c.scanAncestors(quietLogger, workLogger, repo, repoPath, dbRepository, parent, scannedOids)
 			if err != nil {
 				return err
 			}
@@ -157,6 +164,7 @@ func (c *Cloner) scan(
 	repoPath string,
 	dbRepository db.Repository,
 	child *git.Oid,
+	scannedOids map[git.Oid]struct{},
 	parents ...*git.Oid,
 ) error {
 	var parent *git.Oid
@@ -187,6 +195,8 @@ func (c *Cloner) scan(
 			return nil
 		},
 	)
+
+	scannedOids[*child] = struct{}{}
 
 	finishScan(workLogger, scan, c.successCounter, c.failedCounter)
 
