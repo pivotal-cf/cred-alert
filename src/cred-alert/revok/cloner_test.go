@@ -138,10 +138,11 @@ var _ = Describe("Cloner", func() {
 
 		It("tries to scan the repository", func() {
 			Eventually(scanner.ScanCallCount).Should(Equal(1))
-			_, owner, repository, startSHA := scanner.ScanArgsForCall(0)
+			_, owner, repository, startSHA, stopSHA := scanner.ScanArgsForCall(0)
 			Expect(owner).To(Equal("some-owner"))
 			Expect(repository).To(Equal("some-repo"))
 			Expect(startSHA).To(Equal(expectedStartSHA))
+			Expect(stopSHA).To(Equal(""))
 		})
 
 		Context("when cloning fails", func() {

@@ -17,7 +17,7 @@ import (
 //go:generate counterfeiter . Scanner
 
 type Scanner interface {
-	Scan(lager.Logger, string, string, string) error
+	Scan(lager.Logger, string, string, string, string) error
 }
 
 type scanner struct {
@@ -47,6 +47,7 @@ func (s *scanner) Scan(
 	owner string,
 	repository string,
 	startSHA string,
+	stopSHA string,
 ) error {
 	dbRepository, err := s.repositoryRepository.Find(owner, repository)
 	if err != nil {
@@ -60,14 +61,24 @@ func (s *scanner) Scan(
 		return err
 	}
 
-	oid, err := git.NewOid(startSHA)
+	startOid, err := git.NewOid(startSHA)
 	if err != nil {
-		logger.Error("failed-to-create-oid", err)
+		logger.Error("failed-to-create-start-oid", err)
 		return err
 	}
 
+	var stopOid *git.Oid
+	if stopSHA != "" {
+		var err error
+		stopOid, err = git.NewOid(stopSHA)
+		if err != nil {
+			logger.Error("failed-to-create-stop-oid", err)
+			return err
+		}
+	}
+
 	scannedOids := map[git.Oid]struct{}{}
-	err = s.scanAncestors(kolsch.NewLogger(), logger, repo, dbRepository, oid, scannedOids)
+	err = s.scanAncestors(kolsch.NewLogger(), logger, repo, dbRepository, scannedOids, startOid, stopOid)
 	if err != nil {
 		logger.Error("failed-to-scan", err)
 	}
@@ -80,8 +91,9 @@ func (s *scanner) scanAncestors(
 	logger lager.Logger,
 	repo *git.Repository,
 	dbRepository db.Repository,
-	child *git.Oid,
 	scannedOids map[git.Oid]struct{},
+	child *git.Oid,
+	stopPoint *git.Oid,
 ) error {
 	parents, err := s.gitClient.GetParents(repo, child)
 	if err != nil {
@@ -89,7 +101,7 @@ func (s *scanner) scanAncestors(
 	}
 
 	if len(parents) == 0 {
-		return s.scan(quietLogger, logger, dbRepository, child, scannedOids)
+		return s.scan(quietLogger, logger, dbRepository, scannedOids, child)
 	}
 
 	for _, parent := range parents {
@@ -97,12 +109,16 @@ func (s *scanner) scanAncestors(
 			continue
 		}
 
-		err = s.scan(quietLogger, logger, dbRepository, child, scannedOids, parent)
+		err = s.scan(quietLogger, logger, dbRepository, scannedOids, child, parent)
 		if err != nil {
 			return err
 		}
 
-		return s.scanAncestors(quietLogger, logger, repo, dbRepository, parent, scannedOids)
+		if stopPoint != nil && parent.Equal(stopPoint) {
+			continue
+		}
+
+		return s.scanAncestors(quietLogger, logger, repo, dbRepository, scannedOids, parent, stopPoint)
 	}
 
 	return nil
@@ -112,8 +128,8 @@ func (s *scanner) scan(
 	quietLogger lager.Logger,
 	logger lager.Logger,
 	dbRepository db.Repository,
-	child *git.Oid,
 	scannedOids map[git.Oid]struct{},
+	child *git.Oid,
 	parents ...*git.Oid,
 ) error {
 	var parent *git.Oid

@@ -34,6 +34,7 @@ var _ = Describe("Scanner", func() {
 
 		firstScan      *dbfakes.FakeActiveScan
 		secondScan     *dbfakes.FakeActiveScan
+		thirdScan      *dbfakes.FakeActiveScan
 		successMetric  *metricsfakes.FakeCounter
 		failedMetric   *metricsfakes.FakeCounter
 		baseRepoPath   string
@@ -70,11 +71,17 @@ var _ = Describe("Scanner", func() {
 		scanRepository = &dbfakes.FakeScanRepository{}
 		firstScan = &dbfakes.FakeActiveScan{}
 		secondScan = &dbfakes.FakeActiveScan{}
+		thirdScan = &dbfakes.FakeActiveScan{}
 		scanRepository.StartStub = func(lager.Logger, string, *db.Repository, *db.Fetch) db.ActiveScan {
-			if scanRepository.StartCallCount() == 1 {
+			switch scanRepository.StartCallCount() {
+			case 1:
 				return firstScan
+			case 2:
+				return secondScan
+			case 3:
+				return thirdScan
 			}
-			return secondScan
+			panic("need another scan set up")
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
@@ -113,19 +120,19 @@ var _ = Describe("Scanner", func() {
 	})
 
 	It("sniffs", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String())
+		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sniffer.SniffCallCount).Should(Equal(1))
 	})
 
 	It("records credentials found in the repository", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String())
+		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 	})
 
 	It("tries to store information in the database about found credentials", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String())
+		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(scanRepository.StartCallCount).Should(Equal(1))
 		_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
@@ -138,22 +145,38 @@ var _ = Describe("Scanner", func() {
 	})
 
 	Context("when the repository has multiple commits", func() {
-		BeforeEach(func() {
-			createCommit("refs/heads/master", baseRepoPath, "some-other-file", []byte("credential"), "second commit")
+		var stopSHA string
 
+		BeforeEach(func() {
 			var err error
 			head, err = baseRepo.Head()
 			Expect(err).NotTo(HaveOccurred())
 
+			stopSHA = head.Target().String()
+
+			createCommit("refs/heads/master", baseRepoPath, "some-other-file", []byte("credential"), "second commit")
 			createCommit("refs/heads/master", baseRepoPath, "yet-another-file", []byte("credential"), "third commit")
+
+			head, err = baseRepo.Head()
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("scans from the given SHA to the beginning of the repository", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String())
+			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(sniffer.SniffCallCount).Should(Equal(3))
+			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
+			Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
+			Eventually(thirdScan.RecordCredentialCallCount).Should(Equal(1))
+		})
+
+		It("doesn't scan past the SHA to stop at if provided", func() {
+			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), stopSHA)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(2))
 			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 			Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
+			Consistently(thirdScan.RecordCredentialCallCount).Should(Equal(0))
 		})
 	})
 
@@ -163,7 +186,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("does not try to scan", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String())
+			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
 			Expect(err).To(HaveOccurred())
 			Consistently(scanRepository.StartCallCount).Should(BeZero())
 		})

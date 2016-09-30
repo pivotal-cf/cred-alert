@@ -117,5 +117,6 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		msg.Owner,
 		msg.Repository,
 		head.Target().String(),
+		"",
 	)
 }

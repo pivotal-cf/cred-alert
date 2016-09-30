@@ -9,13 +9,14 @@ import (
 )
 
 type FakeScanner struct {
-	ScanStub        func(lager.Logger, string, string, string) error
+	ScanStub        func(lager.Logger, string, string, string, string) error
 	scanMutex       sync.RWMutex
 	scanArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
 		arg4 string
+		arg5 string
 	}
 	scanReturns struct {
 		result1 error
@@ -24,18 +25,19 @@ type FakeScanner struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 string) error {
+func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 string, arg5 string) error {
 	fake.scanMutex.Lock()
 	fake.scanArgsForCall = append(fake.scanArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
 		arg4 string
-	}{arg1, arg2, arg3, arg4})
-	fake.recordInvocation("Scan", []interface{}{arg1, arg2, arg3, arg4})
+		arg5 string
+	}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("Scan", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.scanMutex.Unlock()
 	if fake.ScanStub != nil {
-		return fake.ScanStub(arg1, arg2, arg3, arg4)
+		return fake.ScanStub(arg1, arg2, arg3, arg4, arg5)
 	} else {
 		return fake.scanReturns.result1
 	}
@@ -47,10 +49,10 @@ func (fake *FakeScanner) ScanCallCount() int {
 	return len(fake.scanArgsForCall)
 }
 
-func (fake *FakeScanner) ScanArgsForCall(i int) (lager.Logger, string, string, string) {
+func (fake *FakeScanner) ScanArgsForCall(i int) (lager.Logger, string, string, string, string) {
 	fake.scanMutex.RLock()
 	defer fake.scanMutex.RUnlock()
-	return fake.scanArgsForCall[i].arg1, fake.scanArgsForCall[i].arg2, fake.scanArgsForCall[i].arg3, fake.scanArgsForCall[i].arg4
+	return fake.scanArgsForCall[i].arg1, fake.scanArgsForCall[i].arg2, fake.scanArgsForCall[i].arg3, fake.scanArgsForCall[i].arg4, fake.scanArgsForCall[i].arg5
 }
 
 func (fake *FakeScanner) ScanReturns(result1 error) {
