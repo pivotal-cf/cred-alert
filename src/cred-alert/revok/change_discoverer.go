@@ -23,7 +23,6 @@ import (
 
 type ChangeDiscoverer struct {
 	logger               lager.Logger
-	workdir              string
 	gitClient            gitclient.Client
 	clock                clock.Clock
 	interval             time.Duration
@@ -43,7 +42,6 @@ type ChangeDiscoverer struct {
 
 func NewChangeDiscoverer(
 	logger lager.Logger,
-	workdir string,
 	gitClient gitclient.Client,
 	clock clock.Clock,
 	interval time.Duration,
@@ -55,7 +53,6 @@ func NewChangeDiscoverer(
 ) ifrit.Runner {
 	return &ChangeDiscoverer{
 		logger:               logger,
-		workdir:              workdir,
 		gitClient:            gitClient,
 		clock:                clock,
 		interval:             interval,

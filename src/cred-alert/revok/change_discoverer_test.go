@@ -12,8 +12,6 @@ import (
 	"cred-alert/sniff/snifffakes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 
@@ -31,7 +29,6 @@ import (
 var _ = Describe("ChangeDiscoverer", func() {
 	var (
 		logger               *lagertest.TestLogger
-		workdir              string
 		gitClient            *gitclientfakes.FakeClient
 		clock                *fakeclock.FakeClock
 		interval             time.Duration
@@ -62,10 +59,6 @@ var _ = Describe("ChangeDiscoverer", func() {
 		gitClient = &gitclientfakes.FakeClient{}
 		clock = fakeclock.NewFakeClock(time.Now())
 		interval = 30 * time.Minute
-
-		var err error
-		workdir, err = ioutil.TempDir("", "revok-test")
-		Expect(err).NotTo(HaveOccurred())
 
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 
@@ -136,7 +129,6 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 		runner = revok.NewChangeDiscoverer(
 			logger,
-			workdir,
 			gitClient,
 			clock,
 			interval,
@@ -152,7 +144,6 @@ var _ = Describe("ChangeDiscoverer", func() {
 	AfterEach(func() {
 		ginkgomon.Interrupt(process)
 		<-process.Wait()
-		os.RemoveAll(workdir)
 	})
 
 	It("increments the run metric", func() {

@@ -134,7 +134,6 @@ func main() {
 
 	changeDiscoverer := revok.NewChangeDiscoverer(
 		logger,
-		workdir,
 		gitClient,
 		clock,
 		opts.ChangeDiscoveryInterval,
