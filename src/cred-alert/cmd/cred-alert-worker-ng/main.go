@@ -104,6 +104,13 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
 	sniffer := sniff.NewDefaultSniffer()
+	ancestryScanner := revok.NewScanner(
+		gitClient,
+		repositoryRepository,
+		scanRepository,
+		sniffer,
+		emitter,
+	)
 
 	repoDiscoverer := revok.NewRepoDiscoverer(
 		logger,
@@ -120,9 +127,8 @@ func main() {
 		workdir,
 		cloneMsgCh,
 		gitClient,
-		sniffer,
 		repositoryRepository,
-		scanRepository,
+		ancestryScanner,
 		emitter,
 	)
 

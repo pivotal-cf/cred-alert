@@ -8,16 +8,12 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/revok"
-	"cred-alert/scanners"
-	"cred-alert/sniff"
-	"cred-alert/sniff/snifffakes"
+	"cred-alert/revok/revokfakes"
 	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
@@ -33,16 +29,14 @@ var _ = Describe("Cloner", func() {
 		workCh               chan revok.CloneMsg
 		logger               *lagertest.TestLogger
 		gitClient            gitclient.Client
-		sniffer              *snifffakes.FakeSniffer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
-		scanRepository       *dbfakes.FakeScanRepository
 		emitter              *metricsfakes.FakeEmitter
+		scanner              *revokfakes.FakeScanner
 
-		firstScan     *dbfakes.FakeActiveScan
-		secondScan    *dbfakes.FakeActiveScan
-		successMetric *metricsfakes.FakeCounter
-		failedMetric  *metricsfakes.FakeCounter
-		repoPath      string
+		successMetric    *metricsfakes.FakeCounter
+		failedMetric     *metricsfakes.FakeCounter
+		repoPath         string
+		expectedStartSHA string
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -59,28 +53,20 @@ var _ = Describe("Cloner", func() {
 			},
 		}, nil)
 
-		scanRepository = &dbfakes.FakeScanRepository{}
-		firstScan = &dbfakes.FakeActiveScan{}
-		secondScan = &dbfakes.FakeActiveScan{}
-		scanRepository.StartStub = func(lager.Logger, string, *db.Repository, *db.Fetch) db.ActiveScan {
-			if scanRepository.StartCallCount() == 1 {
-				return firstScan
-			}
-			return secondScan
-		}
-
 		emitter = &metricsfakes.FakeEmitter{}
 		successMetric = &metricsfakes.FakeCounter{}
 		failedMetric = &metricsfakes.FakeCounter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
-			case "revok.success_jobs":
+			case "revok.cloner.success":
 				return successMetric
-			case "revok.failed_jobs":
+			case "revok.cloner.failed":
 				return failedMetric
 			}
 			return &metricsfakes.FakeCounter{}
 		}
+
+		scanner = &revokfakes.FakeScanner{}
 
 		var err error
 		repoPath, err = ioutil.TempDir("", "revok-test-base-repo")
@@ -94,6 +80,11 @@ var _ = Describe("Cloner", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		createCommit(repoPath, "some-file", []byte("credential"), "Initial commit")
+
+		head, err := repo.Head()
+		Expect(err).NotTo(HaveOccurred())
+
+		expectedStartSHA = head.Target().String()
 	})
 
 	AfterEach(func() {
@@ -105,26 +96,13 @@ var _ = Describe("Cloner", func() {
 	})
 
 	JustBeforeEach(func() {
-		sniffer = &snifffakes.FakeSniffer{}
-		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
-			for s.Scan(logger) {
-				line := s.Line(logger)
-				if strings.Contains(string(line.Content), "credential") {
-					h(l, scanners.Violation{Line: *line})
-				}
-			}
-
-			return nil
-		}
-
 		runner = revok.NewCloner(
 			logger,
 			workdir,
 			workCh,
 			gitClient,
-			sniffer,
 			repositoryRepository,
-			scanRepository,
+			scanner,
 			emitter,
 		)
 		process = ginkgomon.Invoke(runner)
@@ -158,35 +136,12 @@ var _ = Describe("Cloner", func() {
 			Eventually(repositoryRepository.MarkAsClonedCallCount).Should(Equal(1))
 		})
 
-		It("sniffs", func() {
-			Eventually(sniffer.SniffCallCount).Should(Equal(1))
-		})
-
-		It("records credentials found in the repository", func() {
-			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
-		})
-
-		It("tries to store information in the database about found credentials", func() {
-			Eventually(scanRepository.StartCallCount).Should(Equal(1))
-			_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
-			Expect(scanType).To(Equal("diff-scan"))
-			Expect(repository.ID).To(BeNumerically("==", 42))
-			Expect(fetch).To(BeNil())
-
-			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
-			Eventually(firstScan.FinishCallCount).Should(Equal(1))
-		})
-
-		Context("when the repository has multiple commits", func() {
-			BeforeEach(func() {
-				createCommit(repoPath, "some-other-file", []byte("credential"), "second commit")
-			})
-
-			It("scans all commits in the repository", func() {
-				Eventually(sniffer.SniffCallCount).Should(Equal(2))
-				Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
-				Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
-			})
+		It("tries to scan the repository", func() {
+			Eventually(scanner.ScanCallCount).Should(Equal(1))
+			_, owner, repository, startSHA := scanner.ScanArgsForCall(0)
+			Expect(owner).To(Equal("some-owner"))
+			Expect(repository).To(Equal("some-repo"))
+			Expect(startSHA).To(Equal(expectedStartSHA))
 		})
 
 		Context("when cloning fails", func() {
@@ -209,12 +164,12 @@ var _ = Describe("Cloner", func() {
 				Eventually(dest).ShouldNot(BeADirectory())
 			})
 
-			It("does not try to scan", func() {
-				Consistently(scanRepository.StartCallCount).Should(BeZero())
-			})
-
 			It("does not mark the repository as having been cloned", func() {
 				Consistently(repositoryRepository.MarkAsClonedCallCount).Should(BeZero())
+			})
+
+			It("does not try to scan", func() {
+				Consistently(scanner.ScanCallCount).Should(BeZero())
 			})
 		})
 
@@ -224,7 +179,7 @@ var _ = Describe("Cloner", func() {
 			})
 
 			It("does not try to scan", func() {
-				Consistently(scanRepository.StartCallCount).Should(BeZero())
+				Consistently(scanner.ScanCallCount).Should(BeZero())
 			})
 		})
 
@@ -234,7 +189,7 @@ var _ = Describe("Cloner", func() {
 			})
 
 			It("does not try to scan", func() {
-				Consistently(scanRepository.StartCallCount).Should(BeZero())
+				Consistently(scanner.ScanCallCount).Should(BeZero())
 			})
 		})
 	})

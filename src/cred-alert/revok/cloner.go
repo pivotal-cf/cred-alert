@@ -3,14 +3,10 @@ package revok
 import (
 	"cred-alert/db"
 	"cred-alert/gitclient"
-	"cred-alert/kolsch"
 	"cred-alert/metrics"
-	"cred-alert/scanners"
-	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"code.cloudfoundry.org/lager"
 
@@ -25,9 +21,9 @@ type Cloner struct {
 	gitClient            gitclient.Client
 	sniffer              sniff.Sniffer
 	repositoryRepository db.RepositoryRepository
-	scanRepository       db.ScanRepository
 	successCounter       metrics.Counter
 	failedCounter        metrics.Counter
+	scanner              Scanner
 }
 
 func NewCloner(
@@ -35,9 +31,8 @@ func NewCloner(
 	workdir string,
 	workCh chan CloneMsg,
 	gitClient gitclient.Client,
-	sniffer sniff.Sniffer,
 	repositoryRepository db.RepositoryRepository,
-	scanRepository db.ScanRepository,
+	scanner Scanner,
 	emitter metrics.Emitter,
 ) ifrit.Runner {
 	return &Cloner{
@@ -45,11 +40,10 @@ func NewCloner(
 		workdir:              workdir,
 		workCh:               workCh,
 		gitClient:            gitClient,
-		sniffer:              sniffer,
 		repositoryRepository: repositoryRepository,
-		scanRepository:       scanRepository,
-		successCounter:       emitter.Counter(successMetric),
-		failedCounter:        emitter.Counter(failedMetric),
+		scanner:              scanner,
+		successCounter:       emitter.Counter("revok.cloner.success"),
+		failedCounter:        emitter.Counter("revok.cloner.failed"),
 	}
 }
 
@@ -84,7 +78,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 	})
 	defer workLogger.Info("done")
 
-	repo, err := c.gitClient.Clone(msg.URL, dest)
+	_, err := c.gitClient.Clone(msg.URL, dest)
 	if err != nil {
 		workLogger.Error("failed-to-clone", err)
 		err = os.RemoveAll(dest)
@@ -100,7 +94,13 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	dbRepository, err := c.repositoryRepository.Find(msg.Owner, msg.Repository)
+	_, err = c.repositoryRepository.Find(msg.Owner, msg.Repository)
+	if err != nil {
+		workLogger.Error("failed-to-find-db-repo", err)
+		return
+	}
+
+	repo, err := git.OpenRepository(dest)
 	if err != nil {
 		workLogger.Error("failed-to-find-db-repo", err)
 		return
@@ -112,88 +112,10 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	scannedOids := map[git.Oid]struct{}{}
-	err = c.scanAncestors(kolsch.NewLogger(), workLogger, repo, dest, dbRepository, head.Target(), scannedOids)
-	if err != nil {
-		workLogger.Error("failed-to-scan", err)
-	}
-}
-
-func (c *Cloner) scanAncestors(
-	quietLogger lager.Logger,
-	workLogger lager.Logger,
-	repo *git.Repository,
-	repoPath string,
-	dbRepository db.Repository,
-	child *git.Oid,
-	scannedOids map[git.Oid]struct{},
-) error {
-	parents, err := c.gitClient.GetParents(repo, child)
-	if err != nil {
-		return err
-	}
-
-	if len(parents) == 0 {
-		return c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids)
-	}
-
-	for _, parent := range parents {
-		if _, found := scannedOids[*parent]; found {
-			continue
-		}
-
-		err = c.scan(quietLogger, workLogger, repoPath, dbRepository, child, scannedOids, parent)
-		if err != nil {
-			return err
-		}
-
-		return c.scanAncestors(quietLogger, workLogger, repo, repoPath, dbRepository, parent, scannedOids)
-	}
-
-	return nil
-}
-
-func (c *Cloner) scan(
-	quietLogger lager.Logger,
-	workLogger lager.Logger,
-	repoPath string,
-	dbRepository db.Repository,
-	child *git.Oid,
-	scannedOids map[git.Oid]struct{},
-	parents ...*git.Oid,
-) error {
-	var parent *git.Oid
-	if len(parents) == 1 {
-		parent = parents[0]
-	}
-
-	diff, err := c.gitClient.Diff(repoPath, parent, child)
-	if err != nil {
-		return err
-	}
-
-	scan := c.scanRepository.Start(quietLogger, "diff-scan", &dbRepository, nil)
-	c.sniffer.Sniff(
-		quietLogger,
-		diffscanner.NewDiffScanner(strings.NewReader(diff)),
-		func(logger lager.Logger, violation scanners.Violation) error {
-			line := violation.Line
-			scan.RecordCredential(db.NewCredential(
-				dbRepository.Owner,
-				dbRepository.Name,
-				"",
-				line.Path,
-				line.LineNumber,
-				violation.Start,
-				violation.End,
-			))
-			return nil
-		},
+	c.scanner.Scan(
+		workLogger,
+		msg.Owner,
+		msg.Repository,
+		head.Target().String(),
 	)
-
-	scannedOids[*child] = struct{}{}
-
-	finishScan(workLogger, scan, c.successCounter, c.failedCounter)
-
-	return nil
 }
