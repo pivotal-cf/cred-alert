@@ -50,7 +50,7 @@ var _ = Describe("Scanner", func() {
 		Expect(err).NotTo(HaveOccurred())
 		defer baseRepo.Free()
 
-		createCommit(baseRepoPath, "some-file", []byte("credential"), "Initial commit")
+		createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit")
 
 		head, err = baseRepo.Head()
 		Expect(err).NotTo(HaveOccurred())
@@ -138,7 +138,7 @@ var _ = Describe("Scanner", func() {
 
 	Context("when the repository has multiple commits", func() {
 		BeforeEach(func() {
-			createCommit(baseRepoPath, "some-other-file", []byte("credential"), "second commit")
+			createCommit("refs/heads/master", baseRepoPath, "some-other-file", []byte("credential"), "second commit")
 		})
 
 		It("scans all commits in the repository", func() {

@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -140,7 +141,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 		Expect(err).NotTo(HaveOccurred())
 		defer remoteRepo.Free()
 
-		createCommit(remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
+		createCommit("refs/heads/master", remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
 
 		repoToFetchPath, err = ioutil.TempDir("", "change-discoverer-repo-to-fetch")
 		Expect(err).NotTo(HaveOccurred())
@@ -168,6 +169,8 @@ var _ = Describe("ChangeDiscoverer", func() {
 	AfterEach(func() {
 		ginkgomon.Interrupt(process)
 		<-process.Wait()
+		os.RemoveAll(repoToFetchPath)
+		os.RemoveAll(remoteRepoPath)
 	})
 
 	It("increments the run metric", func() {
@@ -214,7 +217,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 		Context("when the remote has changes", func() {
 			BeforeEach(func() {
-				createCommit(remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
+				createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
 			})
 
 			It("scans the changes", func() {
@@ -390,7 +393,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			oldTarget = string(bs)
 
-			createCommit(remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
+			createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
 
 			repositoryRepository.NotFetchedSinceReturns(nil, errors.New("an-error"))
 		})

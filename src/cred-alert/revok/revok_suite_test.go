@@ -19,7 +19,7 @@ func TestRevok(t *testing.T) {
 	RunSpecs(t, "Revok Suite")
 }
 
-func createCommit(repoPath, filePath string, contents []byte, commitMsg string) {
+func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg string) {
 	err := ioutil.WriteFile(filepath.Join(repoPath, filePath), contents, os.ModePerm)
 
 	repo, err := git.OpenRepository(repoPath)
@@ -62,12 +62,14 @@ func createCommit(repoPath, filePath string, contents []byte, commitMsg string) 
 	}
 
 	if parent != nil {
-		_, err = repo.CreateCommit("HEAD", sig, sig, commitMsg, tree, parent)
+		_, err = repo.CreateCommit(refName, sig, sig, commitMsg, tree, parent)
 		Expect(err).NotTo(HaveOccurred())
 	} else {
-		_, err = repo.CreateCommit("HEAD", sig, sig, commitMsg, tree)
+		_, err = repo.CreateCommit(refName, sig, sig, commitMsg, tree)
 		Expect(err).NotTo(HaveOccurred())
 	}
+
+	repo.SetHead(refName)
 
 	err = index.Write()
 	Expect(err).NotTo(HaveOccurred())
