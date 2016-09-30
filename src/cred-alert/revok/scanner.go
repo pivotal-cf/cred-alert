@@ -61,14 +61,14 @@ func (s *scanner) Scan(
 		return err
 	}
 
-	head, err := repo.Head()
+	oid, err := git.NewOid(startSHA)
 	if err != nil {
-		logger.Error("failed-to-get-head-of-repo", err)
+		logger.Error("failed-to-create-oid", err)
 		return err
 	}
 
 	scannedOids := map[git.Oid]struct{}{}
-	err = s.scanAncestors(kolsch.NewLogger(), logger, repo, dbRepository, head.Target(), scannedOids)
+	err = s.scanAncestors(kolsch.NewLogger(), logger, repo, dbRepository, oid, scannedOids)
 	if err != nil {
 		logger.Error("failed-to-scan", err)
 	}

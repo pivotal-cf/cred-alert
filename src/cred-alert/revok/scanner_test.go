@@ -39,6 +39,7 @@ var _ = Describe("Scanner", func() {
 		baseRepoPath   string
 		repoToScanPath string
 		head           *git.Reference
+		baseRepo       *git.Repository
 	)
 
 	BeforeEach(func() {
@@ -46,9 +47,8 @@ var _ = Describe("Scanner", func() {
 		baseRepoPath, err = ioutil.TempDir("", "revok-test-base-repo")
 		Expect(err).NotTo(HaveOccurred())
 
-		baseRepo, err := git.InitRepository(baseRepoPath, false)
+		baseRepo, err = git.InitRepository(baseRepoPath, false)
 		Expect(err).NotTo(HaveOccurred())
-		defer baseRepo.Free()
 
 		createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit")
 
@@ -107,6 +107,7 @@ var _ = Describe("Scanner", func() {
 
 	AfterEach(func() {
 		head.Free()
+		baseRepo.Free()
 		os.RemoveAll(baseRepoPath)
 		os.RemoveAll(repoToScanPath)
 	})
@@ -139,9 +140,15 @@ var _ = Describe("Scanner", func() {
 	Context("when the repository has multiple commits", func() {
 		BeforeEach(func() {
 			createCommit("refs/heads/master", baseRepoPath, "some-other-file", []byte("credential"), "second commit")
+
+			var err error
+			head, err = baseRepo.Head()
+			Expect(err).NotTo(HaveOccurred())
+
+			createCommit("refs/heads/master", baseRepoPath, "yet-another-file", []byte("credential"), "third commit")
 		})
 
-		It("scans all commits in the repository", func() {
+		It("scans from the given SHA to the beginning of the repository", func() {
 			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String())
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(2))
