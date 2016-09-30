@@ -218,6 +218,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 		Context("when the remote has changes", func() {
 			BeforeEach(func() {
 				createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
+				createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
 			})
 
 			It("scans the changes", func() {
@@ -231,24 +232,39 @@ var _ = Describe("ChangeDiscoverer", func() {
 				Expect(fetch.Path).To(Equal(repoToFetchPath))
 				Expect(fetch.Repository.ID).To(BeNumerically(">", 0))
 
-				repo, err := git.OpenRepository(remoteRepoPath)
+				localRepo, err := git.OpenRepository(repoToFetchPath)
 				Expect(err).NotTo(HaveOccurred())
-				defer repo.Free()
+				defer localRepo.Free()
 
-				head, err := repo.Head()
+				referenceIterator, err := localRepo.NewReferenceIteratorGlob("refs/remotes/origin/*")
 				Expect(err).NotTo(HaveOccurred())
-				defer head.Free()
+				defer referenceIterator.Free()
 
-				targetRef, err := repo.Lookup(head.Target())
-				Expect(err).NotTo(HaveOccurred())
-				defer targetRef.Free()
+				expectedChanges := map[string][]*git.Oid{}
 
-				headCommit, err := targetRef.AsCommit()
-				Expect(err).NotTo(HaveOccurred())
-				defer headCommit.Free()
+				for {
+					ref, err := referenceIterator.Next()
+					if git.IsErrorCode(err, git.ErrIterOver) {
+						break
+					}
+					Expect(err).NotTo(HaveOccurred())
 
-				expectedChanges := map[string][]*git.Oid{
-					"refs/remotes/origin/master": []*git.Oid{headCommit.ParentId(0), head.Target()},
+					if ref.Name() == "refs/remotes/origin/topicA" {
+						zeroOid, err := git.NewOid("0000000000000000000000000000000000000000")
+						Expect(err).NotTo(HaveOccurred())
+
+						expectedChanges[ref.Name()] = []*git.Oid{zeroOid, ref.Target()}
+					} else {
+						target, err := localRepo.Lookup(ref.Target())
+						Expect(err).NotTo(HaveOccurred())
+						defer target.Free()
+
+						targetCommit, err := target.AsCommit()
+						Expect(err).NotTo(HaveOccurred())
+						defer targetCommit.Free()
+
+						expectedChanges[ref.Name()] = []*git.Oid{targetCommit.ParentId(0), ref.Target()}
+					}
 				}
 
 				bs, err := json.Marshal(expectedChanges)
