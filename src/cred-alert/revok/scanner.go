@@ -48,7 +48,6 @@ func (s *scanner) Scan(
 	repository string,
 	startSHA string,
 ) error {
-
 	dbRepository, err := s.repositoryRepository.Find(owner, repository)
 	if err != nil {
 		logger.Error("failed-to-find-db-repo", err)
