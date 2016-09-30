@@ -6,12 +6,8 @@ import (
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
 	"cred-alert/metrics"
-	"cred-alert/scanners"
-	"cred-alert/scanners/diffscanner"
-	"cred-alert/sniff"
 	"encoding/json"
 	"os"
-	"strings"
 	"time"
 
 	git "github.com/libgit2/git2go"
@@ -26,10 +22,9 @@ type ChangeDiscoverer struct {
 	gitClient            gitclient.Client
 	clock                clock.Clock
 	interval             time.Duration
-	sniffer              sniff.Sniffer
+	scanner              Scanner
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
-	scanRepository       db.ScanRepository
 
 	fetchTimer             metrics.Timer
 	fetchedRepositoryGauge metrics.Gauge
@@ -45,10 +40,9 @@ func NewChangeDiscoverer(
 	gitClient gitclient.Client,
 	clock clock.Clock,
 	interval time.Duration,
-	sniffer sniff.Sniffer,
+	scanner Scanner,
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
-	scanRepository db.ScanRepository,
 	emitter metrics.Emitter,
 ) ifrit.Runner {
 	return &ChangeDiscoverer{
@@ -56,10 +50,9 @@ func NewChangeDiscoverer(
 		gitClient:            gitClient,
 		clock:                clock,
 		interval:             interval,
-		sniffer:              sniffer,
+		scanner:              scanner,
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
-		scanRepository:       scanRepository,
 
 		fetchTimer:             emitter.Timer("revok.fetch_time"),
 		fetchedRepositoryGauge: emitter.Gauge("revok.fetched_repositories"),
@@ -187,40 +180,7 @@ func (c *ChangeDiscoverer) fetch(
 	quietLogger := kolsch.NewLogger()
 
 	for _, oids := range changes {
-		diff, err := c.gitClient.Diff(repo.Path, oids[0], oids[1])
-		if err != nil {
-			repoLogger.Error("failed-to-get-diff", err, lager.Data{
-				"from": oids[0].String(),
-				"to":   oids[1].String(),
-			})
-			c.failedDiffCounter.Inc(repoLogger)
-			continue
-		}
-
-		scan := c.scanRepository.Start(quietLogger, "diff-scan", &repo, &fetch)
-		c.sniffer.Sniff(
-			logger,
-			diffscanner.NewDiffScanner(strings.NewReader(diff)),
-			func(logger lager.Logger, violation scanners.Violation) error {
-				line := violation.Line
-				scan.RecordCredential(db.NewCredential(
-					repo.Owner,
-					repo.Name,
-					"",
-					line.Path,
-					line.LineNumber,
-					violation.Start,
-					violation.End,
-				))
-				return nil
-			},
-		)
-
-		err = scan.Finish()
-		if err != nil {
-			repoLogger.Error("failed-to-finish-scan", err)
-			c.failedScanCounter.Inc(repoLogger)
-		}
+		c.scanner.Scan(quietLogger, repo.Owner, repo.Name, oids[1].String(), oids[0].String())
 	}
 
 	c.successCounter.Inc(repoLogger)

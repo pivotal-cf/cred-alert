@@ -8,15 +8,12 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/revok"
-	"cred-alert/scanners"
-	"cred-alert/sniff"
-	"cred-alert/sniff/snifffakes"
+	"cred-alert/revok/revokfakes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"code.cloudfoundry.org/clock/fakeclock"
@@ -36,14 +33,11 @@ var _ = Describe("ChangeDiscoverer", func() {
 		gitClient            gitclient.Client
 		clock                *fakeclock.FakeClock
 		interval             time.Duration
-		sniffer              *snifffakes.FakeSniffer
+		scanner              *revokfakes.FakeScanner
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		fetchRepository      *dbfakes.FakeFetchRepository
-		scanRepository       *dbfakes.FakeScanRepository
 		emitter              *metricsfakes.FakeEmitter
 
-		firstScan      *dbfakes.FakeActiveScan
-		secondScan     *dbfakes.FakeActiveScan
 		currentFetchID uint
 
 		fetchTimer        *metricsfakes.FakeTimer
@@ -68,19 +62,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 		clock = fakeclock.NewFakeClock(time.Now())
 		interval = 30 * time.Minute
 
-		sniffer = &snifffakes.FakeSniffer{}
-		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
-			for s.Scan(logger) {
-				line := s.Line(logger)
-				if strings.Contains(string(line.Content), "credential") {
-					h(l, scanners.Violation{
-						Line: *line,
-					})
-				}
-			}
-
-			return nil
-		}
+		scanner = &revokfakes.FakeScanner{}
 
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 
@@ -90,16 +72,6 @@ var _ = Describe("ChangeDiscoverer", func() {
 			currentFetchID++
 			f.ID = currentFetchID
 			return nil
-		}
-
-		scanRepository = &dbfakes.FakeScanRepository{}
-		firstScan = &dbfakes.FakeActiveScan{}
-		secondScan = &dbfakes.FakeActiveScan{}
-		scanRepository.StartStub = func(lager.Logger, string, *db.Repository, *db.Fetch) db.ActiveScan {
-			if scanRepository.StartCallCount() == 1 {
-				return firstScan
-			}
-			return secondScan
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
@@ -157,10 +129,9 @@ var _ = Describe("ChangeDiscoverer", func() {
 			gitClient,
 			clock,
 			interval,
-			sniffer,
+			scanner,
 			repositoryRepository,
 			fetchRepository,
-			scanRepository,
 			emitter,
 		)
 		process = ginkgomon.Invoke(runner)
@@ -216,14 +187,32 @@ var _ = Describe("ChangeDiscoverer", func() {
 		})
 
 		Context("when the remote has changes", func() {
+			var results []createCommitResult
+
 			BeforeEach(func() {
-				createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
-				createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
+				results = []createCommitResult{}
+
+				result := createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
+				results = append(results, result)
+
+				result = createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
+				results = append(results, result)
 			})
 
-			It("scans the changes", func() {
-				// this is the only way to know we've scanned
-				Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
+			It("scans only the changes", func() {
+				Eventually(scanner.ScanCallCount).Should(Equal(2)) // 2 new commits
+
+				for i := 0; i < scanner.ScanCallCount(); i++ {
+					_, owner, name, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+					Expect(owner).To(Equal("some-owner"))
+					Expect(name).To(Equal("some-repo"))
+
+					for _, result := range results {
+						if result.To.String() == startSHA {
+							Expect(stopSHA).To(Equal(result.From.String()))
+						}
+					}
+				}
 			})
 
 			It("tries to store information in the database about the fetch", func() {
@@ -272,16 +261,6 @@ var _ = Describe("ChangeDiscoverer", func() {
 				Expect(fetch.Changes).To(Equal(bs))
 			})
 
-			It("tries to store information in the database about found credentials", func() {
-				Eventually(scanRepository.StartCallCount).Should(Equal(1))
-				_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
-				Expect(scanType).To(Equal("diff-scan"))
-				Expect(repository.ID).To(BeNumerically("==", 42))
-				Expect(fetch.ID).To(Equal(currentFetchID))
-
-				Eventually(firstScan.FinishCallCount).Should(Equal(1))
-			})
-
 			Context("when there is an error saving the fetch to the database", func() {
 				BeforeEach(func() {
 					fakeGitClient := &gitclientfakes.FakeClient{}
@@ -289,48 +268,8 @@ var _ = Describe("ChangeDiscoverer", func() {
 					gitClient = fakeGitClient
 				})
 
-				It("does not try to diff anything", func() {
-					Expect(fetchRepository.SaveFetchCallCount()).To(Equal(1))
-					fakeGitClient, ok := gitClient.(*gitclientfakes.FakeClient)
-					Expect(ok).To(BeTrue())
-					Consistently(fakeGitClient.DiffCallCount).Should(BeZero())
-				})
-
 				It("increments the failed metric", func() {
 					Eventually(failedCounter.IncCallCount).Should(Equal(1))
-				})
-			})
-
-			Context("when there is an error storing credentials in the database", func() {
-				BeforeEach(func() {
-					firstScan.FinishReturns(errors.New("an-error"))
-				})
-
-				It("increments the failed scan metric", func() {
-					Eventually(firstScan.FinishCallCount).Should(Equal(1))
-					Expect(failedScanCounter.IncCallCount()).To(Equal(1))
-				})
-			})
-
-			Context("when there is an error getting a diff from Git", func() {
-				BeforeEach(func() {
-					fakeGitClient := &gitclientfakes.FakeClient{}
-
-					// fake client requires successful Fetch
-					oldOid, err := git.NewOid("fce98866a7d559757a0a501aa548e244a46ad00a")
-					Expect(err).NotTo(HaveOccurred())
-					newOid, err := git.NewOid("3f5c0cc6c73ddb1a3aa05725c48ca1223367fb74")
-					Expect(err).NotTo(HaveOccurred())
-					fakeGitClient.FetchReturns(map[string][]*git.Oid{
-						"refs/remotes/origin/master": {oldOid, newOid},
-					}, nil)
-
-					fakeGitClient.DiffReturns("", errors.New("an-error"))
-					gitClient = fakeGitClient
-				})
-
-				It("increments the failed diff metric", func() {
-					Eventually(failedDiffCounter.IncCallCount).Should(Equal(1))
 				})
 			})
 		})

@@ -19,26 +19,44 @@ func TestRevok(t *testing.T) {
 	RunSpecs(t, "Revok Suite")
 }
 
-func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg string) {
+type createCommitResult struct {
+	From *git.Oid
+	To   *git.Oid
+}
+
+func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg string) createCommitResult {
 	err := ioutil.WriteFile(filepath.Join(repoPath, filePath), contents, os.ModePerm)
 
 	repo, err := git.OpenRepository(repoPath)
 	Expect(err).NotTo(HaveOccurred())
 	defer repo.Free()
 
+	referenceIterator, err := repo.NewReferenceIterator()
+	Expect(err).NotTo(HaveOccurred())
+	defer referenceIterator.Free()
+
 	var parent *git.Commit
-	head, _ := repo.Head()
-	if head != nil {
-		defer head.Free()
-		parentId := head.Target()
-
-		object, err := repo.Lookup(parentId)
+	for {
+		ref, err := referenceIterator.Next()
+		if git.IsErrorCode(err, git.ErrIterOver) {
+			break
+		}
 		Expect(err).NotTo(HaveOccurred())
-		defer object.Free()
+		defer ref.Free()
 
-		parent, err = object.AsCommit()
-		Expect(err).NotTo(HaveOccurred())
-		defer parent.Free()
+		if ref.Name() == refName {
+			parentOid := ref.Target()
+
+			parentObject, err := repo.Lookup(parentOid)
+			Expect(err).NotTo(HaveOccurred())
+			defer parentObject.Free()
+
+			parent, err = parentObject.AsCommit()
+			Expect(err).NotTo(HaveOccurred())
+			defer parent.Free()
+
+			break
+		}
 	}
 
 	index, err := repo.Index()
@@ -61,18 +79,32 @@ func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg
 		When:  time.Now(),
 	}
 
+	var newOid *git.Oid
 	if parent != nil {
-		_, err = repo.CreateCommit(refName, sig, sig, commitMsg, tree, parent)
+		newOid, err = repo.CreateCommit(refName, sig, sig, commitMsg, tree, parent)
 		Expect(err).NotTo(HaveOccurred())
 	} else {
-		_, err = repo.CreateCommit(refName, sig, sig, commitMsg, tree)
+		newOid, err = repo.CreateCommit(refName, sig, sig, commitMsg, tree)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	repo.SetHead(refName)
-
 	err = index.Write()
 	Expect(err).NotTo(HaveOccurred())
+
+	if parent != nil {
+		return createCommitResult{
+			From: parent.Id(),
+			To:   newOid,
+		}
+	}
+
+	root, err := git.NewOid("0000000000000000000000000000000000000000")
+	Expect(err).NotTo(HaveOccurred())
+
+	return createCommitResult{
+		From: root,
+		To:   newOid,
+	}
 }
 
 var boshSampleReleaseRepository = revok.GitHubRepository{

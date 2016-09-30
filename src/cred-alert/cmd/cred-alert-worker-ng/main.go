@@ -137,10 +137,9 @@ func main() {
 		gitClient,
 		clock,
 		opts.ChangeDiscoveryInterval,
-		sniffer,
+		ancestryScanner,
 		repositoryRepository,
 		fetchRepository,
-		scanRepository,
 		emitter,
 	)
 
