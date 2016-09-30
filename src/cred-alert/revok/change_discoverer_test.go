@@ -3,6 +3,7 @@ package revok_test
 import (
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
+	"cred-alert/gitclient"
 	"cred-alert/gitclient/gitclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
@@ -12,6 +13,8 @@ import (
 	"cred-alert/sniff/snifffakes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,14 +32,14 @@ import (
 var _ = Describe("ChangeDiscoverer", func() {
 	var (
 		logger               *lagertest.TestLogger
-		gitClient            *gitclientfakes.FakeClient
+		gitClient            gitclient.Client
 		clock                *fakeclock.FakeClock
 		interval             time.Duration
+		sniffer              *snifffakes.FakeSniffer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		fetchRepository      *dbfakes.FakeFetchRepository
 		scanRepository       *dbfakes.FakeScanRepository
 		emitter              *metricsfakes.FakeEmitter
-		sniffer              *snifffakes.FakeSniffer
 
 		firstScan      *dbfakes.FakeActiveScan
 		secondScan     *dbfakes.FakeActiveScan
@@ -50,17 +53,43 @@ var _ = Describe("ChangeDiscoverer", func() {
 		failedScanCounter *metricsfakes.FakeCounter
 		failedDiffCounter *metricsfakes.FakeCounter
 
+		remoteRepoPath  string
+		repoToFetchPath string
+		repoToFetch     *git.Repository
+
 		runner  ifrit.Runner
 		process ifrit.Process
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
-		gitClient = &gitclientfakes.FakeClient{}
+		gitClient = gitclient.New("private-key-path", "public-key-path")
 		clock = fakeclock.NewFakeClock(time.Now())
 		interval = 30 * time.Minute
 
+		sniffer = &snifffakes.FakeSniffer{}
+		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
+			for s.Scan(logger) {
+				line := s.Line(logger)
+				if strings.Contains(string(line.Content), "credential") {
+					h(l, scanners.Violation{
+						Line: *line,
+					})
+				}
+			}
+
+			return nil
+		}
+
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
+
+		currentFetchID = 0
+		fetchRepository = &dbfakes.FakeFetchRepository{}
+		fetchRepository.SaveFetchStub = func(l lager.Logger, f *db.Fetch) error {
+			currentFetchID++
+			f.ID = currentFetchID
+			return nil
+		}
 
 		scanRepository = &dbfakes.FakeScanRepository{}
 		firstScan = &dbfakes.FakeActiveScan{}
@@ -72,16 +101,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 			return secondScan
 		}
 
-		currentFetchID = 0
-		fetchRepository = &dbfakes.FakeFetchRepository{}
-		fetchRepository.SaveFetchStub = func(l lager.Logger, f *db.Fetch) error {
-			currentFetchID++
-			f.ID = currentFetchID
-			return nil
-		}
-
 		emitter = &metricsfakes.FakeEmitter{}
-
 		runCounter = &metricsfakes.FakeCounter{}
 		successCounter = &metricsfakes.FakeCounter{}
 		failedCounter = &metricsfakes.FakeCounter{}
@@ -103,6 +123,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 				return &metricsfakes.FakeCounter{}
 			}
 		}
+
 		fetchTimer = &metricsfakes.FakeTimer{}
 		fetchTimer.TimeStub = func(logger lager.Logger, f func(), tags ...string) {
 			f()
@@ -110,23 +131,26 @@ var _ = Describe("ChangeDiscoverer", func() {
 		emitter.TimerReturns(fetchTimer)
 		reposToFetch = &metricsfakes.FakeGauge{}
 		emitter.GaugeReturns(reposToFetch)
+
+		var err error
+		remoteRepoPath, err = ioutil.TempDir("", "change-discoverer-remote-repo")
+		Expect(err).NotTo(HaveOccurred())
+
+		remoteRepo, err := git.InitRepository(remoteRepoPath, false)
+		Expect(err).NotTo(HaveOccurred())
+		defer remoteRepo.Free()
+
+		createCommit(remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
+
+		repoToFetchPath, err = ioutil.TempDir("", "change-discoverer-repo-to-fetch")
+		Expect(err).NotTo(HaveOccurred())
+
+		repoToFetch, err = git.Clone(remoteRepoPath, repoToFetchPath, &git.CloneOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		defer repoToFetch.Free()
 	})
 
 	JustBeforeEach(func() {
-		sniffer = &snifffakes.FakeSniffer{}
-		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
-			for s.Scan(logger) {
-				line := s.Line(logger)
-				if strings.Contains(string(line.Content), "credential") {
-					h(l, scanners.Violation{
-						Line: *line,
-					})
-				}
-			}
-
-			return nil
-		}
-
 		runner = revok.NewChangeDiscoverer(
 			logger,
 			gitClient,
@@ -175,14 +199,9 @@ var _ = Describe("ChangeDiscoverer", func() {
 					},
 					Owner: "some-owner",
 					Name:  "some-repo",
-					Path:  "some-path",
+					Path:  repoToFetchPath,
 				},
 			}, nil)
-		})
-
-		It("fetches updates for the repo", func() {
-			Eventually(gitClient.FetchCallCount).Should(Equal(1))
-			Expect(gitClient.FetchArgsForCall(0)).To(Equal("some-path"))
 		})
 
 		It("increments the repositories to fetch metric", func() {
@@ -194,142 +213,72 @@ var _ = Describe("ChangeDiscoverer", func() {
 		})
 
 		Context("when the remote has changes", func() {
-			var (
-				oldOid1 *git.Oid
-				newOid1 *git.Oid
-				oldOid2 *git.Oid
-				newOid2 *git.Oid
-				changes map[string][]*git.Oid
-			)
-
 			BeforeEach(func() {
-				var err error
-				oldOid1, err = git.NewOid("fce98866a7d559757a0a501aa548e244a46ad00a")
-				Expect(err).NotTo(HaveOccurred())
-				newOid1, err = git.NewOid("3f5c0cc6c73ddb1a3aa05725c48ca1223367fb74")
-				Expect(err).NotTo(HaveOccurred())
-				oldOid2, err = git.NewOid("7257894438275f68380aa6d75015ef7a0ca6757b")
-				Expect(err).NotTo(HaveOccurred())
-				newOid2, err = git.NewOid("53fc72ccf2ef176a02169aeebf5c8427861e9b0e")
-				Expect(err).NotTo(HaveOccurred())
-
-				changes = map[string][]*git.Oid{
-					"refs/remotes/origin/master":  {oldOid1, newOid1},
-					"refs/remotes/origin/develop": {oldOid2, newOid2},
-				}
-
-				gitClient.FetchReturns(changes, nil)
-
-				gitClient.DiffStub = func(repositoryPath string, a, b *git.Oid) (string, error) {
-					if gitClient.DiffCallCount() == 1 {
-						return `diff --git a/stuff.txt b/stuff.txt
-index f2e4113..fa5a232 100644
---- a/stuff.txt
-+++ b/stuff.txt
-@@ -1 +1,2 @@
--old
-+credential
-+something-else`, nil
-					}
-
-					return `--git a/stuff.txt b/stuff.txt
-index fa5a232..1e13fe8 100644
---- a/stuff.txt
-+++ b/stuff.txt
-@@ -1,2 +1 @@
--old
--content
-+credential`, nil
-				}
+				createCommit(remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
 			})
 
-			It("does a diff scan on the changes", func() {
-				Eventually(gitClient.DiffCallCount).Should(Equal(2))
-
-				// for synchronizing the unordered map returned by Fetch
-				expectedOids := map[string][]*git.Oid{
-					oldOid1.String(): []*git.Oid{oldOid1, newOid1},
-					oldOid2.String(): []*git.Oid{oldOid2, newOid2},
-				}
-
-				actualOids := map[string][]*git.Oid{}
-
-				dest, a, b := gitClient.DiffArgsForCall(0)
-				Expect(dest).To(Equal("some-path"))
-				actualOids[a.String()] = []*git.Oid{a, b}
-
-				// this is the only way to detect anything was scanned
-				Expect(firstScan.RecordCredentialCallCount()).To(Equal(1))
-
-				dest, c, d := gitClient.DiffArgsForCall(1)
-				Expect(dest).To(Equal("some-path"))
-				actualOids[c.String()] = []*git.Oid{c, d}
-
-				Expect(actualOids).To(Equal(expectedOids))
-
-				Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
+			It("scans the changes", func() {
+				// this is the only way to know we've scanned
+				Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 			})
 
 			It("tries to store information in the database about the fetch", func() {
 				Eventually(fetchRepository.SaveFetchCallCount).Should(Equal(1))
 				_, fetch := fetchRepository.SaveFetchArgsForCall(0)
-				Expect(fetch.Path).To(Equal("some-path"))
-				bs, err := json.Marshal(changes)
+				Expect(fetch.Path).To(Equal(repoToFetchPath))
+				Expect(fetch.Repository.ID).To(BeNumerically(">", 0))
+
+				repo, err := git.OpenRepository(remoteRepoPath)
+				Expect(err).NotTo(HaveOccurred())
+				defer repo.Free()
+
+				head, err := repo.Head()
+				Expect(err).NotTo(HaveOccurred())
+				defer head.Free()
+
+				targetRef, err := repo.Lookup(head.Target())
+				Expect(err).NotTo(HaveOccurred())
+				defer targetRef.Free()
+
+				headCommit, err := targetRef.AsCommit()
+				Expect(err).NotTo(HaveOccurred())
+				defer headCommit.Free()
+
+				expectedChanges := map[string][]*git.Oid{
+					"refs/remotes/origin/master": []*git.Oid{headCommit.ParentId(0), head.Target()},
+				}
+
+				bs, err := json.Marshal(expectedChanges)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(fetch.Changes).To(Equal(bs))
-				Expect(fetch.Repository.ID).To(BeNumerically(">", 0))
 			})
 
 			It("tries to store information in the database about found credentials", func() {
-				Eventually(scanRepository.StartCallCount).Should(Equal(2))
+				Eventually(scanRepository.StartCallCount).Should(Equal(1))
 				_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
 				Expect(scanType).To(Equal("diff-scan"))
 				Expect(repository.ID).To(BeNumerically("==", 42))
 				Expect(fetch.ID).To(Equal(currentFetchID))
 
-				Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 				Eventually(firstScan.FinishCallCount).Should(Equal(1))
-
-				Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
-				Eventually(secondScan.FinishCallCount).Should(Equal(1))
 			})
 
 			Context("when there is an error saving the fetch to the database", func() {
 				BeforeEach(func() {
+					fakeGitClient := &gitclientfakes.FakeClient{}
 					fetchRepository.SaveFetchReturns(errors.New("an-error"))
+					gitClient = fakeGitClient
 				})
 
 				It("does not try to diff anything", func() {
-					Consistently(gitClient.DiffCallCount).Should(BeZero())
+					Expect(fetchRepository.SaveFetchCallCount()).To(Equal(1))
+					fakeGitClient, ok := gitClient.(*gitclientfakes.FakeClient)
+					Expect(ok).To(BeTrue())
+					Consistently(fakeGitClient.DiffCallCount).Should(BeZero())
 				})
 
 				It("increments the failed metric", func() {
 					Eventually(failedCounter.IncCallCount).Should(Equal(1))
-				})
-			})
-
-			XIt("it does a message scan on the changes", func() {
-			})
-
-			XContext("when there is an error getting the diff for the changes", func() {
-				BeforeEach(func() {
-					gitClient.DiffStub = func(dest string, a *git.Oid, b *git.Oid) (string, error) {
-						if gitClient.DiffCallCount() == 1 {
-							return "", errors.New("an-error")
-						}
-
-						return `--git a/stuff.txt b/stuff.txt
-	index fa5a232..1e13fe8 100644
-	--- a/stuff.txt
-	+++ b/stuff.txt
-	@@ -1,2 +1 @@
-	-old
-	-content
-	+credential`, nil
-					}
-				})
-
-				XIt("increments a metric which doesn't exist yet", func() {
 				})
 			})
 
@@ -346,18 +295,32 @@ index fa5a232..1e13fe8 100644
 
 			Context("when there is an error getting a diff from Git", func() {
 				BeforeEach(func() {
-					gitClient.DiffReturns("diff", errors.New("an-error"))
+					fakeGitClient := &gitclientfakes.FakeClient{}
+
+					// fake client requires successful Fetch
+					oldOid, err := git.NewOid("fce98866a7d559757a0a501aa548e244a46ad00a")
+					Expect(err).NotTo(HaveOccurred())
+					newOid, err := git.NewOid("3f5c0cc6c73ddb1a3aa05725c48ca1223367fb74")
+					Expect(err).NotTo(HaveOccurred())
+					fakeGitClient.FetchReturns(map[string][]*git.Oid{
+						"refs/remotes/origin/master": {oldOid, newOid},
+					}, nil)
+
+					fakeGitClient.DiffReturns("", errors.New("an-error"))
+					gitClient = fakeGitClient
 				})
 
 				It("increments the failed diff metric", func() {
-					Eventually(failedDiffCounter.IncCallCount).Should(Equal(2)) // 2 changes
+					Eventually(failedDiffCounter.IncCallCount).Should(Equal(1))
 				})
 			})
 		})
 
 		Context("when there is an error fetching changes", func() {
 			BeforeEach(func() {
-				gitClient.FetchReturns(nil, errors.New("an-error"))
+				fakeGitClient := &gitclientfakes.FakeClient{}
+				fakeGitClient.FetchReturns(nil, errors.New("an-error"))
+				gitClient = fakeGitClient
 			})
 
 			It("increments the failed metric", func() {
@@ -367,7 +330,10 @@ index fa5a232..1e13fe8 100644
 	})
 
 	Context("when there are multiple repositories to fetch", func() {
-		var repositories []db.Repository
+		var (
+			repositories  []db.Repository
+			fakeGitClient *gitclientfakes.FakeClient
+		)
 
 		BeforeEach(func() {
 			repositories = []db.Repository{
@@ -396,21 +362,36 @@ index fa5a232..1e13fe8 100644
 
 				return []db.Repository{}, nil
 			}
+
+			fakeGitClient = &gitclientfakes.FakeClient{}
+			gitClient = fakeGitClient
 		})
 
 		It("waits between fetches", func() {
-			Eventually(gitClient.FetchCallCount).Should(Equal(1))
-			Consistently(gitClient.FetchCallCount).Should(Equal(1))
+			Eventually(fakeGitClient.FetchCallCount).Should(Equal(1))
+			Consistently(fakeGitClient.FetchCallCount).Should(Equal(1))
 
 			subInterval := time.Duration(interval.Nanoseconds()/int64(len(repositories))) * time.Nanosecond
 			clock.Increment(subInterval)
 
-			Eventually(gitClient.FetchCallCount).Should(Equal(2))
+			Eventually(fakeGitClient.FetchCallCount).Should(Equal(2))
 		})
 	})
 
 	Context("when there is an error getting repositories to fetch", func() {
+		var (
+			remoteRefPath string
+			oldTarget     string
+		)
+
 		BeforeEach(func() {
+			remoteRefPath = filepath.Join(repoToFetchPath, ".git", "refs", "remotes", "origin", "master")
+			bs, err := ioutil.ReadFile(remoteRefPath)
+			Expect(err).NotTo(HaveOccurred())
+			oldTarget = string(bs)
+
+			createCommit(remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
+
 			repositoryRepository.NotFetchedSinceReturns(nil, errors.New("an-error"))
 		})
 
@@ -419,7 +400,11 @@ index fa5a232..1e13fe8 100644
 		})
 
 		It("does not do any fetches", func() {
-			Consistently(gitClient.FetchCallCount).Should(BeZero())
+			Consistently(func() string {
+				bs, err := ioutil.ReadFile(remoteRefPath)
+				Expect(err).NotTo(HaveOccurred())
+				return string(bs)
+			}).Should(Equal(oldTarget))
 		})
 
 		It("does not save any fetches", func() {
