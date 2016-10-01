@@ -90,13 +90,12 @@ func (s *scanner) Scan(
 			quietLogger,
 			diffscanner.NewDiffScanner(strings.NewReader(diff)),
 			func(logger lager.Logger, violation scanners.Violation) error {
-				line := violation.Line
 				scan.RecordCredential(db.NewCredential(
 					dbRepository.Owner,
 					dbRepository.Name,
 					child.String(),
-					line.Path,
-					line.LineNumber,
+					violation.Line.Path,
+					violation.Line.LineNumber,
 					violation.Start,
 					violation.End,
 				))
