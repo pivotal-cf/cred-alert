@@ -39,6 +39,7 @@ var _ = Describe("Scanner", func() {
 		repoToScanPath string
 		head           *git.Reference
 		baseRepo       *git.Repository
+		result         createCommitResult
 	)
 
 	BeforeEach(func() {
@@ -49,7 +50,7 @@ var _ = Describe("Scanner", func() {
 		baseRepo, err = git.InitRepository(baseRepoPath, false)
 		Expect(err).NotTo(HaveOccurred())
 
-		createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit")
+		result = createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit")
 
 		head, err = baseRepo.Head()
 		Expect(err).NotTo(HaveOccurred())
@@ -117,6 +118,11 @@ var _ = Describe("Scanner", func() {
 		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
+		credential := firstScan.RecordCredentialArgsForCall(0)
+		Expect(credential.Owner).To(Equal("some-owner"))
+		Expect(credential.Repository).To(Equal("some-repository"))
+		Expect(credential.SHA).To(Equal(result.To.String()))
+		Expect(credential.Path).To(Equal("some-file"))
 	})
 
 	It("tries to store information in the database about found credentials", func() {

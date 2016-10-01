@@ -170,7 +170,7 @@ func (s *scanner) scan(
 			scan.RecordCredential(db.NewCredential(
 				dbRepository.Owner,
 				dbRepository.Name,
-				"",
+				child.String(),
 				line.Path,
 				line.LineNumber,
 				violation.Start,
