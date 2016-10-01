@@ -33,8 +33,6 @@ var _ = Describe("Scanner", func() {
 		scanner              revok.Scanner
 
 		firstScan      *dbfakes.FakeActiveScan
-		secondScan     *dbfakes.FakeActiveScan
-		thirdScan      *dbfakes.FakeActiveScan
 		successMetric  *metricsfakes.FakeCounter
 		failedMetric   *metricsfakes.FakeCounter
 		baseRepoPath   string
@@ -70,18 +68,8 @@ var _ = Describe("Scanner", func() {
 
 		scanRepository = &dbfakes.FakeScanRepository{}
 		firstScan = &dbfakes.FakeActiveScan{}
-		secondScan = &dbfakes.FakeActiveScan{}
-		thirdScan = &dbfakes.FakeActiveScan{}
 		scanRepository.StartStub = func(lager.Logger, string, *db.Repository, *db.Fetch) db.ActiveScan {
-			switch scanRepository.StartCallCount() {
-			case 1:
-				return firstScan
-			case 2:
-				return secondScan
-			case 3:
-				return thirdScan
-			}
-			panic("need another scan set up")
+			return firstScan
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
@@ -136,7 +124,7 @@ var _ = Describe("Scanner", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(scanRepository.StartCallCount).Should(Equal(1))
 		_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
-		Expect(scanType).To(Equal("diff-scan"))
+		Expect(scanType).To(Equal("repo-scan"))
 		Expect(repository.ID).To(BeNumerically("==", 42))
 		Expect(fetch).To(BeNil())
 
@@ -165,18 +153,15 @@ var _ = Describe("Scanner", func() {
 			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(3))
-			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
-			Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
-			Eventually(thirdScan.RecordCredentialCallCount).Should(Equal(1))
+			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(3))
+			Eventually(firstScan.FinishCallCount).Should(Equal(1))
 		})
 
 		It("doesn't scan past the SHA to stop at if provided", func() {
 			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), stopSHA)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(2))
-			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
-			Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
-			Consistently(thirdScan.RecordCredentialCallCount).Should(Equal(0))
+			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(2))
 		})
 	})
 

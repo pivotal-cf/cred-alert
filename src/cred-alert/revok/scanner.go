@@ -77,10 +77,28 @@ func (s *scanner) Scan(
 		}
 	}
 
+	quietLogger := kolsch.NewLogger()
+	scan := s.scanRepository.Start(quietLogger, "repo-scan", &dbRepository, nil)
+
 	scannedOids := map[git.Oid]struct{}{}
-	err = s.scanAncestors(kolsch.NewLogger(), logger, repo, dbRepository, scannedOids, startOid, stopOid)
+	err = s.scanAncestors(
+		quietLogger,
+		logger,
+		repo,
+		dbRepository,
+		scan,
+		scannedOids,
+		startOid,
+		stopOid,
+	)
 	if err != nil {
 		logger.Error("failed-to-scan", err)
+	}
+
+	err = scan.Finish()
+	if err != nil {
+		logger.Error("failed-to-finish-scan", err)
+		return err
 	}
 
 	return nil
@@ -91,6 +109,7 @@ func (s *scanner) scanAncestors(
 	logger lager.Logger,
 	repo *git.Repository,
 	dbRepository db.Repository,
+	scan db.ActiveScan,
 	scannedOids map[git.Oid]struct{},
 	child *git.Oid,
 	stopPoint *git.Oid,
@@ -101,7 +120,7 @@ func (s *scanner) scanAncestors(
 	}
 
 	if len(parents) == 0 {
-		return s.scan(quietLogger, logger, dbRepository, scannedOids, child)
+		return s.scan(quietLogger, logger, dbRepository, scan, scannedOids, child)
 	}
 
 	for _, parent := range parents {
@@ -109,7 +128,7 @@ func (s *scanner) scanAncestors(
 			continue
 		}
 
-		err = s.scan(quietLogger, logger, dbRepository, scannedOids, child, parent)
+		err = s.scan(quietLogger, logger, dbRepository, scan, scannedOids, child, parent)
 		if err != nil {
 			return err
 		}
@@ -118,7 +137,7 @@ func (s *scanner) scanAncestors(
 			continue
 		}
 
-		return s.scanAncestors(quietLogger, logger, repo, dbRepository, scannedOids, parent, stopPoint)
+		return s.scanAncestors(quietLogger, logger, repo, dbRepository, scan, scannedOids, parent, stopPoint)
 	}
 
 	return nil
@@ -128,6 +147,7 @@ func (s *scanner) scan(
 	quietLogger lager.Logger,
 	logger lager.Logger,
 	dbRepository db.Repository,
+	scan db.ActiveScan,
 	scannedOids map[git.Oid]struct{},
 	child *git.Oid,
 	parents ...*git.Oid,
@@ -142,7 +162,6 @@ func (s *scanner) scan(
 		return err
 	}
 
-	scan := s.scanRepository.Start(quietLogger, "diff-scan", &dbRepository, nil)
 	s.sniffer.Sniff(
 		quietLogger,
 		diffscanner.NewDiffScanner(strings.NewReader(diff)),
@@ -162,12 +181,6 @@ func (s *scanner) scan(
 	)
 
 	scannedOids[*child] = struct{}{}
-
-	err = scan.Finish()
-	if err != nil {
-		logger.Error("failed-to-finish-scan", err)
-		return err
-	}
 
 	return nil
 }
