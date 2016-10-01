@@ -79,18 +79,37 @@ func (s *scanner) Scan(
 
 	quietLogger := kolsch.NewLogger()
 	scan := s.scanRepository.Start(quietLogger, "repo-scan", &dbRepository, nil)
-
 	scannedOids := map[git.Oid]struct{}{}
-	err = s.scanAncestors(
-		quietLogger,
-		logger,
-		repo,
-		dbRepository,
-		scan,
-		scannedOids,
-		startOid,
-		stopOid,
-	)
+	scanFunc := func(child, parent *git.Oid) error {
+		diff, err := s.gitClient.Diff(dbRepository.Path, parent, child)
+		if err != nil {
+			return err
+		}
+
+		s.sniffer.Sniff(
+			quietLogger,
+			diffscanner.NewDiffScanner(strings.NewReader(diff)),
+			func(logger lager.Logger, violation scanners.Violation) error {
+				line := violation.Line
+				scan.RecordCredential(db.NewCredential(
+					dbRepository.Owner,
+					dbRepository.Name,
+					child.String(),
+					line.Path,
+					line.LineNumber,
+					violation.Start,
+					violation.End,
+				))
+				return nil
+			},
+		)
+
+		scannedOids[*child] = struct{}{}
+
+		return nil
+	}
+
+	err = s.scanAncestors(repo, scanFunc, scannedOids, startOid, stopOid)
 	if err != nil {
 		logger.Error("failed-to-scan", err)
 	}
@@ -105,11 +124,8 @@ func (s *scanner) Scan(
 }
 
 func (s *scanner) scanAncestors(
-	quietLogger lager.Logger,
-	logger lager.Logger,
 	repo *git.Repository,
-	dbRepository db.Repository,
-	scan db.ActiveScan,
+	scanFunc func(*git.Oid, *git.Oid) error,
 	scannedOids map[git.Oid]struct{},
 	child *git.Oid,
 	stopPoint *git.Oid,
@@ -120,7 +136,7 @@ func (s *scanner) scanAncestors(
 	}
 
 	if len(parents) == 0 {
-		return s.scan(quietLogger, logger, dbRepository, scan, scannedOids, child)
+		return scanFunc(child, nil)
 	}
 
 	for _, parent := range parents {
@@ -128,7 +144,7 @@ func (s *scanner) scanAncestors(
 			continue
 		}
 
-		err = s.scan(quietLogger, logger, dbRepository, scan, scannedOids, child, parent)
+		err = scanFunc(child, parent)
 		if err != nil {
 			return err
 		}
@@ -137,50 +153,8 @@ func (s *scanner) scanAncestors(
 			continue
 		}
 
-		return s.scanAncestors(quietLogger, logger, repo, dbRepository, scan, scannedOids, parent, stopPoint)
+		return s.scanAncestors(repo, scanFunc, scannedOids, parent, stopPoint)
 	}
-
-	return nil
-}
-
-func (s *scanner) scan(
-	quietLogger lager.Logger,
-	logger lager.Logger,
-	dbRepository db.Repository,
-	scan db.ActiveScan,
-	scannedOids map[git.Oid]struct{},
-	child *git.Oid,
-	parents ...*git.Oid,
-) error {
-	var parent *git.Oid
-	if len(parents) == 1 {
-		parent = parents[0]
-	}
-
-	diff, err := s.gitClient.Diff(dbRepository.Path, parent, child)
-	if err != nil {
-		return err
-	}
-
-	s.sniffer.Sniff(
-		quietLogger,
-		diffscanner.NewDiffScanner(strings.NewReader(diff)),
-		func(logger lager.Logger, violation scanners.Violation) error {
-			line := violation.Line
-			scan.RecordCredential(db.NewCredential(
-				dbRepository.Owner,
-				dbRepository.Name,
-				child.String(),
-				line.Path,
-				line.LineNumber,
-				violation.Start,
-				violation.End,
-			))
-			return nil
-		},
-	)
-
-	scannedOids[*child] = struct{}{}
 
 	return nil
 }
