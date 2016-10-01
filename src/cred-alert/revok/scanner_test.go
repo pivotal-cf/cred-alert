@@ -37,7 +37,6 @@ var _ = Describe("Scanner", func() {
 		failedMetric   *metricsfakes.FakeCounter
 		baseRepoPath   string
 		repoToScanPath string
-		head           *git.Reference
 		baseRepo       *git.Repository
 		result         createCommitResult
 	)
@@ -51,9 +50,6 @@ var _ = Describe("Scanner", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		result = createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit")
-
-		head, err = baseRepo.Head()
-		Expect(err).NotTo(HaveOccurred())
 
 		logger = lagertest.NewTestLogger("revok-scanner")
 		gitClient = gitclient.New("private-key-path", "public-key-path")
@@ -102,20 +98,19 @@ var _ = Describe("Scanner", func() {
 	})
 
 	AfterEach(func() {
-		head.Free()
 		baseRepo.Free()
 		os.RemoveAll(baseRepoPath)
 		os.RemoveAll(repoToScanPath)
 	})
 
 	It("sniffs", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sniffer.SniffCallCount).Should(Equal(1))
 	})
 
 	It("records credentials found in the repository", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 		credential := firstScan.RecordCredentialArgsForCall(0)
@@ -126,7 +121,7 @@ var _ = Describe("Scanner", func() {
 	})
 
 	It("tries to store information in the database about found credentials", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(scanRepository.StartCallCount).Should(Equal(1))
 		_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
@@ -142,21 +137,14 @@ var _ = Describe("Scanner", func() {
 		var stopSHA string
 
 		BeforeEach(func() {
-			var err error
-			head, err = baseRepo.Head()
-			Expect(err).NotTo(HaveOccurred())
-
-			stopSHA = head.Target().String()
+			stopSHA = result.To.String()
 
 			createCommit("refs/heads/master", baseRepoPath, "some-other-file", []byte("credential"), "second commit")
-			createCommit("refs/heads/master", baseRepoPath, "yet-another-file", []byte("credential"), "third commit")
-
-			head, err = baseRepo.Head()
-			Expect(err).NotTo(HaveOccurred())
+			result = createCommit("refs/heads/master", baseRepoPath, "yet-another-file", []byte("credential"), "third commit")
 		})
 
 		It("scans from the given SHA to the beginning of the repository", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(3))
 			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(3))
@@ -164,7 +152,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("doesn't scan past the SHA to stop at if provided", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), stopSHA)
+			err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), stopSHA)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(2))
 			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(2))
@@ -177,7 +165,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("does not try to scan", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", head.Target().String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
 			Expect(err).To(HaveOccurred())
 			Consistently(scanRepository.StartCallCount).Should(BeZero())
 		})
