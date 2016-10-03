@@ -1,0 +1,39 @@
+name: revok
+version: 1.0.0
+commit_hash: 7910a1e
+uncommitted_changes: false
+jobs:
+- name: revok
+  version: e7f7aab4f4bef2620a174f9d3c492dcffc4778ab
+  fingerprint: e7f7aab4f4bef2620a174f9d3c492dcffc4778ab
+  sha1: c8d80efd6101acdce740787a4debbb9e10fe9471
+packages:
+- name: cred-alert
+  version: 4e2e7bb560594660a509fbad0f6a4a0907cb10a5
+  fingerprint: 4e2e7bb560594660a509fbad0f6a4a0907cb10a5
+  sha1: c9ab1e1c6d9f06880c79b6fe696bf21f5a031160
+  dependencies:
+  - golang
+  - libgit2
+  - libssh2
+- name: golang
+  version: 381cf0ba4ac068d5ce8af5fb94ebd805de689f58
+  fingerprint: 381cf0ba4ac068d5ce8af5fb94ebd805de689f58
+  sha1: c747d3e1aee53ea86ed88ce96720239a5a370042
+  dependencies: []
+- name: libgit2
+  version: 3c87ba895d49a73ca47b5e073303b1c7696741d4
+  fingerprint: 3c87ba895d49a73ca47b5e073303b1c7696741d4
+  sha1: 9d257b448a6b2be39676df171f3267e69163a220
+  dependencies:
+  - libssh2
+- name: libssh2
+  version: 0efae677b1c8c70d2a7f92e2d9ab42a7273356c3
+  fingerprint: 0efae677b1c8c70d2a7f92e2d9ab42a7273356c3
+  sha1: 6f8b180bb92f421ec8ad8e1cb68c3fb21ae39bb1
+  dependencies: []
+- name: pid_utils_revok
+  version: a1f0590ea02d938b933a101c7438985721cd0ab4
+  fingerprint: a1f0590ea02d938b933a101c7438985721cd0ab4
+  sha1: 94989f97e33bbf22eaa93393c21b54735c844051
+  dependencies: []
