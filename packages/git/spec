@@ -1,7 +1,8 @@
 ---
 name: git
 
-dependencies: []
+dependencies:
+  - libexpat
 
 files:
   - git/git-2.10.1.tar.gz

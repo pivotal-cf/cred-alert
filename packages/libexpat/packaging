@@ -1,0 +1,6 @@
+set -e
+
+bzip2 -cd libexpat/libexpat-2.2.0.tar.bz2 | tar xf - && cd expat-2.20
+
+./configure --prefix=${BOSH_INSTALL_TARGET}
+make && make install
