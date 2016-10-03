@@ -14,6 +14,7 @@ templates:
 packages:
 - cred-alert
 - golang
+- git
 - libgit2
 - libssh2
 - pid_utils_revok

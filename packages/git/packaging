@@ -1,0 +1,6 @@
+set -e
+
+tar xzf git/git-2.10.1.tar.gz
+
+cd git-2.10.1
+make prefix=${BOSH_INSTALL_TARGET} all install
