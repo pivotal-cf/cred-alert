@@ -11,3 +11,7 @@ libgit2/libgit2-0.24.1.tar.gz:
   object_id: 4c81ee3d-d170-48d3-b897-c7dd23851304
   sha: 198ac53d713c521d940951ab5d6b90b75b941918
   size: 4173317
+git/git-2.10.1.tar.gz:
+  object_id: 55d1a453-2c54-4b96-80dd-1674575711b7
+  sha: 8da73bdfc3d351ba8806ea85d8e29df18b47252d
+  size: 6057915
