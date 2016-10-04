@@ -132,7 +132,7 @@ func newCredentialsCallback(privateKeyPath, publicKeyPath string) git.Credential
 
 func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string) git.ErrorCode {
 	// should return an error code if the cert isn't valid
-	return 0
+	return git.ErrorCode(0)
 }
 
 func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, error) {
