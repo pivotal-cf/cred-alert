@@ -29,10 +29,10 @@ type ChangeDiscoverer struct {
 	fetchTimer             metrics.Timer
 	fetchedRepositoryGauge metrics.Gauge
 	runCounter             metrics.Counter
-	failedCounter          metrics.Counter
-	failedScanCounter      metrics.Counter
-	failedDiffCounter      metrics.Counter
-	successCounter         metrics.Counter
+	fetchSuccessCounter    metrics.Counter
+	fetchFailedCounter     metrics.Counter
+	scanSuccessCounter     metrics.Counter
+	scanFailedCounter      metrics.Counter
 }
 
 func NewChangeDiscoverer(
@@ -54,13 +54,13 @@ func NewChangeDiscoverer(
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
 
-		fetchTimer:             emitter.Timer("revok.fetch_time"),
-		fetchedRepositoryGauge: emitter.Gauge("revok.fetched_repositories"),
-		runCounter:             emitter.Counter("revok.change_discoverer_runs"),
-		successCounter:         emitter.Counter("revok.change_discoverer_success"),
-		failedCounter:          emitter.Counter("revok.change_discoverer_failed"),
-		failedDiffCounter:      emitter.Counter("revok.change_discoverer_failed_diffs"),
-		failedScanCounter:      emitter.Counter("revok.change_discoverer_failed_scans"),
+		fetchTimer:             emitter.Timer("revok.change_discoverer.fetch_time"),
+		fetchedRepositoryGauge: emitter.Gauge("revok.change_discoverer.repositories_to_fetch"),
+		runCounter:             emitter.Counter("revok.change_discoverer.run"),
+		fetchSuccessCounter:    emitter.Counter("revok.change_discoverer.fetch.success"),
+		fetchFailedCounter:     emitter.Counter("revok.change_discoverer.fetch.failed"),
+		scanSuccessCounter:     emitter.Counter("revok.change_discoverer.scan.success"),
+		scanFailedCounter:      emitter.Counter("revok.change_discoverer.scan.failed"),
 	}
 }
 
@@ -69,8 +69,6 @@ func (c *ChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	logger.Info("started")
 
 	close(ready)
-
-	c.runCounter.Inc(logger)
 
 	timer := c.clock.NewTicker(c.interval)
 	firstTickCh := c.clock.NewTimer(0).C()
@@ -96,6 +94,8 @@ func (c *ChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 }
 
 func (c *ChangeDiscoverer) work(ctx context.Context, logger lager.Logger) {
+	c.runCounter.Inc(logger)
+
 	repos, err := c.repositoryRepository.NotFetchedSince(c.clock.Now().Add(-c.interval))
 	if err != nil {
 		logger.Error("failed-getting-repos", err)
@@ -110,7 +110,6 @@ func (c *ChangeDiscoverer) work(ctx context.Context, logger lager.Logger) {
 
 	err = c.fetch(logger, repos[0])
 	if err != nil {
-		c.failedCounter.Inc(logger)
 		return
 	}
 
@@ -125,12 +124,8 @@ func (c *ChangeDiscoverer) work(ctx context.Context, logger lager.Logger) {
 			go func() { errCh <- c.fetch(logger, repo) }()
 
 			select {
-			case err := <-errCh:
-				if err != nil {
-					c.failedCounter.Inc(logger)
-				}
+			case <-errCh:
 			case <-ctx.Done():
-				return
 			}
 		}
 	}
@@ -156,8 +151,11 @@ func (c *ChangeDiscoverer) fetch(
 
 	if fetchErr != nil {
 		repoLogger.Error("failed-to-fetch", fetchErr)
+		c.fetchFailedCounter.Inc(repoLogger)
 		return fetchErr
 	}
+
+	c.fetchSuccessCounter.Inc(repoLogger)
 
 	bs, err := json.Marshal(changes)
 	if err != nil {
@@ -180,10 +178,13 @@ func (c *ChangeDiscoverer) fetch(
 	quietLogger := kolsch.NewLogger()
 
 	for _, oids := range changes {
-		c.scanner.Scan(quietLogger, repo.Owner, repo.Name, oids[1].String(), oids[0].String())
+		err := c.scanner.Scan(quietLogger, repo.Owner, repo.Name, oids[1].String(), oids[0].String())
+		if err != nil {
+			c.scanFailedCounter.Inc(repoLogger)
+		} else {
+			c.scanSuccessCounter.Inc(repoLogger)
+		}
 	}
-
-	c.successCounter.Inc(repoLogger)
 
 	return nil
 }
