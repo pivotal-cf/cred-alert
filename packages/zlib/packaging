@@ -1,6 +1,6 @@
 set -e
 
-tar xzf zlib/zlib-1.2.8.tar.gz
+tar xf zlib/zlib-1.2.8.tar.gz
 cd zlib-1.2.8
 ./configure --prefix=${BOSH_INSTALL_TARGET}
 make && make install
