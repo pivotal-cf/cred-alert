@@ -1,7 +1,0 @@
----
-name: libexpat
-
-dependencies: []
-
-files:
-- libexpat/expat-2.2.0.tar.bz2

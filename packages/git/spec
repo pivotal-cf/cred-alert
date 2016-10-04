@@ -2,7 +2,7 @@
 name: git
 
 dependencies:
-  - libexpat
+  - zlib
 
 files:
   - git/git-2.10.1.tar.gz

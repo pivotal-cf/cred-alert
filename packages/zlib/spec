@@ -1,0 +1,7 @@
+---
+name: zlib
+
+dependencies: []
+
+files:
+- zlib/zlib-1.2.8.tar.gz

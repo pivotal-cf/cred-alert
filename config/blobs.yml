@@ -15,7 +15,7 @@ git/git-2.10.1.tar.gz:
   object_id: 55d1a453-2c54-4b96-80dd-1674575711b7
   sha: 8da73bdfc3d351ba8806ea85d8e29df18b47252d
   size: 6057915
-libexpat/expat-2.2.0.tar.bz2:
-  object_id: eca5b6f0-876c-4d9f-a8f7-ba9553a7e550
-  sha: 8453bc52324be4c796fd38742ec48470eef358b3
-  size: 414352
+zlib/zlib-1.2.8.tar.gz:
+  object_id: a8a654f3-4fa0-466e-9b50-9655a5690d90
+  sha: 69d42045d87a5e7bff93ae28facb8f448b99b539
+  size: 2795520

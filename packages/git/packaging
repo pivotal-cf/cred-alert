@@ -1,6 +1,21 @@
 set -e
 
 tar xzf git/git-2.10.1.tar.gz
-
 cd git-2.10.1
-make prefix=${BOSH_INSTALL_TARGET} all install
+
+# NO_TCLTK=YesPlease    # No gitk or git-gui
+# NO_EXPAT=YesPlease    # No remote lock management
+# NO_GETTEXT=YesPlease  # Disable localization support
+# NO_CURL=YesPlease     # Disable http/https repository support
+# NO_OPENSSL=YesPlease  # Don't use OpenSSL for SHA or git-imap-send
+
+make \
+  prefix=${BOSH_INSTALL_TARGET}              \
+  NO_TCLTK=YesPlease                         \
+  NO_EXPAT=YesPlease                         \
+  NO_GETTEXT=YesPlease                       \
+  NO_CURL=YesPlease                          \
+  NO_OPENSSL=YesPlease                       \
+  LDFLAGS="-L/var/vcap/packages/zlib/lib"    \
+  CFLAGS="-I/var/vcap/packages/zlib/include" \
+  all install
