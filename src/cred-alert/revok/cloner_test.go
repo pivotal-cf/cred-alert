@@ -33,10 +33,12 @@ var _ = Describe("Cloner", func() {
 		emitter              *metricsfakes.FakeEmitter
 		scanner              *revokfakes.FakeScanner
 
-		successMetric    *metricsfakes.FakeCounter
-		failedMetric     *metricsfakes.FakeCounter
-		repoPath         string
-		expectedStartSHA string
+		scanSuccessMetric  *metricsfakes.FakeCounter
+		scanFailedMetric   *metricsfakes.FakeCounter
+		cloneSuccessMetric *metricsfakes.FakeCounter
+		cloneFailedMetric  *metricsfakes.FakeCounter
+		repoPath           string
+		expectedStartSHA   string
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -54,14 +56,20 @@ var _ = Describe("Cloner", func() {
 		}, nil)
 
 		emitter = &metricsfakes.FakeEmitter{}
-		successMetric = &metricsfakes.FakeCounter{}
-		failedMetric = &metricsfakes.FakeCounter{}
+		scanSuccessMetric = &metricsfakes.FakeCounter{}
+		scanFailedMetric = &metricsfakes.FakeCounter{}
+		cloneSuccessMetric = &metricsfakes.FakeCounter{}
+		cloneFailedMetric = &metricsfakes.FakeCounter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
-			case "revok.cloner.success":
-				return successMetric
-			case "revok.cloner.failed":
-				return failedMetric
+			case "revok.cloner.scan.success":
+				return scanSuccessMetric
+			case "revok.cloner.scan.failed":
+				return scanFailedMetric
+			case "revok.cloner.clone.success":
+				return cloneSuccessMetric
+			case "revok.cloner.clone.failed":
+				return cloneFailedMetric
 			}
 			return &metricsfakes.FakeCounter{}
 		}
@@ -145,6 +153,24 @@ var _ = Describe("Cloner", func() {
 			Expect(stopSHA).To(Equal(""))
 		})
 
+		It("increments the successful clone metric", func() {
+			Eventually(cloneSuccessMetric.IncCallCount).Should(Equal(1))
+		})
+
+		It("increments the successful scan metric", func() {
+			Eventually(scanSuccessMetric.IncCallCount).Should(Equal(1))
+		})
+
+		Context("when scanning fails", func() {
+			BeforeEach(func() {
+				scanner.ScanReturns(errors.New("an-error"))
+			})
+
+			It("increments the failed scan metric", func() {
+				Eventually(scanFailedMetric.IncCallCount).Should(Equal(1))
+			})
+		})
+
 		Context("when cloning fails", func() {
 			BeforeEach(func() {
 				fakeGitClient := &gitclientfakes.FakeClient{}
@@ -171,6 +197,10 @@ var _ = Describe("Cloner", func() {
 
 			It("does not try to scan", func() {
 				Consistently(scanner.ScanCallCount).Should(BeZero())
+			})
+
+			It("increments the failed clone metric", func() {
+				Eventually(cloneFailedMetric.IncCallCount).Should(Equal(1))
 			})
 		})
 

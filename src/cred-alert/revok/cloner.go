@@ -21,8 +21,10 @@ type Cloner struct {
 	gitClient            gitclient.Client
 	sniffer              sniff.Sniffer
 	repositoryRepository db.RepositoryRepository
-	successCounter       metrics.Counter
-	failedCounter        metrics.Counter
+	cloneSuccessCounter  metrics.Counter
+	cloneFailedCounter   metrics.Counter
+	scanSuccessCounter   metrics.Counter
+	scanFailedCounter    metrics.Counter
 	scanner              Scanner
 }
 
@@ -42,8 +44,10 @@ func NewCloner(
 		gitClient:            gitClient,
 		repositoryRepository: repositoryRepository,
 		scanner:              scanner,
-		successCounter:       emitter.Counter("revok.cloner.success"),
-		failedCounter:        emitter.Counter("revok.cloner.failed"),
+		scanSuccessCounter:   emitter.Counter("revok.cloner.scan.success"),
+		scanFailedCounter:    emitter.Counter("revok.cloner.scan.failed"),
+		cloneSuccessCounter:  emitter.Counter("revok.cloner.clone.success"),
+		cloneFailedCounter:   emitter.Counter("revok.cloner.clone.failed"),
 	}
 }
 
@@ -81,12 +85,15 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 	_, err := c.gitClient.Clone(msg.URL, dest)
 	if err != nil {
 		workLogger.Error("failed-to-clone", err)
+		c.cloneFailedCounter.Inc(workLogger)
 		err = os.RemoveAll(dest)
 		if err != nil {
 			workLogger.Error("failed-to-clean-up", err)
 		}
 		return
 	}
+
+	c.cloneSuccessCounter.Inc(workLogger)
 
 	err = c.repositoryRepository.MarkAsCloned(msg.Owner, msg.Repository, dest)
 	if err != nil {
@@ -112,11 +119,10 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	c.scanner.Scan(
-		workLogger,
-		msg.Owner,
-		msg.Repository,
-		head.Target().String(),
-		"",
-	)
+	err = c.scanner.Scan(workLogger, msg.Owner, msg.Repository, head.Target().String(), "")
+	if err != nil {
+		c.scanFailedCounter.Inc(workLogger)
+	} else {
+		c.scanSuccessCounter.Inc(workLogger)
+	}
 }
