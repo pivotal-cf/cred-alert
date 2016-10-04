@@ -33,7 +33,6 @@ func (m *metric) Update(logger lager.Logger, value float32, tags ...string) {
 		"environment": m.emitter.environment,
 		"value":       value,
 	})
-	logger.Debug("starting")
 
 	tagsWithEnv := append(tags, m.emitter.environment)
 	ddMetric := m.emitter.client.BuildMetric(m.metricType, m.name, value, tagsWithEnv...)
@@ -41,8 +40,6 @@ func (m *metric) Update(logger lager.Logger, value float32, tags ...string) {
 	if err != nil {
 		logger.Error("failed", err)
 	}
-
-	logger.Debug("done")
 }
 
 type nullMetric struct {
@@ -51,12 +48,4 @@ type nullMetric struct {
 	environment string
 }
 
-func (m *nullMetric) Update(logger lager.Logger, value float32, tags ...string) {
-	logger.Session("update", lager.Data{
-		"name":        m.name,
-		"type":        m.metricType,
-		"environment": m.environment,
-		"value":       value,
-		"tags":        tags,
-	}).Debug("done")
-}
+func (m *nullMetric) Update(logger lager.Logger, value float32, tags ...string) {}
