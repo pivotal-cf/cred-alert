@@ -19,6 +19,7 @@ files:
   - cred-alert/metrics/*.{go,c} # gosub
   - cred-alert/mimetype/*.{go,c} # gosub
   - cred-alert/revok/*.{go,c} # gosub
+  - cred-alert/revok/stats/*.{go,c} # gosub
   - cred-alert/scanners/*.{go,c} # gosub
   - cred-alert/scanners/diffscanner/*.{go,c} # gosub
   - cred-alert/scanners/dirscanner/*.{go,c} # gosub
