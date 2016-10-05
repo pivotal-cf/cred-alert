@@ -152,7 +152,7 @@ func (c *ChangeDiscoverer) fetch(
 		Changes:    bs,
 	}
 
-	err = c.fetchRepository.SaveFetch(repoLogger, &fetch)
+	err = c.fetchRepository.RegisterFetch(repoLogger, &fetch)
 	if err != nil {
 		repoLogger.Error("failed-to-save-fetch", err)
 		return err

@@ -9,49 +9,49 @@ import (
 )
 
 type FakeFetchRepository struct {
-	SaveFetchStub        func(lager.Logger, *db.Fetch) error
-	saveFetchMutex       sync.RWMutex
-	saveFetchArgsForCall []struct {
+	RegisterFetchStub        func(lager.Logger, *db.Fetch) error
+	registerFetchMutex       sync.RWMutex
+	registerFetchArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 *db.Fetch
 	}
-	saveFetchReturns struct {
+	registerFetchReturns struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeFetchRepository) SaveFetch(arg1 lager.Logger, arg2 *db.Fetch) error {
-	fake.saveFetchMutex.Lock()
-	fake.saveFetchArgsForCall = append(fake.saveFetchArgsForCall, struct {
+func (fake *FakeFetchRepository) RegisterFetch(arg1 lager.Logger, arg2 *db.Fetch) error {
+	fake.registerFetchMutex.Lock()
+	fake.registerFetchArgsForCall = append(fake.registerFetchArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 *db.Fetch
 	}{arg1, arg2})
-	fake.recordInvocation("SaveFetch", []interface{}{arg1, arg2})
-	fake.saveFetchMutex.Unlock()
-	if fake.SaveFetchStub != nil {
-		return fake.SaveFetchStub(arg1, arg2)
+	fake.recordInvocation("RegisterFetch", []interface{}{arg1, arg2})
+	fake.registerFetchMutex.Unlock()
+	if fake.RegisterFetchStub != nil {
+		return fake.RegisterFetchStub(arg1, arg2)
 	} else {
-		return fake.saveFetchReturns.result1
+		return fake.registerFetchReturns.result1
 	}
 }
 
-func (fake *FakeFetchRepository) SaveFetchCallCount() int {
-	fake.saveFetchMutex.RLock()
-	defer fake.saveFetchMutex.RUnlock()
-	return len(fake.saveFetchArgsForCall)
+func (fake *FakeFetchRepository) RegisterFetchCallCount() int {
+	fake.registerFetchMutex.RLock()
+	defer fake.registerFetchMutex.RUnlock()
+	return len(fake.registerFetchArgsForCall)
 }
 
-func (fake *FakeFetchRepository) SaveFetchArgsForCall(i int) (lager.Logger, *db.Fetch) {
-	fake.saveFetchMutex.RLock()
-	defer fake.saveFetchMutex.RUnlock()
-	return fake.saveFetchArgsForCall[i].arg1, fake.saveFetchArgsForCall[i].arg2
+func (fake *FakeFetchRepository) RegisterFetchArgsForCall(i int) (lager.Logger, *db.Fetch) {
+	fake.registerFetchMutex.RLock()
+	defer fake.registerFetchMutex.RUnlock()
+	return fake.registerFetchArgsForCall[i].arg1, fake.registerFetchArgsForCall[i].arg2
 }
 
-func (fake *FakeFetchRepository) SaveFetchReturns(result1 error) {
-	fake.SaveFetchStub = nil
-	fake.saveFetchReturns = struct {
+func (fake *FakeFetchRepository) RegisterFetchReturns(result1 error) {
+	fake.RegisterFetchStub = nil
+	fake.registerFetchReturns = struct {
 		result1 error
 	}{result1}
 }
@@ -59,8 +59,8 @@ func (fake *FakeFetchRepository) SaveFetchReturns(result1 error) {
 func (fake *FakeFetchRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.saveFetchMutex.RLock()
-	defer fake.saveFetchMutex.RUnlock()
+	fake.registerFetchMutex.RLock()
+	defer fake.registerFetchMutex.RUnlock()
 	return fake.invocations
 }
 

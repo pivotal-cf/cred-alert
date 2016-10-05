@@ -8,7 +8,7 @@ import (
 //go:generate counterfeiter . FetchRepository
 
 type FetchRepository interface {
-	SaveFetch(lager.Logger, *Fetch) error
+	RegisterFetch(lager.Logger, *Fetch) error
 }
 
 type fetchRepository struct {
@@ -19,8 +19,8 @@ func NewFetchRepository(db *gorm.DB) *fetchRepository {
 	return &fetchRepository{db: db}
 }
 
-func (r *fetchRepository) SaveFetch(logger lager.Logger, fetch *Fetch) error {
-	logger = logger.Session("save-fetch", lager.Data{
+func (r *fetchRepository) RegisterFetch(logger lager.Logger, fetch *Fetch) error {
+	logger = logger.Session("register-fetch", lager.Data{
 		"path": fetch.Path,
 	})
 	logger.Debug("starting")

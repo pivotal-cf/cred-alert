@@ -68,7 +68,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 		currentFetchID = 0
 		fetchRepository = &dbfakes.FakeFetchRepository{}
-		fetchRepository.SaveFetchStub = func(l lager.Logger, f *db.Fetch) error {
+		fetchRepository.RegisterFetchStub = func(l lager.Logger, f *db.Fetch) error {
 			currentFetchID++
 			f.ID = currentFetchID
 			return nil
@@ -220,8 +220,8 @@ var _ = Describe("ChangeDiscoverer", func() {
 			})
 
 			It("tries to store information in the database about the fetch", func() {
-				Eventually(fetchRepository.SaveFetchCallCount).Should(Equal(1))
-				_, fetch := fetchRepository.SaveFetchArgsForCall(0)
+				Eventually(fetchRepository.RegisterFetchCallCount).Should(Equal(1))
+				_, fetch := fetchRepository.RegisterFetchArgsForCall(0)
 				Expect(fetch.Path).To(Equal(repoToFetchPath))
 				Expect(fetch.Repository.ID).To(BeNumerically(">", 0))
 
@@ -268,7 +268,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 			Context("when there is an error saving the fetch to the database", func() {
 				BeforeEach(func() {
 					fakeGitClient := &gitclientfakes.FakeClient{}
-					fetchRepository.SaveFetchReturns(errors.New("an-error"))
+					fetchRepository.RegisterFetchReturns(errors.New("an-error"))
 					gitClient = fakeGitClient
 				})
 
@@ -390,7 +390,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 		})
 
 		It("does not save any fetches", func() {
-			Consistently(fetchRepository.SaveFetchCallCount).Should(BeZero())
+			Consistently(fetchRepository.RegisterFetchCallCount).Should(BeZero())
 		})
 	})
 })

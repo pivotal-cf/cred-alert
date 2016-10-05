@@ -82,7 +82,7 @@ var _ = Describe("FetchRepo", func() {
 				RawJSON:       repoJSONBytes,
 			}
 
-			err = repo.SaveFetch(logger, &db.Fetch{
+			err = repo.RegisterFetch(logger, &db.Fetch{
 				Repository: *repository,
 				Path:       "path-to-repo-on-disk",
 				Changes:    bs,
