@@ -19,9 +19,10 @@ type reporter struct {
 
 	interval time.Duration
 
-	reposGauge      metrics.Gauge
-	fetchGauge      metrics.Gauge
-	credentialGauge metrics.Gauge
+	reposGauge         metrics.Gauge
+	disabledReposGauge metrics.Gauge
+	fetchGauge         metrics.Gauge
+	credentialGauge    metrics.Gauge
 }
 
 func NewReporter(
@@ -38,9 +39,10 @@ func NewReporter(
 
 		interval: interval,
 
-		reposGauge:      emitter.Gauge("revok.reporter.repo_count"),
-		fetchGauge:      emitter.Gauge("revok.reporter.fetch_count"),
-		credentialGauge: emitter.Gauge("revok.reporter.credential_count"),
+		reposGauge:         emitter.Gauge("revok.reporter.repo_count"),
+		disabledReposGauge: emitter.Gauge("revok.reporter.disabled_repo_count"),
+		fetchGauge:         emitter.Gauge("revok.reporter.fetch_count"),
+		credentialGauge:    emitter.Gauge("revok.reporter.credential_count"),
 	}
 }
 
@@ -88,5 +90,12 @@ func (r *reporter) reportStats(logger lager.Logger) {
 		logger.Error("failed-to-get-credential-count", err)
 	} else {
 		r.credentialGauge.Update(r.logger, float32(credentialCount))
+	}
+
+	disabledRepoCount, err := r.db.DisabledRepositoryCount()
+	if err != nil {
+		logger.Error("failed-to-get-disabled-repository-count", err)
+	} else {
+		r.disabledReposGauge.Update(r.logger, float32(disabledRepoCount))
 	}
 }

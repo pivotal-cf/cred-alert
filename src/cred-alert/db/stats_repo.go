@@ -6,6 +6,7 @@ import "github.com/jinzhu/gorm"
 
 type StatsRepository interface {
 	RepositoryCount() (int, error)
+	DisabledRepositoryCount() (int, error)
 	CredentialCount() (int, error)
 	FetchCount() (int, error)
 }
@@ -26,6 +27,21 @@ func (r *statsRepository) RepositoryCount() (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	return count, nil
+}
+
+func (r *statsRepository) DisabledRepositoryCount() (int, error) {
+	var count int
+	err := r.db.DB().QueryRow(`
+		SELECT count(1)
+		FROM   repositories
+		WHERE  disabled = true
+	`).Scan(&count)
+
+	if err != nil {
+		return 0, err
+	}
+
 	return count, nil
 }
 

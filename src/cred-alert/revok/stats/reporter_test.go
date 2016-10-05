@@ -25,9 +25,10 @@ var _ = Describe("Reporter", func() {
 		statsRepository *dbfakes.FakeStatsRepository
 		emitter         *metricsfakes.FakeEmitter
 
-		repoGauge       *metricsfakes.FakeGauge
-		fetchGauge      *metricsfakes.FakeGauge
-		credentialGauge *metricsfakes.FakeGauge
+		repoGauge         *metricsfakes.FakeGauge
+		disabledRepoGauge *metricsfakes.FakeGauge
+		fetchGauge        *metricsfakes.FakeGauge
+		credentialGauge   *metricsfakes.FakeGauge
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -38,12 +39,15 @@ var _ = Describe("Reporter", func() {
 		clock = fakeclock.NewFakeClock(time.Now())
 		emitter = &metricsfakes.FakeEmitter{}
 		repoGauge = &metricsfakes.FakeGauge{}
+		disabledRepoGauge = &metricsfakes.FakeGauge{}
 		fetchGauge = &metricsfakes.FakeGauge{}
 		credentialGauge = &metricsfakes.FakeGauge{}
 		emitter.GaugeStub = func(name string) metrics.Gauge {
 			switch name {
 			case "revok.reporter.repo_count":
 				return repoGauge
+			case "revok.reporter.disabled_repo_count":
+				return disabledRepoGauge
 			case "revok.reporter.fetch_count":
 				return fetchGauge
 			case "revok.reporter.credential_count":
@@ -56,9 +60,10 @@ var _ = Describe("Reporter", func() {
 		interval = 10 * time.Second
 
 		statsRepository = &dbfakes.FakeStatsRepository{}
-		statsRepository.RepositoryCountReturns(837, nil)
-		statsRepository.FetchCountReturns(93, nil)
-		statsRepository.CredentialCountReturns(1337, nil)
+		statsRepository.RepositoryCountReturns(1, nil)
+		statsRepository.FetchCountReturns(2, nil)
+		statsRepository.CredentialCountReturns(3, nil)
+		statsRepository.DisabledRepositoryCountReturns(4, nil)
 
 		runner = stats.NewReporter(
 			logger,
@@ -90,21 +95,28 @@ var _ = Describe("Reporter", func() {
 			Eventually(repoGauge.UpdateCallCount).Should(Equal(1))
 
 			_, updateValue, _ := repoGauge.UpdateArgsForCall(0)
-			Expect(updateValue).To(BeNumerically("==", 837))
+			Expect(updateValue).To(BeNumerically("==", 1))
 		})
 
 		It("emits the fetch count", func() {
 			Eventually(fetchGauge.UpdateCallCount).Should(Equal(1))
 
 			_, updateValue, _ := fetchGauge.UpdateArgsForCall(0)
-			Expect(updateValue).To(BeNumerically("==", 93))
+			Expect(updateValue).To(BeNumerically("==", 2))
 		})
 
 		It("emits the credential count", func() {
 			Eventually(credentialGauge.UpdateCallCount).Should(Equal(1))
 
 			_, updateValue, _ := credentialGauge.UpdateArgsForCall(0)
-			Expect(updateValue).To(BeNumerically("==", 1337))
+			Expect(updateValue).To(BeNumerically("==", 3))
+		})
+
+		It("emits the disabled repositories count", func() {
+			Eventually(disabledRepoGauge.UpdateCallCount).Should(Equal(1))
+
+			_, updateValue, _ := disabledRepoGauge.UpdateArgsForCall(0)
+			Expect(updateValue).To(BeNumerically("==", 4))
 		})
 	})
 

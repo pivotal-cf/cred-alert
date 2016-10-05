@@ -14,6 +14,13 @@ type FakeStatsRepository struct {
 		result1 int
 		result2 error
 	}
+	DisabledRepositoryCountStub        func() (int, error)
+	disabledRepositoryCountMutex       sync.RWMutex
+	disabledRepositoryCountArgsForCall []struct{}
+	disabledRepositoryCountReturns     struct {
+		result1 int
+		result2 error
+	}
 	CredentialCountStub        func() (int, error)
 	credentialCountMutex       sync.RWMutex
 	credentialCountArgsForCall []struct{}
@@ -53,6 +60,32 @@ func (fake *FakeStatsRepository) RepositoryCountCallCount() int {
 func (fake *FakeStatsRepository) RepositoryCountReturns(result1 int, result2 error) {
 	fake.RepositoryCountStub = nil
 	fake.repositoryCountReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStatsRepository) DisabledRepositoryCount() (int, error) {
+	fake.disabledRepositoryCountMutex.Lock()
+	fake.disabledRepositoryCountArgsForCall = append(fake.disabledRepositoryCountArgsForCall, struct{}{})
+	fake.recordInvocation("DisabledRepositoryCount", []interface{}{})
+	fake.disabledRepositoryCountMutex.Unlock()
+	if fake.DisabledRepositoryCountStub != nil {
+		return fake.DisabledRepositoryCountStub()
+	} else {
+		return fake.disabledRepositoryCountReturns.result1, fake.disabledRepositoryCountReturns.result2
+	}
+}
+
+func (fake *FakeStatsRepository) DisabledRepositoryCountCallCount() int {
+	fake.disabledRepositoryCountMutex.RLock()
+	defer fake.disabledRepositoryCountMutex.RUnlock()
+	return len(fake.disabledRepositoryCountArgsForCall)
+}
+
+func (fake *FakeStatsRepository) DisabledRepositoryCountReturns(result1 int, result2 error) {
+	fake.DisabledRepositoryCountStub = nil
+	fake.disabledRepositoryCountReturns = struct {
 		result1 int
 		result2 error
 	}{result1, result2}
@@ -115,6 +148,8 @@ func (fake *FakeStatsRepository) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.repositoryCountMutex.RLock()
 	defer fake.repositoryCountMutex.RUnlock()
+	fake.disabledRepositoryCountMutex.RLock()
+	defer fake.disabledRepositoryCountMutex.RUnlock()
 	fake.credentialCountMutex.RLock()
 	defer fake.credentialCountMutex.RUnlock()
 	fake.fetchCountMutex.RLock()
