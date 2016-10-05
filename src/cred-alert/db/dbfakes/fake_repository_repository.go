@@ -69,6 +69,15 @@ type FakeRepositoryRepository struct {
 	markAsClonedReturns struct {
 		result1 error
 	}
+	RegisterFailedFetchStub        func(lager.Logger, *db.Repository) error
+	registerFailedFetchMutex       sync.RWMutex
+	registerFailedFetchArgsForCall []struct {
+		arg1 lager.Logger
+		arg2 *db.Repository
+	}
+	registerFailedFetchReturns struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -303,6 +312,40 @@ func (fake *FakeRepositoryRepository) MarkAsClonedReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeRepositoryRepository) RegisterFailedFetch(arg1 lager.Logger, arg2 *db.Repository) error {
+	fake.registerFailedFetchMutex.Lock()
+	fake.registerFailedFetchArgsForCall = append(fake.registerFailedFetchArgsForCall, struct {
+		arg1 lager.Logger
+		arg2 *db.Repository
+	}{arg1, arg2})
+	fake.recordInvocation("RegisterFailedFetch", []interface{}{arg1, arg2})
+	fake.registerFailedFetchMutex.Unlock()
+	if fake.RegisterFailedFetchStub != nil {
+		return fake.RegisterFailedFetchStub(arg1, arg2)
+	} else {
+		return fake.registerFailedFetchReturns.result1
+	}
+}
+
+func (fake *FakeRepositoryRepository) RegisterFailedFetchCallCount() int {
+	fake.registerFailedFetchMutex.RLock()
+	defer fake.registerFailedFetchMutex.RUnlock()
+	return len(fake.registerFailedFetchArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) RegisterFailedFetchArgsForCall(i int) (lager.Logger, *db.Repository) {
+	fake.registerFailedFetchMutex.RLock()
+	defer fake.registerFailedFetchMutex.RUnlock()
+	return fake.registerFailedFetchArgsForCall[i].arg1, fake.registerFailedFetchArgsForCall[i].arg2
+}
+
+func (fake *FakeRepositoryRepository) RegisterFailedFetchReturns(result1 error) {
+	fake.RegisterFailedFetchStub = nil
+	fake.registerFailedFetchReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -320,6 +363,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.notScannedWithVersionMutex.RUnlock()
 	fake.markAsClonedMutex.RLock()
 	defer fake.markAsClonedMutex.RUnlock()
+	fake.registerFailedFetchMutex.RLock()
+	defer fake.registerFailedFetchMutex.RUnlock()
 	return fake.invocations
 }
 

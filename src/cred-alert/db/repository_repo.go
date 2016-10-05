@@ -2,7 +2,10 @@ package db
 
 import (
 	"cred-alert/sniff"
+	"errors"
 	"time"
+
+	"code.cloudfoundry.org/lager"
 
 	"github.com/jinzhu/gorm"
 )
@@ -20,6 +23,7 @@ type RepositoryRepository interface {
 	NotScannedWithVersion(int) ([]Repository, error)
 
 	MarkAsCloned(string, string, string) error
+	RegisterFailedFetch(lager.Logger, *Repository) error
 }
 
 type repositoryRepository struct {
@@ -146,4 +150,53 @@ func (r *repositoryRepository) NotScannedWithVersion(version int) ([]Repository,
 	}
 
 	return repositories, nil
+}
+
+const FailedFetchThreshold = 3
+
+func (r *repositoryRepository) RegisterFailedFetch(
+	logger lager.Logger,
+	repo *Repository,
+) error {
+	logger = logger.Session("register-failed-fetch", lager.Data{
+		"ID": repo.ID,
+	})
+
+	tx, err := r.db.DB().Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	result, err := tx.Exec(`
+		UPDATE repositories
+		SET failed_fetches = failed_fetches + 1
+		WHERE id = ?
+	`, repo.ID)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		err := errors.New("repository could not be found")
+		logger.Error("repository-not-found", err)
+		return err
+	}
+
+	_, err = tx.Exec(`
+		UPDATE repositories
+		SET disabled = true
+		WHERE id = ?
+		AND failed_fetches >= ?
+	`, repo.ID, FailedFetchThreshold)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
