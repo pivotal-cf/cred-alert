@@ -5,6 +5,8 @@ import (
 	"cred-alert/db"
 	"sync"
 	"time"
+
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeRepositoryRepository struct {

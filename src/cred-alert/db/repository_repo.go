@@ -3,6 +3,7 @@ package db
 import (
 	"cred-alert/sniff"
 	"errors"
+	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -189,7 +190,7 @@ func (r *repositoryRepository) RegisterFailedFetch(
 		return err
 	}
 
-	_, err = tx.Exec(`
+	result, err = tx.Exec(`
 		UPDATE repositories
 		SET disabled = true
 		WHERE id = ?
@@ -197,6 +198,16 @@ func (r *repositoryRepository) RegisterFailedFetch(
 	`, repo.ID, FailedFetchThreshold)
 	if err != nil {
 		return err
+	}
+
+	rows, err = result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows > 0 {
+		e := errors.New(fmt.Sprintf("failed to fetch %d times", FailedFetchThreshold))
+		logger.Error("repository-disabled", e)
 	}
 
 	return tx.Commit()

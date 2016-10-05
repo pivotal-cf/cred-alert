@@ -133,8 +133,11 @@ func (c *ChangeDiscoverer) fetch(
 	})
 
 	if fetchErr != nil {
-		repoLogger.Error("failed-to-fetch", fetchErr)
 		c.fetchFailedCounter.Inc(repoLogger)
+		registerErr := c.repositoryRepository.RegisterFailedFetch(repoLogger, &repo)
+		if registerErr != nil {
+			repoLogger.Error("failed-to-register-failed-fetch", registerErr)
+		}
 		return fetchErr
 	}
 

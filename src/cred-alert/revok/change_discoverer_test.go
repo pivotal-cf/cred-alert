@@ -186,6 +186,18 @@ var _ = Describe("ChangeDiscoverer", func() {
 			Eventually(fetchSuccessCounter.IncCallCount).Should(Equal(1))
 		})
 
+		Context("when there is an error fetching", func() {
+			BeforeEach(func() {
+				fakeGitClient := &gitclientfakes.FakeClient{}
+				fakeGitClient.FetchReturns(nil, errors.New("an-error"))
+				gitClient = fakeGitClient
+			})
+
+			It("registers the failed fetch", func() {
+				Eventually(repositoryRepository.RegisterFailedFetchCallCount).Should(Equal(1))
+			})
+		})
+
 		Context("when the remote has changes", func() {
 			var results []createCommitResult
 
