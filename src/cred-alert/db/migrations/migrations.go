@@ -10,4 +10,5 @@ var Migrations = []migration.Migrator{
 	AddRepositoriesAndFetches,
 	AddClonedToRepositories,
 	AddMatchLocation,
+	AddFailedFetchesToRepositories,
 }

@@ -36,6 +36,9 @@ var _ = Describe("FetchRepo", func() {
 			c       *git.Oid
 			d       *git.Oid
 			changes map[string][]string
+
+			repository *db.Repository
+			actualName string
 		)
 
 		BeforeEach(func() {
@@ -53,11 +56,6 @@ var _ = Describe("FetchRepo", func() {
 				"refs/remotes/origin/master":  {a.String(), b.String()},
 				"refs/remotes/origin/develop": {c.String(), d.String()},
 			}
-		})
-
-		It("saves the fetch to the database", func() {
-			bs, err := json.Marshal(changes)
-			Expect(err).NotTo(HaveOccurred())
 
 			repoJSON := map[string]interface{}{
 				"path": "path-to-repo-on-disk",
@@ -72,8 +70,9 @@ var _ = Describe("FetchRepo", func() {
 			repoJSONBytes, err := json.Marshal(repoJSON)
 			Expect(err).NotTo(HaveOccurred())
 
-			repository := &db.Repository{
-				Name:          uuid.NewV4().String(),
+			actualName = uuid.NewV4().String()
+			repository = &db.Repository{
+				Name:          actualName,
 				Owner:         "owner-name",
 				Path:          "path-to-repo-on-disk",
 				SSHURL:        "repo-ssh-url",
@@ -81,6 +80,26 @@ var _ = Describe("FetchRepo", func() {
 				DefaultBranch: "master",
 				RawJSON:       repoJSONBytes,
 			}
+
+			err = database.Save(repository).Error
+			Expect(err).NotTo(HaveOccurred())
+
+			err = database.Save(&db.Repository{
+				Name:          "should-be-same",
+				Owner:         "owner-name",
+				Path:          "path-to-repo-on-disk",
+				SSHURL:        "repo-ssh-url",
+				Private:       true,
+				DefaultBranch: "master",
+				RawJSON:       repoJSONBytes,
+				FailedFetches: 5,
+			}).Error
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("saves the fetch to the database", func() {
+			bs, err := json.Marshal(changes)
+			Expect(err).NotTo(HaveOccurred())
 
 			err = repo.RegisterFetch(logger, &db.Fetch{
 				Repository: *repository,
@@ -97,6 +116,35 @@ var _ = Describe("FetchRepo", func() {
 			err = json.Unmarshal(savedFetch.Changes, &actualChanges)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(actualChanges).To(Equal(changes))
+		})
+
+		Context("when the repository has filed to fetch in the past", func() {
+			BeforeEach(func() {
+				repository.FailedFetches = 3
+				err := database.Save(repository).Error
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("sets the failed fetch count back to 0", func() {
+				bs, err := json.Marshal(changes)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = repo.RegisterFetch(logger, &db.Fetch{
+					Repository: *repository,
+					Path:       "path-to-repo-on-disk",
+					Changes:    bs,
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				savedRepo := &db.Repository{}
+				database.Model(&db.Repository{}).Where("name = ?", actualName).First(savedRepo)
+				Expect(savedRepo.FailedFetches).To(BeZero())
+
+				var rep db.Repository
+				database.Model(&db.Repository{}).Where("name = ?", "should-be-same").First(&rep)
+
+				Expect(rep.FailedFetches).To(Equal(5))
+			})
 		})
 	})
 })

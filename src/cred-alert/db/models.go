@@ -68,6 +68,9 @@ type Repository struct {
 	Private       bool
 	DefaultBranch string
 	RawJSON       []byte `gorm:"column:raw_json"`
+
+	FailedFetches int `gorm:"column:failed_fetches"`
+	Disabled      bool
 }
 
 type Fetch struct {
