@@ -277,18 +277,6 @@ var _ = Describe("ChangeDiscoverer", func() {
 				Expect(fetch.Changes).To(Equal(bs))
 			})
 
-			Context("when there is an error saving the fetch to the database", func() {
-				BeforeEach(func() {
-					fakeGitClient := &gitclientfakes.FakeClient{}
-					fetchRepository.RegisterFetchReturns(errors.New("an-error"))
-					gitClient = fakeGitClient
-				})
-
-				XIt("increments the failed run metric", func() {
-					// Eventually(failedCounter.IncCallCount).Should(Equal(1))
-				})
-			})
-
 			Context("when there is an error scanning a change", func() {
 				BeforeEach(func() {
 					scanner.ScanStub = func(lager.Logger, string, string, string, string) error {
