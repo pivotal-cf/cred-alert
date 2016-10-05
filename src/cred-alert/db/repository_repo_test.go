@@ -265,6 +265,19 @@ var _ = Describe("RepositoryRepo", func() {
 				Expect(repos).To(ConsistOf(savedRepository))
 			})
 
+			Context("when the repository is disabled", func() {
+				BeforeEach(func() {
+					_, err := database.DB().Exec(`UPDATE repositories SET disabled = true WHERE id = ?`, savedRepository.ID)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("does not return the repository", func() {
+					repos, err := repo.NotFetchedSince(time.Now().Add(-10 * time.Minute))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(repos).To(BeEmpty())
+				})
+			})
+
 			Context("when the repository has not been cloned", func() {
 				BeforeEach(func() {
 					err := database.Model(&db.Repository{}).Where("id = ?", savedRepository.ID).Update("cloned", false).Error

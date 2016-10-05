@@ -88,6 +88,7 @@ func (r *repositoryRepository) NotFetchedSince(since time.Time) ([]Repository, e
              ON f.created_at = latest_fetches.created_at
                 AND f.repository_id = latest_fetches.r_id
     WHERE  r.cloned = true
+			AND  r.disabled = false
       AND  latest_fetches.created_at < ?`, since).Rows()
 	if err != nil {
 		return nil, err
