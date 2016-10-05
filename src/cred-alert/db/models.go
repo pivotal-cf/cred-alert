@@ -44,6 +44,7 @@ type Scan struct {
 type Credential struct {
 	Model
 
+	Scan   Scan
 	ScanID uint
 
 	Owner      string

@@ -6,6 +6,7 @@ import (
 	"cred-alert/gitclient"
 	"cred-alert/metrics"
 	"cred-alert/revok"
+	"cred-alert/revok/stats"
 	"cred-alert/sniff"
 	"log"
 	"net/http"
@@ -151,11 +152,20 @@ func main() {
 		emitter,
 	)
 
+	statsReporter := stats.NewReporter(
+		logger,
+		clock,
+		60*time.Second,
+		db.NewStatsRepository(database),
+		emitter,
+	)
+
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
 		{"repo-discoverer", repoDiscoverer},
 		{"cloner", cloner},
 		{"change-discoverer", changeDiscoverer},
 		{"dirscan-updater", dirscanUpdater},
+		{"stats-reporter", statsReporter},
 	}))
 
 	err = <-ifrit.Invoke(runner).Wait()
