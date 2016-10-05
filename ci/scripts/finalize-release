@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -x
+set -e
 
 # inputs
 CANDIDATE_DIR=$PWD/bosh-rc
