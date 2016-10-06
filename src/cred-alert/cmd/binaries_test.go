@@ -18,8 +18,8 @@ var _ = AfterSuite(func() {
 })
 
 var _ = Describe("Binaries", func() {
-	It("builds cred-alert-worker-ng", func() {
-		_, err := gexec.Build("cred-alert/cmd/cred-alert-worker-ng")
+	It("builds revok-worker", func() {
+		_, err := gexec.Build("cred-alert/cmd/revok-worker")
 		Expect(err).NotTo(HaveOccurred())
 	})
 

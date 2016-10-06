@@ -24,7 +24,7 @@ case $1 in
 
     echo $$ > $PIDFILE
 
-    exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/cred-alert-worker-ng \
+    exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/revok-worker \
       --repository-discovery-interval <%= p("revok.repository_discovery_interval") %> \
       --change-discovery-interval <%= p("revok.change_discovery_interval") %> \
       --work-dir <%= p("revok.work_dir") %> \
