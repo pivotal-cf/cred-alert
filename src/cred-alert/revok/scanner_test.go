@@ -6,6 +6,7 @@ import (
 	"cred-alert/gitclient"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
+	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/revok"
 	"cred-alert/scanners"
 	"cred-alert/sniff"
@@ -31,6 +32,7 @@ var _ = Describe("Scanner", func() {
 		scanRepository       *dbfakes.FakeScanRepository
 		emitter              *metricsfakes.FakeEmitter
 		scanner              revok.Scanner
+		notifier             *notificationsfakes.FakeNotifier
 
 		firstScan      *dbfakes.FakeActiveScan
 		successMetric  *metricsfakes.FakeCounter
@@ -58,9 +60,10 @@ var _ = Describe("Scanner", func() {
 			Model: db.Model{
 				ID: 42,
 			},
-			Path:  baseRepoPath,
-			Owner: "some-owner",
-			Name:  "some-repository",
+			Path:    baseRepoPath,
+			Owner:   "some-owner",
+			Name:    "some-repository",
+			Private: true,
 		}, nil)
 
 		scanRepository = &dbfakes.FakeScanRepository{}
@@ -94,7 +97,8 @@ var _ = Describe("Scanner", func() {
 			return nil
 		}
 
-		scanner = revok.NewScanner(gitClient, repositoryRepository, scanRepository, sniffer, emitter)
+		notifier = &notificationsfakes.FakeNotifier{}
+		scanner = revok.NewScanner(gitClient, repositoryRepository, scanRepository, sniffer, notifier, emitter)
 	})
 
 	AfterEach(func() {
@@ -131,6 +135,33 @@ var _ = Describe("Scanner", func() {
 
 		Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 		Eventually(firstScan.FinishCallCount).Should(Equal(1))
+	})
+
+	It("sends notifications about found credentials", func() {
+		err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(notifier.SendBatchNotificationCallCount()).To(Equal(1))
+
+		_, notifications := notifier.SendBatchNotificationArgsForCall(0)
+		Expect(notifications).To(HaveLen(1))
+		Expect(notifications[0].Owner).To(Equal("some-owner"))
+		Expect(notifications[0].Repository).To(Equal("some-repository"))
+		Expect(notifications[0].SHA).To(Equal(result.To.String()))
+		Expect(notifications[0].Path).To(Equal("some-file"))
+		Expect(notifications[0].LineNumber).To(Equal(1))
+		Expect(notifications[0].Private).To(BeTrue())
+	})
+
+	Context("when there are no credentials found", func() {
+		BeforeEach(func() {
+			result = createCommit("refs/heads/topicA", baseRepoPath, "some-file", []byte("some-text"), "some-text commit")
+		})
+
+		It("does not send notifications about credentials", func() {
+			err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(notifier.SendBatchNotificationCallCount()).To(BeZero())
+		})
 	})
 
 	Context("when the repository has multiple commits", func() {

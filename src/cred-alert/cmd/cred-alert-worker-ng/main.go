@@ -5,6 +5,7 @@ import (
 	"cred-alert/db/migrations"
 	"cred-alert/gitclient"
 	"cred-alert/metrics"
+	"cred-alert/notifications"
 	"cred-alert/revok"
 	"cred-alert/revok/stats"
 	"cred-alert/sniff"
@@ -30,6 +31,8 @@ type Opts struct {
 	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
 	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
 
+	Whitelist []string `short:"i" long:"ignore-repos" description:"comma separated list of repo names to ignore. The names may be regex patterns." env:"IGNORED_REPOS" env-delim:"," value-name:"REPO_LIST"`
+
 	GitHub struct {
 		AccessToken    string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
 		PrivateKeyPath string `long:"github-private-key-path" description:"private key to use for GitHub auth" required:"true" value-name:"SSH_KEY"`
@@ -41,6 +44,10 @@ type Opts struct {
 		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
 		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
 	} `group:"Metrics Options"`
+
+	Slack struct {
+		WebhookUrl string `long:"slack-webhook-url" description:"Slack webhook URL" env:"SLACK_WEBHOOK_URL" value-name:"WEBHOOK"`
+	} `group:"Slack Options"`
 
 	MySQL struct {
 		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME" required:"true"`
@@ -104,12 +111,15 @@ func main() {
 	fetchRepository := db.NewFetchRepository(database)
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
+	repoWhitelist := notifications.BuildWhitelist(opts.Whitelist...)
+	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl, clock, repoWhitelist)
 	sniffer := sniff.NewDefaultSniffer()
 	ancestryScanner := revok.NewScanner(
 		gitClient,
 		repositoryRepository,
 		scanRepository,
 		sniffer,
+		notifier,
 		emitter,
 	)
 

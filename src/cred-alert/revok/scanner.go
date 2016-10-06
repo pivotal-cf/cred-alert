@@ -5,6 +5,7 @@ import (
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
 	"cred-alert/metrics"
+	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
@@ -25,6 +26,7 @@ type scanner struct {
 	repositoryRepository db.RepositoryRepository
 	scanRepository       db.ScanRepository
 	sniffer              sniff.Sniffer
+	notifier             notifications.Notifier
 }
 
 func NewScanner(
@@ -32,6 +34,7 @@ func NewScanner(
 	repositoryRepository db.RepositoryRepository,
 	scanRepository db.ScanRepository,
 	sniffer sniff.Sniffer,
+	notifier notifications.Notifier,
 	emitter metrics.Emitter,
 ) Scanner {
 	return &scanner{
@@ -39,6 +42,7 @@ func NewScanner(
 		repositoryRepository: repositoryRepository,
 		scanRepository:       scanRepository,
 		sniffer:              sniffer,
+		notifier:             notifier,
 	}
 }
 
@@ -80,6 +84,9 @@ func (s *scanner) Scan(
 	quietLogger := kolsch.NewLogger()
 	scan := s.scanRepository.Start(quietLogger, "repo-scan", &dbRepository, nil)
 	scannedOids := map[git.Oid]struct{}{}
+
+	var alerts []notifications.Notification
+
 	scanFunc := func(child, parent *git.Oid) error {
 		diff, err := s.gitClient.Diff(dbRepository.Path, parent, child)
 		if err != nil {
@@ -99,6 +106,16 @@ func (s *scanner) Scan(
 					violation.Start,
 					violation.End,
 				))
+
+				alerts = append(alerts, notifications.Notification{
+					Owner:      dbRepository.Owner,
+					Repository: dbRepository.Name,
+					SHA:        child.String(),
+					Path:       violation.Line.Path,
+					LineNumber: violation.Line.LineNumber,
+					Private:    dbRepository.Private,
+				})
+
 				return nil
 			},
 		)
@@ -117,6 +134,14 @@ func (s *scanner) Scan(
 	if err != nil {
 		logger.Error("failed-to-finish-scan", err)
 		return err
+	}
+
+	if alerts != nil {
+		err = s.notifier.SendBatchNotification(logger, alerts)
+		if err != nil {
+			logger.Error("failed", err)
+			return err
+		}
 	}
 
 	return nil

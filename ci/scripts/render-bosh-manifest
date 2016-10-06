@@ -13,6 +13,8 @@ revok-datadog-api-key: $DATADOG_API_KEY
 revok-sentry-dsn: $SENTRY_DSN
 
 revok-papertrail-address: $PAPERTRAIL_ADDRESS
+revok-slack-webhook-url: $SLACK_WEBHOOK_URL
+revok-ignore-repos: $IGNORE_REPOS
 EOF
 
 IFS=$'\n'

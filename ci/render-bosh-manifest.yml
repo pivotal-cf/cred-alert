@@ -24,6 +24,8 @@ params:
   DATADOG_API_KEY:
   SENTRY_DSN:
   PAPERTRAIL_ADDRESS:
+  SLACK_WEBHOOK_URL:
+  IGNORE_REPOS:
 
 run:
   path: cred-alert/ci/scripts/render-bosh-manifest
