@@ -1,10 +1,22 @@
 package queue
 
+//go:generate counterfeiter . Enqueuer
+
+type Enqueuer interface {
+	Enqueue(Task) error
+}
+
+//go:generate counterfeiter . Dequeuer
+
+type Dequeuer interface {
+	Dequeue() (AckTask, error)
+}
+
 //go:generate counterfeiter . Queue
 
 type Queue interface {
-	Enqueue(Task) error
-	Dequeue() (AckTask, error)
+	Enqueuer
+	Dequeuer
 }
 
 //go:generate counterfeiter . Task

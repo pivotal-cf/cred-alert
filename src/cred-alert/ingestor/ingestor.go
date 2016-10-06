@@ -14,21 +14,21 @@ type Ingestor interface {
 }
 
 type ingestor struct {
-	taskQueue queue.Queue
+	enqueuer  queue.Enqueuer
 	generator queue.UUIDGenerator
 
 	requestCounter metrics.Counter
 }
 
 func NewIngestor(
-	taskQueue queue.Queue,
+	enqueuer queue.Enqueuer,
 	emitter metrics.Emitter,
 	generator queue.UUIDGenerator,
 ) *ingestor {
 	requestCounter := emitter.Counter("cred_alert.ingestor_requests")
 
 	handler := &ingestor{
-		taskQueue:      taskQueue,
+		enqueuer:       enqueuer,
 		generator:      generator,
 		requestCounter: requestCounter,
 	}
@@ -57,7 +57,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID s
 		"github-id": githubID,
 	})
 
-	err := s.taskQueue.Enqueue(task)
+	err := s.enqueuer.Enqueue(task)
 	if err != nil {
 		logger.Error("failed", err)
 		return err
