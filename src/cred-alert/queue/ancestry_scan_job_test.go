@@ -177,7 +177,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 					It("kicks off a commit message scan", func() {
 						err := job.Run(logger)
-						Expect(err).ToNot(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred())
 
 						expectedTask := queue.CommitMessageScanPlan{
 							Owner:      plan.Owner,
@@ -312,7 +312,7 @@ var _ = Describe("Ancestry Scan Job", func() {
 
 					It("Enqueues a ref scan", func() {
 						err := job.Run(logger)
-						Expect(err).ToNot(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred())
 						Expect(taskQueue.EnqueueCallCount()).To(Equal(2))
 
 						task := taskQueue.EnqueueArgsForCall(0)

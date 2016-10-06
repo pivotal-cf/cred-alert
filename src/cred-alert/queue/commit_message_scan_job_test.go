@@ -71,7 +71,7 @@ var _ = Describe("Commit Message Scan Job", func() {
 		It("logs basic info", func() {
 			err := job.Run(logger)
 
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(logger).To(gbytes.Say("scan-commit-message"))
 			Expect(logger).To(gbytes.Say(plan.Owner))
 			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"private":%v`, plan.Private)))
@@ -116,7 +116,7 @@ var _ = Describe("Commit Message Scan Job", func() {
 			It("logs the violation", func() {
 				err := job.Run(logger)
 
-				Expect(err).ToNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				Expect(logger).To(gbytes.Say("handle-violation"))
 			})
 

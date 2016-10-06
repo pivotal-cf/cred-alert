@@ -44,7 +44,7 @@ var _ = Describe("SQS Queue", func() {
 		JustBeforeEach(func() {
 			var err error
 			sqsQueue, err = queue.BuildSQSQueue(service, expectedQueueName)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Describe("sending work to the queue", func() {
@@ -115,7 +115,7 @@ var _ = Describe("SQS Queue", func() {
 
 			It("retrieval is successful", func() {
 				task, err := sqsQueue.Dequeue()
-				Expect(err).ToNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				Expect(service.ReceiveMessageCallCount()).To(Equal(1))
 				params := service.ReceiveMessageArgsForCall(0)
@@ -157,7 +157,7 @@ var _ = Describe("SQS Queue", func() {
 
 			It("blocks until there is a message to process", func() {
 				_, err := sqsQueue.Dequeue()
-				Expect(err).ToNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			Context("receiving a message fails", func() {
@@ -202,10 +202,10 @@ var _ = Describe("SQS Queue", func() {
 
 			It("removal is successful", func() {
 				task, err := sqsQueue.Dequeue()
-				Expect(err).ToNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				err = task.Ack()
-				Expect(err).ToNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				Expect(service.DeleteMessageCallCount()).To(Equal(1))
 
@@ -221,7 +221,7 @@ var _ = Describe("SQS Queue", func() {
 
 				It("returns an error", func() {
 					task, err := sqsQueue.Dequeue()
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = task.Ack()
 					Expect(err).To(HaveOccurred())
