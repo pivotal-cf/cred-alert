@@ -64,8 +64,6 @@ func (r *RepoDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 			return nil
 		}
 	}
-
-	return nil
 }
 
 type CloneMsg struct {

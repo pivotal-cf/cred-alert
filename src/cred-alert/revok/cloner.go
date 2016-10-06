@@ -67,8 +67,6 @@ func (c *Cloner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		}
 	}
-
-	return nil
 }
 
 func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {

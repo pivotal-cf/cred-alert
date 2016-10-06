@@ -83,8 +83,6 @@ func (c *ChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 			return nil
 		}
 	}
-
-	return nil
 }
 
 func (c *ChangeDiscoverer) work(signals <-chan os.Signal, logger lager.Logger) {
