@@ -76,6 +76,7 @@ func (r *repositoryRepository) MarkAsCloned(owner, name, path string) error {
 }
 
 func (r *repositoryRepository) NotFetchedSince(since time.Time) ([]Repository, error) {
+	// old fetches
 	rows, err := r.db.Raw(`
     SELECT r.id
     FROM   fetches f
@@ -89,7 +90,7 @@ func (r *repositoryRepository) NotFetchedSince(since time.Time) ([]Repository, e
              ON f.created_at = latest_fetches.created_at
                 AND f.repository_id = latest_fetches.r_id
     WHERE  r.cloned = true
-			AND  r.disabled = false
+      AND  r.disabled = false
       AND  latest_fetches.created_at < ?`, since).Rows()
 	if err != nil {
 		return nil, err
@@ -97,6 +98,30 @@ func (r *repositoryRepository) NotFetchedSince(since time.Time) ([]Repository, e
 	defer rows.Close()
 
 	var ids []int
+
+	for rows.Next() {
+		var id int
+		scanErr := rows.Scan(&id)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		ids = append(ids, id)
+	}
+
+	// never been fetched
+	rows, err = r.db.Raw(`
+    SELECT r.id
+    FROM   repositories r
+           LEFT JOIN fetches f
+             ON r.id = f.repository_id
+    WHERE  r.cloned = true
+      AND  r.disabled = false
+      AND  f.repository_id IS NULL`).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var id int
 		scanErr := rows.Scan(&id)
@@ -121,7 +146,7 @@ func (r *repositoryRepository) NotScannedWithVersion(version int) ([]Repository,
     FROM   scans s
            JOIN repositories r
              ON r.id = s.repository_id
-           JOIN (SELECT repository_id   AS r_id,
+           JOIN (SELECT repository_id      AS r_id,
                         MAX(rules_version) AS rules_version
                  FROM   scans
                  GROUP  BY repository_id

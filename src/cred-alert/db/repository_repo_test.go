@@ -229,7 +229,8 @@ var _ = Describe("RepositoryRepo", func() {
 			err := repo.Create(repository)
 			Expect(err).NotTo(HaveOccurred())
 
-			database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&savedRepository)
+			err = database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&savedRepository).Error
+			Expect(err).NotTo(HaveOccurred())
 
 			err = database.Model(&db.Fetch{}).Create(&db.Fetch{
 				RepositoryID: savedRepository.ID,
@@ -250,6 +251,35 @@ var _ = Describe("RepositoryRepo", func() {
 				repos, err := repo.NotFetchedSince(time.Now().Add(-10 * time.Minute))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(repos).To(BeEmpty())
+			})
+		})
+
+		Context("when the repository has never been fetched", func() {
+			var (
+				neverFetchedRepo db.Repository
+			)
+
+			BeforeEach(func() {
+				repository := &db.Repository{
+					Name:          "some-unfetched-repo",
+					Owner:         "some-unfetched-owner",
+					SSHURL:        "some-unfetched-url",
+					Private:       true,
+					DefaultBranch: "some-branch",
+					RawJSON:       []byte("some-json"),
+					Cloned:        true,
+				}
+				err := repo.Create(repository)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&neverFetchedRepo).Error
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns the repository", func() {
+				repos, err := repo.NotFetchedSince(time.Now().Add(-1 * time.Minute))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(repos).To(ConsistOf(neverFetchedRepo))
 			})
 		})
 
