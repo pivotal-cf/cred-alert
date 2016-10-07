@@ -19,6 +19,8 @@ import (
 //go:generate counterfeiter . ChangeDiscoverer
 
 type ChangeDiscoverer interface {
+	ifrit.Runner
+
 	Fetch(lager.Logger, db.Repository) error
 }
 
@@ -49,7 +51,7 @@ func NewChangeDiscoverer(
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
 	emitter metrics.Emitter,
-) ifrit.Runner {
+) ChangeDiscoverer {
 	return &changeDiscoverer{
 		logger:               logger,
 		gitClient:            gitClient,

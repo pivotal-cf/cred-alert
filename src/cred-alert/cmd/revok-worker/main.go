@@ -9,6 +9,7 @@ import (
 	"cred-alert/revok"
 	"cred-alert/revok/stats"
 	"cred-alert/sniff"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -22,6 +23,7 @@ import (
 	flags "github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
+	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 )
 
@@ -32,6 +34,8 @@ type Opts struct {
 	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
 
 	Whitelist []string `short:"i" long:"ignore-repos" description:"comma separated list of repo names to ignore. The names may be regex patterns." env:"IGNORED_REPOS" env-delim:"," value-name:"REPO_LIST"`
+
+	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
 
 	GitHub struct {
 		AccessToken    string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
@@ -170,12 +174,22 @@ func main() {
 		emitter,
 	)
 
+	handler := revok.NewHandler(
+		logger,
+		changeDiscoverer,
+		repositoryRepository,
+	)
+
+	router := http.NewServeMux()
+	router.Handle("/webhook", handler)
+
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
 		{"repo-discoverer", repoDiscoverer},
 		{"cloner", cloner},
 		{"change-discoverer", changeDiscoverer},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
+		{"handler", http_server.New(fmt.Sprintf(":%d", opts.Port), router)},
 	}))
 
 	err = <-ifrit.Invoke(runner).Wait()
