@@ -69,7 +69,7 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	generator := queue.NewGenerator()
 
-	in := ingestor.NewIngestor(taskQueue, emitter, generator)
+	in := ingestor.NewIngestor(taskQueue, emitter, "cred_alert", generator)
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))

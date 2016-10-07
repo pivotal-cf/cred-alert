@@ -23,9 +23,10 @@ type ingestor struct {
 func NewIngestor(
 	enqueuer queue.Enqueuer,
 	emitter metrics.Emitter,
+	metricPrefix string,
 	generator queue.UUIDGenerator,
 ) *ingestor {
-	requestCounter := emitter.Counter("cred_alert.ingestor_requests")
+	requestCounter := emitter.Counter(metricPrefix + ".ingestor_requests")
 
 	handler := &ingestor{
 		enqueuer:       enqueuer,

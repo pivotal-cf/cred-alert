@@ -65,7 +65,7 @@ var _ = Describe("Ingestor", func() {
 	})
 
 	JustBeforeEach(func() {
-		in = ingestor.NewIngestor(taskQueue, emitter, generator)
+		in = ingestor.NewIngestor(taskQueue, emitter, "cred_alert", generator)
 		ingestErr = in.IngestPushScan(logger, scan, "github-id")
 	})
 

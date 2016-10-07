@@ -37,4 +37,9 @@ var _ = Describe("Binaries", func() {
 		_, err := gexec.Build("cred-alert/cmd/stats-monitor")
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("builds revok-ingestor", func() {
+		_, err := gexec.Build("cred-alert/cmd/revok-ingestor")
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
