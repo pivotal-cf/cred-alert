@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-github/github"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/sigmon"
 	"golang.org/x/oauth2"
 
@@ -65,8 +66,12 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	ghClient := github.NewClient(httpClient)
 	monitor := monitor.NewMonitor(logger, ghClient, emitter, clock, opts.MonitoringInterval)
+	githubService := services.NewGithubService(logger, emitter, clock, opts.MonitoringInterval)
 
-	runner := sigmon.New(monitor)
+	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
+		{"github monitor", monitor},
+		{"github service", githubService},
+	}))
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
 		log.Fatal("failed-to-start: %s", err)
