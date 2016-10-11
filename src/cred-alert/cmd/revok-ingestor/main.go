@@ -59,6 +59,7 @@ func main() {
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookSecretToken))
+	router.Handle("/healthcheck", revok.ObliviousHealthCheck())
 
 	members := []grouper.Member{
 		{"api", http_server.New(fmt.Sprintf(":%d", opts.Port), router)},
