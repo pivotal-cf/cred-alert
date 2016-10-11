@@ -34,7 +34,8 @@ type ScanCommand struct {
 func (command *ScanCommand) Execute(args []string) error {
 	warnIfOldExecutable()
 
-	logger := kolsch.NewLogger()
+	logger := lager.NewLogger("scan")
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 	sniffer := sniff.NewDefaultSniffer()
 	inflate := inflator.New()
 
@@ -130,7 +131,7 @@ func (command *ScanCommand) Execute(args []string) error {
 
 			scanStart := time.Now()
 			dirScanner := dirscanner.New(archiveViolationHandler, sniffer)
-			err = dirScanner.Scan(logger, inflateDir)
+			err = dirScanner.Scan(kolsch.NewLogger(), inflateDir)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
