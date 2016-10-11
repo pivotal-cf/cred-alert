@@ -138,6 +138,18 @@ index 940393e..fa5a232 100644
 			})
 
 			ItTellsPeopleHowToRemoveTheirCredentials()
+
+		})
+
+		Context("when given override-default-regexp flag with a value", func() {
+			BeforeEach(func() {
+				cmdArgs = []string{"--diff", "--override-default-regexp=thisshouldnotmatchanything"}
+				stdin = offendingDiff
+			})
+
+			It("uses the given regexp pattern", func() {
+				Consistently(session.Out).ShouldNot(gbytes.Say("[CRED]"))
+			})
 		})
 	})
 

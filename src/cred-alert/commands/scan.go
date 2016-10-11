@@ -23,20 +23,31 @@ import (
 	"cred-alert/scanners/dirscanner"
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
+	"cred-alert/sniff/matchers"
 )
 
 type ScanCommand struct {
 	File            string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
 	Diff            bool   `long:"diff" description:"content to be scanned is a git diff"`
 	ShowCredentials bool   `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
+	Regexp          string `long:"override-default-regexp" description:"override default regexp matcher" value-name:"REGEXP"`
 }
+
+const awsAccessKeyIDPattern = `AKIA[A-Z0-9]{16}`
 
 func (command *ScanCommand) Execute(args []string) error {
 	warnIfOldExecutable()
 
 	logger := lager.NewLogger("scan")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
-	sniffer := sniff.NewDefaultSniffer()
+	var sniffer sniff.Sniffer
+	if command.Regexp != "" {
+		matcher := matchers.Format(command.Regexp)
+		exclusionMatcher := matchers.Substring("")
+		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
+	} else {
+		sniffer = sniff.NewDefaultSniffer()
+	}
 	inflate := inflator.New()
 
 	exitFuncs := []func(){
@@ -148,7 +159,7 @@ func (command *ScanCommand) Execute(args []string) error {
 			scanFile(logger, handler, sniffer, br, command.File)
 		}
 	} else if command.Diff {
-		handleDiff(logger, handler)
+		handleDiff(logger, handler, sniffer)
 	} else {
 		scanFile(logger, handler, sniffer, os.Stdin, "STDIN")
 	}
@@ -213,11 +224,9 @@ func scanFile(
 	sniffer.Sniff(logger, scanner, handler)
 }
 
-func handleDiff(logger lager.Logger, handler sniff.ViolationHandlerFunc) {
+func handleDiff(logger lager.Logger, handler sniff.ViolationHandlerFunc, sniffer sniff.Sniffer) {
 	logger.Session("handle-diff")
 	scanner := diffscanner.NewDiffScanner(os.Stdin)
-	sniffer := sniff.NewDefaultSniffer()
-
 	sniffer.Sniff(logger, scanner, handler)
 }
 
