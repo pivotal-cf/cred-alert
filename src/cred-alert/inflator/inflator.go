@@ -3,6 +3,7 @@ package inflator
 import (
 	"bufio"
 	"cred-alert/mimetype"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -42,14 +43,23 @@ func (i *inflator) Close() error {
 }
 
 func (i *inflator) Inflate(logger lager.Logger, mime, archivePath, destination string) error {
-	i.extractFile(mime, archivePath, destination)
-	return i.recursivelyExtractArchivesInDir(logger, destination)
+	err := i.extractFile(logger, mime, archivePath, destination)
+	if err != nil {
+		return err
+	}
+
+	i.recursivelyExtractArchivesInDir(logger, destination)
+
+	return nil
 }
 
-func (i *inflator) extractFile(mime, path, destination string) {
+func (i *inflator) extractFile(logger lager.Logger, mime, path, destination string) error {
 	err := os.MkdirAll(destination, 0755)
 	if err != nil {
-		panic(err.Error())
+		logger.Error("failed-to-mkdir", err, lager.Data{
+			"path": destination,
+		})
+		return err
 	}
 
 	var cmd *exec.Cmd
@@ -70,7 +80,10 @@ func (i *inflator) extractFile(mime, path, destination string) {
 		cmd = exec.Command("gunzip", "-c", path)
 		cmd.Stdout = output
 	default:
-		panic(fmt.Sprintf("don't know how to extract %s", mime))
+		logger.Error("unknown-archive-type", err, lager.Data{
+			"mimetype": mime,
+		})
+		return errors.New(fmt.Sprintf("don't know how to extract %s", mime))
 	}
 
 	cmd.Stderr = i.logfile
@@ -78,12 +91,17 @@ func (i *inflator) extractFile(mime, path, destination string) {
 	if err != nil {
 		// We've already logged the output to a file. Let's just keep going.
 	}
+
+	return nil
 }
 
-func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir string) error {
+func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir string) {
 	children, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return err
+		logger.Error("failed-to-read-dir", err, lager.Data{
+			"path": dir,
+		})
+		return
 	}
 
 	for c := range children {
@@ -91,10 +109,7 @@ func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir stri
 		absPath := filepath.Join(dir, basename)
 
 		if children[c].IsDir() {
-			err := i.recursivelyExtractArchivesInDir(logger, absPath)
-			if err != nil {
-				return err
-			}
+			i.recursivelyExtractArchivesInDir(logger, absPath)
 			continue
 		}
 
@@ -106,34 +121,36 @@ func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir stri
 		if !found {
 			fh, err := os.Open(absPath)
 			if err != nil {
-				return err
+				logger.Error("failed-to-open-path", err, lager.Data{
+					"path": absPath,
+				})
+				continue
 			}
 
 			mime, isArchive := mimetype.IsArchive(logger, bufio.NewReader(fh))
 
 			err = fh.Close()
 			if err != nil {
-				return err
+				logger.Error("failed-to-close-fh", err, lager.Data{
+					"fh": fh.Name(),
+				})
 			}
 
 			if isArchive {
 				extractDir := absPath + "-contents"
-				i.extractFile(mime, absPath, extractDir)
+				i.extractFile(logger, mime, absPath, extractDir)
 
 				err = os.RemoveAll(absPath)
 				if err != nil {
-					return err
+					logger.Error("failed-to-clean-up-path", err, lager.Data{
+						"path": absPath,
+					})
 				}
 
-				err = i.recursivelyExtractArchivesInDir(logger, extractDir)
-				if err != nil {
-					return err
-				}
+				i.recursivelyExtractArchivesInDir(logger, extractDir)
 			}
 		}
 	}
-
-	return nil
 }
 
 var nonArchiveExtensions = map[string]struct{}{
