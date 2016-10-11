@@ -21,7 +21,7 @@ type Opts struct {
 	Endpoint string `long:"endpoint" description:"the endpoint to forward tasks to" env:"ENDPOINT" value-name:"URL" required:"true"`
 
 	GitHub struct {
-		WebhookToken string `short:"w" long:"webhook-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_KEY" value-name:"TOKEN" required:"true"`
+		WebhookSecretToken string `short:"w" long:"github-webhook-secret-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_TOKEN" value-name:"TOKEN" required:"true"`
 	} `group:"GitHub Options"`
 
 	Metrics struct {
@@ -51,7 +51,7 @@ func main() {
 	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))
+	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookSecretToken))
 
 	members := []grouper.Member{
 		{"api", http_server.New(fmt.Sprintf(":%d", opts.Port), router)},
