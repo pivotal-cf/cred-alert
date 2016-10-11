@@ -36,11 +36,13 @@ func (g *githubService) Status(serverURL string) (int, error) {
 	}
 	req, err := http.NewRequest("GET", serverURL, nil)
 	if err != nil {
+		g.logger.Error("cannot-create-http-request", err)
 		return 1, err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
+		g.logger.Error("github-request-error", err)
 		return 1, err
 	}
 
@@ -49,7 +51,7 @@ func (g *githubService) Status(serverURL string) (int, error) {
 	content, _ := ioutil.ReadAll(resp.Body)
 	err = json.Unmarshal([]byte(content), &gh)
 	if err != nil {
-		// log it
+		g.logger.Error("github-response-error", err)
 		return 1, err
 	}
 
