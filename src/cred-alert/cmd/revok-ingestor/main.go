@@ -1,9 +1,6 @@
 package main
 
 import (
-	"cred-alert/ingestor"
-	"cred-alert/metrics"
-	"cred-alert/queue"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,6 +11,11 @@ import (
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
+
+	"cred-alert/ingestor"
+	"cred-alert/metrics"
+	"cred-alert/queue"
+	"cred-alert/revok"
 )
 
 type Opts struct {
@@ -25,6 +27,7 @@ type Opts struct {
 	} `group:"GitHub Options"`
 
 	Metrics struct {
+		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN"`
 		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
 		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
 	} `group:"Metrics Options"`
@@ -42,6 +45,10 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed", err)
 		os.Exit(1)
+	}
+
+	if opts.Metrics.SentryDSN != "" {
+		logger.RegisterSink(revok.NewSentrySink(opts.Metrics.SentryDSN, opts.Metrics.Environment))
 	}
 
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
