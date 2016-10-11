@@ -7,9 +7,9 @@ set -o pipefail
 pushd packages/cred-alert
   {
     cat spec | grep -v '# gosub'
-    gosub list -a \
-      cred-alert/cmd/revok-worker \
-      cred-alert/cmd/revok-ingestor \
+    gosub list \
+      -a cred-alert/cmd/revok-worker \
+      -a cred-alert/cmd/revok-ingestor \
       | \
       sed -e 's%\(.*\)%  - \1/*.{go,c} # gosub%g'
   } > spec.new

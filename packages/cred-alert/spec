@@ -10,6 +10,7 @@ files:
   - bitbucket.org/taruti/mimemagic/*.{go,c} # gosub
   - code.cloudfoundry.org/clock/*.{go,c} # gosub
   - code.cloudfoundry.org/lager/*.{go,c} # gosub
+  - cred-alert/cmd/revok-ingestor/*.{go,c} # gosub
   - cred-alert/cmd/revok-worker/*.{go,c} # gosub
   - cred-alert/datadog/*.{go,c} # gosub
   - cred-alert/db/*.{go,c} # gosub
@@ -17,6 +18,7 @@ files:
   - cred-alert/gitclient/*.{go,c} # gosub
   - cred-alert/githubclient/*.{go,c} # gosub
   - cred-alert/inflator/*.{go,c} # gosub
+  - cred-alert/ingestor/*.{go,c} # gosub
   - cred-alert/kolsch/*.{go,c} # gosub
   - cred-alert/metrics/*.{go,c} # gosub
   - cred-alert/mimetype/*.{go,c} # gosub
