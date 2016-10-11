@@ -1,0 +1,45 @@
+---
+name: ingestor
+
+description: |
+  Ingestor for receiving GitHub webhooks.
+
+consumes:
+- name: worker
+  type: worker
+
+templates:
+  ctl.erb: bin/ctl
+
+packages:
+- cred-alert
+- pid_utils_revok
+
+properties:
+  webhook.port:
+    description: |
+      The port used to listen for webhooks.
+
+  webhook.github_secret:
+    description: |
+      The shared signing secret for verifying requests from GitHub.
+
+  worker.host:
+    description: |
+      The host used to forward the webhooks.
+
+  worker.port:
+    description: |
+      The port used to forward the webhooks.
+
+  metrics.datadog_api_key:
+    description: |
+      Datadog API key
+
+  metrics.sentry_dsn:
+    description: |
+      Sentry DSN
+
+  metrics.environment:
+    description: |
+      Environment tag for metrics

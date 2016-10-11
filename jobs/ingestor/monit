@@ -1,0 +1,5 @@
+check process ingestor
+  with pidfile /var/vcap/sys/run/ingestor/ingestor.pid
+  start program "/var/vcap/jobs/ingestor/bin/ctl start"
+  stop program "/var/vcap/jobs/ingestor/bin/ctl stop"
+  group vcap
