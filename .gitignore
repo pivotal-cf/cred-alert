@@ -4,6 +4,7 @@
 
 # BOSH
 config/private.yml
+config/dev.yml
 blobs
 .blobs
 dev_releases
