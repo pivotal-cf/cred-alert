@@ -5,6 +5,12 @@ description: |
   Revok clones all GitHub repositories accessible with the provided API token
   and SSH key and scans them for credentials.
 
+provides:
+- name: worker
+  type: worker
+  properties:
+  - port
+
 templates:
   ctl.erb: bin/ctl
   pre-start.erb: bin/pre-start
@@ -20,6 +26,10 @@ packages:
 - pid_utils_revok
 
 properties:
+  port:
+    description: |
+      The port with which to receive webhooks from the ingestor.
+
   revok.repository_discovery_interval:
     description: |
       The interval, in Go duration format (e.g. 1m = 1 minute), on which to
