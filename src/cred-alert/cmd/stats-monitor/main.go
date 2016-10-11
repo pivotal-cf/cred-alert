@@ -65,12 +65,14 @@ func main() {
 
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	ghClient := github.NewClient(httpClient)
-	monitor := monitor.NewMonitor(logger, ghClient, emitter, clock, opts.MonitoringInterval)
-	githubService := services.NewGithubService(logger, emitter, clock, opts.MonitoringInterval)
+	mon := monitor.NewMonitor(logger, ghClient, emitter, clock, opts.MonitoringInterval)
+
+	githubService := monitor.NewGithubService(logger)
+	githubStatusMonitor := monitor.NewGithubMonitor(logger, githubService, clock, opts.MonitoringInterval, emitter)
 
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
-		{"github monitor", monitor},
-		{"github service", githubService},
+		{"github API monitor", mon},
+		{"github status monitor", githubStatusMonitor},
 	}))
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
