@@ -41,11 +41,13 @@ func (command *ScanCommand) Execute(args []string) error {
 	logger := lager.NewLogger("scan")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
+	var sniffer sniff.Sniffer
 	if command.Regexp != "" && command.RegexpFile != "" {
 		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Two options specified for Regexp, only using: --regexp", command.Regexp)
+		sniffer = createSniffer(command.Regexp, "")
+	} else {
+		sniffer = createSniffer(command.Regexp, command.RegexpFile)
 	}
-
-	sniffer := sniffer(command.Regexp, command.RegexpFile)
 
 	inflate := inflator.New()
 
@@ -195,7 +197,7 @@ func (command *ScanCommand) Execute(args []string) error {
 	return nil
 }
 
-func sniffer(regexp, regexpFile string) sniff.Sniffer {
+func createSniffer(regexp, regexpFile string) sniff.Sniffer {
 	if regexp != "" {
 		matcher := matchers.Format(regexp)
 		exclusionMatcher := matchers.NewNullMatcher()
