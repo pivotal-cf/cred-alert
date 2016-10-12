@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -140,14 +141,15 @@ index 940393e..fa5a232 100644
 			ItTellsPeopleHowToRemoveTheirCredentials()
 
 		})
+	})
 
-		Context("when given override-default-regexp flag with a value", func() {
-			BeforeEach(func() {
-				cmdArgs = []string{
-					"--diff",
-					"--override-default-regexp=random",
-				}
-				stdin = `
+	Context("when given override-default-regexp flag with a value", func() {
+		BeforeEach(func() {
+			cmdArgs = []string{
+				"--diff",
+				"--override-default-regexp=random",
+			}
+			stdin = `
 diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests.txt
 index 940393e..fa5a232 100644
 --- a/spec/integration/git-secrets-pattern-tests.txt
@@ -157,10 +159,73 @@ index 940393e..fa5a232 100644
 
  ## Suspicious Variable Names
 `
+		})
+
+		It("uses the given regexp pattern", func() {
+			Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+		})
+	})
+
+	Context("when given custom-regex-file flag and the file reads successfully", func() {
+		var (
+			tmpFile *os.File
+			err     error
+		)
+
+		BeforeEach(func() {
+			tmpFile, err = ioutil.TempFile("", "tmp-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			regexpContent := `this-does-not-match
+another-pattern
+does-not-match`
+
+			err = ioutil.WriteFile(tmpFile.Name(), []byte(regexpContent), 0644)
+			Expect(err).NotTo(HaveOccurred())
+
+			cmdArgs = []string{
+				fmt.Sprintf("--custom-regexp-file=%s", tmpFile.Name()),
+				"--diff",
+				"--show-suspected-credentials",
+			}
+		})
+
+		AfterEach(func() {
+			err := tmpFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+			os.RemoveAll(tmpFile.Name())
+		})
+
+		Context("uses the custom-regex", func() {
+			Context("and there are no matches", func() {
+				BeforeEach(func() {
+					stdin = offendingDiff
+				})
+
+				It("returns not match", func() {
+					Consistently(session.Out).ShouldNot(gbytes.Say("[CRED]"))
+				})
 			})
 
-			It("uses the given regexp pattern", func() {
-				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+			Context("and multiple regex matches", func() {
+				BeforeEach(func() {
+					stdin = `
+diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests.txt
+index 940393e..fa5a232 100644
+--- a/spec/integration/git-secrets-pattern-tests.txt
++++ b/spec/integration/git-secrets-pattern-tests.txt
+@@ -28,7 +28,7 @@ header line goes here
++this-does-not-match
++another-pattern
++pattern-another
+
+ ## Suspicious Variable Names
+`
+				})
+
+				It("scans the diff", func() {
+					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+				})
 			})
 		})
 	})

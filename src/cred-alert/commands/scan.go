@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,6 +32,7 @@ type ScanCommand struct {
 	Diff            bool   `long:"diff" description:"content to be scanned is a git diff"`
 	ShowCredentials bool   `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
 	Regexp          string `long:"override-default-regexp" description:"override default regexp matcher" value-name:"REGEXP"`
+	RegexpFile      string `long:"custom-regexp-file" description:"path to regexp file" value-name:"PATH"`
 }
 
 func (command *ScanCommand) Execute(args []string) error {
@@ -38,14 +40,34 @@ func (command *ScanCommand) Execute(args []string) error {
 
 	logger := lager.NewLogger("scan")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
+
 	var sniffer sniff.Sniffer
+
 	if command.Regexp != "" {
 		matcher := matchers.Format(command.Regexp)
+		exclusionMatcher := matchers.NewNullMatcher()
+		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
+	} else if command.RegexpFile != "" {
+		fh, err := os.Open(command.RegexpFile)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		defer fh.Close()
+
+		scanner := bufio.NewScanner(fh)
+		var multi []matchers.Matcher
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			multi = append(multi, matchers.Format(string(bytes.ToUpper(line))))
+		}
+
+		matcher := matchers.UpcasedMulti(multi...)
 		exclusionMatcher := matchers.NewNullMatcher()
 		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
 	} else {
 		sniffer = sniff.NewDefaultSniffer()
 	}
+
 	inflate := inflator.New()
 
 	exitFuncs := []func(){
