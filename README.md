@@ -36,6 +36,12 @@ Cred alert supports scanning diffs on standard input. When scanning a diff use t
 
     $ git diff | ./cred-alert-cli scan --diff
 
+#### Scan with custom RegExp
+
+To override the default RegExp in order to scan for a specific vulnerability, use --regexp for a single RegExp or --regexp-file for newline delimited RegExp file
+
+    $ git diff | ./cred-alert-cli scan --diff --regexp-file custom-regexp
+
 #### Exit status
 
   `0` No error occurred and no credentials found
