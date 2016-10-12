@@ -143,12 +143,24 @@ index 940393e..fa5a232 100644
 
 		Context("when given override-default-regexp flag with a value", func() {
 			BeforeEach(func() {
-				cmdArgs = []string{"--diff", "--override-default-regexp=thisshouldnotmatchanything"}
-				stdin = offendingDiff
+				cmdArgs = []string{
+					"--diff",
+					"--override-default-regexp=random",
+				}
+				stdin = `
+diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests.txt
+index 940393e..fa5a232 100644
+--- a/spec/integration/git-secrets-pattern-tests.txt
++++ b/spec/integration/git-secrets-pattern-tests.txt
+@@ -28,7 +28,7 @@ header line goes here
++randomunsuspectedthing
+
+ ## Suspicious Variable Names
+`
 			})
 
 			It("uses the given regexp pattern", func() {
-				Consistently(session.Out).ShouldNot(gbytes.Say("[CRED]"))
+				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 			})
 		})
 	})

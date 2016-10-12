@@ -33,8 +33,6 @@ type ScanCommand struct {
 	Regexp          string `long:"override-default-regexp" description:"override default regexp matcher" value-name:"REGEXP"`
 }
 
-const awsAccessKeyIDPattern = `AKIA[A-Z0-9]{16}`
-
 func (command *ScanCommand) Execute(args []string) error {
 	warnIfOldExecutable()
 
@@ -43,7 +41,7 @@ func (command *ScanCommand) Execute(args []string) error {
 	var sniffer sniff.Sniffer
 	if command.Regexp != "" {
 		matcher := matchers.Format(command.Regexp)
-		exclusionMatcher := matchers.Substring("")
+		exclusionMatcher := matchers.NewNullMatcher()
 		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
 	} else {
 		sniffer = sniff.NewDefaultSniffer()

@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const knownSHA = "01cc8a314500f863f6520a895fd6efe544406b1933fff5e579388861a91e2c43"
+const knownSHA = "f3adbd565ef33bb1afd211b464f638f9cf2df616ee0ff607afd17caf5a324cf6"
 
 func shouldScan(fi os.FileInfo) bool {
 	if fi.IsDir() {
