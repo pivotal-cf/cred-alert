@@ -1,8 +1,8 @@
 package diffscanner_test
 
 import (
+	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
-	"fmt"
 	"strings"
 
 	"code.cloudfoundry.org/lager/lagertest"
@@ -11,162 +11,185 @@ import (
 )
 
 var _ = Describe("DiffScanner", func() {
-	shortFile := `+++ b/our/path/somefile.txt
-@@ -4,7 +5,7 @@ some hint line
-+first line of content
-+second line of content`
+	diffWithMultipleHunks := `diff --git a/some-file.txt b/some-file.txt
+index 4d7fc47..1ba07b5 100644
+--- a/some-file.txt
++++ b/some-file.txt
+@@ -8,7 +8,7 @@ here is a file
+ there are many like it
+ but this one is mine
+ here is a file
+-there are many like it
++first changed line
+ but this one is mine
+ here is a file
+ there are many like it
+@@ -46,7 +46,7 @@ but this one is mine
+ here is a file
+ there are many like it
+ but this one is mine
+-here is a file
++second changed line
+ there are many like it
+ but this one is mine
+ here is a file`
 
-	sneakyFile := `+++ b/our/path/somefile.txt
-@@ -4,7 +5,7 @@ some hint line
- first line of content
- second line of content
-+++sneaky line of content
- last line of content`
+	diffWithMultipleHunksAndFiles := `diff --git a/some-file.txt b/some-file.txt
+index 4d7fc47..1ba07b5 100644
+--- a/some-file.txt
++++ b/some-file.txt
+@@ -8,7 +8,7 @@ here is a file
+ there are many like it
+ but this one is mine
+ here is a file
+-there are many like it
++changed
+ but this one is mine
+ here is a file
+ there are many like it
+@@ -46,7 +46,7 @@ but this one is mine
+ here is a file
+ there are many like it
+ but this one is mine
+-here is a file
++changed
+ there are many like it
+ but this one is mine
+ here is a file
+diff --git a/some-other-file.txt b/some-other-file.txt
+index 468bc36..4c112c7 100644
+--- a/some-other-file.txt
++++ b/some-other-file.txt
+@@ -27,6 +27,7 @@ here are file b contents
+ here are file b contents
+ here are file b contents
+ here are file b contents
++changed
+ here are file b contents
+ here are file b contents
+ here are file b contents
+@@ -49,7 +50,6 @@ here are file b contents
+ here are file b contents
+ here are file b contents
+ here are file b contents
+-here are file b contents
+-here are file b contents
++changed
+ here are file b contents
+ here are file b contents`
 
-	singleLineRemovedFile := `diff --git a/stuff.txt b/stuff.txt
-index f2e4113..fa5a232 100644
---- a/stuff.txt
-+++ b/stuff.txt
-@@ -1 +1,2 @@
--stuff
- stuff
-+blah
-+lol`
-
-	singleLineAddedFile := `--git a/stuff.txt b/stuff.txt
-index fa5a232..1e13fe8 100644
---- a/stuff.txt
-+++ b/stuff.txt
-@@ -1,2 +1 @@
--blah
--lol
-+rofl`
-
-	singleLineReplacementFile := `diff --git a/stuff.txt b/stuff.txt
-index 1e13fe8..06b14f8 100644
---- a/stuff.txt
-+++ b/stuff.txt
-@@ -1 +1 @@
--rofl
-+afk`
-
-	var logger *lagertest.TestLogger
+	var (
+		logger  *lagertest.TestLogger
+		scanner *diffscanner.DiffScanner
+		diff    string
+	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("diff-scanner-test")
+		diff = diffWithMultipleHunks
 	})
 
-	It("scans lines from a diff", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(shortFile))
-		Expect(diffScanner.Scan(logger)).To(BeTrue())
-		Expect(diffScanner.Scan(logger)).To(BeTrue())
-		Expect(diffScanner.Scan(logger)).To(BeFalse())
+	JustBeforeEach(func() {
+		scanner = diffscanner.NewDiffScanner(strings.NewReader(diff))
 	})
 
-	It("returns the current line from a diff", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(shortFile))
+	Describe("Scan", func() {
+		Context("when the diff has added lines", func() {
+			BeforeEach(func() {
+				diff = diffWithMultipleHunks
+			})
 
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`first line of content`)))
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(5))
+			It("returns true for each added line", func() {
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				Expect(scanner.Scan(logger)).To(BeFalse())
+			})
+		})
 
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("second line of content")))
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(6))
+		Context("when the diff has no added lines", func() {
+			BeforeEach(func() {
+				diff = `diff --git a/some-file.txt b/some-file.txt
+index dbb2891..c2bce43 100644
+--- a/some-file.txt
++++ b/some-file.txt
+@@ -1,2 +1 @@
+ first line of content
+-second line of content`
+			})
+
+			It("returns false", func() {
+				Expect(scanner.Scan(logger)).To(BeFalse())
+			})
+		})
 	})
 
-	It("scans for a filename", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(shortFile))
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
+	Describe("Line", func() {
+		It("returns an empty line", func() {
+			line := scanner.Line(logger)
+			Expect(*line).To(Equal(scanners.Line{
+				Content:    nil,
+				LineNumber: 0,
+				Path:       "",
+			}))
+		})
+
+		Context("when the diff has an added/changed line", func() {
+			BeforeEach(func() {
+				diff = diffWithMultipleHunks
+			})
+
+			It("returns a Line equivalent to the matched line after calling Scan()", func() {
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				line := scanner.Line(logger)
+				Expect(line.Path).To(Equal("some-file.txt"))
+				Expect(line.Content).To(Equal([]byte("first changed line")))
+				Expect(line.LineNumber).To(Equal(11))
+
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				line = scanner.Line(logger)
+				Expect(line.Path).To(Equal("some-file.txt"))
+				Expect(line.Content).To(Equal([]byte("second changed line")))
+				Expect(line.LineNumber).To(Equal(49))
+			})
+
+			Context("when an added/changed line looks like a file header", func() {
+				BeforeEach(func() {
+					diff = `diff --git a/some-file.txt b/some-file.txt
+index dbb2891..5751378 100644
+--- a/some-file.txt
++++ b/some-file.txt
+@@ -1,2 +1,3 @@
+ first line of content
+ second line of content
++++new line`
+				})
+
+				It("returns a Line equivalent to the matched line after calling Scan()", func() {
+					Expect(scanner.Scan(logger)).To(BeTrue())
+					line := scanner.Line(logger)
+					Expect(line.Path).To(Equal("some-file.txt"))
+					Expect(line.Content).To(Equal([]byte("++new line")))
+					Expect(line.LineNumber).To(Equal(3))
+				})
+			})
+		})
+
+		Context("when the diff has multiple files", func() {
+			BeforeEach(func() {
+				diff = diffWithMultipleHunksAndFiles
+			})
+
+			It("keeps track of the filename in sections of a unified diff", func() {
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				Expect(scanner.Line(logger).Path).To(Equal("some-file.txt"))
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				Expect(scanner.Line(logger).Path).To(Equal("some-file.txt"))
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				Expect(scanner.Line(logger).Path).To(Equal("some-other-file.txt"))
+				Expect(scanner.Scan(logger)).To(BeTrue())
+				Expect(scanner.Line(logger).Path).To(Equal("some-other-file.txt"))
+			})
+		})
 	})
 
-	It("is not fooled by lines that look like file headers", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(sneakyFile))
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).Path).To(Equal("our/path/somefile.txt"))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("++sneaky line of content")))
-	})
-
-	It("scans for a hunk", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(shortFile))
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(5))
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(6))
-	})
-
-	It("scans multiple hunks in one diff", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(sampleDiff))
-
-		for i := 0; i < 8; i++ {
-			diffScanner.Scan(logger)
-			fmt.Fprintf(
-				GinkgoWriter,
-				"%d: %s\n",
-				diffScanner.Line(logger).LineNumber,
-				diffScanner.Line(logger).Content,
-			)
-		}
-
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(45))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`PRIVATE_KEY: "should_match"`)))
-	})
-
-	It("scans single line hunks", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(singleLineRemovedFile))
-
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(2))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("blah")))
-
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(3))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("lol")))
-		Expect(diffScanner.Scan(logger)).To(BeFalse())
-
-		diffScanner = diffscanner.NewDiffScanner(strings.NewReader(singleLineAddedFile))
-
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(1))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("rofl")))
-		Expect(diffScanner.Scan(logger)).To(BeFalse())
-
-		diffScanner = diffscanner.NewDiffScanner(strings.NewReader(singleLineReplacementFile))
-		diffScanner.Scan(logger)
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(1))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte("afk")))
-		Expect(diffScanner.Scan(logger)).To(BeFalse())
-	})
-
-	It("keeps track of the filename in sections of a unified diff", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(sampleDiff))
-		for i := 0; i < 12; i++ {
-			diffScanner.Scan(logger)
-			fmt.Fprintf(
-				GinkgoWriter,
-				"%d: %s\n",
-				diffScanner.Line(logger).LineNumber,
-				diffScanner.Line(logger).Content,
-			)
-		}
-
-		Expect(diffScanner.Line(logger).LineNumber).To(Equal(31))
-		Expect(diffScanner.Line(logger).Content).To(Equal([]byte(`some_secret: "should_match"`)))
-		Expect(diffScanner.Line(logger).Path).To(Equal("spec/integration/git-secrets-pattern-tests2.txt"))
-	})
-
-	It("handles file renames", func() {
-		diffScanner := diffscanner.NewDiffScanner(strings.NewReader(renameDiff))
-
-		diffScanner.Scan(logger)
-
-		line := diffScanner.Line(logger)
-
-		Expect(line.Path).To(Equal("README.yml"))
-		Expect(line.LineNumber).To(Equal(1))
-		Expect(line.Content).To(Equal([]byte("secret_password: thisisapassword")))
-	})
 })
