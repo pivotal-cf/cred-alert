@@ -47,6 +47,9 @@ func (command *ScanCommand) Execute(args []string) error {
 		matcher := matchers.Format(command.Regexp)
 		exclusionMatcher := matchers.NewNullMatcher()
 		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
+		if command.RegexpFile != "" {
+			fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Two options specified for Regexp, only using: --regexp", command.Regexp)
+		}
 	} else if command.RegexpFile != "" {
 		fh, err := os.Open(command.RegexpFile)
 		if err != nil {

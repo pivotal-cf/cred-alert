@@ -164,6 +164,20 @@ index 940393e..fa5a232 100644
 		It("uses the given regexp pattern", func() {
 			Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 		})
+		Context("when regex-file flags is set", func() {
+			BeforeEach(func() {
+				cmdArgs = append(cmdArgs, "--regexp-file=some-non-existing-file")
+			})
+
+			It("prints warning message", func() {
+				Eventually(session.Out).Should(gbytes.Say("[WARN]"))
+			})
+
+			It("uses the given regexp pattern", func() {
+				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+			})
+		})
+
 	})
 
 	Context("when given regex-file flag and the file reads successfully", func() {
