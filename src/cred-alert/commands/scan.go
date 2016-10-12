@@ -41,35 +41,11 @@ func (command *ScanCommand) Execute(args []string) error {
 	logger := lager.NewLogger("scan")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
-	var sniffer sniff.Sniffer
-
-	if command.Regexp != "" {
-		matcher := matchers.Format(command.Regexp)
-		exclusionMatcher := matchers.NewNullMatcher()
-		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
-		if command.RegexpFile != "" {
-			fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Two options specified for Regexp, only using: --regexp", command.Regexp)
-		}
-	} else if command.RegexpFile != "" {
-		fh, err := os.Open(command.RegexpFile)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-		defer fh.Close()
-
-		scanner := bufio.NewScanner(fh)
-		var multi []matchers.Matcher
-		for scanner.Scan() {
-			line := scanner.Bytes()
-			multi = append(multi, matchers.Format(string(bytes.ToUpper(line))))
-		}
-
-		matcher := matchers.UpcasedMulti(multi...)
-		exclusionMatcher := matchers.NewNullMatcher()
-		sniffer = sniff.NewSniffer(matcher, exclusionMatcher)
-	} else {
-		sniffer = sniff.NewDefaultSniffer()
+	if command.Regexp != "" && command.RegexpFile != "" {
+		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Two options specified for Regexp, only using: --regexp", command.Regexp)
 	}
+
+	sniffer := sniffer(command.Regexp, command.RegexpFile)
 
 	inflate := inflator.New()
 
@@ -217,6 +193,36 @@ func (command *ScanCommand) Execute(args []string) error {
 	}
 
 	return nil
+}
+
+func sniffer(regexp, regexpFile string) sniff.Sniffer {
+	if regexp != "" {
+		matcher := matchers.Format(regexp)
+		exclusionMatcher := matchers.NewNullMatcher()
+
+		return sniff.NewSniffer(matcher, exclusionMatcher)
+
+	} else if regexpFile != "" {
+		fh, err := os.Open(regexpFile)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		defer fh.Close()
+
+		scanner := bufio.NewScanner(fh)
+		var multi []matchers.Matcher
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			multi = append(multi, matchers.Format(string(bytes.ToUpper(line))))
+		}
+
+		matcher := matchers.UpcasedMulti(multi...)
+		exclusionMatcher := matchers.NewNullMatcher()
+
+		return sniff.NewSniffer(matcher, exclusionMatcher)
+	}
+
+	return sniff.NewDefaultSniffer()
 }
 
 func persistFile(srcPath, destPath string) error {
