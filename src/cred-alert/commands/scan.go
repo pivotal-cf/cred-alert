@@ -31,8 +31,8 @@ type ScanCommand struct {
 	File            string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
 	Diff            bool   `long:"diff" description:"content to be scanned is a git diff"`
 	ShowCredentials bool   `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
-	Regexp          string `long:"override-default-regexp" description:"override default regexp matcher" value-name:"REGEXP"`
-	RegexpFile      string `long:"custom-regexp-file" description:"path to regexp file" value-name:"PATH"`
+	Regexp          string `long:"regexp" description:"override default regexp matcher" value-name:"REGEXP"`
+	RegexpFile      string `long:"regexp-file" description:"path to regexp file" value-name:"PATH"`
 }
 
 func (command *ScanCommand) Execute(args []string) error {

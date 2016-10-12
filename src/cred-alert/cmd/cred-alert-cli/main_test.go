@@ -143,11 +143,11 @@ index 940393e..fa5a232 100644
 		})
 	})
 
-	Context("when given override-default-regexp flag with a value", func() {
+	Context("when given regexp flag with a value", func() {
 		BeforeEach(func() {
 			cmdArgs = []string{
 				"--diff",
-				"--override-default-regexp=random",
+				"--regexp=random",
 			}
 			stdin = `
 diff --git a/spec/integration/git-secrets-pattern-tests.txt b/spec/integration/git-secrets-pattern-tests.txt
@@ -166,7 +166,7 @@ index 940393e..fa5a232 100644
 		})
 	})
 
-	Context("when given custom-regex-file flag and the file reads successfully", func() {
+	Context("when given regex-file flag and the file reads successfully", func() {
 		var (
 			tmpFile *os.File
 			err     error
@@ -184,7 +184,7 @@ does-not-match`
 			Expect(err).NotTo(HaveOccurred())
 
 			cmdArgs = []string{
-				fmt.Sprintf("--custom-regexp-file=%s", tmpFile.Name()),
+				fmt.Sprintf("--regexp-file=%s", tmpFile.Name()),
 				"--diff",
 				"--show-suspected-credentials",
 			}
@@ -196,7 +196,7 @@ does-not-match`
 			os.RemoveAll(tmpFile.Name())
 		})
 
-		Context("uses the custom-regex", func() {
+		Context("uses the regex", func() {
 			Context("and there are no matches", func() {
 				BeforeEach(func() {
 					stdin = offendingDiff
