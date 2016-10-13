@@ -26,7 +26,7 @@ applications:
   - cred-alert-staging-logs
   - cred-alert-mysql
   env:
-    IGNORED_REPOS: ".*-credentials$,.*-pool$,.*deployments.*,.*envs.*,.*-locks$"
+    IGNORED_REPOS: ".*-credentials$,.*-pool(?:s)?$,.*deployments.*,.*envs.*,.*-locks$"
     ENVIRONMENT: "staging"
 
 - name: stats-monitor-staging
