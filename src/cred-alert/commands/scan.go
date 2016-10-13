@@ -215,6 +215,9 @@ func createSniffer(regexp, regexpFile string) sniff.Sniffer {
 		var multi []matchers.Matcher
 		for scanner.Scan() {
 			line := scanner.Bytes()
+			if len(line) == 0 {
+				continue
+			}
 			multi = append(multi, matchers.Format(string(bytes.ToUpper(line))))
 		}
 
