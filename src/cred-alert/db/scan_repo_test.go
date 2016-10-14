@@ -18,8 +18,10 @@ import (
 
 var _ = Describe("Scan Repository", func() {
 	var (
-		database *gorm.DB
-		logger   *lagertest.TestLogger
+		database       *gorm.DB
+		clock          *fakeclock.FakeClock
+		logger         *lagertest.TestLogger
+		scanRepository db.ScanRepository
 	)
 
 	BeforeEach(func() {
@@ -30,20 +32,12 @@ var _ = Describe("Scan Repository", func() {
 		var err error
 		database, err = dbRunner.GormDB()
 		Expect(err).NotTo(HaveOccurred())
+
+		clock = fakeclock.NewFakeClock(time.Now())
+		scanRepository = db.NewScanRepository(database, clock)
 	})
 
 	Describe("performing a scan", func() {
-		var (
-			scanRepository db.ScanRepository
-
-			clock *fakeclock.FakeClock
-		)
-
-		BeforeEach(func() {
-			clock = fakeclock.NewFakeClock(time.Now())
-			scanRepository = db.NewScanRepository(database, clock)
-		})
-
 		It("works with no credentials", func() {
 			startTime := clock.Now()
 
@@ -227,6 +221,81 @@ var _ = Describe("Scan Repository", func() {
 				var count uint
 				database.Model(db.Scan{}).Where("repository_id = ? AND fetch_id = ?", repository.ID, fetch.ID).Count(&count)
 				Expect(count).To(Equal(uint(1)))
+			})
+		})
+	})
+
+	Describe("ScansNotYetRunWithVersion", func() {
+		var repository *db.Repository
+
+		BeforeEach(func() {
+			_, err := database.DB().Exec(`
+					INSERT INTO repositories ( name, owner, raw_json)
+					VALUES (
+						'some-repo',
+						'some-owner',
+						'some-bytes'
+					)
+				`)
+			Expect(err).NotTo(HaveOccurred())
+
+			var repositoryID uint
+			err = database.DB().QueryRow(`SELECT id FROM repositories ORDER BY id DESC LIMIT 1`).Scan(&repositoryID)
+			Expect(err).NotTo(HaveOccurred())
+
+			repository = &db.Repository{
+				Model: db.Model{
+					ID: repositoryID,
+				},
+			}
+		})
+
+		It("returns nothing when there are no scans present for the rules version", func() {
+			priorScans, err := scanRepository.ScansNotYetRunWithVersion(logger, 6)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(priorScans).To(BeEmpty())
+		})
+
+		Context("when there are scans with a startSHA present for the rules version", func() {
+			var expectedScanID int
+
+			BeforeEach(func() {
+				// two v5 scans
+				err := scanRepository.Start(logger, "scan-type", "some-start-sha", "some-stop-sha", repository, nil).Finish()
+				Expect(err).NotTo(HaveOccurred())
+				err = database.DB().QueryRow(`SELECT id FROM scans ORDER BY id DESC LIMIT 1`).Scan(&expectedScanID)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = scanRepository.Start(logger, "scan-type", "some-other-start-sha", "some-other-stop-sha", repository, nil).Finish()
+				Expect(err).NotTo(HaveOccurred())
+
+				database.DB().Exec(`UPDATE scans SET rules_version = 5`)
+
+				// add another scan, same as the second above, but for v6
+				err = scanRepository.Start(logger, "scan-type", "some-other-start-sha", "some-other-stop-sha", repository, nil).Finish()
+				Expect(err).NotTo(HaveOccurred())
+
+				var v6ScanID int
+				err = database.DB().QueryRow(`SELECT id FROM scans ORDER BY id DESC LIMIT 1`).Scan(&v6ScanID)
+				Expect(err).NotTo(HaveOccurred())
+
+				database.DB().Exec(`UPDATE scans SET rules_version = 6 WHERE id = ?`, v6ScanID)
+			})
+
+			It("returns scans for that rules version", func() {
+				priorScans, err := scanRepository.ScansNotYetRunWithVersion(logger, 6)
+				Expect(err).NotTo(HaveOccurred())
+
+				// this scan has no v6 scan
+				Expect(priorScans).To(Equal([]db.PriorScan{
+					{
+						ID:         expectedScanID,
+						StartSHA:   "some-start-sha",
+						StopSHA:    "some-stop-sha",
+						Owner:      "some-owner",
+						Repository: "some-repo",
+					},
+				}))
 			})
 		})
 	})

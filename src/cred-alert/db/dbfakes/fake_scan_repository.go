@@ -22,6 +22,16 @@ type FakeScanRepository struct {
 	startReturns struct {
 		result1 db.ActiveScan
 	}
+	ScansNotYetRunWithVersionStub        func(lager.Logger, int) ([]db.PriorScan, error)
+	scansNotYetRunWithVersionMutex       sync.RWMutex
+	scansNotYetRunWithVersionArgsForCall []struct {
+		arg1 lager.Logger
+		arg2 int
+	}
+	scansNotYetRunWithVersionReturns struct {
+		result1 []db.PriorScan
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -64,11 +74,48 @@ func (fake *FakeScanRepository) StartReturns(result1 db.ActiveScan) {
 	}{result1}
 }
 
+func (fake *FakeScanRepository) ScansNotYetRunWithVersion(arg1 lager.Logger, arg2 int) ([]db.PriorScan, error) {
+	fake.scansNotYetRunWithVersionMutex.Lock()
+	fake.scansNotYetRunWithVersionArgsForCall = append(fake.scansNotYetRunWithVersionArgsForCall, struct {
+		arg1 lager.Logger
+		arg2 int
+	}{arg1, arg2})
+	fake.recordInvocation("ScansNotYetRunWithVersion", []interface{}{arg1, arg2})
+	fake.scansNotYetRunWithVersionMutex.Unlock()
+	if fake.ScansNotYetRunWithVersionStub != nil {
+		return fake.ScansNotYetRunWithVersionStub(arg1, arg2)
+	} else {
+		return fake.scansNotYetRunWithVersionReturns.result1, fake.scansNotYetRunWithVersionReturns.result2
+	}
+}
+
+func (fake *FakeScanRepository) ScansNotYetRunWithVersionCallCount() int {
+	fake.scansNotYetRunWithVersionMutex.RLock()
+	defer fake.scansNotYetRunWithVersionMutex.RUnlock()
+	return len(fake.scansNotYetRunWithVersionArgsForCall)
+}
+
+func (fake *FakeScanRepository) ScansNotYetRunWithVersionArgsForCall(i int) (lager.Logger, int) {
+	fake.scansNotYetRunWithVersionMutex.RLock()
+	defer fake.scansNotYetRunWithVersionMutex.RUnlock()
+	return fake.scansNotYetRunWithVersionArgsForCall[i].arg1, fake.scansNotYetRunWithVersionArgsForCall[i].arg2
+}
+
+func (fake *FakeScanRepository) ScansNotYetRunWithVersionReturns(result1 []db.PriorScan, result2 error) {
+	fake.ScansNotYetRunWithVersionStub = nil
+	fake.scansNotYetRunWithVersionReturns = struct {
+		result1 []db.PriorScan
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeScanRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.startMutex.RLock()
 	defer fake.startMutex.RUnlock()
+	fake.scansNotYetRunWithVersionMutex.RLock()
+	defer fake.scansNotYetRunWithVersionMutex.RUnlock()
 	return fake.invocations
 }
 

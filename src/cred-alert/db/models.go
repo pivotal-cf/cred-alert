@@ -1,6 +1,9 @@
 package db
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Model struct {
 	ID        uint `gorm:"primary_key"`
@@ -58,6 +61,10 @@ type Credential struct {
 	MatchStart int
 	MatchEnd   int
 	Private    bool
+}
+
+func (c *Credential) Hash() string {
+	return fmt.Sprintf("%s:%s:%s:%s:%d:%t", c.Owner, c.Repository, c.SHA, c.Path, c.LineNumber, c.Private)
 }
 
 type Repository struct {

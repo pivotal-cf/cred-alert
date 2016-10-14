@@ -1,19 +1,17 @@
 package revok_test
 
 import (
+	"errors"
+
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
+	"cred-alert/notifications"
+	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/revok"
-	"cred-alert/scanners"
+	"cred-alert/revok/revokfakes"
 	"cred-alert/sniff"
-	"cred-alert/sniff/snifffakes"
-	"errors"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -27,145 +25,344 @@ import (
 var _ = Describe("Rescanner", func() {
 	var (
 		logger               *lagertest.TestLogger
-		sniffer              *snifffakes.FakeSniffer
-		repositoryRepository *dbfakes.FakeRepositoryRepository
 		scanRepository       *dbfakes.FakeScanRepository
+		credentialRepository *dbfakes.FakeCredentialRepository
+		scanner              *revokfakes.FakeScanner
+		notifier             *notificationsfakes.FakeNotifier
 		emitter              *metricsfakes.FakeEmitter
 
-		firstScan     *dbfakes.FakeActiveScan
-		secondScan    *dbfakes.FakeActiveScan
 		successMetric *metricsfakes.FakeCounter
 		failedMetric  *metricsfakes.FakeCounter
 
-		tempdir string
 		runner  ifrit.Runner
 		process ifrit.Process
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
-		sniffer = &snifffakes.FakeSniffer{}
-		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
-			for s.Scan(logger) {
-				line := s.Line(logger)
-				if strings.Contains(string(line.Content), "credential") {
-					h(l, scanners.Violation{Line: *line})
-				}
+
+		scanRepository = &dbfakes.FakeScanRepository{}
+		scanRepository.ScansNotYetRunWithVersionReturns([]db.PriorScan{
+			{
+				ID:         1,
+				StartSHA:   "some-start-sha",
+				StopSHA:    "",
+				Repository: "some-repository",
+				Owner:      "some-owner",
+			},
+			{
+				ID:         2,
+				StartSHA:   "some-other-start-sha",
+				StopSHA:    "some-stop-sha",
+				Repository: "some-other-repository",
+				Owner:      "some-other-owner",
+			},
+		}, nil)
+
+		credentialRepository = &dbfakes.FakeCredentialRepository{}
+		credentialRepository.ForScanWithIDStub = func(int) ([]db.Credential, error) {
+			if credentialRepository.ForScanWithIDCallCount() == 1 {
+				return []db.Credential{
+					{
+						Owner:      "some-owner",
+						Repository: "some-repo",
+						SHA:        "some-sha",
+						Path:       "some-path",
+						LineNumber: 1,
+						MatchStart: 2,
+						MatchEnd:   3,
+						Private:    true,
+					},
+				}, nil
 			}
 
-			return nil
+			return []db.Credential{
+				{
+					Owner:      "some-other-owner",
+					Repository: "some-other-repo",
+					SHA:        "some-other-sha",
+					Path:       "some-other-path",
+					LineNumber: 1,
+					MatchStart: 2,
+					MatchEnd:   3,
+					Private:    true,
+				},
+			}, nil
 		}
+
+		scanner = &revokfakes.FakeScanner{}
+		notifier = &notificationsfakes.FakeNotifier{}
 
 		emitter = &metricsfakes.FakeEmitter{}
 		successMetric = &metricsfakes.FakeCounter{}
 		failedMetric = &metricsfakes.FakeCounter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
-			case "revok.success_jobs":
+			case "revok.rescanner.success":
 				return successMetric
-			case "revok.failed_jobs":
+			case "revok.rescanner.failed":
 				return failedMetric
 			}
 			return &metricsfakes.FakeCounter{}
 		}
-
-		scanRepository = &dbfakes.FakeScanRepository{}
-		firstScan = &dbfakes.FakeActiveScan{}
-		secondScan = &dbfakes.FakeActiveScan{}
-		scanRepository.StartStub = func(lager.Logger, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
-			if scanRepository.StartCallCount() == 1 {
-				return firstScan
-			}
-			return secondScan
-		}
-
-		var err error
-		tempdir, err = ioutil.TempDir("", "dirscan-updater-test")
-		Expect(err).NotTo(HaveOccurred())
-
-		err = os.MkdirAll(filepath.Join(tempdir, "some-owner", "some-repo"), os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = ioutil.WriteFile(filepath.Join(tempdir, "some-owner", "some-repo", "some-file"), []byte("credential"), os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = os.MkdirAll(filepath.Join(tempdir, "some-other-owner", "some-other-repo"), os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = ioutil.WriteFile(filepath.Join(tempdir, "some-other-owner", "some-other-repo", "some-other-file"), []byte("credential"), os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-
-		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		repositoryRepository.NotScannedWithVersionReturns([]db.Repository{
-			{
-				Model: db.Model{
-					ID: 42,
-				},
-				Name:  "some-repo",
-				Owner: "some-owner",
-				Path:  filepath.Join(tempdir, "some-owner", "some-repo"),
-			},
-			{
-				Model: db.Model{
-					ID: 44,
-				},
-				Name:  "some-other-repo",
-				Owner: "some-other-owner",
-				Path:  filepath.Join(tempdir, "some-other-owner", "some-other-repo"),
-			},
-		}, nil)
 	})
 
 	AfterEach(func() {
 		ginkgomon.Interrupt(process)
 		<-process.Wait()
-		os.RemoveAll(tempdir)
 	})
 
 	JustBeforeEach(func() {
 		runner = revok.NewRescanner(
 			logger,
-			sniffer,
-			repositoryRepository,
 			scanRepository,
+			credentialRepository,
+			scanner,
+			notifier,
 			emitter,
 		)
 		process = ginkgomon.Invoke(runner)
 	})
 
-	It("gets the repositories from the RepositoryRepository", func() {
-		Eventually(repositoryRepository.NotScannedWithVersionCallCount).Should(Equal(1))
-		rulesVersion := repositoryRepository.NotScannedWithVersionArgsForCall(0)
+	It("tries to get the scans not yet run with the current rules version from the DB", func() {
+		Eventually(scanRepository.ScansNotYetRunWithVersionCallCount).Should(Equal(1))
+		_, rulesVersion := scanRepository.ScansNotYetRunWithVersionArgsForCall(0)
 		Expect(rulesVersion).To(Equal(sniff.RulesVersion))
 	})
 
-	It("does a dirscan on each repository", func() {
-		Eventually(scanRepository.StartCallCount).Should(Equal(2))
+	It("repeats each prior scan for the previous rules version", func() {
+		Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
 
-		_, scanType, _, _, repository, fetch := scanRepository.StartArgsForCall(0)
-		Expect(scanType).To(Equal("dir-scan"))
-		Expect(repository.ID).To(BeNumerically("==", 42))
-		Expect(fetch).To(BeNil())
+		_, owner, repository, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(0)
+		Expect(owner).To(Equal("some-owner"))
+		Expect(repository).To(Equal("some-repository"))
+		Expect(startSHA).To(Equal("some-start-sha"))
+		Expect(stopSHA).To(Equal(""))
 
-		Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
-		Eventually(firstScan.FinishCallCount).Should(Equal(1))
-
-		_, scanType, _, _, repository, fetch = scanRepository.StartArgsForCall(1)
-		Expect(scanType).To(Equal("dir-scan"))
-		Expect(repository.ID).To(BeNumerically("==", 44))
-		Expect(fetch).To(BeNil())
-
-		Eventually(secondScan.RecordCredentialCallCount).Should(Equal(1))
-		Eventually(secondScan.FinishCallCount).Should(Equal(1))
+		_, owner, repository, startSHA, stopSHA = scanner.ScanNoNotifyArgsForCall(1)
+		Expect(owner).To(Equal("some-other-owner"))
+		Expect(repository).To(Equal("some-other-repository"))
+		Expect(startSHA).To(Equal("some-other-start-sha"))
+		Expect(stopSHA).To(Equal("some-stop-sha"))
 	})
 
-	Context("when getting repositories fails", func() {
+	It("gets the credentials for each prior scan", func() {
+		Eventually(credentialRepository.ForScanWithIDCallCount).Should(Equal(2))
+		Expect(credentialRepository.ForScanWithIDArgsForCall(0)).To(Equal(1))
+		Expect(credentialRepository.ForScanWithIDArgsForCall(1)).To(Equal(2))
+	})
+
+	It("increments the success metric", func() {
+		Eventually(successMetric.IncCallCount).Should(Equal(2))
+	})
+
+	Context("when no prior scans for the previous rules version are found", func() {
 		BeforeEach(func() {
-			repositoryRepository.NotScannedWithVersionReturns(nil, errors.New("an-error"))
+			scanRepository.ScansNotYetRunWithVersionReturns(nil, nil)
 		})
 
-		It("does not try to dirscan anything", func() {
-			Consistently(scanRepository.StartCallCount).Should(Equal(0))
+		It("does nothing", func() {
+			Consistently(credentialRepository.ForScanWithIDCallCount).Should(BeZero())
+			Consistently(scanner.ScanNoNotifyCallCount).Should(BeZero())
+			Consistently(notifier.SendBatchNotificationCallCount).Should(BeZero())
+		})
+	})
+
+	Context("when finding old credentials fails", func() {
+		BeforeEach(func() {
+			credentialRepository.ForScanWithIDStub = func(int) ([]db.Credential, error) {
+				if credentialRepository.ForScanWithIDCallCount() == 1 {
+					return nil, errors.New("an-error")
+				}
+
+				return []db.Credential{
+					{
+						Owner:      "some-other-owner",
+						Repository: "some-other-repo",
+						SHA:        "some-other-sha",
+						Path:       "some-other-path",
+						LineNumber: 1,
+						MatchStart: 2,
+						MatchEnd:   3,
+						Private:    true,
+					},
+				}, nil
+			}
+		})
+
+		It("increments the failed metric for the failed repository", func() {
+			Eventually(failedMetric.IncCallCount).Should(Equal(1))
+		})
+
+		It("continues to the next prior scan for the previous rules version", func() {
+			Eventually(credentialRepository.ForScanWithIDCallCount).Should(Equal(2))
+			Consistently(scanner.ScanNoNotifyCallCount).Should(Equal(1))
+		})
+	})
+
+	Context("when a credential is found that was not previously found", func() {
+		BeforeEach(func() {
+			credentialRepository.ForScanWithIDStub = func(int) ([]db.Credential, error) {
+				if credentialRepository.ForScanWithIDCallCount() == 1 {
+					return []db.Credential{
+						{
+							Owner:      "some-owner",
+							Repository: "some-repo",
+							SHA:        "some-sha",
+							Path:       "some-path",
+							LineNumber: 1,
+							MatchStart: 2,
+							MatchEnd:   3,
+							Private:    true,
+						},
+					}, nil
+				}
+
+				return []db.Credential{
+					{
+						Owner:      "some-other-owner",
+						Repository: "some-other-repo",
+						SHA:        "some-other-sha",
+						Path:       "some-other-path",
+						LineNumber: 1,
+						MatchStart: 2,
+						MatchEnd:   3,
+						Private:    true,
+					},
+				}, nil
+			}
+
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, string, string) ([]db.Credential, error) {
+				if scanner.ScanNoNotifyCallCount() == 1 {
+					return []db.Credential{
+						{
+							Owner:      "some-owner",
+							Repository: "some-repo",
+							SHA:        "some-sha",
+							Path:       "some-path",
+							LineNumber: 1,
+							MatchStart: 2,
+							MatchEnd:   3,
+							Private:    true,
+						},
+						{ // new
+							Owner:      "some-owner",
+							Repository: "some-repo",
+							SHA:        "some-sha",
+							Path:       "some-other-path",
+							LineNumber: 2,
+							MatchStart: 3,
+							MatchEnd:   4,
+							Private:    true,
+						},
+					}, nil
+				}
+
+				return []db.Credential{
+					{
+						Owner:      "some-other-owner",
+						Repository: "some-other-repo",
+						SHA:        "some-other-sha",
+						Path:       "some-other-path",
+						LineNumber: 1,
+						MatchStart: 2,
+						MatchEnd:   3,
+						Private:    true,
+					},
+				}, nil
+			}
+		})
+
+		It("sends a notification for the new credentials", func() {
+			Eventually(notifier.SendBatchNotificationCallCount).Should(Equal(1))
+			_, batch := notifier.SendBatchNotificationArgsForCall(0)
+			Expect(batch).To(Equal([]notifications.Notification{
+				{
+					Owner:      "some-owner",
+					Repository: "some-repo",
+					SHA:        "some-sha",
+					Path:       "some-other-path",
+					LineNumber: 2,
+					Private:    true,
+				},
+			}))
+		})
+	})
+
+	Context("when no new credentials are found", func() {
+		BeforeEach(func() {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, string, string) ([]db.Credential, error) {
+				if scanner.ScanNoNotifyCallCount() == 1 {
+					return []db.Credential{
+						{
+							Owner:      "some-owner",
+							Repository: "some-repo",
+							SHA:        "some-sha",
+							Path:       "some-path",
+							LineNumber: 1,
+							MatchStart: 2,
+							MatchEnd:   3,
+							Private:    true,
+						},
+					}, nil
+				}
+
+				return []db.Credential{
+					{
+						Owner:      "some-other-owner",
+						Repository: "some-other-repo",
+						SHA:        "some-other-sha",
+						Path:       "some-other-path",
+						LineNumber: 1,
+						MatchStart: 2,
+						MatchEnd:   3,
+						Private:    true,
+					},
+				}, nil
+			}
+		})
+
+		It("doesn't send any notifications", func() {
+			Consistently(notifier.SendBatchNotificationCallCount).Should(BeZero())
+		})
+	})
+
+	Context("when getting prior scans fails", func() {
+		BeforeEach(func() {
+			scanRepository.ScansNotYetRunWithVersionReturns(nil, errors.New("an-error"))
+		})
+
+		It("does not try to scan anything", func() {
+			Eventually(scanner.ScanNoNotifyCallCount).Should(BeZero())
+		})
+	})
+
+	Context("when doing a scan fails", func() {
+		BeforeEach(func() {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, string, string) ([]db.Credential, error) {
+				if scanner.ScanNoNotifyCallCount() == 1 {
+					return nil, errors.New("an-error")
+				}
+
+				return []db.Credential{}, nil
+			}
+		})
+
+		It("should continue on to the next repository", func() {
+			Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
+			_, owner, repository, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(1)
+			Expect(owner).To(Equal("some-other-owner"))
+			Expect(repository).To(Equal("some-other-repository"))
+			Expect(startSHA).To(Equal("some-other-start-sha"))
+			Expect(stopSHA).To(Equal("some-stop-sha"))
+		})
+
+		It("increments the failed metric for the failed repository", func() {
+			Eventually(failedMetric.IncCallCount).Should(Equal(1))
+		})
+
+		It("does not increment the success metric for the failed repository", func() {
+			Eventually(successMetric.IncCallCount).Should(Equal(1))
 		})
 	})
 })

@@ -13,6 +13,7 @@ import (
 
 type ScanRepository interface {
 	Start(logger lager.Logger, scanType, startSHA, stopSHA string, repository *Repository, fetch *Fetch) ActiveScan
+	ScansNotYetRunWithVersion(lager.Logger, int) ([]PriorScan, error)
 }
 
 type scanRepository struct {
@@ -112,4 +113,75 @@ func (s *activeScan) Finish() error {
 	s.tx.Commit()
 
 	return nil
+}
+
+type PriorScan struct {
+	ID          int
+	StartSHA    string
+	StopSHA     string
+	Repository  string
+	Owner       string
+	Credentials []Credential
+}
+
+func (repo *scanRepository) ScansNotYetRunWithVersion(logger lager.Logger, version int) ([]PriorScan, error) {
+	logger = logger.Session("prior-scans-for-rules-version", lager.Data{
+		"version": version,
+	})
+
+	rows, err := repo.db.DB().Query(`
+    SELECT s.id,
+           s.start_sha,
+           s.stop_sha,
+           r.owner,
+           r.name
+      FROM scans s
+           JOIN repositories r
+             ON s.repository_id = r.id
+           JOIN (SELECT repository_id,
+                        start_sha,
+                        stop_sha,
+                        MAX(rules_version) AS max_version
+                   FROM scans
+                  WHERE start_sha <> ''
+                  GROUP BY 1, 2, 3
+                 HAVING max_version = ? - 1) ood_scans
+             ON s.repository_id = ood_scans.repository_id
+                AND s.start_sha = ood_scans.start_sha
+                AND s.stop_sha = ood_scans.stop_sha
+                AND s.rules_version = ood_scans.max_version
+	`, version)
+	if err != nil {
+		logger.Error("failed-to-execute-query", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var (
+		previousScans []PriorScan
+
+		id             int
+		startSHA       string
+		stopSHA        string
+		owner          string
+		repositoryName string
+	)
+
+	for rows.Next() {
+		scanErr := rows.Scan(&id, &startSHA, &stopSHA, &owner, &repositoryName)
+		if scanErr != nil {
+			logger.Error("failed-to-scan-row", err)
+			return nil, scanErr
+		}
+		previousScans = append(previousScans, PriorScan{
+			ID:         id,
+			StartSHA:   startSHA,
+			StopSHA:    stopSHA,
+			Owner:      owner,
+			Repository: repositoryName,
+		})
+	}
+
+	return previousScans, nil
 }

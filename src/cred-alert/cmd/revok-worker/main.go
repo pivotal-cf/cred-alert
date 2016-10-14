@@ -160,9 +160,10 @@ func main() {
 
 	dirscanUpdater := revok.NewRescanner(
 		logger,
-		sniffer,
-		repositoryRepository,
 		scanRepository,
+		db.NewCredentialRepository(database),
+		ancestryScanner,
+		notifier,
 		emitter,
 	)
 
