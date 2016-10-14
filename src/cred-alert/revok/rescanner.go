@@ -13,7 +13,7 @@ import (
 	"github.com/tedsuo/ifrit"
 )
 
-type DirscanUpdater struct {
+type Rescanner struct {
 	logger               lager.Logger
 	sniffer              sniff.Sniffer
 	repositoryRepository db.RepositoryRepository
@@ -22,14 +22,14 @@ type DirscanUpdater struct {
 	failedCounter        metrics.Counter
 }
 
-func NewDirscanUpdater(
+func NewRescanner(
 	logger lager.Logger,
 	sniffer sniff.Sniffer,
 	repositoryRepository db.RepositoryRepository,
 	scanRepository db.ScanRepository,
 	emitter metrics.Emitter,
 ) ifrit.Runner {
-	return &DirscanUpdater{
+	return &Rescanner{
 		logger:               logger,
 		sniffer:              sniffer,
 		repositoryRepository: repositoryRepository,
@@ -39,37 +39,37 @@ func NewDirscanUpdater(
 	}
 }
 
-func (d *DirscanUpdater) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	logger := d.logger.Session("dirscan-updater")
+func (r *Rescanner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+	logger := r.logger.Session("rescanner")
 	logger.Info("started")
 
 	close(ready)
 
 	defer logger.Info("done")
 
-	_ = d.work(logger)
+	_ = r.work(logger)
 
 	<-signals
 
 	return nil
 }
 
-func (d *DirscanUpdater) work(logger lager.Logger) error {
-	repos, err := d.repositoryRepository.NotScannedWithVersion(sniff.RulesVersion)
+func (r *Rescanner) work(logger lager.Logger) error {
+	repos, err := r.repositoryRepository.NotScannedWithVersion(sniff.RulesVersion)
 	if err != nil {
 		logger.Error("failed-getting-repositories", err)
 		return err
 	}
 
-	for _, r := range repos {
-		repo := r
-		scan := d.scanRepository.Start(logger, "dir-scan", "", "", &repo, nil)
+	for _, repo := range repos {
+		repository := repo
+		scan := r.scanRepository.Start(logger, "dir-scan", "", "", &repository, nil)
 		scanner := dirscanner.New(
 			func(logger lager.Logger, violation scanners.Violation) error {
 				line := violation.Line
 				scan.RecordCredential(db.NewCredential(
-					repo.Owner,
-					repo.Name,
+					repository.Owner,
+					repository.Name,
 					"",
 					line.Path,
 					line.LineNumber,
@@ -78,10 +78,10 @@ func (d *DirscanUpdater) work(logger lager.Logger) error {
 				))
 				return nil
 			},
-			d.sniffer,
+			r.sniffer,
 		)
-		_ = scanner.Scan(kolsch.NewLogger(), repo.Path)
-		finishScan(logger, scan, d.successCounter, d.failedCounter)
+		_ = scanner.Scan(kolsch.NewLogger(), repository.Path)
+		finishScan(logger, scan, r.successCounter, r.failedCounter)
 	}
 
 	return nil

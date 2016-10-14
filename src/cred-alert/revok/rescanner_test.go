@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("DirscanUpdater", func() {
+var _ = Describe("Rescanner", func() {
 	var (
 		logger               *lagertest.TestLogger
 		sniffer              *snifffakes.FakeSniffer
@@ -123,7 +123,7 @@ var _ = Describe("DirscanUpdater", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = revok.NewDirscanUpdater(
+		runner = revok.NewRescanner(
 			logger,
 			sniffer,
 			repositoryRepository,

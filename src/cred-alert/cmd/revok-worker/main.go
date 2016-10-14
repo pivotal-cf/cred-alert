@@ -158,7 +158,7 @@ func main() {
 		emitter,
 	)
 
-	dirscanUpdater := revok.NewDirscanUpdater(
+	dirscanUpdater := revok.NewRescanner(
 		logger,
 		sniffer,
 		repositoryRepository,
