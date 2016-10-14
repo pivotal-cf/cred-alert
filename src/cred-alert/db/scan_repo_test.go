@@ -77,6 +77,7 @@ var _ = Describe("Scan Repository", func() {
 				42,
 				1,
 				8,
+				true,
 			)
 
 			activeScan.RecordCredential(credential)
@@ -89,6 +90,7 @@ var _ = Describe("Scan Repository", func() {
 				92,
 				31,
 				38,
+				false,
 			)
 
 			activeScan.RecordCredential(otherCredential)
@@ -111,6 +113,7 @@ var _ = Describe("Scan Repository", func() {
 			Expect(firstSavedCredential.LineNumber).To(Equal(credential.LineNumber))
 			Expect(firstSavedCredential.MatchStart).To(Equal(credential.MatchStart))
 			Expect(firstSavedCredential.MatchEnd).To(Equal(credential.MatchEnd))
+			Expect(firstSavedCredential.Private).To(BeTrue())
 
 			secondSavedCredential := savedCredentials[1]
 			Expect(secondSavedCredential.Owner).To(Equal(otherCredential.Owner))
@@ -120,6 +123,7 @@ var _ = Describe("Scan Repository", func() {
 			Expect(secondSavedCredential.LineNumber).To(Equal(otherCredential.LineNumber))
 			Expect(secondSavedCredential.MatchStart).To(Equal(otherCredential.MatchStart))
 			Expect(secondSavedCredential.MatchEnd).To(Equal(otherCredential.MatchEnd))
+			Expect(secondSavedCredential.Private).To(BeFalse())
 		})
 
 		Context("when there is an error saving the scan", func() {
@@ -148,6 +152,7 @@ var _ = Describe("Scan Repository", func() {
 					42,
 					22,
 					33,
+					false,
 				)
 
 				scan.RecordCredential(credential)

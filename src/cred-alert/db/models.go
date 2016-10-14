@@ -57,6 +57,7 @@ type Credential struct {
 	LineNumber int
 	MatchStart int
 	MatchEnd   int
+	Private    bool
 }
 
 type Repository struct {

@@ -115,6 +115,7 @@ func (j *DiffScanJob) scanDiffForCredentials(logger lager.Logger, scan db.Active
 			line.LineNumber,
 			violation.Start,
 			violation.End,
+			j.Private,
 		))
 
 		alerts = append(alerts, notifications.Notification{

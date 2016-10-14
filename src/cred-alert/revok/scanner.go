@@ -105,6 +105,7 @@ func (s *scanner) Scan(
 					violation.Line.LineNumber,
 					violation.Start,
 					violation.End,
+					dbRepository.Private,
 				))
 
 				alerts = append(alerts, notifications.Notification{

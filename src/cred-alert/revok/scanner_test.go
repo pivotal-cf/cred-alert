@@ -87,10 +87,17 @@ var _ = Describe("Scanner", func() {
 
 		sniffer = &snifffakes.FakeSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
+			var start, end int
 			for s.Scan(logger) {
+				start += 1
+				end += 2
 				line := s.Line(logger)
 				if strings.Contains(string(line.Content), "credential") {
-					h(l, scanners.Violation{Line: *line})
+					h(l, scanners.Violation{
+						Line:  *line,
+						Start: start,
+						End:   end,
+					})
 				}
 			}
 
@@ -122,6 +129,10 @@ var _ = Describe("Scanner", func() {
 		Expect(credential.Repository).To(Equal("some-repository"))
 		Expect(credential.SHA).To(Equal(result.To.String()))
 		Expect(credential.Path).To(Equal("some-file"))
+		Expect(credential.LineNumber).To(Equal(1))
+		Expect(credential.MatchStart).To(Equal(1))
+		Expect(credential.MatchEnd).To(Equal(2))
+		Expect(credential.Private).To(BeTrue())
 	})
 
 	It("tries to store information in the database about found credentials", func() {

@@ -12,4 +12,5 @@ var Migrations = []migration.Migrator{
 	AddMatchLocation,
 	AddFailedFetchesToRepositories,
 	AddStartSHAAndStopSHAToScans,
+	AddPrivateToCredentials,
 }

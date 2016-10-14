@@ -90,6 +90,7 @@ func (j *CommitMessageJob) createHandleViolation(scan db.ActiveScan) func(lager.
 			violation.Line.LineNumber,
 			violation.Start,
 			violation.End,
+			j.Private,
 		)
 
 		scan.RecordCredential(credential)

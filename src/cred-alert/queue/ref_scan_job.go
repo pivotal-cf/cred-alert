@@ -178,6 +178,7 @@ func (j *RefScanJob) scanFilesIn(logger lager.Logger, scan db.ActiveScan, destin
 			line.LineNumber,
 			violation.Start,
 			violation.End,
+			j.Private,
 		))
 
 		alerts = append(alerts, notifications.Notification{

@@ -75,6 +75,7 @@ func (r *Rescanner) work(logger lager.Logger) error {
 					line.LineNumber,
 					violation.Start,
 					violation.End,
+					repo.Private,
 				))
 				return nil
 			},
