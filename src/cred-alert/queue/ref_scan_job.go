@@ -71,7 +71,7 @@ func (j *RefScanJob) Run(logger lager.Logger) error {
 	})
 	logger.Debug("starting")
 
-	scan := j.scanRepository.Start(logger, "ref-scan", nil, nil)
+	scan := j.scanRepository.Start(logger, "ref-scan", "", "", nil, nil)
 
 	if j.Ref == initialCommitParentHash {
 		logger.Info("skipped-initial-nil-ref")

@@ -82,7 +82,7 @@ func (s *scanner) Scan(
 	}
 
 	quietLogger := kolsch.NewLogger()
-	scan := s.scanRepository.Start(quietLogger, "repo-scan", &dbRepository, nil)
+	scan := s.scanRepository.Start(quietLogger, "repo-scan", startSHA, stopSHA, &dbRepository, nil)
 	scannedOids := map[git.Oid]struct{}{}
 
 	var alerts []notifications.Notification

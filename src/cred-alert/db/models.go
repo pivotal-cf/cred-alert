@@ -33,6 +33,9 @@ type Scan struct {
 	ScanStart time.Time
 	ScanEnd   time.Time
 
+	StartSHA string
+	StopSHA  string
+
 	Repository   *Repository
 	RepositoryID *uint
 	Fetch        *Fetch

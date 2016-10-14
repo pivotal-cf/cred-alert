@@ -12,7 +12,7 @@ import (
 //go:generate counterfeiter . ScanRepository
 
 type ScanRepository interface {
-	Start(logger lager.Logger, scanType string, repository *Repository, fetch *Fetch) ActiveScan
+	Start(logger lager.Logger, scanType, startSHA, stopSHA string, repository *Repository, fetch *Fetch) ActiveScan
 }
 
 type scanRepository struct {
@@ -27,7 +27,14 @@ func NewScanRepository(db *gorm.DB, clock clock.Clock) ScanRepository {
 	}
 }
 
-func (repo *scanRepository) Start(logger lager.Logger, scanType string, repository *Repository, fetch *Fetch) ActiveScan {
+func (repo *scanRepository) Start(
+	logger lager.Logger,
+	scanType string,
+	startSHA string,
+	stopSHA string,
+	repository *Repository,
+	fetch *Fetch,
+) ActiveScan {
 	logger = logger.Session("start-scan", lager.Data{
 		"type":          scanType,
 		"rules-version": sniff.RulesVersion,
@@ -44,6 +51,9 @@ func (repo *scanRepository) Start(logger lager.Logger, scanType string, reposito
 		fetch:      fetch,
 		typee:      scanType,
 		startTime:  repo.clock.Now(),
+
+		startSHA: startSHA,
+		stopSHA:  stopSHA,
 	}
 }
 
@@ -64,6 +74,9 @@ type activeScan struct {
 	repository *Repository
 	fetch      *Fetch
 
+	startSHA string
+	stopSHA  string
+
 	credentials []Credential
 }
 
@@ -77,6 +90,8 @@ func (s *activeScan) Finish() error {
 		RulesVersion: sniff.RulesVersion,
 		ScanStart:    s.startTime,
 		ScanEnd:      s.clock.Now(),
+		StartSHA:     s.startSHA,
+		StopSHA:      s.stopSHA,
 		Credentials:  s.credentials,
 	}
 

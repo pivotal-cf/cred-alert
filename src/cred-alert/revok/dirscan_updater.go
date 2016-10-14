@@ -63,7 +63,7 @@ func (d *DirscanUpdater) work(logger lager.Logger) error {
 
 	for _, r := range repos {
 		repo := r
-		scan := d.scanRepository.Start(logger, "dir-scan", &repo, nil)
+		scan := d.scanRepository.Start(logger, "dir-scan", "", "", &repo, nil)
 		scanner := dirscanner.New(
 			func(logger lager.Logger, violation scanners.Violation) error {
 				line := violation.Line

@@ -47,7 +47,7 @@ var _ = Describe("Scan Repository", func() {
 		It("works with no credentials", func() {
 			startTime := clock.Now()
 
-			scan := scanRepository.Start(logger, "scan-type", nil, nil)
+			scan := scanRepository.Start(logger, "scan-type", "start-sha", "stop-sha", nil, nil)
 
 			clock.Increment(time.Second * 5)
 
@@ -60,13 +60,15 @@ var _ = Describe("Scan Repository", func() {
 			Expect(savedScan.Type).To(Equal("scan-type"))
 			Expect(savedScan.RulesVersion).To(Equal(sniff.RulesVersion))
 			Expect(savedScan.ScanStart).To(BeTemporally("~", startTime, time.Second))
+			Expect(savedScan.StartSHA).To(Equal("start-sha"))
+			Expect(savedScan.StopSHA).To(Equal("stop-sha"))
 
 			endTime := startTime.Add(5 * time.Second)
 			Expect(savedScan.ScanEnd).To(BeTemporally("~", endTime, time.Second))
 		})
 
 		It("can record found credentials for a scan", func() {
-			activeScan := scanRepository.Start(logger, "scan-type", nil, nil)
+			activeScan := scanRepository.Start(logger, "scan-type", "start-sha", "stop-sha", nil, nil)
 
 			credential := db.NewCredential("owner",
 				"repo",
@@ -131,12 +133,12 @@ var _ = Describe("Scan Repository", func() {
 			})
 
 			It("returns an error", func() {
-				err := scanRepository.Start(logger, "scan-type", nil, nil).Finish()
+				err := scanRepository.Start(logger, "scan-type", "start-sha", "stop-sha", nil, nil).Finish()
 				Expect(err).To(MatchError(saveError))
 			})
 
 			It("does not save any of the credentials from the scan", func() {
-				scan := scanRepository.Start(logger, "scan-type", nil, nil)
+				scan := scanRepository.Start(logger, "scan-type", "start-sha", "stop-sha", nil, nil)
 
 				credential := db.NewCredential(
 					"owner",
@@ -156,7 +158,6 @@ var _ = Describe("Scan Repository", func() {
 				savedCredentials := db.Credential{}
 				database.Find(&savedCredentials).Count(&count)
 				Expect(count).To(BeZero())
-
 			})
 		})
 
@@ -209,7 +210,7 @@ var _ = Describe("Scan Repository", func() {
 				err = database.Save(fetch).Error
 				Expect(err).NotTo(HaveOccurred())
 
-				scan = scanRepository.Start(logger, "scan-type", repository, fetch)
+				scan = scanRepository.Start(logger, "scan-type", "start-sha", "stop-sha", repository, fetch)
 			})
 
 			It("saves both appropriately on Finish", func() {

@@ -68,7 +68,7 @@ var _ = Describe("Scanner", func() {
 
 		scanRepository = &dbfakes.FakeScanRepository{}
 		firstScan = &dbfakes.FakeActiveScan{}
-		scanRepository.StartStub = func(lager.Logger, string, *db.Repository, *db.Fetch) db.ActiveScan {
+		scanRepository.StartStub = func(lager.Logger, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
 			return firstScan
 		}
 
@@ -128,8 +128,10 @@ var _ = Describe("Scanner", func() {
 		err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(scanRepository.StartCallCount).Should(Equal(1))
-		_, scanType, repository, fetch := scanRepository.StartArgsForCall(0)
+		_, scanType, startSHA, stopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
 		Expect(scanType).To(Equal("repo-scan"))
+		Expect(startSHA).To(Equal(result.To.String()))
+		Expect(stopSHA).To(Equal(""))
 		Expect(repository.ID).To(BeNumerically("==", 42))
 		Expect(fetch).To(BeNil())
 
@@ -187,6 +189,18 @@ var _ = Describe("Scanner", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(2))
 			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(2))
+		})
+
+		It("starts the scan with the start and stop SHA", func() {
+			err := scanner.Scan(logger, "some-owner", "some-repository", result.To.String(), stopSHA)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, scanType, actualStartSHA, actualStopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
+			Expect(scanType).To(Equal("repo-scan"))
+			Expect(actualStartSHA).To(Equal(result.To.String()))
+			Expect(actualStopSHA).To(Equal(stopSHA))
+			Expect(repository.ID).To(BeNumerically("==", 42))
+			Expect(fetch).To(BeNil())
 		})
 	})
 

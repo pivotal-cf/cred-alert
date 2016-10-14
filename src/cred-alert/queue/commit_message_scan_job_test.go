@@ -99,7 +99,7 @@ var _ = Describe("Commit Message Scan Job", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(scanRepository.StartCallCount()).To(Equal(1))
-				_, typee, _, _ := scanRepository.StartArgsForCall(0)
+				_, typee, _, _, _, _ := scanRepository.StartArgsForCall(0)
 				Expect(typee).To(Equal("commit-message-scan"))
 
 				Expect(activeScan.RecordCredentialCallCount()).To(Equal(1))
