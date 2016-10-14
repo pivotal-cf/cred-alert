@@ -4,7 +4,6 @@ import (
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/metrics"
-	"cred-alert/sniff"
 	"os"
 	"path/filepath"
 
@@ -19,7 +18,6 @@ type Cloner struct {
 	workdir              string
 	workCh               chan CloneMsg
 	gitClient            gitclient.Client
-	sniffer              sniff.Sniffer
 	repositoryRepository db.RepositoryRepository
 	cloneSuccessCounter  metrics.Counter
 	cloneFailedCounter   metrics.Counter
