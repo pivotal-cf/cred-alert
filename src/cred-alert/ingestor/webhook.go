@@ -41,9 +41,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	scan, valid := extractPushScanFromEvent(event)
 	if !valid {
-		h.logger.Debug("event-missing-data", lager.Data{
-			"repo": *event.Repo.FullName,
-		})
+		h.logger.Info("invalid-event-dropped")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
