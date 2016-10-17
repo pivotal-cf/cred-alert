@@ -39,8 +39,8 @@ case $1 in
       --mysql-port <%= p("revok.mysql.port") %> \
       --mysql-dbname <%= p("revok.mysql.db") %> \
       --mysql-hostname <%= p("revok.mysql.hostname") %> \
-      <% if_p("revok.ignore_repos") do |whitelist| %> \
-      --ignore-repos <%= whitelist %> \
+      <% p("revok.ignore_patterns", []).each do |pattern| %> \
+      --ignore-pattern <%= pattern %> \
       <% end %> \
       <% if_p("revok.metrics.datadog_api_key") do |api_key| %> \
       --datadog-api-key <%= api_key %> \

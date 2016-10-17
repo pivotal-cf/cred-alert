@@ -42,10 +42,10 @@ properties:
       query Git repositories on disk for changes.
     default: 1h
 
-  revok.ignore_repos:
+  revok.ignore_patterns:
     description: |
-      Comma separated list of repo names to ignore. The names may be regex
-      patterns.
+      List regexes to match against repo names to ignore. The names may be
+      regex patterns.
 
   revok.work_dir:
     description: |
