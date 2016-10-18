@@ -9,6 +9,8 @@ builds:
     version: 3.0.0
   219383d1-f740-495d-780f-2780cdcd199e:
     version: 5.0.0
+  ecf728d5-0118-4540-5ee3-28488eb13d3d:
+    version: 6.0.0
   f9d248c9-0cf2-4b08-4e99-ffc68aad4d62:
     version: 0.1.1
 format-version: "2"
