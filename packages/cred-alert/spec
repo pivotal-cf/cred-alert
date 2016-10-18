@@ -8,6 +8,10 @@ dependencies:
 
 files:
   - bitbucket.org/taruti/mimemagic/*.{go,c} # gosub
+  - cloud.google.com/go/compute/metadata/*.{go,c} # gosub
+  - cloud.google.com/go/internal/*.{go,c} # gosub
+  - cloud.google.com/go/pubsub/*.{go,c} # gosub
+  - cloud.google.com/go/pubsub/apiv1/*.{go,c} # gosub
   - code.cloudfoundry.org/clock/*.{go,c} # gosub
   - code.cloudfoundry.org/lager/*.{go,c} # gosub
   - cred-alert/cmd/revok-ingestor/*.{go,c} # gosub
@@ -54,8 +58,16 @@ files:
   - github.com/cloudfoundry/gunk/urljoiner/*.{go,c} # gosub
   - github.com/getsentry/raven-go/*.{go,c} # gosub
   - github.com/go-sql-driver/mysql/*.{go,c} # gosub
+  - github.com/golang/protobuf/proto/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/any/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/duration/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/empty/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/timestamp/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/wrappers/*.{go,c} # gosub
   - github.com/google/go-github/github/*.{go,c} # gosub
   - github.com/google/go-querystring/query/*.{go,c} # gosub
+  - github.com/googleapis/gax-go/*.{go,c} # gosub
   - github.com/hashicorp/errwrap/*.{go,c} # gosub
   - github.com/hashicorp/go-multierror/*.{go,c} # gosub
   - github.com/jessevdk/go-flags/*.{go,c} # gosub
@@ -68,5 +80,35 @@ files:
   - github.com/tedsuo/ifrit/http_server/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/sigmon/*.{go,c} # gosub
   - golang.org/x/net/context/*.{go,c} # gosub
+  - golang.org/x/net/context/ctxhttp/*.{go,c} # gosub
+  - golang.org/x/net/http2/*.{go,c} # gosub
+  - golang.org/x/net/http2/hpack/*.{go,c} # gosub
+  - golang.org/x/net/internal/timeseries/*.{go,c} # gosub
+  - golang.org/x/net/lex/httplex/*.{go,c} # gosub
+  - golang.org/x/net/trace/*.{go,c} # gosub
   - golang.org/x/oauth2/*.{go,c} # gosub
+  - golang.org/x/oauth2/google/*.{go,c} # gosub
   - golang.org/x/oauth2/internal/*.{go,c} # gosub
+  - golang.org/x/oauth2/jws/*.{go,c} # gosub
+  - golang.org/x/oauth2/jwt/*.{go,c} # gosub
+  - google.golang.org/api/internal/*.{go,c} # gosub
+  - google.golang.org/api/iterator/*.{go,c} # gosub
+  - google.golang.org/api/option/*.{go,c} # gosub
+  - google.golang.org/api/transport/*.{go,c} # gosub
+  - google.golang.org/genproto/googleapis/api/label/*.{go,c} # gosub
+  - google.golang.org/genproto/googleapis/api/metric/*.{go,c} # gosub
+  - google.golang.org/genproto/googleapis/api/monitoredres/*.{go,c} # gosub
+  - google.golang.org/genproto/googleapis/api/serviceconfig/*.{go,c} # gosub
+  - google.golang.org/genproto/googleapis/iam/v1/*.{go,c} # gosub
+  - google.golang.org/genproto/googleapis/pubsub/v1/*.{go,c} # gosub
+  - google.golang.org/genproto/protobuf/*.{go,c} # gosub
+  - google.golang.org/grpc/*.{go,c} # gosub
+  - google.golang.org/grpc/codes/*.{go,c} # gosub
+  - google.golang.org/grpc/credentials/*.{go,c} # gosub
+  - google.golang.org/grpc/credentials/oauth/*.{go,c} # gosub
+  - google.golang.org/grpc/grpclog/*.{go,c} # gosub
+  - google.golang.org/grpc/internal/*.{go,c} # gosub
+  - google.golang.org/grpc/metadata/*.{go,c} # gosub
+  - google.golang.org/grpc/naming/*.{go,c} # gosub
+  - google.golang.org/grpc/peer/*.{go,c} # gosub
+  - google.golang.org/grpc/transport/*.{go,c} # gosub

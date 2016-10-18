@@ -129,3 +129,23 @@
 	path = src/github.com/certifi/gocertifi
 	url = https://github.com/certifi/gocertifi
 	branch = master
+[submodule "src/github.com/googleapis/gax-go"]
+	path = src/github.com/googleapis/gax-go
+	url = https://github.com/googleapis/gax-go
+	branch = master
+[submodule "src/google.golang.org/api"]
+	path = src/google.golang.org/api
+	url = https://code.googlesource.com/google-api-go-client
+	branch = master
+[submodule "src/google.golang.org/grpc"]
+	path = src/google.golang.org/grpc
+	url = https://github.com/grpc/grpc-go
+	branch = master
+[submodule "src/google.golang.org/genproto"]
+	path = src/google.golang.org/genproto
+	url = https://github.com/google/go-genproto
+	branch = master
+[submodule "src/cloud.google.com/go"]
+	path = src/cloud.google.com/go
+	url = https://code.googlesource.com/gocloud
+	branch = master
