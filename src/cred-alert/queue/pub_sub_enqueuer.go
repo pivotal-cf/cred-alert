@@ -36,8 +36,14 @@ func (p *pubSubEnqueuer) Enqueue(task Task) error {
 
 	_, err := p.topic.Publish(context.TODO(), message)
 	if err != nil {
+		p.logger.Error("failed-to-publish", err)
 		return err
 	}
+
+	p.logger.Info("successfully-published", lager.Data{
+		"id":   task.ID(),
+		"type": task.Type(),
+	})
 
 	return nil
 }
