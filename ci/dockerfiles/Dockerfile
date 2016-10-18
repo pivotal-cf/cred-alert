@@ -15,11 +15,9 @@ RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a
     echo 'deb http://httpredir.debian.org/debian testing main' >> /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends mariadb-server unzip libgit2-dev pkg-config openjdk-8-jre-headless && \
-    apt-get remove -y libcups2 && \
-    wget http://snapshot.debian.org/archive/debian/20160809T044933Z/pool/main/g/gnutls28/libgnutls30_3.5.2-3_amd64.deb && \
-    dpkg -i libgnutls30_3.5.2-3_amd64.deb && \
-    go get github.com/cloudfoundry/bosh-cli && \
-    rm -rf $GOPATH/src/github.com/cloudfoundry/bosh-cli libgnutls30_3.5.2-3_amd64.deb && \
+    wget https://s3.amazonaws.com/bosh-cli-artifacts/bosh-cli-0.0.84-linux-amd64 && \
+    mv bosh-cli-0.0.84-linux-amd64 /usr/local/bin/bosh-cli && \
+    chmod +x /usr/local/bin/bosh-cli && \
     apt-get -y clean && apt-get -y autoremove --purge && \
     rm -rf /var/lib/apt/lists/*
 
