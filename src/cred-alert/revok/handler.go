@@ -1,10 +1,13 @@
 package revok
 
 import (
+	"bytes"
 	"cred-alert/db"
 	"cred-alert/queue"
 	"encoding/json"
-	"net/http"
+	"errors"
+
+	"cloud.google.com/go/pubsub"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -23,33 +26,28 @@ func NewHandler(logger lager.Logger, changeDiscoverer ChangeDiscoverer, db db.Re
 	}
 }
 
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	defer r.Body.Close()
+func (h *handler) ProcessMessage(message *pubsub.Message) (bool, error) {
+	decoder := json.NewDecoder(bytes.NewBuffer(message.Data))
 
 	var p queue.PushEventPlan
 	err := decoder.Decode(&p)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return false, err
 	}
 
 	if len(p.Owner) == 0 || len(p.Repository) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return false, errors.New("invalid payload: missing owner or repository")
 	}
 
 	repo, err := h.db.Find(p.Owner, p.Repository)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return false, err
 	}
 
 	err = h.changeDiscoverer.Fetch(h.logger, repo)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return true, err
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	return false, nil
 }
