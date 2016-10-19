@@ -24,7 +24,9 @@ type pubsubProcessor struct {
 
 func NewProcessor(logger lager.Logger, subscription *pubsub.Subscription, handler Handler) ifrit.Runner {
 	return &pubsubProcessor{
-		logger:       logger,
+		logger: logger.Session("message-processor", lager.Data{
+			"subscription": subscription.ID(),
+		}),
 		subscription: subscription,
 		handler:      handler,
 	}
@@ -53,11 +55,16 @@ func (p *pubsubProcessor) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 				continue
 			}
 
+			logger := p.logger.Session("processing-message", lager.Data{
+				"message": message.ID,
+			})
+
 			retryable, err := p.handler.ProcessMessage(message)
 			if err != nil {
-				p.logger.Error("failed-to-process-message", err)
+				logger.Error("failed-to-process-message", err)
 
 				if retryable {
+					logger.Info("queuing-message-for-retry")
 					message.Done(false)
 				} else {
 					message.Done(true)
@@ -74,9 +81,10 @@ func (p *pubsubProcessor) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 
 	select {
 	case <-signals:
-		p.logger.Info("received-exit-waiting-for-iterator")
+		p.logger.Info("told-to-exit")
 		it.Stop()
 		<-finished
+		p.logger.Info("done")
 		return nil
 	}
 
