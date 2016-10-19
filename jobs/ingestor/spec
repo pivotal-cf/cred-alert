@@ -24,6 +24,14 @@ properties:
     description: |
       The shared signing secret for verifying requests from GitHub.
 
+  pubsub.project_name:
+    description: |
+      The name of the project that includes the topic which we are publishing to.
+
+  pubsub.topic:
+    description: |
+      The topic to send messages to.
+
   worker.host:
     description: |
       The host used to forward the webhooks.

@@ -38,7 +38,7 @@ var _ = Describe("PubSubEnqueuer", func() {
 
 		Expect(topic.PublishCallCount()).To(Equal(1))
 		_, message := topic.PublishArgsForCall(0)
-		Expect(message).To(Equal(&pubsub.Message{
+		Expect(message).To(ConsistOf(&pubsub.Message{
 			Attributes: map[string]string{
 				"id":   "some-id",
 				"type": "some-type",

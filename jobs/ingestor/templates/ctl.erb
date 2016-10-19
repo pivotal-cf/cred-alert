@@ -29,6 +29,8 @@ case $1 in
     exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/revok-ingestor \
       --port <%= p("webhook.port") %> \
       --github-webhook-secret-token <%= p("webhook.github_secret") %> \
+      --pubsub-project-name <%= p("pubsub.project_name") %> \
+      --pubsub-topic <%= p("pubsub.topic") %> \
       --endpoint <%= endpoint %> \
       <% if_p("metrics.datadog_api_key") do |api_key| %> \
       --datadog-api-key <%= api_key %> \

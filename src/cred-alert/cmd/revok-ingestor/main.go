@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
+	"golang.org/x/net/context"
 
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
@@ -25,6 +27,11 @@ type Opts struct {
 	GitHub struct {
 		WebhookSecretToken string `short:"w" long:"github-webhook-secret-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_TOKEN" value-name:"TOKEN" required:"true"`
 	} `group:"GitHub Options"`
+
+	PubSub struct {
+		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" required:"true"`
+		Topic       string `long:"pubsub-topic" description:"PubSub Topic to send message to" value-name:"NAME" required:"true"`
+	} `group:"PubSub Options"`
 
 	Metrics struct {
 		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN"`
@@ -54,7 +61,13 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	generator := queue.NewGenerator()
 
-	enqueuer := queue.NewHTTPEnqueuer(logger, opts.Endpoint)
+	pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
+	if err != nil {
+		logger.Fatal("failed", err)
+		os.Exit(1)
+	}
+	topic := pubSubClient.Topic(opts.PubSub.Topic)
+	enqueuer := queue.NewPubSubEnqueuer(logger, topic)
 	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
 
 	router := http.NewServeMux()

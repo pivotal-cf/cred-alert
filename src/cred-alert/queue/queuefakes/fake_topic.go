@@ -2,19 +2,19 @@
 package queuefakes
 
 import (
-	"context"
 	"cred-alert/queue"
 	"sync"
 
 	"cloud.google.com/go/pubsub"
+	"golang.org/x/net/context"
 )
 
 type FakeTopic struct {
-	PublishStub        func(context.Context, *pubsub.Message) ([]string, error)
+	PublishStub        func(context.Context, ...*pubsub.Message) ([]string, error)
 	publishMutex       sync.RWMutex
 	publishArgsForCall []struct {
 		arg1 context.Context
-		arg2 *pubsub.Message
+		arg2 []*pubsub.Message
 	}
 	publishReturns struct {
 		result1 []string
@@ -24,16 +24,16 @@ type FakeTopic struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTopic) Publish(arg1 context.Context, arg2 *pubsub.Message) ([]string, error) {
+func (fake *FakeTopic) Publish(arg1 context.Context, arg2 ...*pubsub.Message) ([]string, error) {
 	fake.publishMutex.Lock()
 	fake.publishArgsForCall = append(fake.publishArgsForCall, struct {
 		arg1 context.Context
-		arg2 *pubsub.Message
+		arg2 []*pubsub.Message
 	}{arg1, arg2})
 	fake.recordInvocation("Publish", []interface{}{arg1, arg2})
 	fake.publishMutex.Unlock()
 	if fake.PublishStub != nil {
-		return fake.PublishStub(arg1, arg2)
+		return fake.PublishStub(arg1, arg2...)
 	} else {
 		return fake.publishReturns.result1, fake.publishReturns.result2
 	}
@@ -45,7 +45,7 @@ func (fake *FakeTopic) PublishCallCount() int {
 	return len(fake.publishArgsForCall)
 }
 
-func (fake *FakeTopic) PublishArgsForCall(i int) (context.Context, *pubsub.Message) {
+func (fake *FakeTopic) PublishArgsForCall(i int) (context.Context, []*pubsub.Message) {
 	fake.publishMutex.RLock()
 	defer fake.publishMutex.RUnlock()
 	return fake.publishArgsForCall[i].arg1, fake.publishArgsForCall[i].arg2

@@ -1,16 +1,15 @@
 package queue
 
 import (
-	"context"
-
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager"
+	"golang.org/x/net/context"
 )
 
 //go:generate counterfeiter . Topic
 
 type Topic interface {
-	Publish(context.Context, *pubsub.Message) ([]string, error)
+	Publish(context.Context, ...*pubsub.Message) ([]string, error)
 }
 
 type pubSubEnqueuer struct {
