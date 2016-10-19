@@ -126,8 +126,11 @@ func (command *ScanCommand) Execute(args []string) error {
 				if err != nil {
 					return err
 				}
-
-				fmt.Printf("%s %s:%d\n", red("[CRED]"), destPath, line.LineNumber)
+				if command.ShowCredentials {
+					fmt.Printf("%s %s:%d [%s]\n", red("[CRED]"), destPath, line.LineNumber, violation.Credential())
+				} else {
+					fmt.Printf("%s %s:%d\n", red("[CRED]"), destPath, line.LineNumber)
+				}
 
 				return nil
 			}

@@ -70,6 +70,18 @@ index 940393e..fa5a232 100644
 		})
 	}
 
+	ItShowsTheCredentialInTheOutput := func(expectedCredential string) {
+		Context("shows actual credential if show-suspected-credentials flag is set", func() {
+			BeforeEach(func() {
+				cmdArgs = append(cmdArgs, "--show-suspected-credentials")
+			})
+
+			It("shows credentials", func() {
+				Eventually(session.Out).Should(gbytes.Say(expectedCredential))
+			})
+		})
+	}
+
 	ItTellsPeopleToUpdateIfTheBinaryIsOld := func() {
 		Context("when the executable is not over 2 weeks old", func() {
 			It("does not display a warning telling the user to upgrade", func() {
@@ -117,6 +129,7 @@ index 940393e..fa5a232 100644
 
 		ItTellsPeopleHowToRemoveTheirCredentials()
 		ItTellsPeopleToUpdateIfTheBinaryIsOld()
+		ItShowsTheCredentialInTheOutput("AKIASOMEMORETEXTHERE")
 
 		Context("when given a --diff flag", func() {
 			BeforeEach(func() {
@@ -128,18 +141,8 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt:28"))
 			})
 
-			Context("shows actual credential if show-suspected-credentials flag is set", func() {
-				BeforeEach(func() {
-					cmdArgs = append(cmdArgs, "--show-suspected-credentials")
-				})
-
-				It("shows credentials", func() {
-					Eventually(session.Out).Should(gbytes.Say(`private_key '\$should_match'`))
-				})
-			})
-
+			ItShowsTheCredentialInTheOutput(`private_key '\$should_match'`)
 			ItTellsPeopleHowToRemoveTheirCredentials()
-
 		})
 	})
 
@@ -371,6 +374,7 @@ index 940393e..fa5a232 100644
 			})
 
 			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+			ItShowsTheCredentialInTheOutput("AKIASOMEMORETEXTHERE")
 		})
 
 		Context("when the file is a gzipped tar file", func() {
