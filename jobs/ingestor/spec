@@ -4,10 +4,6 @@ name: ingestor
 description: |
   Ingestor for receiving GitHub webhooks.
 
-consumes:
-- name: worker
-  type: worker
-
 templates:
   ctl.erb: bin/ctl
 
@@ -31,14 +27,6 @@ properties:
   pubsub.topic:
     description: |
       The topic to send messages to.
-
-  worker.host:
-    description: |
-      The host used to forward the webhooks.
-
-  worker.port:
-    description: |
-      The port used to forward the webhooks.
 
   metrics.datadog_api_key:
     description: |

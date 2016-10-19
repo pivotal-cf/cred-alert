@@ -21,8 +21,7 @@ import (
 )
 
 type Opts struct {
-	Port     uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
-	Endpoint string `long:"endpoint" description:"the endpoint to forward tasks to" env:"ENDPOINT" value-name:"URL" required:"true"`
+	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
 
 	GitHub struct {
 		WebhookSecretToken string `short:"w" long:"github-webhook-secret-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_TOKEN" value-name:"TOKEN" required:"true"`
