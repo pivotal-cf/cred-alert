@@ -1,20 +1,14 @@
 package main
 
 import (
-	"cred-alert/db"
-	"cred-alert/db/migrations"
-	"cred-alert/gitclient"
-	"cred-alert/metrics"
-	"cred-alert/notifications"
-	"cred-alert/revok"
-	"cred-alert/revok/stats"
-	"cred-alert/sniff"
-	"fmt"
+	"context"
 	"log"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"time"
+
+	"cloud.google.com/go/pubsub"
 
 	"golang.org/x/oauth2"
 
@@ -26,6 +20,16 @@ import (
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
+
+	"cred-alert/db"
+	"cred-alert/db/migrations"
+	"cred-alert/gitclient"
+	"cred-alert/metrics"
+	"cred-alert/notifications"
+	"cred-alert/queue"
+	"cred-alert/revok"
+	"cred-alert/revok/stats"
+	"cred-alert/sniff"
 )
 
 type Opts struct {
@@ -36,13 +40,19 @@ type Opts struct {
 
 	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX"`
 
-	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
-
 	GitHub struct {
 		AccessToken    string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
 		PrivateKeyPath string `long:"github-private-key-path" description:"private key to use for GitHub auth" required:"true" value-name:"SSH_KEY"`
 		PublicKeyPath  string `long:"github-public-key-path" description:"public key to use for GitHub auth" required:"true" value-name:"SSH_KEY"`
 	} `group:"GitHub Options"`
+
+	PubSub struct {
+		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" required:"true"`
+
+		FetchHint struct {
+			Subscription string `long:"fetch-hint-pubsub-subscription" description:"PubSub Topic recieve messages from" value-name:"NAME" required:"true"`
+		} `group:"PubSub Fetch Hint Options"`
+	} `group:"PubSub Options"`
 
 	Metrics struct {
 		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN"`
@@ -182,8 +192,12 @@ func main() {
 		repositoryRepository,
 	)
 
-	router := http.NewServeMux()
-	router.Handle("/webhook", handler)
+	pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
+	if err != nil {
+		logger.Fatal("failed", err)
+		os.Exit(1)
+	}
+	hintSubscription := pubSubClient.Subscription(opts.PubSub.FetchHint.Subscription)
 
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
 		{"repo-discoverer", repoDiscoverer},
@@ -191,7 +205,7 @@ func main() {
 		{"change-discoverer", changeDiscoverer},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
-		{"handler", http_server.New(fmt.Sprintf(":%d", opts.Port), router)},
+		{"github-hint-handler", queue.NewProcessor(logger, hintSubscription, handler)},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}))
 
