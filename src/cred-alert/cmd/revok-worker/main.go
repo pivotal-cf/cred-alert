@@ -211,7 +211,7 @@ func main() {
 
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
-		log.Fatal("failed-to-start: %s", err)
+		log.Fatalf("failed-to-start: %s", err)
 	}
 }
 
