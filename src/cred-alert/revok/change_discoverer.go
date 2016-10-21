@@ -1,6 +1,7 @@
 package revok
 
 import (
+	"context"
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
@@ -77,23 +78,28 @@ func (c *changeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 
 	close(ready)
 
-	c.work(signals, logger)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c.work(signals, cancel, logger)
 
 	timer := c.clock.NewTicker(c.interval)
 
 	for {
 		select {
 		case <-timer.C():
-			c.work(signals, logger)
-		case <-signals:
+			c.work(signals, cancel, logger)
+		case <-ctx.Done():
 			logger.Info("done")
 			timer.Stop()
 			return nil
+		case <-signals:
+			cancel()
 		}
 	}
 }
 
-func (c *changeDiscoverer) work(signals <-chan os.Signal, logger lager.Logger) {
+func (c *changeDiscoverer) work(signals <-chan os.Signal, cancel context.CancelFunc, logger lager.Logger) {
 	c.runCounter.Inc(logger)
 
 	repos, err := c.repositoryRepository.NotFetchedSince(c.clock.Now().Add(-c.interval))
@@ -111,6 +117,7 @@ func (c *changeDiscoverer) work(signals <-chan os.Signal, logger lager.Logger) {
 		for i := range repos {
 			select {
 			case <-signals:
+				cancel()
 				return
 			default:
 				c.Fetch(logger, repos[i])
