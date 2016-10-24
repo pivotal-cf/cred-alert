@@ -30,6 +30,7 @@ var _ = Describe("Scanner", func() {
 		sniffer              *snifffakes.FakeSniffer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		scanRepository       *dbfakes.FakeScanRepository
+		credentialRepository *dbfakes.FakeCredentialRepository
 		emitter              *metricsfakes.FakeEmitter
 		scanner              revok.Scanner
 		notifier             *notificationsfakes.FakeNotifier
@@ -72,6 +73,8 @@ var _ = Describe("Scanner", func() {
 			return firstScan
 		}
 
+		credentialRepository = &dbfakes.FakeCredentialRepository{}
+
 		emitter = &metricsfakes.FakeEmitter{}
 		successMetric = &metricsfakes.FakeCounter{}
 		failedMetric = &metricsfakes.FakeCounter{}
@@ -105,7 +108,15 @@ var _ = Describe("Scanner", func() {
 		}
 
 		notifier = &notificationsfakes.FakeNotifier{}
-		scanner = revok.NewScanner(gitClient, repositoryRepository, scanRepository, sniffer, notifier, emitter)
+		scanner = revok.NewScanner(
+			gitClient,
+			repositoryRepository,
+			scanRepository,
+			credentialRepository,
+			sniffer,
+			notifier,
+			emitter,
+		)
 	})
 
 	AfterEach(func() {
@@ -246,6 +257,47 @@ var _ = Describe("Scanner", func() {
 				"third-commit-file",
 				"topic-a-file",
 			))
+		})
+	})
+
+	Context("when the repository has been scanned in the past with the same scanner version and now has a new merge commit", func() {
+		var mergeCommitResult createCommitResult
+		var scan *dbfakes.FakeActiveScan
+
+		BeforeEach(func() {
+			secondMasterCommitResult := createCommit("refs/heads/master", baseRepoPath, "second-commit-file", []byte("credential"), "second commit", nil)
+			thirdMasterCommitResult := createCommit("refs/heads/master", baseRepoPath, "third-commit-file", []byte("credential"), "third commit", nil)
+
+			err := scanner.Scan(logger, "some-owner", "some-repository", thirdMasterCommitResult.To.String(), "")
+			Expect(err).NotTo(HaveOccurred())
+
+			scan = &dbfakes.FakeActiveScan{}
+			scanRepository.StartStub = func(lager.Logger, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
+				return scan
+			}
+
+			credentialRepository.UniqueSHAsForRepoAndRulesVersionReturns([]string{
+				result.To.String(),
+				secondMasterCommitResult.To.String(),
+				thirdMasterCommitResult.To.String(),
+			}, nil)
+
+			firstTopicACommitResult := createCommit("refs/heads/topicA", baseRepoPath, "topic-a-file", []byte("credential"), "first topicA commit", secondMasterCommitResult.To)
+
+			mergeCommitResult = createMerge(thirdMasterCommitResult.To, firstTopicACommitResult.To, baseRepoPath)
+		})
+
+		It("scans only the never-before seen commits", func() {
+			err := scanner.Scan(logger, "some-owner", "some-repository", mergeCommitResult.To.String(), "")
+			Expect(err).NotTo(HaveOccurred())
+
+			actualCredPaths := []string{}
+			for i := 0; i < scan.RecordCredentialCallCount(); i++ {
+				credential := scan.RecordCredentialArgsForCall(i)
+				actualCredPaths = append(actualCredPaths, credential.Path)
+			}
+
+			Expect(actualCredPaths).To(ConsistOf("topic-a-file"))
 		})
 	})
 

@@ -124,6 +124,7 @@ func main() {
 	scanRepository := db.NewScanRepository(database, clock)
 	repositoryRepository := db.NewRepositoryRepository(database)
 	fetchRepository := db.NewFetchRepository(database)
+	credentialRepository := db.NewCredentialRepository(database)
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
 	repoWhitelist := notifications.BuildWhitelist(opts.Whitelist...)
@@ -133,6 +134,7 @@ func main() {
 		gitClient,
 		repositoryRepository,
 		scanRepository,
+		credentialRepository,
 		sniffer,
 		notifier,
 		emitter,
@@ -172,7 +174,7 @@ func main() {
 	dirscanUpdater := revok.NewRescanner(
 		logger,
 		scanRepository,
-		db.NewCredentialRepository(database),
+		credentialRepository,
 		ancestryScanner,
 		notifier,
 		emitter,

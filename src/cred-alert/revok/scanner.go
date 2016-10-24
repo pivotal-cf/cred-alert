@@ -26,6 +26,7 @@ type scanner struct {
 	gitClient            gitclient.Client
 	repositoryRepository db.RepositoryRepository
 	scanRepository       db.ScanRepository
+	credentialRepository db.CredentialRepository
 	sniffer              sniff.Sniffer
 	notifier             notifications.Notifier
 }
@@ -34,6 +35,7 @@ func NewScanner(
 	gitClient gitclient.Client,
 	repositoryRepository db.RepositoryRepository,
 	scanRepository db.ScanRepository,
+	credentialRepository db.CredentialRepository,
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
 	emitter metrics.Emitter,
@@ -42,6 +44,7 @@ func NewScanner(
 		gitClient:            gitClient,
 		repositoryRepository: repositoryRepository,
 		scanRepository:       scanRepository,
+		credentialRepository: credentialRepository,
 		sniffer:              sniffer,
 		notifier:             notifier,
 	}
@@ -177,7 +180,13 @@ func (s *scanner) scan(
 		return nil
 	}
 
-	err = s.scanAncestors(repo, scanFunc, scannedOids, startOid, stopOid)
+	knownSHAs := map[string]struct{}{}
+	shas, err := s.credentialRepository.UniqueSHAsForRepoAndRulesVersion(dbRepository, sniff.RulesVersion)
+	for i := range shas {
+		knownSHAs[shas[i]] = struct{}{}
+	}
+
+	err = s.scanAncestors(repo, scanFunc, scannedOids, knownSHAs, startOid, stopOid)
 	if err != nil {
 		logger.Error("failed-to-scan-ancestors", err, lager.Data{
 			"start":      startOid.String(),
@@ -199,6 +208,7 @@ func (s *scanner) scanAncestors(
 	repo *git.Repository,
 	scanFunc func(*git.Oid, *git.Oid) error,
 	scannedOids map[git.Oid]struct{},
+	knownSHAs map[string]struct{},
 	child *git.Oid,
 	stopPoint *git.Oid,
 ) error {
@@ -223,11 +233,15 @@ func (s *scanner) scanAncestors(
 			continue
 		}
 
+		if _, found := knownSHAs[parent.String()]; found {
+			continue
+		}
+
 		if stopPoint != nil && parent.Equal(stopPoint) {
 			continue
 		}
 
-		err = s.scanAncestors(repo, scanFunc, scannedOids, parent, stopPoint)
+		err = s.scanAncestors(repo, scanFunc, scannedOids, knownSHAs, parent, stopPoint)
 		if err != nil {
 			return err
 		}

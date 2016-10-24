@@ -6,6 +6,7 @@ import "github.com/jinzhu/gorm"
 
 type CredentialRepository interface {
 	ForScanWithID(int) ([]Credential, error)
+	UniqueSHAsForRepoAndRulesVersion(Repository, int) ([]string, error)
 }
 
 type credentialRepository struct {
@@ -74,4 +75,32 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 	}
 
 	return credentials, nil
+}
+
+func (r *credentialRepository) UniqueSHAsForRepoAndRulesVersion(repo Repository, rulesVersion int) ([]string, error) {
+	rows, err := r.db.DB().Query(`
+    SELECT DISTINCT c.sha
+		FROM   repositories r
+					 JOIN scans s
+						 ON s.repository_id = r.id
+					 JOIN credentials c
+						 ON c.scan_id = s.id
+		WHERE  r.id = ?
+					 AND s.rules_version = ?`, repo.ID, rulesVersion)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var shas []string
+	var sha string
+	for rows.Next() {
+		scanErr := rows.Scan(&sha)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		shas = append(shas, sha)
+	}
+
+	return shas, nil
 }
