@@ -70,8 +70,6 @@ func (r *Rescanner) work(logger lager.Logger) error {
 		return nil
 	}
 
-	var batch []notifications.Notification
-
 	for _, priorScan := range priorScans {
 		oldCredentials, err := r.credRepo.ForScanWithID(priorScan.ID)
 		if err != nil {
@@ -93,6 +91,7 @@ func (r *Rescanner) work(logger lager.Logger) error {
 			r.successCounter.Inc(logger)
 		}
 
+		var batch []notifications.Notification
 		for _, cred := range newCredentials {
 			if _, ok := credMap[cred.Hash()]; !ok {
 				batch = append(batch, notifications.Notification{
@@ -105,12 +104,12 @@ func (r *Rescanner) work(logger lager.Logger) error {
 				})
 			}
 		}
-	}
 
-	if len(batch) > 0 {
-		err = r.notifier.SendBatchNotification(logger, batch)
-		if err != nil {
-			logger.Error("failed-to-notify", err)
+		if len(batch) > 0 {
+			err = r.notifier.SendBatchNotification(logger, batch)
+			if err != nil {
+				logger.Error("failed-to-notify", err)
+			}
 		}
 	}
 
