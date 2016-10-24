@@ -88,9 +88,6 @@ func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	err = index.Write()
-	Expect(err).NotTo(HaveOccurred())
-
 	if parent != nil {
 		return createCommitResult{
 			From: parent.Id(),
