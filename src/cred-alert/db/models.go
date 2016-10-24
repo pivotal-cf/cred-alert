@@ -64,7 +64,7 @@ type Credential struct {
 }
 
 func (c *Credential) Hash() string {
-	return fmt.Sprintf("%s:%s:%s:%s:%d:%t", c.Owner, c.Repository, c.SHA, c.Path, c.LineNumber, c.Private)
+	return fmt.Sprintf("%s:%s:%s:%s:%d:%d:%d", c.Owner, c.Repository, c.SHA, c.Path, c.LineNumber, c.MatchStart, c.MatchEnd)
 }
 
 type Repository struct {
