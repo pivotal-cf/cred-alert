@@ -58,7 +58,7 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 			&private,
 		)
 		if scanErr != nil {
-			return nil, err
+			return nil, scanErr
 		}
 
 		credentials = append(credentials, NewCredential(
