@@ -113,7 +113,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 		Expect(err).NotTo(HaveOccurred())
 		defer remoteRepo.Free()
 
-		createCommit("refs/heads/master", remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
+		createCommit("refs/heads/master", remoteRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
 
 		repoToFetchPath, err = ioutil.TempDir("", "change-discoverer-repo-to-fetch")
 		Expect(err).NotTo(HaveOccurred())
@@ -204,10 +204,10 @@ var _ = Describe("ChangeDiscoverer", func() {
 			BeforeEach(func() {
 				results = []createCommitResult{}
 
-				result := createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
+				result := createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit", nil)
 				results = append(results, result)
 
-				result = createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit")
+				result = createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
 				results = append(results, result)
 			})
 
@@ -368,7 +368,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			oldTarget = string(bs)
 
-			createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit")
+			createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit", nil)
 
 			repositoryRepository.NotFetchedSinceReturns(nil, errors.New("an-error"))
 		})

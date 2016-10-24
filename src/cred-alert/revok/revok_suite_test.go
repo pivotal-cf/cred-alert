@@ -24,38 +24,30 @@ type createCommitResult struct {
 	To   *git.Oid
 }
 
-func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg string) createCommitResult {
+func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg string, parentOid *git.Oid) createCommitResult {
 	err := ioutil.WriteFile(filepath.Join(repoPath, filePath), contents, os.ModePerm)
 
 	repo, err := git.OpenRepository(repoPath)
 	Expect(err).NotTo(HaveOccurred())
 	defer repo.Free()
 
-	referenceIterator, err := repo.NewReferenceIterator()
-	Expect(err).NotTo(HaveOccurred())
-	defer referenceIterator.Free()
-
-	var parent *git.Commit
-	for {
-		ref, err := referenceIterator.Next()
-		if git.IsErrorCode(err, git.ErrIterOver) {
-			break
-		}
+	if parentOid == nil {
+		referenceIterator, err := repo.NewReferenceIterator()
 		Expect(err).NotTo(HaveOccurred())
-		defer ref.Free()
+		defer referenceIterator.Free()
 
-		if ref.Name() == refName {
-			parentOid := ref.Target()
-
-			parentObject, err := repo.Lookup(parentOid)
+		for {
+			ref, err := referenceIterator.Next()
+			if git.IsErrorCode(err, git.ErrIterOver) {
+				break
+			}
 			Expect(err).NotTo(HaveOccurred())
-			defer parentObject.Free()
+			defer ref.Free()
 
-			parent, err = parentObject.AsCommit()
-			Expect(err).NotTo(HaveOccurred())
-			defer parent.Free()
-
-			break
+			if ref.Name() == refName {
+				parentOid = ref.Target()
+				break
+			}
 		}
 	}
 
@@ -80,7 +72,16 @@ func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg
 	}
 
 	var newOid *git.Oid
-	if parent != nil {
+	var parent *git.Commit
+	if parentOid != nil {
+		parentObject, err := repo.Lookup(parentOid)
+		Expect(err).NotTo(HaveOccurred())
+		defer parentObject.Free()
+
+		parent, err = parentObject.AsCommit()
+		Expect(err).NotTo(HaveOccurred())
+		defer parent.Free()
+
 		newOid, err = repo.CreateCommit(refName, sig, sig, commitMsg, tree, parent)
 		Expect(err).NotTo(HaveOccurred())
 	} else {
@@ -101,6 +102,53 @@ func createCommit(refName, repoPath, filePath string, contents []byte, commitMsg
 	return createCommitResult{
 		From: root,
 		To:   newOid,
+	}
+}
+
+func createMerge(oid1, oid2 *git.Oid, repoPath string) createCommitResult {
+	repo, err := git.OpenRepository(repoPath)
+	Expect(err).NotTo(HaveOccurred())
+	defer repo.Free()
+
+	object, err := repo.Lookup(oid1)
+	Expect(err).NotTo(HaveOccurred())
+	defer object.Free()
+
+	oid1Commit, err := object.AsCommit()
+	Expect(err).NotTo(HaveOccurred())
+	defer oid1Commit.Free()
+
+	object, err = repo.Lookup(oid2)
+	Expect(err).NotTo(HaveOccurred())
+	defer object.Free()
+
+	oid2Commit, err := object.AsCommit()
+	Expect(err).NotTo(HaveOccurred())
+
+	defer oid2Commit.Free()
+
+	mergeOptions, err := git.DefaultMergeOptions()
+	Expect(err).NotTo(HaveOccurred())
+
+	idx, err := repo.MergeCommits(oid1Commit, oid2Commit, &mergeOptions)
+	treeOid, err := idx.WriteTreeTo(repo)
+	Expect(err).NotTo(HaveOccurred())
+
+	tree, err := repo.LookupTree(treeOid)
+	Expect(err).NotTo(HaveOccurred())
+	defer tree.Free()
+
+	sig := &git.Signature{
+		Name:  "revok-test",
+		Email: "revok-test@localhost",
+		When:  time.Now(),
+	}
+
+	newOid, err := repo.CreateCommit("refs/heads/master", sig, sig, "merged", tree, oid1Commit, oid2Commit)
+	Expect(err).NotTo(HaveOccurred())
+
+	return createCommitResult{
+		To: newOid,
 	}
 }
 

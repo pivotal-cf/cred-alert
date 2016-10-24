@@ -87,7 +87,7 @@ var _ = Describe("Cloner", func() {
 		workdir, err = ioutil.TempDir("", "revok-test")
 		Expect(err).NotTo(HaveOccurred())
 
-		createCommit("refs/heads/master", repoPath, "some-file", []byte("credential"), "Initial commit")
+		createCommit("refs/heads/master", repoPath, "some-file", []byte("credential"), "Initial commit", nil)
 
 		head, err := repo.Head()
 		Expect(err).NotTo(HaveOccurred())

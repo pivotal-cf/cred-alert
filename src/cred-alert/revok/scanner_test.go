@@ -51,7 +51,7 @@ var _ = Describe("Scanner", func() {
 		baseRepo, err = git.InitRepository(baseRepoPath, false)
 		Expect(err).NotTo(HaveOccurred())
 
-		result = createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit")
+		result = createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
 
 		logger = lagertest.NewTestLogger("revok-scanner")
 		gitClient = gitclient.New("private-key-path", "public-key-path")
@@ -167,7 +167,7 @@ var _ = Describe("Scanner", func() {
 
 	Context("when there are no credentials found", func() {
 		BeforeEach(func() {
-			result = createCommit("refs/heads/topicA", baseRepoPath, "some-file", []byte("some-text"), "some-text commit")
+			result = createCommit("refs/heads/topicA", baseRepoPath, "some-file", []byte("some-text"), "some-text commit", nil)
 		})
 
 		It("does not send notifications about credentials", func() {
@@ -183,8 +183,8 @@ var _ = Describe("Scanner", func() {
 		BeforeEach(func() {
 			stopSHA = result.To.String()
 
-			createCommit("refs/heads/master", baseRepoPath, "some-other-file", []byte("credential"), "second commit")
-			result = createCommit("refs/heads/master", baseRepoPath, "yet-another-file", []byte("credential"), "third commit")
+			createCommit("refs/heads/master", baseRepoPath, "some-other-file", []byte("credential"), "second commit", nil)
+			result = createCommit("refs/heads/master", baseRepoPath, "yet-another-file", []byte("credential"), "third commit", nil)
 		})
 
 		It("scans from the given SHA to the beginning of the repository", func() {
@@ -212,6 +212,40 @@ var _ = Describe("Scanner", func() {
 			Expect(actualStopSHA).To(Equal(stopSHA))
 			Expect(repository.ID).To(BeNumerically("==", 42))
 			Expect(fetch).To(BeNil())
+		})
+	})
+
+	Context("when the repository has a merge commit", func() {
+		var mergeCommitResult createCommitResult
+
+		BeforeEach(func() {
+			By("creating three total commits on master")
+			secondMasterCommitResult := createCommit("refs/heads/master", baseRepoPath, "second-commit-file", []byte("credential"), "second commit", nil)
+			thirdMasterCommitResult := createCommit("refs/heads/master", baseRepoPath, "third-commit-file", []byte("credential"), "third commit", nil)
+
+			By("creating a branch from master")
+			firstTopicACommitResult := createCommit("refs/heads/topicA", baseRepoPath, "topic-a-file", []byte("credential"), "first topicA commit", secondMasterCommitResult.To)
+
+			By("creating a merge commit between master and the branch")
+			mergeCommitResult = createMerge(thirdMasterCommitResult.To, firstTopicACommitResult.To, baseRepoPath)
+		})
+
+		It("scans all parents", func() {
+			err := scanner.Scan(logger, "some-owner", "some-repository", mergeCommitResult.To.String(), "")
+			Expect(err).NotTo(HaveOccurred())
+
+			actualCredPaths := []string{}
+			for i := 0; i < firstScan.RecordCredentialCallCount(); i++ {
+				credential := firstScan.RecordCredentialArgsForCall(i)
+				actualCredPaths = append(actualCredPaths, credential.Path)
+			}
+
+			Expect(actualCredPaths).To(ConsistOf(
+				"some-file",
+				"second-commit-file",
+				"third-commit-file",
+				"topic-a-file",
+			))
 		})
 	})
 

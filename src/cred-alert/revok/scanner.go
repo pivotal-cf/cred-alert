@@ -211,21 +211,26 @@ func (s *scanner) scanAncestors(
 		return scanFunc(child, nil)
 	}
 
+	if len(parents) == 1 {
+		err = scanFunc(child, parents[0])
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, parent := range parents {
 		if _, found := scannedOids[*parent]; found {
 			continue
-		}
-
-		err = scanFunc(child, parent)
-		if err != nil {
-			return err
 		}
 
 		if stopPoint != nil && parent.Equal(stopPoint) {
 			continue
 		}
 
-		return s.scanAncestors(repo, scanFunc, scannedOids, parent, stopPoint)
+		err = s.scanAncestors(repo, scanFunc, scannedOids, parent, stopPoint)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
