@@ -64,7 +64,7 @@ type client struct {
 	client *http.Client
 }
 
-func NewClient(apiKey string) *client {
+func NewClient(apiKey string) Client {
 	return &client{
 		apiKey: apiKey,
 		client: &http.Client{
