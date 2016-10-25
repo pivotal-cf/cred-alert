@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,7 +21,6 @@ var _ = Describe("RetryingClient", func() {
 
 	BeforeEach(func() {
 		fakeClient = &netfakes.FakeClient{}
-
 		client = net.NewRetryingClient(fakeClient)
 	})
 
@@ -75,6 +75,39 @@ var _ = Describe("RetryingClient", func() {
 
 		actualRequest := fakeClient.DoArgsForCall(3)
 		Expect(actualRequest).To(Equal(request))
+	})
+
+	It("retries the first request after random time (between 0.25 seconds and 0.75 seconds)", func() {
+		doCalls := 0
+
+		expectedResponse := &http.Response{}
+		err := errors.New("My Special Error")
+		var startTime []time.Time
+
+		fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
+			startTime = append(startTime, time.Now())
+			doCalls += 1
+
+			if doCalls < 4 {
+				return nil, err
+			}
+
+			return expectedResponse, nil
+		}
+
+		request, _ := http.NewRequest("GET", "http://example.com", nil)
+
+		_, _ = client.Do(request)
+
+		Expect(len(startTime)).To(Equal(4))
+		Expect(startTime[1].Sub(startTime[0])).Should(BeNumerically(">=", 250*time.Millisecond))
+		Expect(startTime[1].Sub(startTime[0])).Should(BeNumerically("<=", 750*time.Millisecond))
+
+		Expect(startTime[2].Sub(startTime[1])).Should(BeNumerically(">=", 375*time.Millisecond))
+		Expect(startTime[2].Sub(startTime[1])).Should(BeNumerically("<=", 1125*time.Millisecond))
+
+		Expect(startTime[3].Sub(startTime[2])).Should(BeNumerically(">=", 562*time.Millisecond))
+		Expect(startTime[3].Sub(startTime[2])).Should(BeNumerically("<=", 1687*time.Millisecond))
 	})
 
 	It("errors after three requests fail", func() {
