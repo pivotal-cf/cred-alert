@@ -1,6 +1,7 @@
 package revok
 
 import (
+	"context"
 	"cred-alert/db"
 	"fmt"
 	"os"
@@ -49,21 +50,27 @@ func (r *RepoDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 
 	timer := r.clock.NewTicker(r.interval)
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	defer func() {
 		logger.Info("done")
 		timer.Stop()
 	}()
 
-	r.work(logger)
+	r.work(logger, signals, cancel)
 
 	for {
 		select {
-		case <-timer.C():
-			r.work(logger)
 		case <-signals:
+			cancel()
+		case <-ctx.Done():
 			return nil
+		case <-timer.C():
+			r.work(logger, signals, cancel)
 		}
 	}
+
+	return nil
 }
 
 type CloneMsg struct {
@@ -72,7 +79,7 @@ type CloneMsg struct {
 	URL        string
 }
 
-func (r *RepoDiscoverer) work(logger lager.Logger) {
+func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, cancel context.CancelFunc) {
 	logger = logger.Session("work")
 	defer logger.Info("done")
 
@@ -95,31 +102,37 @@ func (r *RepoDiscoverer) work(logger lager.Logger) {
 	}
 
 	for _, repo := range repos {
-		key := fmt.Sprintf("%s-%s", repo.Owner, repo.Name)
-		if _, found := knownRepos[key]; found {
-			continue
-		}
+		select {
+		case <-signals:
+			cancel()
+			return
+		default:
+			key := fmt.Sprintf("%s-%s", repo.Owner, repo.Name)
+			if _, found := knownRepos[key]; found {
+				continue
+			}
 
-		err = r.repositoryRepository.Create(&db.Repository{
-			Owner:         repo.Owner,
-			Name:          repo.Name,
-			SSHURL:        repo.SSHURL,
-			Private:       repo.Private,
-			DefaultBranch: repo.DefaultBranch,
-			RawJSON:       repo.RawJSON,
-		})
-		if err != nil {
-			logger.Error("failed-to-create-repository", err, lager.Data{
-				"owner":      repo.Owner,
-				"repository": repo.Name,
+			err = r.repositoryRepository.Create(&db.Repository{
+				Owner:         repo.Owner,
+				Name:          repo.Name,
+				SSHURL:        repo.SSHURL,
+				Private:       repo.Private,
+				DefaultBranch: repo.DefaultBranch,
+				RawJSON:       repo.RawJSON,
 			})
-			continue
-		}
+			if err != nil {
+				logger.Error("failed-to-create-repository", err, lager.Data{
+					"owner":      repo.Owner,
+					"repository": repo.Name,
+				})
+				continue
+			}
 
-		r.cloneMsgCh <- CloneMsg{
-			Repository: repo.Name,
-			Owner:      repo.Owner,
-			URL:        repo.SSHURL,
+			r.cloneMsgCh <- CloneMsg{
+				Repository: repo.Name,
+				Owner:      repo.Owner,
+				URL:        repo.SSHURL,
+			}
 		}
 	}
 }
