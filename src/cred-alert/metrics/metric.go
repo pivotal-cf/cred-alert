@@ -36,10 +36,7 @@ func (m *metric) Update(logger lager.Logger, value float32, tags ...string) {
 
 	tagsWithEnv := append(tags, m.emitter.environment)
 	ddMetric := m.emitter.client.BuildMetric(m.metricType, m.name, value, tagsWithEnv...)
-	err := m.emitter.client.PublishSeries([]datadog.Metric{ddMetric})
-	if err != nil {
-		logger.Error("failed", err)
-	}
+	go m.emitter.client.PublishSeries(logger, []datadog.Metric{ddMetric})
 }
 
 type nullMetric struct {

@@ -4,16 +4,16 @@ package datadogfakes
 import (
 	"cred-alert/datadog"
 	"sync"
+
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeClient struct {
-	PublishSeriesStub        func(series datadog.Series) error
+	PublishSeriesStub        func(logger lager.Logger, series datadog.Series)
 	publishSeriesMutex       sync.RWMutex
 	publishSeriesArgsForCall []struct {
+		logger lager.Logger
 		series datadog.Series
-	}
-	publishSeriesReturns struct {
-		result1 error
 	}
 	BuildMetricStub        func(metricType string, metricName string, count float32, tags ...string) datadog.Metric
 	buildMetricMutex       sync.RWMutex
@@ -30,17 +30,16 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) PublishSeries(series datadog.Series) error {
+func (fake *FakeClient) PublishSeries(logger lager.Logger, series datadog.Series) {
 	fake.publishSeriesMutex.Lock()
 	fake.publishSeriesArgsForCall = append(fake.publishSeriesArgsForCall, struct {
+		logger lager.Logger
 		series datadog.Series
-	}{series})
-	fake.recordInvocation("PublishSeries", []interface{}{series})
+	}{logger, series})
+	fake.recordInvocation("PublishSeries", []interface{}{logger, series})
 	fake.publishSeriesMutex.Unlock()
 	if fake.PublishSeriesStub != nil {
-		return fake.PublishSeriesStub(series)
-	} else {
-		return fake.publishSeriesReturns.result1
+		fake.PublishSeriesStub(logger, series)
 	}
 }
 
@@ -50,17 +49,10 @@ func (fake *FakeClient) PublishSeriesCallCount() int {
 	return len(fake.publishSeriesArgsForCall)
 }
 
-func (fake *FakeClient) PublishSeriesArgsForCall(i int) datadog.Series {
+func (fake *FakeClient) PublishSeriesArgsForCall(i int) (lager.Logger, datadog.Series) {
 	fake.publishSeriesMutex.RLock()
 	defer fake.publishSeriesMutex.RUnlock()
-	return fake.publishSeriesArgsForCall[i].series
-}
-
-func (fake *FakeClient) PublishSeriesReturns(result1 error) {
-	fake.PublishSeriesStub = nil
-	fake.publishSeriesReturns = struct {
-		result1 error
-	}{result1}
+	return fake.publishSeriesArgsForCall[i].logger, fake.publishSeriesArgsForCall[i].series
 }
 
 func (fake *FakeClient) BuildMetric(metricType string, metricName string, count float32, tags ...string) datadog.Metric {

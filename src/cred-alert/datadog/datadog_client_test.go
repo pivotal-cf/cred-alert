@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	"code.cloudfoundry.org/lager/lagertest"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/ghttp"
 )
 
@@ -46,10 +49,12 @@ var _ = Describe("Datadog", func() {
 
 		Describe("PublishSeries", func() {
 			var (
+				logger *lagertest.TestLogger
 				server *ghttp.Server
 			)
 
 			BeforeEach(func() {
+				logger = lagertest.NewTestLogger("datadog")
 				server = ghttp.NewServer()
 				datadog.APIURL = server.URL()
 			})
@@ -91,7 +96,7 @@ var _ = Describe("Datadog", func() {
 				It("works", func() {
 					client := datadog.NewClient("api-key")
 
-					err := client.PublishSeries(datadog.Series{
+					client.PublishSeries(logger, datadog.Series{
 						{
 							Name: "memory.limit",
 							Points: []datadog.Point{
@@ -104,7 +109,7 @@ var _ = Describe("Datadog", func() {
 						},
 					})
 
-					Expect(err).NotTo(HaveOccurred())
+					Consistently(logger).ShouldNot(gbytes.Say("failed"))
 				})
 			})
 
@@ -122,8 +127,8 @@ var _ = Describe("Datadog", func() {
 
 					client := datadog.NewClient("api-key")
 
-					err := client.PublishSeries(datadog.Series{})
-					Expect(err).To(HaveOccurred())
+					client.PublishSeries(logger, datadog.Series{})
+					Eventually(logger).Should(gbytes.Say("failed"))
 
 					numRequestsAfter := len(server.ReceivedRequests())
 
@@ -142,8 +147,8 @@ var _ = Describe("Datadog", func() {
 				It("returns an error", func() {
 					client := datadog.NewClient("api-key")
 
-					err := client.PublishSeries(datadog.Series{})
-					Expect(err).To(HaveOccurred())
+					client.PublishSeries(logger, datadog.Series{})
+					Eventually(logger).Should(gbytes.Say("failed"))
 				})
 			})
 		})

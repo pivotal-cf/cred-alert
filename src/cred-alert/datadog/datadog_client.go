@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"code.cloudfoundry.org/lager"
 )
 
 var APIURL = "https://app.datadoghq.com"
@@ -56,7 +58,7 @@ type request struct {
 //go:generate counterfeiter . Client
 
 type Client interface {
-	PublishSeries(series Series) error
+	PublishSeries(logger lager.Logger, series Series)
 	BuildMetric(metricType string, metricName string, count float32, tags ...string) Metric
 }
 
@@ -90,19 +92,21 @@ func (c *client) BuildMetric(metricType string, metricName string, count float32
 	}
 }
 
-func (c *client) PublishSeries(series Series) error {
+func (c *client) PublishSeries(logger lager.Logger, series Series) {
 	request := request{
 		Series: series,
 	}
 
 	payload, err := json.Marshal(request)
 	if err != nil {
-		return err
+		logger.Error("failed", err)
+		return
 	}
 
 	req, err := http.NewRequest("POST", APIURL+"/api/v1/series", bytes.NewBuffer(payload))
 	if err != nil {
-		return fmt.Errorf("building request: %s", err)
+		logger.Error("failed building request", err)
+		return
 	}
 
 	auth := url.Values{}
@@ -114,17 +118,23 @@ func (c *client) PublishSeries(series Series) error {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error sending metric to datadog: %s", err.Error())
+		logger.Error("failed error sending metric to datadog:", err)
+		return
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed reading body of error: %s", err.Error())
+			logger.Error("failed reading body of error:", err)
+			return
 		}
 
-		return fmt.Errorf("bad response (!202): %d - %s", resp.StatusCode, string(body))
+		logger.Error("failed", fmt.Errorf("bad response (!202): %d - %s", resp.StatusCode, string(body)))
+		return
 	}
 
-	return resp.Body.Close()
+	if err = resp.Body.Close(); err != nil {
+		logger.Error("failed", err)
+	}
+	return
 }

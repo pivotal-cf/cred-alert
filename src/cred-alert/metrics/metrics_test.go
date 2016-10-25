@@ -41,13 +41,17 @@ var _ = Describe("Metrics", func() {
 		client.BuildMetricReturns(expectedMetric)
 
 		Expect(client.BuildMetricCallCount()).Should(Equal(1))
+
 		metricType, name, value, env := client.BuildMetricArgsForCall(0)
 		Expect(metricType).To(Equal(expectedMetricType))
 		Expect(name).To(Equal(expectedMetricName))
 		Expect(value).To(Equal(expectedValue))
 		Expect(env[0]).To(Equal(expectedEnv))
-		Expect(client.PublishSeriesCallCount()).Should(Equal(1))
-		Expect(client.PublishSeriesArgsForCall(0)).To(ContainElement(expectedMetric))
+
+		Eventually(client.PublishSeriesCallCount).Should(Equal(1))
+
+		_, actualMetric := client.PublishSeriesArgsForCall(0)
+		Expect(actualMetric).To(ContainElement(expectedMetric))
 	})
 
 	It("can have tags", func() {
