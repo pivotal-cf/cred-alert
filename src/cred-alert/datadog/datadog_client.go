@@ -2,6 +2,7 @@ package datadog
 
 import (
 	"bytes"
+	"cred-alert/net"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -61,18 +62,20 @@ type Client interface {
 
 type client struct {
 	apiKey string
-	client *http.Client
+	client net.Client
 }
 
 func NewClient(apiKey string) Client {
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	}
+
 	return &client{
 		apiKey: apiKey,
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-			Transport: &http.Transport{
-				DisableKeepAlives: true,
-			},
-		},
+		client: net.NewRetryingClient(httpClient),
 	}
 }
 

@@ -110,15 +110,24 @@ var _ = Describe("Datadog", func() {
 
 			Context("when the server does not respond", func() {
 				BeforeEach(func() {
-					server.Close()
-					server = nil
+					closingHandler := func(w http.ResponseWriter, req *http.Request) {
+						server.CloseClientConnections()
+					}
+
+					server.RouteToHandler("POST", "/api/v1/series", closingHandler)
 				})
 
-				It("returns an error", func() {
+				It("retries the request", func() {
+					numRequestsBefore := len(server.ReceivedRequests())
+
 					client := datadog.NewClient("api-key")
 
 					err := client.PublishSeries(datadog.Series{})
 					Expect(err).To(HaveOccurred())
+
+					numRequestsAfter := len(server.ReceivedRequests())
+
+					Expect(numRequestsAfter).To(Equal(numRequestsBefore + 4))
 				})
 			})
 

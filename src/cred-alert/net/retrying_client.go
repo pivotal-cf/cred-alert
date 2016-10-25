@@ -1,32 +1,46 @@
 package net
 
-import "net/http"
+import (
+	"bytes"
+	"io"
+	"net/http"
+)
 
 type retryingClient struct {
-	retryingClient Client
+	client Client
 }
 
 const maxRetries = 4
 
 func NewRetryingClient(c Client) Client {
 	return &retryingClient{
-		retryingClient: c,
+		client: c,
 	}
 }
 
-func (c *retryingClient) Do(req *http.Request) (*http.Response, error) {
+func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
 	var (
 		err  error
 		resp *http.Response
+		body io.Reader
 	)
 
+	if orgReq.Body != nil {
+		buf := bytes.NewBuffer([]byte{})
+		buf.ReadFrom(orgReq.Body)
+		body = buf
+	}
+
 	for i := 0; i < maxRetries; i++ {
-		resp, err = c.retryingClient.Do(req)
+		req, _ := http.NewRequest(orgReq.Method, orgReq.URL.String(), body)
+		req.Header = orgReq.Header
+
+		resp, err = c.client.Do(req)
 
 		if err == nil {
-			return resp, nil
+			break
 		}
 	}
 
-	return nil, err
+	return resp, err
 }

@@ -1,10 +1,12 @@
 package net_test
 
 import (
+	"bytes"
 	"cred-alert/net"
 	"cred-alert/net/netfakes"
 	"errors"
 	"net/http"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,7 +25,9 @@ var _ = Describe("RetryingClient", func() {
 	})
 
 	It("proxies requests to the underlying client", func() {
-		request, _ := http.NewRequest("GET", "http://example.com", nil)
+		body := strings.NewReader("My Special Body")
+		request, _ := http.NewRequest("POST", "http://example.com", body)
+		request.Header.Add("My-Special", "Header")
 
 		expectedResponse := &http.Response{}
 		fakeClient.DoReturns(expectedResponse, nil)
@@ -35,7 +39,14 @@ var _ = Describe("RetryingClient", func() {
 		Expect(fakeClient.DoCallCount()).To(Equal(1))
 
 		actualRequest := fakeClient.DoArgsForCall(0)
-		Expect(actualRequest).To(Equal(request))
+
+		Expect(actualRequest.URL).To(Equal(request.URL))
+		Expect(actualRequest.Header).To(Equal(request.Header))
+		Expect(actualRequest.Method).To(Equal(request.Method))
+
+		buf := bytes.NewBuffer([]byte{})
+		buf.ReadFrom(actualRequest.Body)
+		Expect(buf.Bytes()).To(Equal([]byte("My Special Body")))
 	})
 
 	It("retries the request when the first three requests fail", func() {
@@ -55,6 +66,7 @@ var _ = Describe("RetryingClient", func() {
 		}
 
 		request, _ := http.NewRequest("GET", "http://example.com", nil)
+
 		actualResponse, err := client.Do(request)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actualResponse).To(BeIdenticalTo(expectedResponse))
