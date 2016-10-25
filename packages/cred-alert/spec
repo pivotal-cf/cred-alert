@@ -26,6 +26,7 @@ files:
   - cred-alert/kolsch/*.{go,c} # gosub
   - cred-alert/metrics/*.{go,c} # gosub
   - cred-alert/mimetype/*.{go,c} # gosub
+  - cred-alert/net/*.{go,c} # gosub
   - cred-alert/notifications/*.{go,c} # gosub
   - cred-alert/queue/*.{go,c} # gosub
   - cred-alert/revok/*.{go,c} # gosub
