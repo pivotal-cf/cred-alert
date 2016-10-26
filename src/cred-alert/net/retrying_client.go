@@ -2,7 +2,8 @@ package net
 
 import (
 	"bytes"
-	"io"
+	"errors"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"time"
@@ -27,36 +28,38 @@ func NewRetryingClient(c Client) Client {
 }
 
 func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
-	var (
-		err  error
-		resp *http.Response
-		body io.Reader
-	)
-
-	if orgReq.Body != nil {
-		buf := bytes.NewBuffer([]byte{})
-		buf.ReadFrom(orgReq.Body)
-		body = buf
+	body, err := ioutil.ReadAll(orgReq.Body)
+	if err != nil {
+		return nil, err
 	}
 
-	req, _ := http.NewRequest(orgReq.Method, orgReq.URL.String(), body)
+	req, reqErr := http.NewRequest(orgReq.Method, orgReq.URL.String(), bytes.NewBuffer(body))
+	if reqErr != nil {
+		return nil, reqErr
+	}
+
 	req.Header = orgReq.Header
-	if resp, err = c.client.Do(req); err == nil {
+	if resp, err := c.client.Do(req); err == nil {
 		return resp, nil
 	}
 
 	for i := 0; i < maxRetries; i++ {
-		req, _ := http.NewRequest(orgReq.Method, orgReq.URL.String(), body)
+		req, reqErr := http.NewRequest(orgReq.Method, orgReq.URL.String(), bytes.NewBuffer(body))
+		if reqErr != nil {
+			return nil, reqErr
+		}
+
 		req.Header = orgReq.Header
 
 		random := rand.Intn(delays[i][1]-delays[i][0]) + delays[i][0]
 		time.Sleep(time.Duration(random) * time.Millisecond)
-		resp, err = c.client.Do(req)
-
-		if err == nil {
-			break
+		resp, err := c.client.Do(req)
+		if err != nil {
+			continue
 		}
+
+		return resp, nil
 	}
 
-	return resp, err
+	return nil, errors.New("request failed after retry")
 }

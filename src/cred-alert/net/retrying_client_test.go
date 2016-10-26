@@ -5,6 +5,7 @@ import (
 	"cred-alert/net"
 	"cred-alert/net/netfakes"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -26,7 +27,8 @@ var _ = Describe("RetryingClient", func() {
 
 	It("proxies requests to the underlying client", func() {
 		body := strings.NewReader("My Special Body")
-		request, _ := http.NewRequest("POST", "http://example.com", body)
+		request, err := http.NewRequest("POST", "http://example.com", body)
+		Expect(err).NotTo(HaveOccurred())
 		request.Header.Add("My-Special", "Header")
 
 		expectedResponse := &http.Response{}
@@ -59,13 +61,16 @@ var _ = Describe("RetryingClient", func() {
 			doCalls += 1
 
 			if doCalls < 4 {
-				return nil, err
+				return nil, errors.New("My Special Error")
 			}
 
 			return expectedResponse, nil
 		}
 
-		request, _ := http.NewRequest("GET", "http://example.com", nil)
+		body := []byte("body")
+
+		request, err := http.NewRequest("GET", "http://example.com", bytes.NewBuffer(body))
+		Expect(err).NotTo(HaveOccurred())
 
 		actualResponse, err := client.Do(request)
 		Expect(err).ToNot(HaveOccurred())
@@ -74,14 +79,18 @@ var _ = Describe("RetryingClient", func() {
 		Expect(fakeClient.DoCallCount()).To(Equal(4))
 
 		actualRequest := fakeClient.DoArgsForCall(3)
-		Expect(actualRequest).To(Equal(request))
+		Expect(actualRequest.URL).To(Equal(request.URL))
+		Expect(actualRequest.Header).To(Equal(request.Header))
+
+		actualBody, err := ioutil.ReadAll(actualRequest.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actualBody).To(Equal([]byte("body")))
 	})
 
 	It("retries the first request after random time (between 0.25 seconds and 0.75 seconds)", func() {
 		doCalls := 0
 
 		expectedResponse := &http.Response{}
-		err := errors.New("My Special Error")
 		var startTime []time.Time
 
 		fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
@@ -89,15 +98,17 @@ var _ = Describe("RetryingClient", func() {
 			doCalls += 1
 
 			if doCalls < 4 {
-				return nil, err
+				return nil, errors.New("My Special Error")
 			}
 
 			return expectedResponse, nil
 		}
 
-		request, _ := http.NewRequest("GET", "http://example.com", nil)
+		request, err := http.NewRequest("GET", "http://example.com", bytes.NewBufferString("body"))
+		Expect(err).NotTo(HaveOccurred())
 
-		_, _ = client.Do(request)
+		_, err = client.Do(request)
+		Expect(err).NotTo(HaveOccurred())
 
 		Expect(len(startTime)).To(Equal(4))
 		Expect(startTime[1].Sub(startTime[0])).Should(BeNumerically(">=", 250*time.Millisecond))
@@ -111,16 +122,22 @@ var _ = Describe("RetryingClient", func() {
 	})
 
 	It("errors after three requests fail", func() {
-		expectedError := errors.New("My Special Error")
-		fakeClient.DoReturns(nil, expectedError)
+		fakeClient.DoReturns(nil, errors.New("disaster"))
 
-		request, _ := http.NewRequest("GET", "http://example.com", nil)
-		_, err := client.Do(request)
-		Expect(err).To(Equal(expectedError))
+		request, err := http.NewRequest("GET", "http://example.com", bytes.NewBufferString("body"))
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = client.Do(request)
+		Expect(err).To(MatchError("request failed after retry"))
 
 		Expect(fakeClient.DoCallCount()).To(Equal(4))
 
 		actualRequest := fakeClient.DoArgsForCall(3)
-		Expect(actualRequest).To(Equal(request))
+		Expect(actualRequest.URL).To(Equal(request.URL))
+		Expect(actualRequest.Header).To(Equal(request.Header))
+
+		actualBody, err := ioutil.ReadAll(actualRequest.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actualBody).To(Equal([]byte("body")))
 	})
 })
