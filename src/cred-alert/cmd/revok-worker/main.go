@@ -209,13 +209,18 @@ func main() {
 	}
 	hintSubscription := pubSubClient.Subscription(opts.PubSub.FetchHint.Subscription)
 
+	failedMessageRepo := db.NewFailedMessageRepository(database)
+	ack := queue.NewAcker()
+
+	retryHandler := queue.NewRetryHandler(failedMessageRepo, pushEventProcessor, ack)
+
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
 		{"repo-discoverer", repoDiscoverer},
 		{"cloner", cloner},
 		{"change-discoverer", changeDiscoverer},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
-		{"github-hint-handler", queue.NewPubSubSubscriber(logger, hintSubscription, pushEventProcessor)},
+		{"github-hint-handler", queue.NewPubSubSubscriber(logger, hintSubscription, retryHandler)},
 		{"head-credential-counter", headCredentialCounter},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}))

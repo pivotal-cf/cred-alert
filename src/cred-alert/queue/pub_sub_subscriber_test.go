@@ -9,6 +9,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -22,7 +23,7 @@ var _ = Describe("PubSubSubscriber", func() {
 		logger        *lagertest.TestLogger
 		firstMessage  *pubsub.Message
 		secondMessage *pubsub.Message
-		processor     *queuefakes.FakePubSubProcessor
+		handler       *queuefakes.FakeRetryHandler
 		subscription  *pubsub.Subscription
 		topic         *pubsub.Topic
 		client        *pubsub.Client
@@ -64,7 +65,10 @@ var _ = Describe("PubSubSubscriber", func() {
 		_, err = topic.Publish(ctx, firstMessage, secondMessage)
 		Expect(err).NotTo(HaveOccurred())
 
-		processor = &queuefakes.FakePubSubProcessor{}
+		handler = &queuefakes.FakeRetryHandler{}
+		handler.ProcessMessageStub = func(logger lager.Logger, msg *pubsub.Message) {
+			msg.Done(true)
+		}
 	})
 
 	AfterEach(func() {
@@ -74,7 +78,7 @@ var _ = Describe("PubSubSubscriber", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = queue.NewPubSubSubscriber(logger, subscription, processor)
+		runner = queue.NewPubSubSubscriber(logger, subscription, handler)
 		process = ginkgomon.Invoke(runner)
 	})
 
@@ -85,22 +89,22 @@ var _ = Describe("PubSubSubscriber", func() {
 		})
 
 		It("does not process any more messages", func() {
-			Eventually(processor.ProcessCallCount).Should(Equal(2))
+			Eventually(handler.ProcessMessageCallCount).Should(Equal(2))
 			process.Signal(os.Interrupt)
 
 			_, err := topic.Publish(context.Background(), firstMessage)
 			Expect(err).NotTo(HaveOccurred())
 
-			Consistently(processor.ProcessCallCount).Should(Equal(2))
+			Consistently(handler.ProcessMessageCallCount).Should(Equal(2))
 		})
 	})
 
 	It("tries to process the messages", func() {
-		Eventually(processor.ProcessCallCount).Should(Equal(2))
-		_, message := processor.ProcessArgsForCall(0)
+		Eventually(handler.ProcessMessageCallCount).Should(Equal(2))
+		_, message := handler.ProcessMessageArgsForCall(0)
 		Expect(message.Attributes).To(Equal(firstMessage.Attributes))
 
-		_, message = processor.ProcessArgsForCall(1)
+		_, message = handler.ProcessMessageArgsForCall(1)
 		Expect(message.Attributes).To(Equal(secondMessage.Attributes))
 	})
 })

@@ -92,3 +92,9 @@ type Fetch struct {
 	Path    string
 	Changes []byte
 }
+
+type FailedMessage struct {
+	MessageID string `gorm:"column:pubsub_message_id"`
+	Retries   int
+	Dead      bool `gorm:"column:dead_lettered"`
+}

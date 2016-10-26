@@ -19,16 +19,16 @@ type PubSubProcessor interface {
 type pubSubSubscriber struct {
 	logger       lager.Logger
 	subscription *pubsub.Subscription
-	processor    PubSubProcessor
+	handler      RetryHandler
 }
 
-func NewPubSubSubscriber(logger lager.Logger, subscription *pubsub.Subscription, processor PubSubProcessor) ifrit.Runner {
+func NewPubSubSubscriber(logger lager.Logger, subscription *pubsub.Subscription, handler RetryHandler) ifrit.Runner {
 	return &pubSubSubscriber{
 		logger: logger.Session("message-processor", lager.Data{
 			"subscription": subscription.ID(),
 		}),
 		subscription: subscription,
-		processor:    processor,
+		handler:      handler,
 	}
 }
 
@@ -59,21 +59,7 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 				"pubsub-message": message.ID,
 			})
 
-			retryable, err := p.processor.Process(logger, message)
-			if err != nil {
-				logger.Error("failed-to-process-message", err)
-
-				if retryable {
-					logger.Info("queuing-message-for-retry")
-					message.Done(false)
-				} else {
-					message.Done(true)
-				}
-
-				continue
-			}
-
-			message.Done(true)
+			p.handler.ProcessMessage(logger, message)
 		}
 
 		close(finished)
