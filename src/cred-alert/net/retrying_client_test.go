@@ -52,15 +52,11 @@ var _ = Describe("RetryingClient", func() {
 	})
 
 	It("retries the request when the first three requests fail", func() {
-		doCalls := 0
-
 		expectedResponse := &http.Response{}
 		err := errors.New("My Special Error")
 
 		fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
-			doCalls += 1
-
-			if doCalls < 4 {
+			if fakeClient.DoCallCount() < 4 {
 				return nil, errors.New("My Special Error")
 			}
 
@@ -81,6 +77,7 @@ var _ = Describe("RetryingClient", func() {
 		actualRequest := fakeClient.DoArgsForCall(3)
 		Expect(actualRequest.URL).To(Equal(request.URL))
 		Expect(actualRequest.Header).To(Equal(request.Header))
+		Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
 
 		actualBody, err := ioutil.ReadAll(actualRequest.Body)
 		Expect(err).ToNot(HaveOccurred())
@@ -88,16 +85,13 @@ var _ = Describe("RetryingClient", func() {
 	})
 
 	It("retries the first request after random time (between 0.25 seconds and 0.75 seconds)", func() {
-		doCalls := 0
-
 		expectedResponse := &http.Response{}
 		var startTime []time.Time
 
 		fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
 			startTime = append(startTime, time.Now())
-			doCalls += 1
 
-			if doCalls < 4 {
+			if fakeClient.DoCallCount() < 4 {
 				return nil, errors.New("My Special Error")
 			}
 
@@ -135,6 +129,7 @@ var _ = Describe("RetryingClient", func() {
 		actualRequest := fakeClient.DoArgsForCall(3)
 		Expect(actualRequest.URL).To(Equal(request.URL))
 		Expect(actualRequest.Header).To(Equal(request.Header))
+		Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
 
 		actualBody, err := ioutil.ReadAll(actualRequest.Body)
 		Expect(err).ToNot(HaveOccurred())

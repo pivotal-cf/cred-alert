@@ -15,12 +15,6 @@ type retryingClient struct {
 
 const maxRetries = 3
 
-var delays = [3][2]int{
-	{250, 750},
-	{375, 1125},
-	{562, 1687},
-}
-
 func NewRetryingClient(c Client) Client {
 	return &retryingClient{
 		client: c,
@@ -33,17 +27,7 @@ func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	req, reqErr := http.NewRequest(orgReq.Method, orgReq.URL.String(), bytes.NewBuffer(body))
-	if reqErr != nil {
-		return nil, reqErr
-	}
-
-	req.Header = orgReq.Header
-	if resp, err := c.client.Do(req); err == nil {
-		return resp, nil
-	}
-
-	for i := 0; i < maxRetries; i++ {
+	for i := 0; i < maxRetries+1; i++ {
 		req, reqErr := http.NewRequest(orgReq.Method, orgReq.URL.String(), bytes.NewBuffer(body))
 		if reqErr != nil {
 			return nil, reqErr
@@ -51,8 +35,7 @@ func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
 
 		req.Header = orgReq.Header
 
-		random := rand.Intn(delays[i][1]-delays[i][0]) + delays[i][0]
-		time.Sleep(time.Duration(random) * time.Millisecond)
+		c.delayForAttempt(i)
 		resp, err := c.client.Do(req)
 		if err != nil {
 			continue
@@ -62,4 +45,19 @@ func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
 	}
 
 	return nil, errors.New("request failed after retry")
+}
+
+var delays = [3][2]int{
+	{250, 750},
+	{375, 1125},
+	{562, 1687},
+}
+
+func (c *retryingClient) delayForAttempt(i int) {
+	if i == 0 {
+		return
+	}
+
+	random := rand.Intn(delays[i-1][1]-delays[i-1][0]) + delays[i-1][0]
+	time.Sleep(time.Duration(random) * time.Millisecond)
 }
