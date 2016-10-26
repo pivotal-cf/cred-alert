@@ -30,14 +30,14 @@ func (r *fetchRepository) RegisterFetch(logger lager.Logger, fetch *Fetch) error
 	err := tx.Model(&fetch.Repository).Update("failed_fetches", 0).Error
 	if err != nil {
 		tx.Rollback()
-		logger.Error("failed", err)
+		logger.Error("failed-to-update-failed-fetches", err)
 		return err
 	}
 
 	err = tx.Save(fetch).Error
 	if err != nil {
 		tx.Rollback()
-		logger.Error("failed", err)
+		logger.Error("failed-to-save-fetch", err)
 		return err
 	}
 
