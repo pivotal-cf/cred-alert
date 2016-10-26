@@ -1,7 +1,9 @@
 package gitclient
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	git "github.com/libgit2/git2go"
@@ -21,6 +23,7 @@ type Client interface {
 	Fetch(string) (map[string][]*git.Oid, error)
 	HardReset(string, *git.Oid) error
 	Diff(repositoryPath string, a, b *git.Oid) (string, error)
+	AllBlobsForRef(string, string, *io.PipeWriter) error
 }
 
 func New(privateKeyPath, publicKeyPath string) *client {
@@ -190,6 +193,92 @@ func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, er
 	}
 
 	return strings.Join(results, "\n"), nil
+}
+
+// AllBlobsForRef will write to the provided io.PipeWriter all of the contents
+// of the blobs of the tree specified by refName. Use io.Pipe() to construct an
+// io.PipeReader and io.PipeWriter. Either the call to AllBlobsForRef or the
+// code that reads from the reader will need to run in a goroutine to prevent
+// deadlock.
+func (c *client) AllBlobsForRef(repositoryPath string, refName string, w *io.PipeWriter) error {
+	repo, err := git.OpenRepository(repositoryPath)
+	if err != nil {
+		return err
+	}
+	defer repo.Free()
+
+	referenceIterator, err := repo.NewReferenceIterator()
+	if err != nil {
+		return err
+	}
+	defer referenceIterator.Free()
+
+	var oid *git.Oid
+	for {
+		ref, err := referenceIterator.Next()
+		if git.IsErrorCode(err, git.ErrIterOver) {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		defer ref.Free()
+
+		if ref.Name() == refName {
+			oid = ref.Target()
+			break
+		}
+	}
+
+	if oid == nil {
+		return errors.New(fmt.Sprintf("unable to find ref matching %s", refName))
+	}
+
+	object, err := repo.Lookup(oid)
+	if err != nil {
+		return err
+	}
+	defer object.Free()
+
+	commit, err := object.AsCommit()
+	if err != nil {
+		return err
+	}
+	defer commit.Free()
+
+	tree, err := commit.Tree()
+	if err != nil {
+		return err
+	}
+	defer tree.Free()
+
+	err = tree.Walk(func(s string, entry *git.TreeEntry) int {
+		if entry.Type == git.ObjectBlob {
+			object, err := repo.Lookup(entry.Id)
+			if err != nil {
+				return -1
+			}
+			defer object.Free()
+
+			blob, err := object.AsBlob()
+			if err != nil {
+				return -1
+			}
+			defer blob.Free()
+
+			w.Write(blob.Contents())
+		}
+
+		return 0
+	})
+
+	if err != nil {
+		w.CloseWithError(err)
+		return err
+	}
+
+	w.Close()
+	return nil
 }
 
 func objectToTree(repo *git.Repository, oid *git.Oid) (*git.Tree, error) {

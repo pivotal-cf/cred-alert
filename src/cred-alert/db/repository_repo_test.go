@@ -454,4 +454,36 @@ var _ = Describe("RepositoryRepo", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
+
+	Describe("UpdateCredentialCount", func() {
+		var repository *db.Repository
+
+		BeforeEach(func() {
+			repository = &db.Repository{
+				Name:          "some-repo",
+				Owner:         "some-owner",
+				SSHURL:        "some-url",
+				DefaultBranch: "some-branch",
+				RawJSON:       []byte("some-json"),
+				Cloned:        true,
+			}
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("updates the credential count on the repository", func() {
+			err := repo.UpdateCredentialCount(repository, uint(42))
+			Expect(err).NotTo(HaveOccurred())
+
+			var count int
+			err = database.DB().QueryRow(`
+				SELECT credential_count
+				FROM repositories
+				WHERE id = ?
+			`, repository.ID).Scan(&count)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(count).To(Equal(42))
+		})
+	})
 })

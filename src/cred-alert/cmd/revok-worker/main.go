@@ -194,6 +194,15 @@ func main() {
 		repositoryRepository,
 	)
 
+	headCredentialCounter := revok.NewHeadCredentialCounter(
+		logger,
+		repositoryRepository,
+		clock,
+		24*time.Hour,
+		gitClient,
+		sniffer,
+	)
+
 	pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
 	if err != nil {
 		logger.Fatal("failed", err)
@@ -208,6 +217,7 @@ func main() {
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
 		{"github-hint-handler", queue.NewProcessor(logger, hintSubscription, handler)},
+		{"head-credential-counter", headCredentialCounter},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}))
 

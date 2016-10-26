@@ -25,6 +25,7 @@ type RepositoryRepository interface {
 
 	MarkAsCloned(string, string, string) error
 	RegisterFailedFetch(lager.Logger, *Repository) error
+	UpdateCredentialCount(*Repository, uint) error
 }
 
 type repositoryRepository struct {
@@ -236,4 +237,23 @@ func (r *repositoryRepository) RegisterFailedFetch(
 	}
 
 	return tx.Commit()
+}
+
+func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, count uint) error {
+	result, err := r.db.DB().Exec(`
+		UPDATE repositories
+		SET credential_count = ?
+		WHERE id = ?
+	`, count, repository.ID)
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New(fmt.Sprintf("failed to update credential count", FailedFetchThreshold))
+	}
+
+	return nil
 }

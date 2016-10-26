@@ -3,6 +3,7 @@ package gitclientfakes
 
 import (
 	"cred-alert/gitclient"
+	"io"
 	"sync"
 
 	git "github.com/libgit2/git2go"
@@ -57,6 +58,16 @@ type FakeClient struct {
 	diffReturns struct {
 		result1 string
 		result2 error
+	}
+	AllBlobsForRefStub        func(string, string, *io.PipeWriter) error
+	allBlobsForRefMutex       sync.RWMutex
+	allBlobsForRefArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 *io.PipeWriter
+	}
+	allBlobsForRefReturns struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -236,6 +247,41 @@ func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeClient) AllBlobsForRef(arg1 string, arg2 string, arg3 *io.PipeWriter) error {
+	fake.allBlobsForRefMutex.Lock()
+	fake.allBlobsForRefArgsForCall = append(fake.allBlobsForRefArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 *io.PipeWriter
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("AllBlobsForRef", []interface{}{arg1, arg2, arg3})
+	fake.allBlobsForRefMutex.Unlock()
+	if fake.AllBlobsForRefStub != nil {
+		return fake.AllBlobsForRefStub(arg1, arg2, arg3)
+	} else {
+		return fake.allBlobsForRefReturns.result1
+	}
+}
+
+func (fake *FakeClient) AllBlobsForRefCallCount() int {
+	fake.allBlobsForRefMutex.RLock()
+	defer fake.allBlobsForRefMutex.RUnlock()
+	return len(fake.allBlobsForRefArgsForCall)
+}
+
+func (fake *FakeClient) AllBlobsForRefArgsForCall(i int) (string, string, *io.PipeWriter) {
+	fake.allBlobsForRefMutex.RLock()
+	defer fake.allBlobsForRefMutex.RUnlock()
+	return fake.allBlobsForRefArgsForCall[i].arg1, fake.allBlobsForRefArgsForCall[i].arg2, fake.allBlobsForRefArgsForCall[i].arg3
+}
+
+func (fake *FakeClient) AllBlobsForRefReturns(result1 error) {
+	fake.AllBlobsForRefStub = nil
+	fake.allBlobsForRefReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -249,6 +295,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.hardResetMutex.RUnlock()
 	fake.diffMutex.RLock()
 	defer fake.diffMutex.RUnlock()
+	fake.allBlobsForRefMutex.RLock()
+	defer fake.allBlobsForRefMutex.RUnlock()
 	return fake.invocations
 }
 
