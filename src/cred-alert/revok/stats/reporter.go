@@ -66,8 +66,6 @@ func (r *reporter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		}
 	}
-
-	return nil
 }
 
 func (r *reporter) reportStats(logger lager.Logger) {

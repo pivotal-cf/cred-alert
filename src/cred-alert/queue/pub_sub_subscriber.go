@@ -87,6 +87,4 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 		p.logger.Info("done")
 		return nil
 	}
-
-	panic("unreachable")
 }

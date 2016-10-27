@@ -62,6 +62,4 @@ func (m *monitor) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			return nil
 		}
 	}
-
-	return nil
 }

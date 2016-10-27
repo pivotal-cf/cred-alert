@@ -53,5 +53,4 @@ func (g *githubMonitor) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			return nil
 		}
 	}
-	return nil
 }

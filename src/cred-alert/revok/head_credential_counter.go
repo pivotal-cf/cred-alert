@@ -67,8 +67,6 @@ func (c *headCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struc
 			return nil
 		}
 	}
-
-	return nil
 }
 
 func (c *headCredentialCounter) work(
