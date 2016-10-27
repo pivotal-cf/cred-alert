@@ -164,26 +164,6 @@ func (n *slackNotifier) send(logger lager.Logger, body []byte) error {
 	return err
 }
 
-func (n *slackNotifier) formatSlackMessage(not Notification) slackMessage {
-	link := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s#L%d", not.Owner, not.Repository, not.SHA, not.Path, not.LineNumber)
-
-	color := "danger"
-	if not.Private {
-		color = "warning"
-	}
-
-	return slackMessage{
-		Attachments: []slackAttachment{
-			{
-				Fallback: link,
-				Color:    color,
-				Title:    fmt.Sprintf("Credential detected in %s!", not.FullName()),
-				Text:     fmt.Sprintf("<%s|%s:%d>", link, not.Path, not.LineNumber),
-			},
-		},
-	}
-}
-
 type slackLink struct {
 	Text string
 	Href string
