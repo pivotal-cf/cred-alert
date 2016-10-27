@@ -188,7 +188,7 @@ func main() {
 		emitter,
 	)
 
-	pushEventProcessor := queue.NewPushEventProcessor(
+	pushEventProcessor := revok.NewPushEventProcessor(
 		changeDiscoverer,
 		repositoryRepository,
 	)
