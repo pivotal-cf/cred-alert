@@ -166,6 +166,10 @@ func (s *scanner) scanMultiple(
 				diffscanner.NewDiffScanner(strings.NewReader(diff)),
 				func(logger lager.Logger, violation scanners.Violation) error {
 					credential := db.Credential{
+						SHA:        child.String(),
+						Path:       violation.Line.Path,
+						LineNumber: violation.Line.LineNumber,
+
 						Content: violation.Credential(),
 					}
 

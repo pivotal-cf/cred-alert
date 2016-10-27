@@ -63,7 +63,7 @@ func main() {
 	}
 
 	for i := range credentials {
-		fmt.Println(credentials[i].Content)
+		fmt.Printf("%s - %s:%d '%s'\n", credentials[i].SHA, credentials[i].Path, credentials[i].LineNumber, credentials[i].Content)
 	}
 
 	os.Exit(0)
