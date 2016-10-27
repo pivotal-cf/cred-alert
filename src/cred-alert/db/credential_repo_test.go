@@ -4,8 +4,6 @@ import (
 	"cred-alert/db"
 	"database/sql"
 
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,11 +14,9 @@ var _ = Describe("CredentialRepo", func() {
 		repo   db.CredentialRepository
 		gormDB *gorm.DB
 		sqlDB  *sql.DB
-		logger lager.Logger
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("reporepo")
 		var err error
 		gormDB, err = dbRunner.GormDB()
 		Expect(err).NotTo(HaveOccurred())
