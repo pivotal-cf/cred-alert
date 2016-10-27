@@ -252,7 +252,7 @@ func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, cou
 	}
 
 	if rows == 0 {
-		return errors.New(fmt.Sprintf("failed to update credential count", FailedFetchThreshold))
+		return errors.New(fmt.Sprint("failed to update credential count"))
 	}
 
 	return nil
