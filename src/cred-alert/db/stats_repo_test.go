@@ -3,6 +3,7 @@ package db_test
 import (
 	"cred-alert/db"
 	"fmt"
+	"strconv"
 
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
@@ -82,6 +83,32 @@ var _ = Describe("StatsRepo", func() {
 
 		It("returns the count of repositories", func() {
 			Expect(statsRepo.CredentialCount()).To(Equal(6))
+		})
+	})
+
+	Describe("DeadLetterCount", func() {
+		BeforeEach(func() {
+			failedMessage := &db.FailedMessage{}
+			err := database.Create(failedMessage).Error
+			Expect(err).NotTo(HaveOccurred())
+
+			for i := 0; i < 6; i++ {
+				err := database.Create(&db.FailedMessage{
+					MessageID: strconv.Itoa(i),
+					Dead:      true,
+				}).Error
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			err = database.Create(&db.FailedMessage{
+				MessageID: "7",
+				Dead:      false,
+			}).Error
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the count of dead letters", func() {
+			Expect(statsRepo.DeadLetterCount()).To(Equal(6))
 		})
 	})
 })

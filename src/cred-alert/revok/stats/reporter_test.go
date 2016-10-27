@@ -29,6 +29,7 @@ var _ = Describe("Reporter", func() {
 		disabledRepoGauge *metricsfakes.FakeGauge
 		fetchGauge        *metricsfakes.FakeGauge
 		credentialGauge   *metricsfakes.FakeGauge
+		deadLetterGauge   *metricsfakes.FakeGauge
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -42,6 +43,7 @@ var _ = Describe("Reporter", func() {
 		disabledRepoGauge = &metricsfakes.FakeGauge{}
 		fetchGauge = &metricsfakes.FakeGauge{}
 		credentialGauge = &metricsfakes.FakeGauge{}
+		deadLetterGauge = &metricsfakes.FakeGauge{}
 		emitter.GaugeStub = func(name string) metrics.Gauge {
 			switch name {
 			case "revok.reporter.repo_count":
@@ -52,6 +54,8 @@ var _ = Describe("Reporter", func() {
 				return fetchGauge
 			case "revok.reporter.credential_count":
 				return credentialGauge
+			case "revok.reporter.dead_letter_count":
+				return deadLetterGauge
 			default:
 				panic("unexpected metric!")
 			}
@@ -64,6 +68,7 @@ var _ = Describe("Reporter", func() {
 		statsRepository.FetchCountReturns(2, nil)
 		statsRepository.CredentialCountReturns(3, nil)
 		statsRepository.DisabledRepositoryCountReturns(4, nil)
+		statsRepository.DeadLetterCountReturns(5, nil)
 
 		runner = stats.NewReporter(
 			logger,
@@ -117,6 +122,13 @@ var _ = Describe("Reporter", func() {
 
 			_, updateValue, _ := disabledRepoGauge.UpdateArgsForCall(0)
 			Expect(updateValue).To(BeNumerically("==", 4))
+		})
+
+		It("emits the dead letter count", func() {
+			Eventually(deadLetterGauge.UpdateCallCount).Should(Equal(1))
+
+			_, updateValue, _ := deadLetterGauge.UpdateArgsForCall(0)
+			Expect(updateValue).To(BeNumerically("==", 5))
 		})
 	})
 

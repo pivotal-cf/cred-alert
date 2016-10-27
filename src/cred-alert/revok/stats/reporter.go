@@ -23,6 +23,7 @@ type reporter struct {
 	disabledReposGauge metrics.Gauge
 	fetchGauge         metrics.Gauge
 	credentialGauge    metrics.Gauge
+	deadLetterGauge    metrics.Gauge
 }
 
 func NewReporter(
@@ -43,6 +44,7 @@ func NewReporter(
 		disabledReposGauge: emitter.Gauge("revok.reporter.disabled_repo_count"),
 		fetchGauge:         emitter.Gauge("revok.reporter.fetch_count"),
 		credentialGauge:    emitter.Gauge("revok.reporter.credential_count"),
+		deadLetterGauge:    emitter.Gauge("revok.reporter.dead_letter_count"),
 	}
 }
 
@@ -95,5 +97,12 @@ func (r *reporter) reportStats(logger lager.Logger) {
 		logger.Error("failed-to-get-disabled-repository-count", err)
 	} else {
 		r.disabledReposGauge.Update(r.logger, float32(disabledRepoCount))
+	}
+
+	deadLetterCount, err := r.db.DeadLetterCount()
+	if err != nil {
+		logger.Error("failed-to-get-dead-letter-count", err)
+	} else {
+		r.deadLetterGauge.Update(r.logger, float32(deadLetterCount))
 	}
 }

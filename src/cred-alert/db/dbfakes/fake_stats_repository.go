@@ -35,6 +35,13 @@ type FakeStatsRepository struct {
 		result1 int
 		result2 error
 	}
+	DeadLetterCountStub        func() (int, error)
+	deadLetterCountMutex       sync.RWMutex
+	deadLetterCountArgsForCall []struct{}
+	deadLetterCountReturns     struct {
+		result1 int
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -143,6 +150,32 @@ func (fake *FakeStatsRepository) FetchCountReturns(result1 int, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeStatsRepository) DeadLetterCount() (int, error) {
+	fake.deadLetterCountMutex.Lock()
+	fake.deadLetterCountArgsForCall = append(fake.deadLetterCountArgsForCall, struct{}{})
+	fake.recordInvocation("DeadLetterCount", []interface{}{})
+	fake.deadLetterCountMutex.Unlock()
+	if fake.DeadLetterCountStub != nil {
+		return fake.DeadLetterCountStub()
+	} else {
+		return fake.deadLetterCountReturns.result1, fake.deadLetterCountReturns.result2
+	}
+}
+
+func (fake *FakeStatsRepository) DeadLetterCountCallCount() int {
+	fake.deadLetterCountMutex.RLock()
+	defer fake.deadLetterCountMutex.RUnlock()
+	return len(fake.deadLetterCountArgsForCall)
+}
+
+func (fake *FakeStatsRepository) DeadLetterCountReturns(result1 int, result2 error) {
+	fake.DeadLetterCountStub = nil
+	fake.deadLetterCountReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStatsRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -154,6 +187,8 @@ func (fake *FakeStatsRepository) Invocations() map[string][][]interface{} {
 	defer fake.credentialCountMutex.RUnlock()
 	fake.fetchCountMutex.RLock()
 	defer fake.fetchCountMutex.RUnlock()
+	fake.deadLetterCountMutex.RLock()
+	defer fake.deadLetterCountMutex.RUnlock()
 	return fake.invocations
 }
 
