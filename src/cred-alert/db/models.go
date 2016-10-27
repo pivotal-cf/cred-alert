@@ -53,6 +53,7 @@ type Credential struct {
 	Scan   Scan
 	ScanID uint
 
+	Content    string
 	Owner      string
 	Repository string
 	SHA        string

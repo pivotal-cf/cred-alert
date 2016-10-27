@@ -19,6 +19,7 @@ import (
 
 type Scanner interface {
 	Scan(lager.Logger, string, string, string, string) error
+	ScanMultiple(lager.Logger, string, string, []string, string) ([]db.Credential, error)
 	ScanNoNotify(lager.Logger, string, string, string, string) ([]db.Credential, error)
 }
 
@@ -108,6 +109,91 @@ func (s *scanner) ScanNoNotify(
 	credentials, err := s.scan(logger, dbRepository, startSHA, stopSHA)
 	if err != nil {
 		return nil, err
+	}
+
+	return credentials, nil
+}
+
+func (s *scanner) ScanMultiple(
+	logger lager.Logger,
+	owner string,
+	repository string,
+	startSHAs []string,
+	path string,
+) ([]db.Credential, error) {
+	scannedOids := map[git.Oid]struct{}{}
+
+	credentials, err := s.scanMultiple(logger, path, scannedOids, startSHAs)
+	if err != nil {
+		return nil, err
+	}
+
+	return credentials, nil
+}
+
+func (s *scanner) scanMultiple(
+	logger lager.Logger,
+	path string,
+	scannedOids map[git.Oid]struct{},
+	startSHAs []string,
+) ([]db.Credential, error) {
+	repo, err := git.OpenRepository(path)
+	if err != nil {
+		logger.Error("failed-to-open-repo", err)
+		return nil, err
+	}
+
+	var credentials []db.Credential
+
+	for _, startSHA := range startSHAs {
+		startOid, err := git.NewOid(startSHA)
+		if err != nil {
+			logger.Error("failed-to-create-start-oid", err)
+			return nil, err
+		}
+
+		quietLogger := kolsch.NewLogger()
+		// scan := s.scanRepository.Start(quietLogger, "repo-scan", startSHA, "", &db.Repository{}, nil)
+
+		scanFunc := func(child, parent *git.Oid) error {
+			diff, err := s.gitClient.Diff(path, parent, child)
+			if err != nil {
+				return err
+			}
+
+			s.sniffer.Sniff(
+				quietLogger,
+				diffscanner.NewDiffScanner(strings.NewReader(diff)),
+				func(logger lager.Logger, violation scanners.Violation) error {
+					credential := db.Credential{
+						Content: violation.Credential(),
+					}
+
+					credentials = append(credentials, credential)
+
+					return nil
+				},
+			)
+
+			scannedOids[*child] = struct{}{}
+
+			return nil
+		}
+
+		knownSHAs := map[string]struct{}{}
+
+		err = s.scanAncestors(repo, scanFunc, scannedOids, knownSHAs, startOid, nil)
+		if err != nil {
+			logger.Error("failed-to-scan-ancestors", err, lager.Data{
+				"start": startOid.String(),
+			})
+		}
+
+		// err = scan.Finish()
+		// if err != nil {
+		// 	logger.Error("failed-to-finish-scan", err)
+		// 	return nil, err
+		// }
 	}
 
 	return credentials, nil

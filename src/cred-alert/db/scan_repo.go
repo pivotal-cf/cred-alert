@@ -48,10 +48,8 @@ func (repo *scanRepository) Start(
 		clock:  repo.clock,
 		tx:     repo.db.Begin(),
 
-		repository: repository,
-		fetch:      fetch,
-		typee:      scanType,
-		startTime:  repo.clock.Now(),
+		typee:     scanType,
+		startTime: repo.clock.Now(),
 
 		startSHA: startSHA,
 		stopSHA:  stopSHA,
