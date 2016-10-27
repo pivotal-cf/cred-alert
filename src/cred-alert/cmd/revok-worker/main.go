@@ -50,7 +50,7 @@ type Opts struct {
 		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" required:"true"`
 
 		FetchHint struct {
-			Subscription string `long:"fetch-hint-pubsub-subscription" description:"PubSub Topic recieve messages from" value-name:"NAME" required:"true"`
+			Subscription string `long:"fetch-hint-pubsub-subscription" description:"PubSub Topic receive messages from" value-name:"NAME" required:"true"`
 		} `group:"PubSub Fetch Hint Options"`
 	} `group:"PubSub Options"`
 

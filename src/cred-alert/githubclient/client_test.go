@@ -139,7 +139,7 @@ var _ = Describe("Client", func() {
 	})
 
 	Describe("CompareRefs", func() {
-		It("sets vnd.github.diff as the accept content-type header, and recieves a diff", func() {
+		It("sets vnd.github.diff as the accept content-type header, and receives a diff", func() {
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", "/repos/owner/repo/compare/a...b"),
