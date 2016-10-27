@@ -184,7 +184,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 				process.Signal(os.Interrupt)
 
 				// give the counts time to converge; they should eventually be the same
-				Eventually(repositoryRepository.UpdateCredentialCountCallCount, 2*time.Second).Should(Equal(gitClient.AllBlobsForRefCallCount()))
+				Eventually(repositoryRepository.UpdateCredentialCountCallCount, 2*time.Second).Should(BeNumerically("~", gitClient.AllBlobsForRefCallCount(), 1))
 			})
 		})
 
