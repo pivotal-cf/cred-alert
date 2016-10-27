@@ -49,7 +49,7 @@ func (g *githubService) Status(serverURL string) (int, error) {
 	var gh map[string]string
 
 	content, _ := ioutil.ReadAll(resp.Body)
-	err = json.Unmarshal([]byte(content), &gh)
+	err = json.Unmarshal(content, &gh)
 	if err != nil {
 		g.logger.Error("github-response-error", err)
 		return 1, err
