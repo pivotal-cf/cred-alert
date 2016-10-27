@@ -13,7 +13,7 @@ import (
 //go:generate counterfeiter . PubSubProcessor
 
 type PubSubProcessor interface {
-	Process(*pubsub.Message) (bool, error)
+	Process(lager.Logger, *pubsub.Message) (bool, error)
 }
 
 type pubSubSubscriber struct {
@@ -56,10 +56,10 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 			}
 
 			logger := p.logger.Session("processing-message", lager.Data{
-				"message": message.ID,
+				"pubsub-message": message.ID,
 			})
 
-			retryable, err := p.processor.Process(message)
+			retryable, err := p.processor.Process(logger, message)
 			if err != nil {
 				logger.Error("failed-to-process-message", err)
 

@@ -97,10 +97,10 @@ var _ = Describe("PubSubSubscriber", func() {
 
 	It("tries to process the messages", func() {
 		Eventually(processor.ProcessCallCount).Should(Equal(2))
-		message := processor.ProcessArgsForCall(0)
+		_, message := processor.ProcessArgsForCall(0)
 		Expect(message.Attributes).To(Equal(firstMessage.Attributes))
 
-		message = processor.ProcessArgsForCall(1)
+		_, message = processor.ProcessArgsForCall(1)
 		Expect(message.Attributes).To(Equal(secondMessage.Attributes))
 	})
 })

@@ -189,7 +189,6 @@ func main() {
 	)
 
 	pushEventProcessor := queue.NewPushEventProcessor(
-		logger,
 		changeDiscoverer,
 		repositoryRepository,
 	)

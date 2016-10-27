@@ -29,7 +29,7 @@ var _ = Describe("PushEventProcessor", func() {
 		logger = lagertest.NewTestLogger("ingestor")
 		changeDiscoverer = &revokfakes.FakeChangeDiscoverer{}
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		pushEventProcessor = queue.NewPushEventProcessor(logger, changeDiscoverer, repositoryRepository)
+		pushEventProcessor = queue.NewPushEventProcessor(changeDiscoverer, repositoryRepository)
 	})
 
 	Context("when the payload is a valid JSON PushEventPlan", func() {
@@ -52,7 +52,7 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("looks up the repository in the database", func() {
-			pushEventProcessor.Process(message)
+			pushEventProcessor.Process(logger, message)
 			Expect(repositoryRepository.FindCallCount()).To(Equal(1))
 			owner, name := repositoryRepository.FindArgsForCall(0)
 			Expect(owner).To(Equal("some-owner"))
@@ -74,7 +74,7 @@ var _ = Describe("PushEventProcessor", func() {
 			})
 
 			It("tries to do a fetch", func() {
-				pushEventProcessor.Process(message)
+				pushEventProcessor.Process(logger, message)
 				Expect(changeDiscoverer.FetchCallCount()).To(Equal(1))
 				_, actualRepository := changeDiscoverer.FetchArgsForCall(0)
 				Expect(actualRepository).To(Equal(*expectedRepository))
@@ -86,7 +86,7 @@ var _ = Describe("PushEventProcessor", func() {
 				})
 
 				It("does not retry or return an error", func() {
-					retry, err := pushEventProcessor.Process(message)
+					retry, err := pushEventProcessor.Process(logger, message)
 					Expect(retry).To(BeFalse())
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -98,7 +98,7 @@ var _ = Describe("PushEventProcessor", func() {
 				})
 
 				It("returns an error that can be retried", func() {
-					retry, err := pushEventProcessor.Process(message)
+					retry, err := pushEventProcessor.Process(logger, message)
 					Expect(retry).To(BeTrue())
 					Expect(err).To(HaveOccurred())
 				})
@@ -111,12 +111,12 @@ var _ = Describe("PushEventProcessor", func() {
 			})
 
 			It("does not try to do a fetch", func() {
-				pushEventProcessor.Process(message)
+				pushEventProcessor.Process(logger, message)
 				Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
 			})
 
 			It("returns an error that cannot be retried", func() {
-				retry, err := pushEventProcessor.Process(message)
+				retry, err := pushEventProcessor.Process(logger, message)
 				Expect(retry).To(BeFalse())
 				Expect(err).To(HaveOccurred())
 			})
@@ -137,17 +137,17 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not look up the repository in the database", func() {
-			pushEventProcessor.Process(message)
+			pushEventProcessor.Process(logger, message)
 			Expect(repositoryRepository.FindCallCount()).To(BeZero())
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(message)
+			pushEventProcessor.Process(logger, message)
 			Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an error that cannot be retried", func() {
-			retry, err := pushEventProcessor.Process(message)
+			retry, err := pushEventProcessor.Process(logger, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})
@@ -169,17 +169,17 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not look up the repository in the database", func() {
-			pushEventProcessor.Process(message)
+			pushEventProcessor.Process(logger, message)
 			Expect(repositoryRepository.FindCallCount()).To(BeZero())
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(message)
+			pushEventProcessor.Process(logger, message)
 			Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {
-			retry, err := pushEventProcessor.Process(message)
+			retry, err := pushEventProcessor.Process(logger, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})
@@ -201,17 +201,17 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not look up the repository in the database", func() {
-			pushEventProcessor.Process(message)
+			pushEventProcessor.Process(logger, message)
 			Expect(repositoryRepository.FindCallCount()).To(BeZero())
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(message)
+			pushEventProcessor.Process(logger, message)
 			Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {
-			retry, err := pushEventProcessor.Process(message)
+			retry, err := pushEventProcessor.Process(logger, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})

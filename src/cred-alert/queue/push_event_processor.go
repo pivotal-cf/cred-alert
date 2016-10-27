@@ -13,24 +13,21 @@ import (
 )
 
 type pushEventProcessor struct {
-	logger           lager.Logger
 	db               db.RepositoryRepository
 	changeDiscoverer revok.ChangeDiscoverer
 }
 
 func NewPushEventProcessor(
-	logger lager.Logger,
 	changeDiscoverer revok.ChangeDiscoverer,
 	db db.RepositoryRepository,
 ) *pushEventProcessor {
 	return &pushEventProcessor{
-		logger:           logger,
 		db:               db,
 		changeDiscoverer: changeDiscoverer,
 	}
 }
 
-func (h *pushEventProcessor) Process(message *pubsub.Message) (bool, error) {
+func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Message) (bool, error) {
 	decoder := json.NewDecoder(bytes.NewBuffer(message.Data))
 
 	var p PushEventPlan
@@ -48,7 +45,7 @@ func (h *pushEventProcessor) Process(message *pubsub.Message) (bool, error) {
 		return false, err
 	}
 
-	err = h.changeDiscoverer.Fetch(h.logger, repo)
+	err = h.changeDiscoverer.Fetch(logger, repo)
 	if err != nil {
 		return true, err
 	}
