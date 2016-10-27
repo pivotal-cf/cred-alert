@@ -188,7 +188,7 @@ func main() {
 		emitter,
 	)
 
-	handler := revok.NewHandler(
+	pushEventProcessor := revok.NewPushEventProcessor(
 		logger,
 		changeDiscoverer,
 		repositoryRepository,
@@ -216,7 +216,7 @@ func main() {
 		{"change-discoverer", changeDiscoverer},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
-		{"github-hint-handler", queue.NewProcessor(logger, hintSubscription, handler)},
+		{"github-hint-handler", queue.NewPubSubSubscriber(logger, hintSubscription, pushEventProcessor)},
 		{"head-credential-counter", headCredentialCounter},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}))

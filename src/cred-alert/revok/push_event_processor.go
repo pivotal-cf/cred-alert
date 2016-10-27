@@ -12,21 +12,21 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type handler struct {
+type pushEventProcessor struct {
 	logger           lager.Logger
 	db               db.RepositoryRepository
 	changeDiscoverer ChangeDiscoverer
 }
 
-func NewHandler(logger lager.Logger, changeDiscoverer ChangeDiscoverer, db db.RepositoryRepository) *handler {
-	return &handler{
+func NewPushEventProcessor(logger lager.Logger, changeDiscoverer ChangeDiscoverer, db db.RepositoryRepository) *pushEventProcessor {
+	return &pushEventProcessor{
 		logger:           logger,
 		db:               db,
 		changeDiscoverer: changeDiscoverer,
 	}
 }
 
-func (h *handler) ProcessMessage(message *pubsub.Message) (bool, error) {
+func (h *pushEventProcessor) Process(message *pubsub.Message) (bool, error) {
 	decoder := json.NewDecoder(bytes.NewBuffer(message.Data))
 
 	var p queue.PushEventPlan

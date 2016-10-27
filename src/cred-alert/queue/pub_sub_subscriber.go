@@ -10,29 +10,29 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-//go:generate counterfeiter . Handler
+//go:generate counterfeiter . PubSubProcessor
 
-type Handler interface {
-	ProcessMessage(*pubsub.Message) (bool, error)
+type PubSubProcessor interface {
+	Process(*pubsub.Message) (bool, error)
 }
 
-type pubsubProcessor struct {
+type pubSubSubscriber struct {
 	logger       lager.Logger
 	subscription *pubsub.Subscription
-	handler      Handler
+	processor    PubSubProcessor
 }
 
-func NewProcessor(logger lager.Logger, subscription *pubsub.Subscription, handler Handler) ifrit.Runner {
-	return &pubsubProcessor{
+func NewPubSubSubscriber(logger lager.Logger, subscription *pubsub.Subscription, processor PubSubProcessor) ifrit.Runner {
+	return &pubSubSubscriber{
 		logger: logger.Session("message-processor", lager.Data{
 			"subscription": subscription.ID(),
 		}),
 		subscription: subscription,
-		handler:      handler,
+		processor:    processor,
 	}
 }
 
-func (p *pubsubProcessor) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	p.logger.Info("starting")
 	it, err := p.subscription.Pull(context.Background())
 	if err != nil {
@@ -59,7 +59,7 @@ func (p *pubsubProcessor) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 				"message": message.ID,
 			})
 
-			retryable, err := p.handler.ProcessMessage(message)
+			retryable, err := p.processor.Process(message)
 			if err != nil {
 				logger.Error("failed-to-process-message", err)
 
