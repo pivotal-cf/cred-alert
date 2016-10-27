@@ -18,7 +18,6 @@ type CommitMessageJob struct {
 	credentialCounter metrics.Counter
 	notifier          notifications.Notifier
 	scanRepository    db.ScanRepository
-	id                string
 }
 
 func NewCommitMessageJob(

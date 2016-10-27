@@ -40,9 +40,8 @@ func (m *metric) Update(logger lager.Logger, value float32, tags ...string) {
 }
 
 type nullMetric struct {
-	name        string
-	metricType  string
-	environment string
+	name       string
+	metricType string
 }
 
 func (m *nullMetric) Update(logger lager.Logger, value float32, tags ...string) {}
