@@ -47,11 +47,7 @@ func (r *repositoryRepository) Find(owner, name string) (Repository, error) {
 
 func (r *repositoryRepository) FindOrCreate(repository *Repository) error {
 	r2 := Repository{Name: repository.Name, Owner: repository.Owner}
-	err := r.db.Where(r2).FirstOrCreate(repository).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.Where(r2).FirstOrCreate(repository).Error
 }
 
 func (r *repositoryRepository) Create(repository *Repository) error {

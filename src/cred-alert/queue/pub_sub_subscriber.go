@@ -79,12 +79,10 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 		close(finished)
 	}()
 
-	select {
-	case <-signals:
-		p.logger.Info("told-to-exit")
-		it.Stop()
-		<-finished
-		p.logger.Info("done")
-		return nil
-	}
+	<-signals
+	p.logger.Info("told-to-exit")
+	it.Stop()
+	<-finished
+	p.logger.Info("done")
+	return nil
 }

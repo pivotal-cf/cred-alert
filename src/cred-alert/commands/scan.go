@@ -59,14 +59,11 @@ func (command *ScanCommand) Execute(args []string) error {
 	signal.Notify(signalsCh, os.Interrupt)
 
 	go func() {
-		for {
-			select {
-			case <-signalsCh:
-				for _, f := range exitFuncs {
-					f()
-				}
-				os.Exit(1)
+		for range signalsCh {
+			for _, f := range exitFuncs {
+				f()
 			}
+			os.Exit(1)
 		}
 	}()
 
@@ -282,7 +279,7 @@ func warnIfOldExecutable() {
 
 	mtime := info.ModTime()
 
-	if time.Now().Sub(mtime) > twoWeeks {
+	if time.Since(mtime) > twoWeeks {
 		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Executable is old! Please consider running `cred-alert-cli update`.")
 	}
 }
