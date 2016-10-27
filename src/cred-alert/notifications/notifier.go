@@ -251,7 +251,7 @@ func (n *slackNotifier) formatBatchSlackMessages(batch []Notification) []slackMe
 
 		// Make sure we get a consistent map iteration order.
 		fileNames := []string{}
-		for path, _ := range files {
+		for path := range files {
 			fileNames = append(fileNames, path)
 		}
 		sort.Strings(fileNames)
