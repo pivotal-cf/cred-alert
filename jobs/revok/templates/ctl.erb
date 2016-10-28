@@ -38,6 +38,8 @@ case $1 in
       --mysql-port <%= p("revok.mysql.port") %> \
       --mysql-dbname <%= p("revok.mysql.db") %> \
       --mysql-hostname <%= p("revok.mysql.hostname") %> \
+      --rpc-server-bind-ip <%= p("revok.rpc_server_bind_ip") %> \
+      --rpc-server-bind-port <%= p("revok.rpc_server_bind_port") %> \
       <% p("revok.ignore_patterns", []).each do |pattern| %> \
       --ignore-pattern <%= pattern %> \
       <% end %> \

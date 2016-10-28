@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package revokpb;
+
+service Revok {
+  rpc GetCredentialCounts(CredentialCountRequest) returns (CredentialCountResponse) {}
+}
+
+message CredentialCount {
+  string owner = 1;
+  string repository = 2;
+  uint32 count = 3;
+}
+
+message CredentialCountResponse {
+  repeated CredentialCount credentialCounts = 1;
+}
+
+message Repository {
+  string name = 1;
+}
+
+message Organization {
+  string name = 1;
+  repeated Repository repositories = 2;
+}
+
+message CredentialCountRequest {
+  repeated Organization organizations = 1;
+}
