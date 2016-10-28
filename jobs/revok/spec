@@ -5,12 +5,6 @@ description: |
   Revok clones all GitHub repositories accessible with the provided API token
   and SSH key and scans them for credentials.
 
-provides:
-- name: worker
-  type: worker
-  properties:
-  - port
-
 templates:
   ctl.erb: bin/ctl
   pre-start.erb: bin/pre-start
