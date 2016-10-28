@@ -241,6 +241,9 @@ func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, cou
 		SET credential_count = ?
 		WHERE id = ?
 	`, count, repository.ID)
+	if err != nil {
+		return err
+	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
@@ -248,7 +251,7 @@ func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, cou
 	}
 
 	if rows == 0 {
-		return errors.New(fmt.Sprint("failed to update credential count"))
+		return errors.New("no rows were updated when updating credential count")
 	}
 
 	return nil
