@@ -26,10 +26,6 @@ packages:
 - pid_utils_revok
 
 properties:
-  port:
-    description: |
-      The port with which to receive webhooks from the ingestor.
-
   revok.pubsub.project_name:
     description: |
       The name of the project that includes the subscription which we are pulling messages from to.
