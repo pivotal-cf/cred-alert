@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -217,7 +218,8 @@ func (n *slackNotifier) formatBatchSlackMessages(batch []Notification) []slackMe
 
 	for _, repo := range repos {
 		files := messageMap[repo]
-		commitLink := fmt.Sprintf("https://github.com/%s/%s/commit/%s", repo.Owner, repo.Repository, repo.SHA)
+		commitLink := githubURL(repo.Owner, repo.Repository, "commit", repo.SHA)
+
 		title := fmt.Sprintf("Possible credentials found in %s!", slackLink{
 			Text: fmt.Sprintf("%s / %s", repo.FullName(), repo.ShortSHA()),
 			Href: commitLink,
@@ -240,8 +242,7 @@ func (n *slackNotifier) formatBatchSlackMessages(batch []Notification) []slackMe
 
 		for _, path := range fileNames {
 			nots := files[path]
-			fileLink := fmt.Sprintf("https://github.com/%s/%s/blob/%s/%s", repo.Owner, repo.Repository, repo.SHA, path)
-
+			fileLink := githubURL(repo.Owner, repo.Repository, "blob", repo.SHA, path)
 			lineLinks := []string{}
 
 			for _, not := range nots {
@@ -301,6 +302,16 @@ func humanizeList(list []string) string {
 	}
 
 	return joinedLines.String()
+}
+
+func githubURL(components ...string) string {
+	url := &url.URL{
+		Scheme: "https",
+		Host:   "github.com",
+		Path:   strings.Join(components, "/"),
+	}
+
+	return url.String()
 }
 
 type nullSlackNotifier struct{}
