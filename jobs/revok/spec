@@ -10,6 +10,9 @@ templates:
   pre-start.erb: bin/pre-start
   github_private_key.erb: config/github_private_key
   github_public_key.erb: config/github_public_key
+  rpc_server_client_ca.erb: config/rpc_server_client_ca
+  rpc_server_private_key.erb: config/rpc_server_private_key
+  rpc_server_cert.erb: config/rpc_server_cert
 
 packages:
 - cred-alert
