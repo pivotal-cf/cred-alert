@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -11,7 +10,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 
-	"golang.org/x/net/trace"
 	"golang.org/x/oauth2"
 
 	"code.cloudfoundry.org/clock"
@@ -41,9 +39,6 @@ type Opts struct {
 	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
 
 	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX"`
-
-	RPCBindIP   string `long:"rpc-server-bind-ip" default:"0.0.0.0" description:"IP address on which to listen for RPC traffic."`
-	RPCBindPort uint16 `long:"rpc-server-bind-port" default:"50051" description:"Port on which to listen for RPC traffic."`
 
 	GitHub struct {
 		AccessToken    string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
@@ -207,12 +202,6 @@ func main() {
 		sniffer,
 	)
 
-	grpcServer := revok.NewGRPCServer(
-		logger,
-		fmt.Sprintf("%s:%d", opts.RPCBindIP, opts.RPCBindPort),
-		revok.NewRevokServer(logger, repositoryRepository),
-	)
-
 	pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
 	if err != nil {
 		logger.Fatal("failed", err)
@@ -233,7 +222,6 @@ func main() {
 		{"stats-reporter", statsReporter},
 		{"github-hint-handler", queue.NewPubSubSubscriber(logger, hintSubscription, retryHandler)},
 		{"head-credential-counter", headCredentialCounter},
-		{"grpc-server", grpcServer},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}))
 
@@ -250,26 +238,6 @@ func debugHandler() http.Handler {
 	debugRouter.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	debugRouter.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	debugRouter.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
-	debugRouter.HandleFunc("/debug/requests", func(w http.ResponseWriter, req *http.Request) {
-		any, sensitive := trace.AuthRequest(req)
-		if !any {
-			http.Error(w, "not allowed", http.StatusUnauthorized)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		trace.Render(w, req, sensitive)
-	})
-
-	debugRouter.HandleFunc("/debug/events", func(w http.ResponseWriter, req *http.Request) {
-		any, sensitive := trace.AuthRequest(req)
-		if !any {
-			http.Error(w, "not allowed", http.StatusUnauthorized)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		trace.RenderEvents(w, req, sensitive)
-	})
 
 	return debugRouter
 }

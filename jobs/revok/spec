@@ -84,16 +84,6 @@ properties:
       The name of the database to use.
     default: revok
 
-  revok.rpc_server_bind_ip:
-    description: |
-      IP address on which to listen for RPC traffic.
-    default: 0.0.0.0
-
-  revok.rpc_server_bind_port:
-    description: |
-      Port on which to listen for RPC traffic.
-    default: 50051
-
   revok.metrics.datadog_api_key:
     description: |
       Datadog API key
