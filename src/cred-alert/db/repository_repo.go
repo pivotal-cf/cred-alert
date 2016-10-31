@@ -236,23 +236,11 @@ func (r *repositoryRepository) RegisterFailedFetch(
 }
 
 func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, count uint) error {
-	result, err := r.db.DB().Exec(`
+	_, err := r.db.DB().Exec(`
 		UPDATE repositories
 		SET credential_count = ?
 		WHERE id = ?
 	`, count, repository.ID)
-	if err != nil {
-		return err
-	}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
-		return errors.New("no rows were updated when updating credential count")
-	}
-
-	return nil
+	return err
 }
