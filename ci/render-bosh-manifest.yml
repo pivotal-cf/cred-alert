@@ -27,6 +27,9 @@ params:
   PAPERTRAIL_ADDRESS:
   SLACK_WEBHOOK_URL:
   IGNORE_REPOS:
+  RPC_SERVER_CLIENT_CA:
+  RPC_SERVER_CERT:
+  RPC_SERVER_PRIVATE_KEY:
 
 run:
   path: cred-alert/ci/scripts/render-bosh-manifest

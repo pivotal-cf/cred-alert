@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Credential Count by Organization</title>
+  </head>
+  <body>
+    <div id="content">
+      <table class="table">
+        <thead>
+          <th>Organization</th>
+          <th>Credential Count</th>
+        </thead>
+
+        {{range .Organizations}}
+        <tr>
+          <td><a href="{{.Path}}">{{.Name}}</a></td>
+          <td>{{.CredentialCount}}</td>
+        </tr>
+        {{end}}
+      </table>
+
+      {{range .Organizations}}
+      <h1>{{.Name}}</h1>
+      <table class="table">
+        <thead>
+          <th>Repository</th>
+          <th>Credential Count</th>
+        </thead>
+
+        {{range .Repositories}}
+        <tr>
+          <td>{{.Name}}</a></td>
+          <td>{{.CredentialCount}}</td>
+        </tr>
+        {{end}}
+
+      {{end}}
+    </div>
+  </body>
+</html>

@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -75,6 +78,12 @@ type Opts struct {
 		Hostname string `long:"mysql-hostname" description:"MySQL hostname" value-name:"HOSTNAME" required:"true"`
 		Port     uint16 `long:"mysql-port" description:"MySQL port" value-name:"PORT" required:"true"`
 		DBName   string `long:"mysql-dbname" description:"MySQL database name" value-name:"DBNAME" required:"true"`
+	}
+
+	RPC struct {
+		ClientCACertificate string `long:"rpc-server-client-ca" description:"Path to client CA certificate" required:"true"`
+		Certificate         string `long:"rpc-server-cert" description:"Path to RPC server certificate" required:"true"`
+		PrivateKey          string `long:"rpc-server-private-key" description:"Path to RPC server private key" required:"true"`
 	}
 }
 
@@ -207,10 +216,31 @@ func main() {
 		sniffer,
 	)
 
+	certificate, err := tls.LoadX509KeyPair(
+		opts.RPC.Certificate,
+		opts.RPC.PrivateKey,
+	)
+
+	clientCertPool := x509.NewCertPool()
+	bs, err := ioutil.ReadFile(opts.RPC.ClientCACertificate)
+	if err != nil {
+		log.Fatalf("failed to read client ca certificate: %s", err.Error())
+	}
+
+	ok := clientCertPool.AppendCertsFromPEM(bs)
+	if !ok {
+		log.Fatalf("failed to append client certs from pem: %s", err.Error())
+	}
+
 	grpcServer := revok.NewGRPCServer(
 		logger,
 		fmt.Sprintf("%s:%d", opts.RPCBindIP, opts.RPCBindPort),
 		revok.NewRevokServer(logger, repositoryRepository),
+		&tls.Config{
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			Certificates: []tls.Certificate{certificate},
+			ClientCAs:    clientCertPool,
+		},
 	)
 
 	pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)

@@ -16,6 +16,9 @@ revok-sentry-dsn: $SENTRY_DSN
 revok-papertrail-address: $PAPERTRAIL_ADDRESS
 revok-slack-webhook-url: $SLACK_WEBHOOK_URL
 revok-ignore-repos: $IGNORE_REPOS
+
+revok-rpc-server-bind-ip: $RPC_SERVER_BIND_IP
+revok-rpc-server-bind-port: $RPC_SERVER_BIND_PORT
 EOF
 
 IFS=$'\n'
@@ -26,6 +29,21 @@ done
 
 echo "revok-github-public-key: |" >> credentials.yml
 for line in $GITHUB_PUBLIC_KEY; do
+  echo "  $line" >> credentials.yml
+done
+
+echo "revok-rpc-server-client-ca: |" >> credentials.yml
+for line in $RPC_SERVER_CLIENT_CA; do
+  echo "  $line" >> credentials.yml
+done
+
+echo "revok-rpc-server-cert: |" >> credentials.yml
+for line in $RPC_SERVER_CERT; do
+  echo "  $line" >> credentials.yml
+done
+
+echo "revok-rpc-server-private-key: |" >> credentials.yml
+for line in $RPC_SERVER_PRIVATE_KEY; do
   echo "  $line" >> credentials.yml
 done
 

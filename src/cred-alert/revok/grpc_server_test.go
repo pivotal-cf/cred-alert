@@ -5,11 +5,16 @@ import (
 	"cred-alert/revok"
 	"cred-alert/revok/revokfakes"
 	"cred-alert/revokpb"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -26,9 +31,10 @@ var _ = Describe("GrpcServer", func() {
 		logger      lager.Logger
 		revokServer *revokfakes.FakeRevokServer
 
-		listenAddr string
-		runner     ifrit.Runner
-		process    ifrit.Process
+		listenAddr   string
+		runner       ifrit.Runner
+		process      ifrit.Process
+		rootCertPool *x509.CertPool
 	)
 
 	BeforeEach(func() {
@@ -43,12 +49,29 @@ var _ = Describe("GrpcServer", func() {
 				},
 			},
 		}, nil)
+
+		rootCertPool = x509.NewCertPool()
+		bs, err := ioutil.ReadFile(filepath.Join("fixtures", "rootCA.crt"))
+		Expect(err).NotTo(HaveOccurred())
+		success := rootCertPool.AppendCertsFromPEM(bs)
+		Expect(success).To(BeTrue())
 	})
 
 	JustBeforeEach(func() {
 		logger = lagertest.NewTestLogger("grpc-server")
 
-		runner = revok.NewGRPCServer(logger, listenAddr, revokServer)
+		certificate, err := tls.LoadX509KeyPair(
+			filepath.Join("fixtures", "server.crt"),
+			filepath.Join("fixtures", "server.key"),
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		config := &tls.Config{
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			Certificates: []tls.Certificate{certificate},
+			ClientCAs:    rootCertPool,
+		}
+		runner = revok.NewGRPCServer(logger, listenAddr, revokServer, config)
 		process = ginkgomon.Invoke(runner)
 	})
 
@@ -69,10 +92,23 @@ var _ = Describe("GrpcServer", func() {
 		)
 
 		BeforeEach(func() {
-			var err error
-			conn, err = grpc.Dial(listenAddr, grpc.WithInsecure())
+			clientCert, err := tls.LoadX509KeyPair(
+				filepath.Join("fixtures", "client.crt"),
+				filepath.Join("fixtures", "client.key"),
+			)
+
+			clientTransportCreds := credentials.NewTLS(&tls.Config{
+				ServerName:   "127.0.0.1",
+				Certificates: []tls.Certificate{clientCert},
+				RootCAs:      rootCertPool,
+			})
+
+			dialOption := grpc.WithTransportCredentials(clientTransportCreds)
+			conn, err = grpc.Dial(listenAddr, dialOption)
 			Expect(err).NotTo(HaveOccurred())
+
 			client = revokpb.NewRevokClient(conn)
+
 			request = &revokpb.CredentialCountRequest{
 				Organizations: []*revokpb.Organization{
 					{

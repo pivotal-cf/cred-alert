@@ -94,6 +94,18 @@ properties:
       Port on which to listen for RPC traffic.
     default: 50051
 
+  revok.rpc_server.client_ca:
+    description: |
+      RPC client CA certificate
+
+  revok.rpc_server.cert:
+    description: |
+      RPC server certificate
+
+  revok.rpc_server.private_key:
+    description: |
+      RPC server private key
+
   revok.metrics.datadog_api_key:
     description: |
       Datadog API key

@@ -40,6 +40,9 @@ case $1 in
       --mysql-hostname <%= p("revok.mysql.hostname") %> \
       --rpc-server-bind-ip <%= p("revok.rpc_server.bind_ip") %> \
       --rpc-server-bind-port <%= p("revok.rpc_server.bind_port") %> \
+      --rpc-server-client-ca /var/vcap/jobs/revok/config/rpc_server_client_ca \
+      --rpc-server-cert /var/vcap/jobs/revok/config/rpc_server_cert \
+      --rpc-server-private-key /var/vcap/jobs/revok/config/rpc_server_private_key \
       <% p("revok.ignore_patterns", []).each do |pattern| %> \
       --ignore-pattern <%= pattern %> \
       <% end %> \

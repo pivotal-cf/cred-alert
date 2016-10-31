@@ -2,10 +2,12 @@ package revok
 
 import (
 	"cred-alert/revokpb"
+	"crypto/tls"
 	"net"
 	"os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"code.cloudfoundry.org/lager"
 
@@ -16,34 +18,38 @@ type grpcServer struct {
 	logger      lager.Logger
 	listenAddr  string
 	revokServer RevokServer
+	tlsConfig   *tls.Config
 }
 
 func NewGRPCServer(
 	logger lager.Logger,
 	listenAddr string,
 	revokServer RevokServer,
+	tlsConfig *tls.Config,
 ) ifrit.Runner {
 	return &grpcServer{
 		logger:      logger,
 		listenAddr:  listenAddr,
 		revokServer: revokServer,
+		tlsConfig:   tlsConfig,
 	}
 }
 
-func (r *grpcServer) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	logger := r.logger.Session("grpc-server")
+func (s *grpcServer) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+	logger := s.logger.Session("grpc-server")
 
-	lis, err := net.Listen("tcp", r.listenAddr)
+	lis, err := net.Listen("tcp", s.listenAddr)
 	if err != nil {
 		return err
 	}
 
-	s := grpc.NewServer()
-	revokpb.RegisterRevokServer(s, r.revokServer)
+	serverOption := grpc.Creds(credentials.NewTLS(s.tlsConfig))
+	server := grpc.NewServer(serverOption)
+	revokpb.RegisterRevokServer(server, s.revokServer)
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- s.Serve(lis)
+		errCh <- server.Serve(lis)
 	}()
 
 	close(ready)
@@ -54,7 +60,7 @@ func (r *grpcServer) Run(signals <-chan os.Signal, ready chan<- struct{}) error 
 	case err = <-errCh:
 		return err
 	case <-signals:
-		s.GracefulStop()
+		server.GracefulStop()
 	}
 
 	logger.Info("exiting")
