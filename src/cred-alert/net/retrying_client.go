@@ -7,17 +7,21 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+
+	"code.cloudfoundry.org/clock"
 )
 
 type retryingClient struct {
 	client Client
+	clock  clock.Clock
 }
 
 const maxRetries = 3
 
-func NewRetryingClient(c Client) Client {
+func NewRetryingClient(c Client, clock clock.Clock) Client {
 	return &retryingClient{
 		client: c,
+		clock:  clock,
 	}
 }
 
@@ -35,7 +39,11 @@ func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
 
 		req.Header = orgReq.Header
 
-		c.delayForAttempt(i)
+		if i != 0 {
+			random := rand.Intn(delays[i-1][1]-delays[i-1][0]) + delays[i-1][0]
+			c.clock.Sleep(time.Duration(random) * time.Millisecond)
+		}
+
 		resp, err := c.client.Do(req)
 		if err != nil {
 			continue
@@ -51,13 +59,4 @@ var delays = [3][2]int{
 	{250, 750},
 	{375, 1125},
 	{562, 1687},
-}
-
-func (c *retryingClient) delayForAttempt(i int) {
-	if i == 0 {
-		return
-	}
-
-	random := rand.Intn(delays[i-1][1]-delays[i-1][0]) + delays[i-1][0]
-	time.Sleep(time.Duration(random) * time.Millisecond)
 }

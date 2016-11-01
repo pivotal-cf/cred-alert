@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/clock/fakeclock"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -18,11 +20,13 @@ var _ = Describe("RetryingClient", func() {
 	var (
 		client     net.Client
 		fakeClient *netfakes.FakeClient
+		clock      *fakeclock.FakeClock
 	)
 
 	BeforeEach(func() {
 		fakeClient = &netfakes.FakeClient{}
-		client = net.NewRetryingClient(fakeClient)
+		clock = fakeclock.NewFakeClock(time.Now())
+		client = net.NewRetryingClient(fakeClient, clock)
 	})
 
 	It("proxies requests to the underlying client", func() {
@@ -31,12 +35,12 @@ var _ = Describe("RetryingClient", func() {
 		Expect(err).NotTo(HaveOccurred())
 		request.Header.Add("My-Special", "Header")
 
-		expectedResponse := &http.Response{}
-		fakeClient.DoReturns(expectedResponse, nil)
+		successfulResponse := &http.Response{}
+		fakeClient.DoReturns(successfulResponse, nil)
 
 		resp, err := client.Do(request)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(resp).To(BeIdenticalTo(expectedResponse))
+		Expect(resp).To(BeIdenticalTo(successfulResponse))
 
 		Expect(fakeClient.DoCallCount()).To(Equal(1))
 
@@ -51,88 +55,146 @@ var _ = Describe("RetryingClient", func() {
 		Expect(buf.Bytes()).To(Equal([]byte("My Special Body")))
 	})
 
-	It("retries the request when the first three requests fail", func() {
-		expectedResponse := &http.Response{}
-		err := errors.New("My Special Error")
+	Context("when the request fails three times, then succeeds", func() {
+		var (
+			successfulResponse *http.Response
+			startTimes         []time.Time
+		)
 
-		fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
-			if fakeClient.DoCallCount() < 4 {
-				return nil, errors.New("My Special Error")
+		BeforeEach(func() {
+			successfulResponse = &http.Response{}
+			fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
+				startTimes = append(startTimes, clock.Now())
+
+				if fakeClient.DoCallCount() < 4 {
+					return nil, errors.New("My Special Error")
+				}
+
+				return successfulResponse, nil
 			}
+		})
 
-			return expectedResponse, nil
-		}
+		It("retries the request three times", func() {
+			request, err := http.NewRequest("GET", "http://example.com", bytes.NewBufferString("body"))
+			Expect(err).NotTo(HaveOccurred())
 
-		body := []byte("body")
+			go func() {
+				GinkgoRecover()
+				actualResponse, err := client.Do(request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actualResponse).To(BeIdenticalTo(successfulResponse))
+			}()
 
-		request, err := http.NewRequest("GET", "http://example.com", bytes.NewBuffer(body))
-		Expect(err).NotTo(HaveOccurred())
+			// 1
+			Eventually(fakeClient.DoCallCount).Should(Equal(1))
+			actualRequest := fakeClient.DoArgsForCall(0)
+			Expect(actualRequest.URL).To(Equal(request.URL))
+			Expect(actualRequest.Header).To(Equal(request.Header))
+			Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
 
-		actualResponse, err := client.Do(request)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actualResponse).To(BeIdenticalTo(expectedResponse))
+			actualBody, err := ioutil.ReadAll(actualRequest.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actualBody).To(Equal([]byte("body")))
 
-		Expect(fakeClient.DoCallCount()).To(Equal(4))
+			clock.Increment(750 * time.Millisecond)
 
-		actualRequest := fakeClient.DoArgsForCall(3)
-		Expect(actualRequest.URL).To(Equal(request.URL))
-		Expect(actualRequest.Header).To(Equal(request.Header))
-		Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
+			// 2
+			Eventually(fakeClient.DoCallCount).Should(Equal(2))
+			actualRequest = fakeClient.DoArgsForCall(1)
+			Expect(actualRequest.URL).To(Equal(request.URL))
+			Expect(actualRequest.Header).To(Equal(request.Header))
+			Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
 
-		actualBody, err := ioutil.ReadAll(actualRequest.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actualBody).To(Equal([]byte("body")))
+			actualBody, err = ioutil.ReadAll(actualRequest.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actualBody).To(Equal([]byte("body")))
+
+			clock.Increment(1125 * time.Millisecond)
+
+			// 3
+			Eventually(fakeClient.DoCallCount).Should(Equal(3))
+			actualRequest = fakeClient.DoArgsForCall(2)
+			Expect(actualRequest.URL).To(Equal(request.URL))
+			Expect(actualRequest.Header).To(Equal(request.Header))
+			Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
+
+			actualBody, err = ioutil.ReadAll(actualRequest.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actualBody).To(Equal([]byte("body")))
+
+			clock.Increment(1687 * time.Millisecond)
+
+			// 4
+			Eventually(fakeClient.DoCallCount).Should(Equal(4))
+			actualRequest = fakeClient.DoArgsForCall(3)
+			Expect(actualRequest.URL).To(Equal(request.URL))
+			Expect(actualRequest.Header).To(Equal(request.Header))
+			Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
+
+			actualBody, err = ioutil.ReadAll(actualRequest.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actualBody).To(Equal([]byte("body")))
+		})
+
+		It("retries the request three times with random sleep intervals)", func() {
+			request, err := http.NewRequest("GET", "http://example.com", bytes.NewBufferString("body"))
+			Expect(err).NotTo(HaveOccurred())
+
+			go func() {
+				GinkgoRecover()
+				_, err := client.Do(request)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			Eventually(fakeClient.DoCallCount).Should(Equal(1))
+			clock.Increment(750 * time.Millisecond)
+
+			Eventually(fakeClient.DoCallCount).Should(Equal(2))
+			clock.Increment(1125 * time.Millisecond)
+
+			Eventually(fakeClient.DoCallCount).Should(Equal(3))
+			clock.Increment(1687 * time.Millisecond)
+
+			Eventually(fakeClient.DoCallCount).Should(Equal(4))
+			Eventually(startTimes).Should(HaveLen(4))
+
+			Expect(startTimes[1].Sub(startTimes[0])).Should(BeNumerically(">=", 250*time.Millisecond))
+			Expect(startTimes[1].Sub(startTimes[0])).Should(BeNumerically("<=", 750*time.Millisecond))
+
+			Expect(startTimes[2].Sub(startTimes[1])).Should(BeNumerically(">=", 375*time.Millisecond))
+			Expect(startTimes[2].Sub(startTimes[1])).Should(BeNumerically("<=", 1125*time.Millisecond))
+
+			Expect(startTimes[3].Sub(startTimes[2])).Should(BeNumerically(">=", 562*time.Millisecond))
+			Expect(startTimes[3].Sub(startTimes[2])).Should(BeNumerically("<=", 1687*time.Millisecond))
+		})
+
 	})
 
-	It("retries the first request after random time (between 0.25 seconds and 0.75 seconds)", func() {
-		expectedResponse := &http.Response{}
-		var startTime []time.Time
+	Context("when the request continually fails", func() {
+		BeforeEach(func() {
+			fakeClient.DoReturns(nil, errors.New("disaster"))
+		})
 
-		fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
-			startTime = append(startTime, time.Now())
+		It("returns an error", func() {
+			request, err := http.NewRequest("GET", "http://example.com", bytes.NewBufferString("body"))
+			Expect(err).NotTo(HaveOccurred())
 
-			if fakeClient.DoCallCount() < 4 {
-				return nil, errors.New("My Special Error")
-			}
+			go func() {
+				GinkgoRecover()
+				_, err := client.Do(request)
+				Expect(err).To(MatchError("request failed after retry"))
+			}()
 
-			return expectedResponse, nil
-		}
+			Eventually(fakeClient.DoCallCount).Should(Equal(1))
+			clock.Increment(750 * time.Millisecond)
 
-		request, err := http.NewRequest("GET", "http://example.com", bytes.NewBufferString("body"))
-		Expect(err).NotTo(HaveOccurred())
+			Eventually(fakeClient.DoCallCount).Should(Equal(2))
+			clock.Increment(1125 * time.Millisecond)
 
-		_, err = client.Do(request)
-		Expect(err).NotTo(HaveOccurred())
+			Eventually(fakeClient.DoCallCount).Should(Equal(3))
+			clock.Increment(1687 * time.Millisecond)
 
-		Expect(len(startTime)).To(Equal(4))
-		Expect(startTime[1].Sub(startTime[0])).Should(BeNumerically(">=", 250*time.Millisecond))
-		Expect(startTime[1].Sub(startTime[0])).Should(BeNumerically("<=", 750*time.Millisecond))
-
-		Expect(startTime[2].Sub(startTime[1])).Should(BeNumerically(">=", 375*time.Millisecond))
-		Expect(startTime[2].Sub(startTime[1])).Should(BeNumerically("<=", 1125*time.Millisecond))
-
-		Expect(startTime[3].Sub(startTime[2])).Should(BeNumerically(">=", 562*time.Millisecond))
-		Expect(startTime[3].Sub(startTime[2])).Should(BeNumerically("<=", 1687*time.Millisecond))
-	})
-
-	It("errors after three requests fail", func() {
-		fakeClient.DoReturns(nil, errors.New("disaster"))
-
-		request, err := http.NewRequest("GET", "http://example.com", bytes.NewBufferString("body"))
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = client.Do(request)
-		Expect(err).To(MatchError("request failed after retry"))
-
-		Expect(fakeClient.DoCallCount()).To(Equal(4))
-
-		actualRequest := fakeClient.DoArgsForCall(3)
-		Expect(actualRequest.URL).To(Equal(request.URL))
-		Expect(actualRequest.Header).To(Equal(request.Header))
-		Expect(actualRequest.ContentLength).To(BeNumerically("==", 4))
-
-		actualBody, err := ioutil.ReadAll(actualRequest.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actualBody).To(Equal([]byte("body")))
+			Eventually(fakeClient.DoCallCount).Should(Equal(4))
+		})
 	})
 })
