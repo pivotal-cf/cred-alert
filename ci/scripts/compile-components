@@ -9,6 +9,6 @@ OUTPUT="${PWD}/cred-alert-components"
 
 for component in cred-alert-ingestor cred-alert-worker stats-monitor; do
   echo "Building ${component}..."
-  GOARCH=amd64 GOOS=linux go build -v -o "${OUTPUT}/${component}" "cred-alert/cmd/${component}"
+  GOARCH=amd64 GOOS=linux go build -x -v -o "${OUTPUT}/${component}" "cred-alert/cmd/${component}"
 done
 
