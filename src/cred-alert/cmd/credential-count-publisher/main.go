@@ -20,8 +20,8 @@ import (
 type Opts struct {
 	Port uint16 `long:"port" default:"8080" description:"Port to listen on."`
 
-	RPCServerIP   string `long:"rpc-server-ip" description:"IP address for RPC server." required:"true"`
-	RPCServerPort uint16 `long:"rpc-server-port" description:"Port for RPC server." required:"true"`
+	RPCServerAddress string `long:"rpc-server-address" description:"Address for RPC server." required:"true"`
+	RPCServerPort    uint16 `long:"rpc-server-port" description:"Port for RPC server." required:"true"`
 
 	CACertPath     string `long:"ca-cert-path" description:"Path to the CA certificate" required:"true"`
 	ClientCertPath string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
@@ -54,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	serverAddr := fmt.Sprintf("%s:%d", opts.RPCServerIP, opts.RPCServerPort)
+	serverAddr := fmt.Sprintf("%s:%d", opts.RPCServerAddress, opts.RPCServerPort)
 	listenAddr := fmt.Sprintf(":%d", opts.Port)
 
 	clientCert, err := tls.LoadX509KeyPair(
@@ -80,7 +80,7 @@ func main() {
 				logger,
 				layout,
 				serverAddr,
-				opts.RPCServerIP,
+				opts.RPCServerAddress,
 				clientCert,
 				rootCertPool,
 			),
