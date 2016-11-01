@@ -56,16 +56,11 @@ var _ = Describe("RetryingClient", func() {
 	})
 
 	Context("when the request fails three times, then succeeds", func() {
-		var (
-			successfulResponse *http.Response
-			startTimes         []time.Time
-		)
+		var successfulResponse *http.Response
 
 		BeforeEach(func() {
 			successfulResponse = &http.Response{}
 			fakeClient.DoStub = func(req *http.Request) (*http.Response, error) {
-				startTimes = append(startTimes, clock.Now())
-
 				if fakeClient.DoCallCount() < 4 {
 					return nil, errors.New("My Special Error")
 				}
@@ -147,27 +142,22 @@ var _ = Describe("RetryingClient", func() {
 			}()
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(1))
-			clock.WaitForWatcherAndIncrement(750 * time.Millisecond)
 
+			clock.WaitForWatcherAndIncrement(249 * time.Millisecond)
+			Expect(fakeClient.DoCallCount()).To(Equal(1))
+			clock.WaitForWatcherAndIncrement(501 * time.Millisecond)
 			Eventually(fakeClient.DoCallCount).Should(Equal(2))
-			clock.WaitForWatcherAndIncrement(1125 * time.Millisecond)
 
+			clock.WaitForWatcherAndIncrement(374 * time.Millisecond)
+			Expect(fakeClient.DoCallCount()).To(Equal(2))
+			clock.WaitForWatcherAndIncrement(751 * time.Millisecond)
 			Eventually(fakeClient.DoCallCount).Should(Equal(3))
-			clock.WaitForWatcherAndIncrement(1687 * time.Millisecond)
 
+			clock.WaitForWatcherAndIncrement(561 * time.Millisecond)
+			Expect(fakeClient.DoCallCount()).To(Equal(3))
+			clock.WaitForWatcherAndIncrement(1127 * time.Millisecond)
 			Eventually(fakeClient.DoCallCount).Should(Equal(4))
-			Eventually(startTimes).Should(HaveLen(4))
-
-			Expect(startTimes[1].Sub(startTimes[0])).Should(BeNumerically(">=", 250*time.Millisecond))
-			Expect(startTimes[1].Sub(startTimes[0])).Should(BeNumerically("<=", 750*time.Millisecond))
-
-			Expect(startTimes[2].Sub(startTimes[1])).Should(BeNumerically(">=", 375*time.Millisecond))
-			Expect(startTimes[2].Sub(startTimes[1])).Should(BeNumerically("<=", 1125*time.Millisecond))
-
-			Expect(startTimes[3].Sub(startTimes[2])).Should(BeNumerically(">=", 562*time.Millisecond))
-			Expect(startTimes[3].Sub(startTimes[2])).Should(BeNumerically("<=", 1687*time.Millisecond))
 		})
-
 	})
 
 	Context("when the request continually fails", func() {
