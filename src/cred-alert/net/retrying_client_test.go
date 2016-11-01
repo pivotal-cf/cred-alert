@@ -96,7 +96,7 @@ var _ = Describe("RetryingClient", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actualBody).To(Equal([]byte("body")))
 
-			clock.Increment(750 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(750 * time.Millisecond)
 
 			// 2
 			Eventually(fakeClient.DoCallCount).Should(Equal(2))
@@ -109,7 +109,7 @@ var _ = Describe("RetryingClient", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actualBody).To(Equal([]byte("body")))
 
-			clock.Increment(1125 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(1125 * time.Millisecond)
 
 			// 3
 			Eventually(fakeClient.DoCallCount).Should(Equal(3))
@@ -122,7 +122,7 @@ var _ = Describe("RetryingClient", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actualBody).To(Equal([]byte("body")))
 
-			clock.Increment(1687 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(1687 * time.Millisecond)
 
 			// 4
 			Eventually(fakeClient.DoCallCount).Should(Equal(4))
@@ -147,13 +147,13 @@ var _ = Describe("RetryingClient", func() {
 			}()
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(1))
-			clock.Increment(750 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(750 * time.Millisecond)
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(2))
-			clock.Increment(1125 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(1125 * time.Millisecond)
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(3))
-			clock.Increment(1687 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(1687 * time.Millisecond)
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(4))
 			Eventually(startTimes).Should(HaveLen(4))
@@ -186,13 +186,13 @@ var _ = Describe("RetryingClient", func() {
 			}()
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(1))
-			clock.Increment(750 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(750 * time.Millisecond)
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(2))
-			clock.Increment(1125 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(1125 * time.Millisecond)
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(3))
-			clock.Increment(1687 * time.Millisecond)
+			clock.WaitForWatcherAndIncrement(1687 * time.Millisecond)
 
 			Eventually(fakeClient.DoCallCount).Should(Equal(4))
 		})
