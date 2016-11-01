@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -77,7 +78,7 @@ func NewClient(apiKey string) Client {
 
 	return &client{
 		apiKey: apiKey,
-		client: net.NewRetryingClient(httpClient),
+		client: net.NewRetryingClient(httpClient, clock.NewClock()),
 	}
 }
 
