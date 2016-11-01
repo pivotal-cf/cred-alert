@@ -3,9 +3,12 @@ package revok_test
 import (
 	"cred-alert/revok"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"google.golang.org/grpc/grpclog"
 
 	git "github.com/libgit2/git2go"
 	. "github.com/onsi/ginkgo"
@@ -13,6 +16,10 @@ import (
 
 	"testing"
 )
+
+func init() {
+	grpclog.SetLogger(log.New(ioutil.Discard, "", 0))
+}
 
 func TestRevok(t *testing.T) {
 	RegisterFailHandler(Fail)
