@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-//go:generate bash ../../../scripts/generate_protos.sh
+//go:generate bash $GOPATH/scripts/generate_protos.sh
 
 //go:generate counterfeiter . RevokServer
 
