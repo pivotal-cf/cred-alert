@@ -55,12 +55,14 @@ func (c *headCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struc
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	c.work(logger, cancel, signals)
+	quietLogger := kolsch.NewLogger()
+
+	c.work(logger, quietLogger, cancel, signals)
 
 	for {
 		select {
 		case <-timer.C():
-			c.work(logger, cancel, signals)
+			c.work(logger, quietLogger, cancel, signals)
 		case <-signals:
 			cancel()
 			return nil
@@ -72,6 +74,7 @@ func (c *headCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struc
 
 func (c *headCredentialCounter) work(
 	logger lager.Logger,
+	quietLogger lager.Logger,
 	cancel context.CancelFunc,
 	signals <-chan os.Signal,
 ) {
@@ -79,8 +82,6 @@ func (c *headCredentialCounter) work(
 	if err != nil {
 		logger.Error("failed-getting-all-repositories", err)
 	}
-
-	quietLogger := kolsch.NewLogger()
 
 	for i := range repositories {
 		select {
