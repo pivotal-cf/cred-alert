@@ -118,7 +118,7 @@ var _ = Describe("FetchRepo", func() {
 			Expect(actualChanges).To(Equal(changes))
 		})
 
-		Context("when the repository has filed to fetch in the past", func() {
+		Context("when the repository has failed to fetch in the past", func() {
 			BeforeEach(func() {
 				repository.FailedFetches = 3
 				err := database.Save(repository).Error

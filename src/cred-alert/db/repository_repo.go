@@ -11,6 +11,11 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+var (
+	NeverBeenFetchedError = errors.New("Repository has never been fetched")
+	NoChangesError        = errors.New("Repository has never been changed")
+)
+
 //go:generate counterfeiter . RepositoryRepository
 
 type RepositoryRepository interface {
@@ -20,12 +25,15 @@ type RepositoryRepository interface {
 	Find(owner string, name string) (Repository, error)
 
 	All() ([]Repository, error)
-	NotFetchedSince(time.Time) ([]Repository, error)
 	NotScannedWithVersion(int) ([]Repository, error)
 
 	MarkAsCloned(string, string, string) error
 	RegisterFailedFetch(lager.Logger, *Repository) error
 	UpdateCredentialCount(*Repository, uint) error
+
+	DueForFetch() ([]Repository, error)
+	UpdateFetchInterval(*Repository, time.Duration) error
+	LastActivity(*Repository) (time.Time, error)
 }
 
 type repositoryRepository struct {
@@ -33,7 +41,9 @@ type repositoryRepository struct {
 }
 
 func NewRepositoryRepository(db *gorm.DB) *repositoryRepository {
-	return &repositoryRepository{db: db}
+	return &repositoryRepository{
+		db: db,
+	}
 }
 
 func (r *repositoryRepository) Find(owner, name string) (Repository, error) {
@@ -70,71 +80,6 @@ func (r *repositoryRepository) MarkAsCloned(owner, name, path string) error {
 	).Updates(
 		map[string]interface{}{"cloned": true, "path": path},
 	).Error
-}
-
-func (r *repositoryRepository) NotFetchedSince(since time.Time) ([]Repository, error) {
-	// old fetches
-	rows, err := r.db.Raw(`
-    SELECT r.id
-    FROM   fetches f
-           JOIN repositories r
-             ON r.id = f.repository_id
-           JOIN (SELECT repository_id   AS r_id,
-                        MAX(created_at) AS created_at
-                 FROM   fetches
-                 GROUP  BY repository_id
-                ) latest_fetches
-             ON f.created_at = latest_fetches.created_at
-                AND f.repository_id = latest_fetches.r_id
-    WHERE  r.cloned = true
-      AND  r.disabled = false
-      AND  latest_fetches.created_at < ?`, since).Rows()
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var ids []int
-
-	for rows.Next() {
-		var id int
-		scanErr := rows.Scan(&id)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		ids = append(ids, id)
-	}
-
-	// never been fetched
-	rows, err = r.db.Raw(`
-    SELECT r.id
-    FROM   repositories r
-           LEFT JOIN fetches f
-             ON r.id = f.repository_id
-    WHERE  r.cloned = true
-      AND  r.disabled = false
-      AND  f.repository_id IS NULL`).Rows()
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		scanErr := rows.Scan(&id)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		ids = append(ids, id)
-	}
-
-	var repositories []Repository
-	err = r.db.Model(&Repository{}).Where("id IN (?)", ids).Find(&repositories).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return repositories, nil
 }
 
 func (r *repositoryRepository) NotScannedWithVersion(version int) ([]Repository, error) {
@@ -241,6 +186,107 @@ func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, cou
 		SET credential_count = ?
 		WHERE id = ?
 	`, count, repository.ID)
+
+	return err
+}
+
+func (r *repositoryRepository) DueForFetch() ([]Repository, error) {
+	ids := []int{}
+
+	// old fetches
+	rows, err := r.db.Raw(`
+		SELECT r.id
+		FROM repositories r
+			JOIN (SELECT repository_id, MAX(created_at) AS last_activity
+				FROM fetches
+				WHERE changes != '{}'
+				GROUP BY repository_id
+			) activity
+			ON activity.repository_id = r.id
+	  WHERE UTC_TIMESTAMP() - INTERVAL r.fetch_interval SECOND > last_activity
+		AND r.disabled = false
+		AND r.cloned = true
+	`).Rows()
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		scanErr := rows.Scan(&id)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		ids = append(ids, id)
+	}
+
+	// never been fetched
+	rows, err = r.db.Raw(`
+    SELECT r.id
+    FROM   repositories r
+           LEFT JOIN fetches f
+             ON r.id = f.repository_id
+    WHERE  f.repository_id IS NULL
+	`).Rows()
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		scanErr := rows.Scan(&id)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		ids = append(ids, id)
+	}
+
+	var repositories []Repository
+	err = r.db.Model(&Repository{}).Where("id IN (?)", ids).Find(&repositories).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return repositories, nil
+}
+
+func (r *repositoryRepository) LastActivity(repository *Repository) (time.Time, error) {
+	var createdAt time.Time
+
+	err := r.db.DB().QueryRow(`
+		SELECT MAX(created_at)
+		  FROM fetches
+		  WHERE repository_id = ?
+			AND changes != '{}'
+	`, repository.ID).Scan(&createdAt)
+
+	if err != nil {
+		err = r.db.DB().QueryRow(`
+		SELECT MAX(created_at)
+		  FROM fetches
+		  WHERE repository_id = ?
+	`, repository.ID).Scan(&createdAt)
+
+		if err != nil {
+			return createdAt, NeverBeenFetchedError
+		} else {
+			return createdAt, NoChangesError
+		}
+	}
+
+	return createdAt, nil
+}
+
+func (r *repositoryRepository) UpdateFetchInterval(repository *Repository, interval time.Duration) error {
+	_, err := r.db.DB().Exec(`
+		UPDATE repositories
+		SET fetch_interval = ?
+		WHERE id = ?
+	`, int(interval.Seconds()), repository.ID)
 
 	return err
 }

@@ -36,9 +36,11 @@ var _ = Describe("ChangeDiscoverer", func() {
 		scanner              *revokfakes.FakeScanner
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		fetchRepository      *dbfakes.FakeFetchRepository
+		fetchIntervalUpdater *revokfakes.FakeFetchIntervalUpdater
 		emitter              *metricsfakes.FakeEmitter
 
-		currentFetchID uint
+		currentFetchID       uint
+		fetchedRepositoryIds []uint
 
 		fetchTimer          *metricsfakes.FakeTimer
 		reposToFetch        *metricsfakes.FakeGauge
@@ -66,12 +68,24 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 
+		fetchedRepositoryIds = []uint{}
 		currentFetchID = 0
+
 		fetchRepository = &dbfakes.FakeFetchRepository{}
 		fetchRepository.RegisterFetchStub = func(l lager.Logger, f *db.Fetch) error {
 			currentFetchID++
 			f.ID = currentFetchID
+
+			fetchedRepositoryIds = append(fetchedRepositoryIds, f.Repository.ID)
+
 			return nil
+		}
+
+		fetchIntervalUpdater = &revokfakes.FakeFetchIntervalUpdater{}
+
+		fetchIntervalUpdater.UpdateFetchIntervalStub = func(repo *db.Repository) {
+			defer GinkgoRecover()
+			Expect(fetchedRepositoryIds).To(ContainElement(repo.ID))
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
@@ -132,6 +146,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 			scanner,
 			repositoryRepository,
 			fetchRepository,
+			fetchIntervalUpdater,
 			emitter,
 		)
 		process = ginkgomon.Invoke(runner)
@@ -149,33 +164,34 @@ var _ = Describe("ChangeDiscoverer", func() {
 	})
 
 	It("tries to get repositories from the database immediately on start", func() {
-		Eventually(repositoryRepository.NotFetchedSinceCallCount).Should(Equal(1))
-		actualTime := repositoryRepository.NotFetchedSinceArgsForCall(0)
-		Expect(actualTime).To(Equal(clock.Now().Add(-30 * time.Minute)))
+		Eventually(repositoryRepository.DueForFetchCallCount).Should(Equal(1))
 	})
 
 	It("tries to get repositories from the database on a timer", func() {
-		Eventually(repositoryRepository.NotFetchedSinceCallCount).Should(Equal(1))
-		Consistently(repositoryRepository.NotFetchedSinceCallCount).Should(Equal(1))
+		Eventually(repositoryRepository.DueForFetchCallCount).Should(Equal(1))
+		Consistently(repositoryRepository.DueForFetchCallCount).Should(Equal(1))
 
 		clock.Increment(interval)
 
-		Eventually(repositoryRepository.NotFetchedSinceCallCount).Should(Equal(2))
-		Consistently(repositoryRepository.NotFetchedSinceCallCount).Should(Equal(2))
+		Eventually(repositoryRepository.DueForFetchCallCount).Should(Equal(2))
+		Consistently(repositoryRepository.DueForFetchCallCount).Should(Equal(2))
 	})
 
 	Context("when there are repositories to fetch", func() {
+		var (
+			repo db.Repository
+		)
+
 		BeforeEach(func() {
-			repositoryRepository.NotFetchedSinceReturns([]db.Repository{
-				{
-					Model: db.Model{
-						ID: 42,
-					},
-					Owner: "some-owner",
-					Name:  "some-repo",
-					Path:  repoToFetchPath,
+			repo = db.Repository{
+				Model: db.Model{
+					ID: 42,
 				},
-			}, nil)
+				Owner: "some-owner",
+				Name:  "some-repo",
+				Path:  repoToFetchPath,
+			}
+			repositoryRepository.DueForFetchReturns([]db.Repository{repo}, nil)
 		})
 
 		It("increments the repositories to fetch metric", func() {
@@ -277,6 +293,13 @@ var _ = Describe("ChangeDiscoverer", func() {
 				Expect(fetch.Changes).To(Equal(bs))
 			})
 
+			It("updates the fetch interval for the repository", func() {
+				Eventually(fetchIntervalUpdater.UpdateFetchIntervalCallCount).Should(Equal(1))
+
+				passedRepo := fetchIntervalUpdater.UpdateFetchIntervalArgsForCall(0)
+				Expect(passedRepo).To(Equal(&repo))
+			})
+
 			Context("when there is an error scanning a change", func() {
 				BeforeEach(func() {
 					scanner.ScanStub = func(lager.Logger, string, string, string, string) error {
@@ -333,8 +356,8 @@ var _ = Describe("ChangeDiscoverer", func() {
 				},
 			}
 
-			repositoryRepository.NotFetchedSinceStub = func(time.Time) ([]db.Repository, error) {
-				if repositoryRepository.NotFetchedSinceCallCount() == 1 {
+			repositoryRepository.DueForFetchStub = func() ([]db.Repository, error) {
+				if repositoryRepository.DueForFetchCallCount() == 1 {
 					return repositories, nil
 				}
 
@@ -370,7 +393,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 			createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit", nil)
 
-			repositoryRepository.NotFetchedSinceReturns(nil, errors.New("an-error"))
+			repositoryRepository.DueForFetchReturns(nil, errors.New("an-error"))
 		})
 
 		It("does not increment the repositories to fetch metric", func() {

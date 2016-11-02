@@ -33,6 +33,7 @@ type changeDiscoverer struct {
 	scanner              Scanner
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
+	fetchIntervalUpdater FetchIntervalUpdater
 
 	fetchTimer             metrics.Timer
 	fetchedRepositoryGauge metrics.Gauge
@@ -51,6 +52,7 @@ func NewChangeDiscoverer(
 	scanner Scanner,
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
+	fetchIntervalUpdater FetchIntervalUpdater,
 	emitter metrics.Emitter,
 ) ChangeDiscoverer {
 	return &changeDiscoverer{
@@ -61,6 +63,7 @@ func NewChangeDiscoverer(
 		scanner:              scanner,
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
+		fetchIntervalUpdater: fetchIntervalUpdater,
 
 		fetchTimer:             emitter.Timer("revok.change_discoverer.fetch_time"),
 		fetchedRepositoryGauge: emitter.Gauge("revok.change_discoverer.repositories_to_fetch"),
@@ -102,7 +105,7 @@ func (c *changeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 func (c *changeDiscoverer) work(signals <-chan os.Signal, cancel context.CancelFunc, logger lager.Logger) {
 	c.runCounter.Inc(logger)
 
-	repos, err := c.repositoryRepository.NotFetchedSince(c.clock.Now().Add(-c.interval))
+	repos, err := c.repositoryRepository.DueForFetch()
 	if err != nil {
 		logger.Error("failed-getting-repos", err)
 		return
@@ -133,6 +136,7 @@ func (c *changeDiscoverer) Fetch(
 	logger lager.Logger,
 	repo db.Repository,
 ) error {
+
 	repoLogger := logger.WithData(lager.Data{
 		"owner":      repo.Owner,
 		"repository": repo.Name,
@@ -173,6 +177,8 @@ func (c *changeDiscoverer) Fetch(
 		repoLogger.Error("failed-to-save-fetch", err)
 		return err
 	}
+
+	c.fetchIntervalUpdater.UpdateFetchInterval(&repo)
 
 	quietLogger := kolsch.NewLogger()
 

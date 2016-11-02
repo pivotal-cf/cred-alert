@@ -72,17 +72,20 @@ type Repository struct {
 
 	Cloned bool
 
-	Name            string
-	Owner           string
-	Path            string
-	SSHURL          string `gorm:"column:ssh_url"`
-	Private         bool
-	DefaultBranch   string
-	RawJSON         []byte `gorm:"column:raw_json"`
-	CredentialCount uint32
+	Name          string
+	Owner         string
+	Path          string
+	SSHURL        string `gorm:"column:ssh_url"`
+	Private       bool
+	DefaultBranch string
+	RawJSON       []byte `gorm:"column:raw_json"`
 
 	FailedFetches int `gorm:"column:failed_fetches"`
 	Disabled      bool
+
+	FetchIntervalSeconds int `gorm:"column:fetch_interval"`
+
+	CredentialCount uint32
 }
 
 type Fetch struct {

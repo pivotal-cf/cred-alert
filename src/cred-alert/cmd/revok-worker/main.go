@@ -42,6 +42,8 @@ type Opts struct {
 	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" required:"true"`
 	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
 	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
+	MinFetchInterval            time.Duration `long:"min-fetch-interval" description:"the minimum frequency tofetch changes for repositories on disk and scan the changes" value-name:"MIN_FETCH_INTERVAL" default:"6h"`
+	MaxFetchInterval            time.Duration `long:"max-fetch-interval" description:"the maximum frequency tofetch changes for repositories on disk and scan the changes" value-name:"MAX_FETCH_INTERVAL" default:"168h"`
 
 	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX"`
 
@@ -138,6 +140,11 @@ func main() {
 	scanRepository := db.NewScanRepository(database, clock)
 	repositoryRepository := db.NewRepositoryRepository(database)
 	fetchRepository := db.NewFetchRepository(database)
+	fetchIntervalUpdater := revok.NewFetchIntervalUpdater(
+		repositoryRepository,
+		opts.MinFetchInterval,
+		opts.MaxFetchInterval,
+	)
 	credentialRepository := db.NewCredentialRepository(database)
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
@@ -182,6 +189,7 @@ func main() {
 		ancestryScanner,
 		repositoryRepository,
 		fetchRepository,
+		fetchIntervalUpdater,
 		emitter,
 	)
 

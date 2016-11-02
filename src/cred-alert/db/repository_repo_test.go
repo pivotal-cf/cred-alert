@@ -210,7 +210,7 @@ var _ = Describe("RepositoryRepo", func() {
 		})
 	})
 
-	Describe("NotFetchedSince", func() {
+	Describe("DueForFetch", func() {
 		var (
 			savedFetch      db.Fetch
 			savedRepository db.Repository
@@ -218,18 +218,21 @@ var _ = Describe("RepositoryRepo", func() {
 
 		BeforeEach(func() {
 			repository := &db.Repository{
-				Name:          "some-repo",
-				Owner:         "some-owner",
-				SSHURL:        "some-url",
-				Private:       true,
-				DefaultBranch: "some-branch",
-				RawJSON:       []byte("some-json"),
-				Cloned:        true,
+				Name:                 "some-repo",
+				Owner:                "some-owner",
+				SSHURL:               "some-url",
+				Private:              true,
+				DefaultBranch:        "some-branch",
+				RawJSON:              []byte("some-json"),
+				Cloned:               true,
+				FetchIntervalSeconds: 8 * 60 * 60,
 			}
 			err := repo.Create(repository)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&savedRepository).Error
+			err = database.
+				Where("name = ? AND owner = ?", repository.Name, repository.Owner).
+				Last(&savedRepository).Error
 			Expect(err).NotTo(HaveOccurred())
 
 			err = database.Model(&db.Fetch{}).Create(&db.Fetch{
@@ -241,16 +244,30 @@ var _ = Describe("RepositoryRepo", func() {
 			database.Where("repository_id = ?", repository.ID).Last(&savedFetch)
 		})
 
-		Context("when the repo's latest fetch is later than the given time", func() {
+		Context("when the time between the last fetch and now is shorter than the fetch interval", func() {
 			BeforeEach(func() {
-				t := time.Now().Add(-5 * time.Minute)
+				t := time.Now().Add(-15 * time.Minute)
 				database.Model(&db.Fetch{}).Where("id = ?", savedFetch.ID).Update("created_at", t)
 			})
 
-			It("does not return the repository", func() {
-				repos, err := repo.NotFetchedSince(time.Now().Add(-10 * time.Minute))
+			It("does not return that repository", func() {
+				repos, err := repo.DueForFetch()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(repos).To(BeEmpty())
+			})
+		})
+
+		Context("when time between the last fetch and now is longer than the fetch interval", func() {
+			BeforeEach(func() {
+				t := time.Now().Add(-10 * time.Hour)
+				database.Model(&db.Fetch{}).Where("id = ?", savedFetch.ID).Update("created_at", t)
+			})
+
+			It("returns a list of repositories that are due for fetch", func() {
+				repos, err := repo.DueForFetch()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(repos).To(HaveLen(1))
+				Expect(repos).To(ConsistOf(savedRepository))
 			})
 		})
 
@@ -261,13 +278,14 @@ var _ = Describe("RepositoryRepo", func() {
 
 			BeforeEach(func() {
 				repository := &db.Repository{
-					Name:          "some-unfetched-repo",
-					Owner:         "some-unfetched-owner",
-					SSHURL:        "some-unfetched-url",
-					Private:       true,
-					DefaultBranch: "some-branch",
-					RawJSON:       []byte("some-json"),
-					Cloned:        true,
+					Name:                 "some-unfetched-repo",
+					Owner:                "some-unfetched-owner",
+					SSHURL:               "some-unfetched-url",
+					Private:              true,
+					DefaultBranch:        "some-branch",
+					RawJSON:              []byte("some-json"),
+					Cloned:               true,
+					FetchIntervalSeconds: 8 * 60 * 60,
 				}
 				err := repo.Create(repository)
 				Expect(err).NotTo(HaveOccurred())
@@ -277,49 +295,157 @@ var _ = Describe("RepositoryRepo", func() {
 			})
 
 			It("returns the repository", func() {
-				repos, err := repo.NotFetchedSince(time.Now().Add(-1 * time.Minute))
+				repos, err := repo.DueForFetch()
 				Expect(err).NotTo(HaveOccurred())
+				Expect(repos).To(HaveLen(1))
 				Expect(repos).To(ConsistOf(neverFetchedRepo))
 			})
 		})
 
-		Context("when the repo's latest fetch is not later than the given time", func() {
+		Context("when the repository is disabled", func() {
 			BeforeEach(func() {
-				t := time.Now().Add(-15 * time.Minute)
-				database.Model(&db.Fetch{}).Where("id = ?", savedFetch.ID).Update("created_at", t)
-			})
-
-			It("returns the repo", func() {
-				repos, err := repo.NotFetchedSince(time.Now().UTC().Add(-10 * time.Minute))
+				_, err := database.DB().Exec(`UPDATE repositories SET disabled = true WHERE id = ?`, savedRepository.ID)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(repos).To(ConsistOf(savedRepository))
 			})
 
-			Context("when the repository is disabled", func() {
-				BeforeEach(func() {
-					_, err := database.DB().Exec(`UPDATE repositories SET disabled = true WHERE id = ?`, savedRepository.ID)
-					Expect(err).NotTo(HaveOccurred())
-				})
+			It("does not return the repository", func() {
+				repos, err := repo.DueForFetch()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(repos).To(BeEmpty())
+			})
+		})
 
-				It("does not return the repository", func() {
-					repos, err := repo.NotFetchedSince(time.Now().Add(-10 * time.Minute))
-					Expect(err).NotTo(HaveOccurred())
-					Expect(repos).To(BeEmpty())
-				})
+		Context("when the repository has not been cloned", func() {
+			BeforeEach(func() {
+				err := database.Model(&db.Repository{}).Where("id = ?", savedRepository.ID).Update("cloned", false).Error
+				Expect(err).NotTo(HaveOccurred())
 			})
 
-			Context("when the repository has not been cloned", func() {
-				BeforeEach(func() {
-					err := database.Model(&db.Repository{}).Where("id = ?", savedRepository.ID).Update("cloned", false).Error
-					Expect(err).NotTo(HaveOccurred())
-				})
+			It("does not return the repository", func() {
+				repos, err := repo.DueForFetch()
+				Expect(err).NotTo(HaveOccurred())
 
-				It("does not return the repository", func() {
-					repos, err := repo.NotFetchedSince(time.Now().Add(-10 * time.Minute))
-					Expect(err).NotTo(HaveOccurred())
-					Expect(repos).To(BeEmpty())
-				})
+				Expect(repos).To(BeEmpty())
 			})
+		})
+	})
+
+	Describe("LastActivity", func() {
+		var (
+			repository *db.Repository
+			fetchedAt  time.Time
+		)
+
+		BeforeEach(func() {
+			repository = &db.Repository{
+				Name:                 "some-unfetched-repo",
+				Owner:                "some-unfetched-owner",
+				SSHURL:               "some-unfetched-url",
+				Private:              true,
+				DefaultBranch:        "some-branch",
+				RawJSON:              []byte("some-json"),
+				Cloned:               true,
+				FetchIntervalSeconds: 6 * 60 * 60,
+			}
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+
+			fetchedAt = time.Now()
+		})
+
+		Context("when there are fetches with changes", func() {
+			BeforeEach(func() {
+				fetch1 := &db.Fetch{
+					RepositoryID: repository.ID,
+					Changes:      []byte("changes"),
+					Model: db.Model{
+						CreatedAt: fetchedAt,
+					},
+				}
+
+				err := database.Model(&db.Fetch{}).Create(fetch1).Error
+				Expect(err).NotTo(HaveOccurred())
+
+				fetch2 := &db.Fetch{
+					RepositoryID: repository.ID,
+					Changes:      []byte("{}"),
+					Model: db.Model{
+						CreatedAt: fetchedAt.Add(time.Second),
+					},
+				}
+
+				err = database.Model(&db.Fetch{}).Create(fetch2).Error
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns the time of last activity", func() {
+				lastActivity, err := repo.LastActivity(repository)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(lastActivity).To(BeTemporally("~", fetchedAt, time.Second))
+			})
+		})
+
+		Context("when there are no fetches with changes", func() {
+			BeforeEach(func() {
+				fetch := &db.Fetch{
+					RepositoryID: repository.ID,
+					Changes:      []byte("{}"),
+					Model: db.Model{
+						CreatedAt: fetchedAt,
+					},
+				}
+
+				err := database.Model(&db.Fetch{}).Create(fetch).Error
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns an error", func() {
+				_, err := repo.LastActivity(repository)
+				Expect(err).To(Equal(db.NoChangesError))
+			})
+		})
+
+		Context("when there are no fetches", func() {
+			It("returns an error", func() {
+				_, err := repo.LastActivity(repository)
+				Expect(err).To(Equal(db.NeverBeenFetchedError))
+			})
+		})
+	})
+
+	Describe("UpdateFetchInterval", func() {
+		var (
+			repository *db.Repository
+		)
+
+		BeforeEach(func() {
+			repository = &db.Repository{
+				Name:                 "some-unfetched-repo",
+				Owner:                "some-unfetched-owner",
+				SSHURL:               "some-unfetched-url",
+				Private:              true,
+				DefaultBranch:        "some-branch",
+				RawJSON:              []byte("some-json"),
+				Cloned:               true,
+				FetchIntervalSeconds: 6 * 60 * 60,
+			}
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("updates fetch interval", func() {
+			err := repo.UpdateFetchInterval(repository, 8*time.Hour)
+			Expect(err).NotTo(HaveOccurred())
+
+			var sec int
+			err = database.DB().QueryRow(`
+				SELECT fetch_interval
+				FROM repositories
+				WHERE id = ?
+				`, repository.ID).Scan(&sec)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(sec).To(Equal(8 * 60 * 60))
 		})
 	})
 
