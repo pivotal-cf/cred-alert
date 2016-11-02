@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"cred-alert/revokpb"
 	"crypto/tls"
@@ -101,7 +102,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	err = h.template.Execute(w, TemplateData{
+	buf := bytes.NewBuffer([]byte{})
+	err = h.template.Execute(buf, TemplateData{
 		Organizations: templateOrgs,
 	})
 
@@ -110,4 +112,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	buf.WriteTo(w)
 }
