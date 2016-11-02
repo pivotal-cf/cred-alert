@@ -2,10 +2,12 @@
 <html lang="en">
   <head>
     <title>Credential Count by Organization</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
   </head>
   <body>
     <div id="content">
-      <table class="table">
+      <h3>Credential Counts By Organization</h3>
+      <table class="pure-table pure-table-bordered">
         <thead>
           <th>Organization</th>
           <th>Credential Count</th>
@@ -23,21 +25,23 @@
       <br />
       <hr>
 
+      <h3>Credential Counts By Repository</h3>
       {{range .Organizations}}
-      <table id="#{{.Name}}" class="table">
-	<caption>{{.Name}}</caption>
-        <thead>
-          <th>Repository</th>
-          <th>Credential Count</th>
-        </thead>
+      <div style="float:left;">
+	<table id="#{{.Name}}" class="pure-table pure-table-bordered">
+	  <caption>{{.Name}}</caption>
+	  <thead>
+	    <th>Repository</th>
+	    <th>Credential Count</th>
+	  </thead>
 
-        {{range .Repositories}}
-        <tr>
-          <td>{{.Name}}</a></td>
-          <td>{{.CredentialCount}}</td>
-        </tr>
-        {{end}}
-
+	  {{range .Repositories}}
+	  <tr>
+	    <td>{{.Name}}</a></td>
+	    <td>{{.CredentialCount}}</td>
+	  </tr>
+	  {{end}}
+	</table>
       {{end}}
     </div>
   </body>
