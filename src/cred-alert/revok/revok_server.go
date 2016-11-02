@@ -11,6 +11,8 @@ import (
 
 //go:generate bash $GOPATH/scripts/generate_protos.sh
 
+//go:generate go-bindata -o web/bindata.go -ignore bindata -pkg web web web/templates/...
+
 //go:generate counterfeiter . RevokServer
 
 type RevokServer interface {
