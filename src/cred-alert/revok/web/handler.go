@@ -66,6 +66,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	dialOption := grpc.WithTransportCredentials(transportCreds)
 	conn, err := grpc.Dial(h.rpcServerAddr, dialOption)
 	if err != nil {
+		h.logger.Error("dial-error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -75,6 +76,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	request := &revokpb.CredentialCountRequest{}
 	response, err := client.GetCredentialCounts(context.Background(), request)
 	if err != nil {
+		h.logger.Error("failed-to-get-credential-counts", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -104,6 +106,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		h.logger.Error("failed-to-execute-template", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
