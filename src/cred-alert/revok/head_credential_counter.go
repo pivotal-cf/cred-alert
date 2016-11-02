@@ -4,6 +4,7 @@ import (
 	"context"
 	"cred-alert/db"
 	"cred-alert/gitclient"
+	"cred-alert/kolsch"
 	"cred-alert/scanners"
 	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
@@ -79,6 +80,8 @@ func (c *headCredentialCounter) work(
 		logger.Error("failed-getting-all-repositories", err)
 	}
 
+	quietLogger := kolsch.NewLogger()
+
 	for i := range repositories {
 		select {
 		case <-signals:
@@ -100,7 +103,7 @@ func (c *headCredentialCounter) work(
 
 			var credCount uint
 			_ = c.sniffer.Sniff(
-				logger,
+				quietLogger,
 				filescanner.New(r, ""), // no filename necessary
 				func(lager.Logger, scanners.Violation) error {
 					credCount++
