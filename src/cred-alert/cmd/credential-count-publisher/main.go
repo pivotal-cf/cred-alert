@@ -34,9 +34,9 @@ var (
 )
 
 func init() {
-	bs, err := web.Asset("revok/web/templates/index.html")
+	bs, err := web.Asset("web/templates/index.html")
 	if err != nil {
-		os.Exit(1)
+		log.Fatalf("failed loading asset: %s", err.Error())
 	}
 	layout = template.Must(template.New("index.html").Parse(string(bs)))
 
