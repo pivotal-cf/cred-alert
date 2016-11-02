@@ -56,7 +56,8 @@ func (runner *Runner) Setup() {
 	runner.process = ginkgomon.Invoke(pubSub)
 	runner.pid = cmd.Process.Pid
 
-	os.Setenv("PUBSUB_EMULATOR_HOST", hostPort)
+	err = os.Setenv("PUBSUB_EMULATOR_HOST", hostPort)
+	Expect(err).ToNot(HaveOccurred())
 
 	ctx := context.Background()
 	runner.client, err = pubsub.NewClient(ctx, "testing")

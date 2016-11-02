@@ -123,7 +123,7 @@ func (c *changeDiscoverer) work(signals <-chan os.Signal, cancel context.CancelF
 				cancel()
 				return
 			default:
-				c.Fetch(logger, repos[i])
+				_ = c.Fetch(logger, repos[i])
 				if i < len(repos)-1 {
 					<-waitCh
 				}
