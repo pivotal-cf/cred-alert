@@ -13,15 +13,19 @@
 
         {{range .Organizations}}
         <tr>
-          <td><a href="{{.Path}}">{{.Name}}</a></td>
+          <td><a href="#{{.Name}}">{{.Name}}</a></td>
           <td>{{.CredentialCount}}</td>
         </tr>
         {{end}}
       </table>
 
+      <br />
+      <br />
+      <hr>
+
       {{range .Organizations}}
-      <h1>{{.Name}}</h1>
-      <table class="table">
+      <table id="#{{.Name}}" class="table">
+	<caption>{{.Name}}</caption>
         <thead>
           <th>Repository</th>
           <th>Credential Count</th>
