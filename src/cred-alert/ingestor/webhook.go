@@ -39,11 +39,18 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scan, valid := extractPushScanFromEvent(event)
-	if !valid {
+	if event.Before == nil || event.After == nil {
 		h.logger.Info("invalid-event-dropped")
 		w.WriteHeader(http.StatusOK)
 		return
+	}
+
+	scan := PushScan{
+		Owner:      *event.Repo.Owner.Name,
+		Repository: *event.Repo.Name,
+		From:       *event.Before,
+		To:         *event.After,
+		Private:    *event.Repo.Private,
 	}
 
 	h.logger.Info("handling-webhook-payload", lager.Data{
