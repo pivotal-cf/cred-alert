@@ -14,7 +14,7 @@ type handler struct {
 	ingestor  Ingestor
 }
 
-func Handler(logger lager.Logger, ingestor Ingestor, secretKey string) *handler {
+func NewHandler(logger lager.Logger, ingestor Ingestor, secretKey string) *handler {
 	return &handler{
 		logger:    logger.Session("webhook-handler"),
 		secretKey: []byte(secretKey),

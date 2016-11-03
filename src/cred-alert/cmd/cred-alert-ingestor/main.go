@@ -72,7 +72,7 @@ func main() {
 	in := ingestor.NewIngestor(taskQueue, emitter, "cred_alert", generator)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookToken))
+	router.Handle("/webhook", ingestor.NewHandler(logger, in, opts.GitHub.WebhookToken))
 
 	members := []grouper.Member{
 		{"api", http_server.New(

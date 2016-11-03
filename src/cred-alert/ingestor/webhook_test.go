@@ -60,7 +60,7 @@ var _ = Describe("Webhook", func() {
 			},
 		}
 
-		handler = ingestor.Handler(logger, in, token)
+		handler = ingestor.NewHandler(logger, in, token)
 	})
 
 	Context("when the request is properly formed", func() {

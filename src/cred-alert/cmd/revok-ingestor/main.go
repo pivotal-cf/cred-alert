@@ -70,7 +70,7 @@ func main() {
 	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", ingestor.Handler(logger, in, opts.GitHub.WebhookSecretToken))
+	router.Handle("/webhook", ingestor.NewHandler(logger, in, opts.GitHub.WebhookSecretToken))
 	router.Handle("/healthcheck", revok.ObliviousHealthCheck())
 
 	members := []grouper.Member{
