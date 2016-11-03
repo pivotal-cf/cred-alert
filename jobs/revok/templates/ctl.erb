@@ -29,6 +29,8 @@ case $1 in
       --fetch-hint-pubsub-subscription <%= p("revok.pubsub.fetch_hint.subscription") %> \
       --repository-discovery-interval <%= p("revok.repository_discovery_interval") %> \
       --change-discovery-interval <%= p("revok.change_discovery_interval") %> \
+      --min-fetch-interval <%= p("revok.minimum_fetch_interval") %> \
+      --max-fetch-interval <%= p("revok.maximum_fetch_interval") %> \
       --work-dir <%= p("revok.work_dir") %> \
       --github-private-key-path /var/vcap/jobs/revok/config/github_private_key \
       --github-public-key-path /var/vcap/jobs/revok/config/github_public_key \
