@@ -83,13 +83,13 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 
 	repos, err := r.ghClient.ListRepositories(logger)
 	if err != nil {
-		logger.Error("failed", err)
+		logger.Error("failed-to-get-github-repositories", err)
 		return
 	}
 
 	dbRepos, err := r.repositoryRepository.All()
 	if err != nil {
-		logger.Error("failed", err)
+		logger.Error("failed-to-get-db-repositories", err)
 		return
 	}
 
