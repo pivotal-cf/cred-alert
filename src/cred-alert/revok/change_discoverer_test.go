@@ -235,7 +235,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 				Eventually(scanner.ScanCallCount).Should(Equal(2)) // 2 new commits
 
 				for i := 0; i < scanner.ScanCallCount(); i++ {
-					_, owner, name, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+					_, owner, name, _, startSHA, stopSHA := scanner.ScanArgsForCall(i)
 					Expect(owner).To(Equal("some-owner"))
 					Expect(name).To(Equal("some-repo"))
 
@@ -302,7 +302,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 			Context("when there is an error scanning a change", func() {
 				BeforeEach(func() {
-					scanner.ScanStub = func(lager.Logger, string, string, string, string) error {
+					scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) error {
 						if scanner.ScanCallCount() == 1 {
 							return nil
 						}

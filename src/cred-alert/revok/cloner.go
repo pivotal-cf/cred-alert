@@ -115,14 +115,15 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	var branch *git.Branch
+	scannedOids := map[git.Oid]struct{}{}
 	for {
-		branch, _, err = it.Next()
+		branch, _, err := it.Next()
 		if err != nil {
 			break
 		}
 
-		err = c.scanner.Scan(workLogger, msg.Owner, msg.Repository, branch.Target().String(), "")
+		err = c.scanner.Scan(workLogger, msg.Owner, msg.Repository, scannedOids, branch.Target().String(), "")
+
 		if err != nil {
 			c.scanFailedCounter.Inc(workLogger)
 		} else {

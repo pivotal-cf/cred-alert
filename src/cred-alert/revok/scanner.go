@@ -18,7 +18,7 @@ import (
 //go:generate counterfeiter . Scanner
 
 type Scanner interface {
-	Scan(lager.Logger, string, string, string, string) error
+	Scan(lager.Logger, string, string, map[git.Oid]struct{}, string, string) error
 	ScanNoNotify(lager.Logger, string, string, string, string) ([]db.Credential, error)
 }
 
@@ -54,6 +54,7 @@ func (s *scanner) Scan(
 	logger lager.Logger,
 	owner string,
 	repository string,
+	scannedOids map[git.Oid]struct{},
 	startSHA string,
 	stopSHA string,
 ) error {
@@ -63,7 +64,7 @@ func (s *scanner) Scan(
 		return err
 	}
 
-	credentials, err := s.scan(logger, dbRepository, startSHA, stopSHA)
+	credentials, err := s.scan(logger, dbRepository, scannedOids, startSHA, stopSHA)
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,8 @@ func (s *scanner) ScanNoNotify(
 		return nil, err
 	}
 
-	credentials, err := s.scan(logger, dbRepository, startSHA, stopSHA)
+	scannedOids := map[git.Oid]struct{}{}
+	credentials, err := s.scan(logger, dbRepository, scannedOids, startSHA, stopSHA)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +118,7 @@ func (s *scanner) ScanNoNotify(
 func (s *scanner) scan(
 	logger lager.Logger,
 	dbRepository db.Repository,
+	scannedOids map[git.Oid]struct{},
 	startSHA string,
 	stopSHA string,
 ) ([]db.Credential, error) {
@@ -143,7 +146,6 @@ func (s *scanner) scan(
 
 	quietLogger := kolsch.NewLogger()
 	scan := s.scanRepository.Start(quietLogger, "repo-scan", startSHA, stopSHA, &dbRepository, nil)
-	scannedOids := map[git.Oid]struct{}{}
 
 	var credentials []db.Credential
 
@@ -212,6 +214,14 @@ func (s *scanner) scanAncestors(
 	child *git.Oid,
 	stopPoint *git.Oid,
 ) error {
+	if _, found := scannedOids[*child]; found {
+		return nil
+	}
+
+	if _, found := knownSHAs[child.String()]; found {
+		return nil
+	}
+
 	parents, err := s.gitClient.GetParents(repo, child)
 	if err != nil {
 		return err
@@ -229,14 +239,6 @@ func (s *scanner) scanAncestors(
 	}
 
 	for _, parent := range parents {
-		if _, found := scannedOids[*parent]; found {
-			continue
-		}
-
-		if _, found := knownSHAs[parent.String()]; found {
-			continue
-		}
-
 		if stopPoint != nil && parent.Equal(stopPoint) {
 			continue
 		}
