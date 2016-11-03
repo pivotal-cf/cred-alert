@@ -38,7 +38,7 @@ var _ = Describe("Cloner", func() {
 		cloneSuccessMetric *metricsfakes.FakeCounter
 		cloneFailedMetric  *metricsfakes.FakeCounter
 		repoPath           string
-		expectedStartSHA   string
+		repo               *git.Repository
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -80,22 +80,16 @@ var _ = Describe("Cloner", func() {
 		repoPath, err = ioutil.TempDir("", "revok-test-base-repo")
 		Expect(err).NotTo(HaveOccurred())
 
-		repo, err := git.InitRepository(repoPath, false)
+		repo, err = git.InitRepository(repoPath, false)
 		Expect(err).NotTo(HaveOccurred())
-		defer repo.Free()
 
 		workdir, err = ioutil.TempDir("", "revok-test")
 		Expect(err).NotTo(HaveOccurred())
 
-		createCommit("refs/heads/master", repoPath, "some-file", []byte("credential"), "Initial commit", nil)
-
-		head, err := repo.Head()
-		Expect(err).NotTo(HaveOccurred())
-
-		expectedStartSHA = head.Target().String()
 	})
 
 	AfterEach(func() {
+		repo.Free()
 		ginkgomon.Interrupt(process)
 		<-process.Wait()
 
@@ -116,111 +110,140 @@ var _ = Describe("Cloner", func() {
 		process = ginkgomon.Invoke(runner)
 	})
 
-	Context("when there is a message on the clone message channel", func() {
+	It("does not try to scan when there are no branches", func() {
+		Consistently(scanner.ScanCallCount).Should(BeZero())
+	})
+
+	Context("when there are multiple branches", func() {
 		BeforeEach(func() {
-			workCh <- revok.CloneMsg{
-				URL:        repoPath,
-				Repository: "some-repo",
-				Owner:      "some-owner",
-			}
+			createCommit("refs/heads/potatoes", repoPath, "some-potato", []byte("credential"), "Initial commit on potatoes", nil)
+			createCommit("refs/heads/tomatoes", repoPath, "some-tomato", []byte("credential"), "Initial commit on tomatoes", nil)
 		})
 
-		It("clones the repository to workdir/owner/repo", func() {
-			Eventually(filepath.Join(workdir, "some-owner", "some-repo", ".git")).Should(BeADirectory())
-			Eventually(func() error {
-				_, err := git.OpenRepository(filepath.Join(workdir, "some-owner", "some-repo"))
-				return err
-			}).ShouldNot(HaveOccurred())
-		})
-
-		It("finds the repository in the database that matches the owner and repo", func() {
-			Eventually(repositoryRepository.FindCallCount).Should(Equal(1))
-			owner, name := repositoryRepository.FindArgsForCall(0)
-			Expect(owner).To(Equal("some-owner"))
-			Expect(name).To(Equal("some-repo"))
-		})
-
-		It("marks the repository in the database as cloned", func() {
-			Eventually(repositoryRepository.MarkAsClonedCallCount).Should(Equal(1))
-		})
-
-		It("tries to scan the repository", func() {
-			Eventually(scanner.ScanCallCount).Should(Equal(1))
-			_, owner, repository, startSHA, stopSHA := scanner.ScanArgsForCall(0)
-			Expect(owner).To(Equal("some-owner"))
-			Expect(repository).To(Equal("some-repo"))
-			Expect(startSHA).To(Equal(expectedStartSHA))
-			Expect(stopSHA).To(Equal(""))
-		})
-
-		It("increments the successful clone metric", func() {
-			Eventually(cloneSuccessMetric.IncCallCount).Should(Equal(1))
-		})
-
-		It("increments the successful scan metric", func() {
-			Eventually(scanSuccessMetric.IncCallCount).Should(Equal(1))
-		})
-
-		Context("when scanning fails", func() {
+		Context("when there is a message on the clone message channel", func() {
 			BeforeEach(func() {
-				scanner.ScanReturns(errors.New("an-error"))
-			})
-
-			It("increments the failed scan metric", func() {
-				Eventually(scanFailedMetric.IncCallCount).Should(Equal(1))
-			})
-		})
-
-		Context("when cloning fails", func() {
-			BeforeEach(func() {
-				fakeGitClient := &gitclientfakes.FakeClient{}
-				fakeGitClient.CloneStub = func(url, dest string) (*git.Repository, error) {
-					err := os.MkdirAll(dest, os.ModePerm)
-					Expect(err).NotTo(HaveOccurred())
-					return nil, errors.New("an-error")
+				workCh <- revok.CloneMsg{
+					URL:        repoPath,
+					Repository: "some-repo",
+					Owner:      "some-owner",
 				}
-				gitClient = fakeGitClient
 			})
 
-			It("cleans up the failed clone destination, if any", func() {
-				fakeGitClient, ok := gitClient.(*gitclientfakes.FakeClient)
-				Expect(ok).To(BeTrue())
-
-				Eventually(fakeGitClient.CloneCallCount).Should(Equal(1))
-				_, dest := fakeGitClient.CloneArgsForCall(0)
-				Eventually(dest).ShouldNot(BeADirectory())
+			It("clones the repository to workdir/owner/repo", func() {
+				Eventually(filepath.Join(workdir, "some-owner", "some-repo", ".git")).Should(BeADirectory())
+				Eventually(func() error {
+					_, err := git.OpenRepository(filepath.Join(workdir, "some-owner", "some-repo"))
+					return err
+				}).ShouldNot(HaveOccurred())
 			})
 
-			It("does not mark the repository as having been cloned", func() {
-				Consistently(repositoryRepository.MarkAsClonedCallCount).Should(BeZero())
+			It("finds the repository in the database that matches the owner and repo", func() {
+				Eventually(repositoryRepository.FindCallCount).Should(Equal(1))
+				owner, name := repositoryRepository.FindArgsForCall(0)
+				Expect(owner).To(Equal("some-owner"))
+				Expect(name).To(Equal("some-repo"))
 			})
 
-			It("does not try to scan", func() {
-				Consistently(scanner.ScanCallCount).Should(BeZero())
+			It("marks the repository in the database as cloned", func() {
+				Eventually(repositoryRepository.MarkAsClonedCallCount).Should(Equal(1))
 			})
 
-			It("increments the failed clone metric", func() {
-				Eventually(cloneFailedMetric.IncCallCount).Should(Equal(1))
-			})
-		})
+			It("tries to scan all branches", func() {
+				Eventually(scanner.ScanCallCount).Should(Equal(2))
 
-		Context("when marking the repository as cloned fails", func() {
-			BeforeEach(func() {
-				repositoryRepository.MarkAsClonedReturns(errors.New("an-error"))
+				it, err := repo.NewReferenceIterator()
+				Expect(err).ToNot(HaveOccurred())
+				head, err := it.Next()
+				Expect(err).ToNot(HaveOccurred())
+				expectedStartSHA := head.Target().String()
+
+				_, owner, repository, startSHA, stopSHA := scanner.ScanArgsForCall(0)
+
+				Expect(owner).To(Equal("some-owner"))
+				Expect(repository).To(Equal("some-repo"))
+				Expect(startSHA).To(Equal(expectedStartSHA))
+				Expect(stopSHA).To(Equal(""))
+
+				head, err = it.Next()
+				Expect(err).ToNot(HaveOccurred())
+				expectedStartSHA = head.Target().String()
+
+				_, owner, repository, startSHA, stopSHA = scanner.ScanArgsForCall(1)
+				Expect(owner).To(Equal("some-owner"))
+				Expect(repository).To(Equal("some-repo"))
+				Expect(startSHA).To(Equal(expectedStartSHA))
+				Expect(stopSHA).To(Equal(""))
 			})
 
-			It("does not try to scan", func() {
-				Consistently(scanner.ScanCallCount).Should(BeZero())
-			})
-		})
-
-		Context("when finding the repository fails", func() {
-			BeforeEach(func() {
-				repositoryRepository.FindReturns(db.Repository{}, errors.New("an-error"))
+			It("increments the successful clone metric", func() {
+				Eventually(cloneSuccessMetric.IncCallCount).Should(Equal(1))
 			})
 
-			It("does not try to scan", func() {
-				Consistently(scanner.ScanCallCount).Should(BeZero())
+			It("increments the successful scan metric", func() {
+				Eventually(scanSuccessMetric.IncCallCount).Should(Equal(2))
+			})
+
+			Context("when scanning fails", func() {
+				BeforeEach(func() {
+					scanner.ScanReturns(errors.New("an-error"))
+				})
+
+				It("increments the failed scan metric", func() {
+					Eventually(scanFailedMetric.IncCallCount).Should(Equal(2))
+				})
+			})
+
+			Context("when cloning fails", func() {
+				BeforeEach(func() {
+					fakeGitClient := &gitclientfakes.FakeClient{}
+					fakeGitClient.CloneStub = func(url, dest string) (*git.Repository, error) {
+						err := os.MkdirAll(dest, os.ModePerm)
+						Expect(err).NotTo(HaveOccurred())
+						return nil, errors.New("an-error")
+					}
+					gitClient = fakeGitClient
+				})
+
+				It("cleans up the failed clone destination, if any", func() {
+					fakeGitClient, ok := gitClient.(*gitclientfakes.FakeClient)
+					Expect(ok).To(BeTrue())
+
+					Eventually(fakeGitClient.CloneCallCount).Should(Equal(1))
+					_, dest := fakeGitClient.CloneArgsForCall(0)
+					Eventually(dest).ShouldNot(BeADirectory())
+				})
+
+				It("does not mark the repository as having been cloned", func() {
+					Consistently(repositoryRepository.MarkAsClonedCallCount).Should(BeZero())
+				})
+
+				It("does not try to scan", func() {
+					Consistently(scanner.ScanCallCount).Should(BeZero())
+				})
+
+				It("increments the failed clone metric", func() {
+					Eventually(cloneFailedMetric.IncCallCount).Should(Equal(1))
+				})
+			})
+
+			Context("when marking the repository as cloned fails", func() {
+				BeforeEach(func() {
+					repositoryRepository.MarkAsClonedReturns(errors.New("an-error"))
+				})
+
+				It("does not try to scan", func() {
+					Consistently(scanner.ScanCallCount).Should(BeZero())
+				})
+			})
+
+			Context("when finding the repository fails", func() {
+				BeforeEach(func() {
+					repositoryRepository.FindReturns(db.Repository{}, errors.New("an-error"))
+				})
+
+				It("does not try to scan", func() {
+					Consistently(scanner.ScanCallCount).Should(BeZero())
+				})
 			})
 		})
 	})

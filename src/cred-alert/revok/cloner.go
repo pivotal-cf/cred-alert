@@ -109,16 +109,24 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	head, err := repo.Head()
+	it, err := repo.NewBranchIterator(git.BranchAll)
 	if err != nil {
-		workLogger.Error("failed-to-get-head-of-repo", err)
+		workLogger.Error("failed-to-get-branch-iterator", err)
 		return
 	}
 
-	err = c.scanner.Scan(workLogger, msg.Owner, msg.Repository, head.Target().String(), "")
-	if err != nil {
-		c.scanFailedCounter.Inc(workLogger)
-	} else {
-		c.scanSuccessCounter.Inc(workLogger)
+	var branch *git.Branch
+	for {
+		branch, _, err = it.Next()
+		if err != nil {
+			break
+		}
+
+		err = c.scanner.Scan(workLogger, msg.Owner, msg.Repository, branch.Target().String(), "")
+		if err != nil {
+			c.scanFailedCounter.Inc(workLogger)
+		} else {
+			c.scanSuccessCounter.Inc(workLogger)
+		}
 	}
 }
