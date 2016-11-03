@@ -119,15 +119,16 @@ var _ = Describe("Cloner", func() {
 		BeforeEach(func() {
 			createCommit("refs/heads/potatoes", repoPath, "some-potato", []byte("credential"), "Initial commit on potatoes", nil)
 			createCommit("refs/heads/tomatoes", repoPath, "some-tomato", []byte("credential"), "Initial commit on tomatoes", nil)
-
-			workCh <- revok.CloneMsg{
-				URL:        repoPath,
-				Repository: "some-repo",
-				Owner:      "some-owner",
-			}
 		})
 
 		Context("when there is a message on the clone message channel", func() {
+			BeforeEach(func() {
+				workCh <- revok.CloneMsg{
+					URL:        repoPath,
+					Repository: "some-repo",
+					Owner:      "some-owner",
+				}
+			})
 
 			It("clones the repository to workdir/owner/repo", func() {
 				Eventually(filepath.Join(workdir, "some-owner", "some-repo", ".git")).Should(BeADirectory())
