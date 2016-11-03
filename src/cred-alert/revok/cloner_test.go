@@ -10,11 +10,11 @@ import (
 	"cred-alert/revok"
 	"cred-alert/revok/revokfakes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
@@ -119,32 +119,15 @@ var _ = Describe("Cloner", func() {
 		BeforeEach(func() {
 			createCommit("refs/heads/potatoes", repoPath, "some-potato", []byte("credential"), "Initial commit on potatoes", nil)
 			createCommit("refs/heads/tomatoes", repoPath, "some-tomato", []byte("credential"), "Initial commit on tomatoes", nil)
+
+			workCh <- revok.CloneMsg{
+				URL:        repoPath,
+				Repository: "some-repo",
+				Owner:      "some-owner",
+			}
 		})
 
 		Context("when there is a message on the clone message channel", func() {
-			BeforeEach(func() {
-				workCh <- revok.CloneMsg{
-					URL:        repoPath,
-					Repository: "some-repo",
-					Owner:      "some-owner",
-				}
-
-				scanner.ScanStub = func(logger lager.Logger, owner string, repository string, scannedOids map[git.Oid]struct{}, startSHA string, stopSHA string) error {
-					defer GinkgoRecover()
-
-					n := scanner.ScanCallCount()
-
-					// Assert that scannedOids are accumulated
-					Expect(scannedOids).To(HaveLen(n - 1))
-
-					// Construct unique Oid for this scan
-					oidBytes := make([]byte, 20)
-					oidBytes[0] = byte(n)
-					oid := git.NewOidFromBytes(oidBytes)
-					scannedOids[*oid] = struct{}{}
-					return nil
-				}
-			})
 
 			It("clones the repository to workdir/owner/repo", func() {
 				Eventually(filepath.Join(workdir, "some-owner", "some-repo", ".git")).Should(BeADirectory())
@@ -174,7 +157,7 @@ var _ = Describe("Cloner", func() {
 				Expect(err).ToNot(HaveOccurred())
 				expectedStartSHA := head.Target().String()
 
-				_, owner, repository, _, startSHA, stopSHA := scanner.ScanArgsForCall(0)
+				_, owner, repository, scannedOids, startSHA, stopSHA := scanner.ScanArgsForCall(0)
 
 				Expect(owner).To(Equal("some-owner"))
 				Expect(repository).To(Equal("some-repo"))
@@ -185,11 +168,12 @@ var _ = Describe("Cloner", func() {
 				Expect(err).ToNot(HaveOccurred())
 				expectedStartSHA = head.Target().String()
 
-				_, owner, repository, _, startSHA, stopSHA = scanner.ScanArgsForCall(1)
+				_, owner, repository, scannedOids2, startSHA, stopSHA := scanner.ScanArgsForCall(1)
 				Expect(owner).To(Equal("some-owner"))
 				Expect(repository).To(Equal("some-repo"))
 				Expect(startSHA).To(Equal(expectedStartSHA))
 				Expect(stopSHA).To(Equal(""))
+				Expect(fmt.Sprintf("%p", scannedOids)).To(BeIdenticalTo(fmt.Sprintf("%p", scannedOids2)))
 			})
 
 			It("increments the successful clone metric", func() {

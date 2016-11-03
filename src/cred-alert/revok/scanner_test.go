@@ -6,7 +6,6 @@ import (
 	"cred-alert/gitclient"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
-	"cred-alert/notifications"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/revok"
 	"cred-alert/scanners"
@@ -304,37 +303,13 @@ var _ = Describe("Scanner", func() {
 		})
 	})
 
-	Context("when the repository has a new branch with a commit", func() {
-		BeforeEach(func() {
-			secondMasterCommitResult := createCommit("refs/heads/master", baseRepoPath, "second-master-commit-file", []byte("credential"), "second commit", nil)
-			createCommit("refs/heads/branch", baseRepoPath, "first-branch-commit-file", []byte("credential"), "first-branch-commit", secondMasterCommitResult.To)
-			createCommit("refs/heads/branch", baseRepoPath, "second-branch-commit-file", []byte("credential"), "second-branch-commit", nil)
-		})
-
-		It("scans the common commit only once", func() {
-			it, err := baseRepo.NewBranchIterator(git.BranchAll)
-			Expect(err).NotTo(HaveOccurred())
-			scannedOids := map[git.Oid]struct{}{}
-
-			for {
-				branch, _, err := it.Next()
-				if err != nil {
-					break
-				}
-
-				err = scanner.Scan(logger, "some-owner", "some-repository", scannedOids, branch.Target().String(), "")
-				Expect(err).NotTo(HaveOccurred())
-			}
-
-			allNotifications := []notifications.Notification{}
-
-			for i := 0; i < notifier.SendBatchNotificationCallCount(); i++ {
-				_, notifications := notifier.SendBatchNotificationArgsForCall(i)
-				allNotifications = append(allNotifications, notifications...)
-			}
-
-			Expect(allNotifications).To(HaveLen(4))
-		})
+	It("does nothing when provided with a branch that's already been scanned", func() {
+		m := map[git.Oid]struct{}{
+			*result.To: struct{}{},
+		}
+		err := scanner.Scan(logger, "some-owner", "some-repository", m, result.To.String(), "")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(firstScan.RecordCredentialCallCount()).To(BeZero())
 	})
 
 	Context("when finding the repository fails", func() {
