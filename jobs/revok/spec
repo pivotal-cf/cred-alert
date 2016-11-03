@@ -34,7 +34,9 @@ properties:
   revok.repository_discovery_interval:
     description: |
       The interval, in Go duration format (e.g. 1m = 1 minute), on which to
-      query GitHub for repositories.
+      query GitHub for repositories. Setting this value to a multiple of the
+      minimum_fetch_interval can cause some repositories to be fetched half
+      as frequently.
     default: 1h
 
   revok.change_discovery_interval:
