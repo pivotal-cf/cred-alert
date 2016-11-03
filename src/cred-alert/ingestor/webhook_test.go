@@ -30,16 +30,17 @@ var _ = Describe("Webhook", func() {
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
 
-		token     string
-		pushEvent github.PushEvent
+		configuredTokens []string
+		signingToken     string
+		pushEvent        github.PushEvent
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("ingestor")
 		recorder = httptest.NewRecorder()
 		in = &ingestorfakes.FakeIngestor{}
-		token = "example-key"
-
+		configuredTokens = []string{"example-key"}
+		signingToken = configuredTokens[0]
 		pushEvent = github.PushEvent{
 			Before: github.String("commit-sha-0"),
 			After:  github.String("commit-sha-5"),
@@ -60,16 +61,18 @@ var _ = Describe("Webhook", func() {
 			},
 		}
 
-		handler = ingestor.NewHandler(logger, in, token)
+		handler = ingestor.NewHandler(logger, in, configuredTokens)
 	})
 
 	Context("when the request is properly formed", func() {
 		JustBeforeEach(func() {
+			handler = ingestor.NewHandler(logger, in, configuredTokens)
+
 			body := &bytes.Buffer{}
 			err := json.NewEncoder(body).Encode(pushEvent)
 			Expect(err).NotTo(HaveOccurred())
 
-			macHeader := fmt.Sprintf("sha1=%s", messageMAC(token, body.Bytes()))
+			macHeader := fmt.Sprintf("sha1=%s", messageMAC(signingToken, body.Bytes()))
 
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", body)
 			fakeRequest.Header.Set("X-Hub-Signature", macHeader)
@@ -96,6 +99,34 @@ var _ = Describe("Webhook", func() {
 				Private:    true,
 			}))
 			Expect(actualGitHubID).To(Equal("delivery-id"))
+		})
+
+		Context("when multiple configuredTokens are configured", func() {
+			BeforeEach(func() {
+				configuredTokens = []string{"example-token-a", "example-token-b"}
+			})
+
+			Context("when the request is signed with the first token", func() {
+				BeforeEach(func() {
+					signingToken = "example-token-a"
+				})
+
+				It("responds with 200", func() {
+					handler.ServeHTTP(recorder, fakeRequest)
+					Expect(recorder.Code).To(Equal(http.StatusOK))
+				})
+			})
+
+			Context("when the request is signed with the second token", func() {
+				BeforeEach(func() {
+					signingToken = "example-token-b"
+				})
+
+				It("responds with 200", func() {
+					handler.ServeHTTP(recorder, fakeRequest)
+					Expect(recorder.Code).To(Equal(http.StatusOK))
+				})
+			})
 		})
 
 		Context("when we fail to ingest the message", func() {
@@ -171,7 +202,7 @@ var _ = Describe("Webhook", func() {
 			badJSON := bytes.NewBufferString("{'ooops:---")
 
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", badJSON)
-			fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(token, badJSON.Bytes())))
+			fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(signingToken, badJSON.Bytes())))
 		})
 
 		It("responds with 400", func() {

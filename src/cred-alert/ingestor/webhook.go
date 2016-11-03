@@ -1,7 +1,9 @@
 package ingestor
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
@@ -9,27 +11,43 @@ import (
 )
 
 type handler struct {
-	logger    lager.Logger
-	secretKey []byte
-	ingestor  Ingestor
+	logger     lager.Logger
+	secretKeys []string
+	ingestor   Ingestor
 }
 
-func NewHandler(logger lager.Logger, ingestor Ingestor, secretKey string) http.Handler {
+func NewHandler(logger lager.Logger, ingestor Ingestor, secretKeys []string) http.Handler {
 	return &handler{
-		logger:    logger.Session("webhook-handler"),
-		secretKey: []byte(secretKey),
-		ingestor:  ingestor,
+		logger:     logger.Session("webhook-handler"),
+		secretKeys: secretKeys,
+		ingestor:   ingestor,
 	}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.logger.Debug("starting")
 
-	payload, err := github.ValidatePayload(r, h.secretKey)
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		h.logger.Error("invalid-payload", err)
 		w.WriteHeader(http.StatusForbidden)
 		return
+	}
+	r.Body.Close()
+
+	var payload []byte
+	for i, secretKey := range h.secretKeys {
+		r.Body = ioutil.NopCloser(bytes.NewReader(body))
+		payload, err = github.ValidatePayload(r, []byte(secretKey))
+		if err == nil {
+			break
+		}
+
+		if i == len(h.secretKeys)-1 {
+			h.logger.Error("invalid-payload", err)
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 	}
 
 	var event github.PushEvent

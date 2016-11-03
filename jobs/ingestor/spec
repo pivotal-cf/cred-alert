@@ -16,9 +16,10 @@ properties:
     description: |
       The port used to listen for webhooks.
 
-  webhook.github_secret:
+  webhook.github_secret_keys:
     description: |
-      The shared signing secret for verifying requests from GitHub.
+      One or more shared signing secret keys for verifying requests from
+      GitHub. Use multiple if you want to have more than one webhook configured.
 
   pubsub.project_name:
     description: |

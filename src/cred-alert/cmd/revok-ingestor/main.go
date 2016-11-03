@@ -24,7 +24,7 @@ type Opts struct {
 	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
 
 	GitHub struct {
-		WebhookSecretToken string `short:"w" long:"github-webhook-secret-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_TOKEN" value-name:"TOKEN" required:"true"`
+		WebhookSecretTokens []string `short:"w" long:"github-webhook-secret-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_TOKENS" env-delim:"," value-name:"TOKENS" required:"true"`
 	} `group:"GitHub Options"`
 
 	PubSub struct {
@@ -70,7 +70,7 @@ func main() {
 	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", ingestor.NewHandler(logger, in, opts.GitHub.WebhookSecretToken))
+	router.Handle("/webhook", ingestor.NewHandler(logger, in, opts.GitHub.WebhookSecretTokens))
 	router.Handle("/healthcheck", revok.ObliviousHealthCheck())
 
 	members := []grouper.Member{
