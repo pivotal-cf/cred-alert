@@ -178,7 +178,11 @@ func (c *changeDiscoverer) Fetch(
 		return err
 	}
 
-	c.fetchIntervalUpdater.UpdateFetchInterval(&repo)
+	err = c.fetchIntervalUpdater.UpdateFetchInterval(&repo)
+	if err != nil {
+		repoLogger.Error("failed-to-update-fetch-interval", err)
+		return err
+	}
 
 	quietLogger := kolsch.NewLogger()
 

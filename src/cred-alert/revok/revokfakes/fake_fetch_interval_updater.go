@@ -8,16 +8,19 @@ import (
 )
 
 type FakeFetchIntervalUpdater struct {
-	UpdateFetchIntervalStub        func(*db.Repository)
+	UpdateFetchIntervalStub        func(*db.Repository) error
 	updateFetchIntervalMutex       sync.RWMutex
 	updateFetchIntervalArgsForCall []struct {
 		arg1 *db.Repository
+	}
+	updateFetchIntervalReturns struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeFetchIntervalUpdater) UpdateFetchInterval(arg1 *db.Repository) {
+func (fake *FakeFetchIntervalUpdater) UpdateFetchInterval(arg1 *db.Repository) error {
 	fake.updateFetchIntervalMutex.Lock()
 	fake.updateFetchIntervalArgsForCall = append(fake.updateFetchIntervalArgsForCall, struct {
 		arg1 *db.Repository
@@ -25,7 +28,9 @@ func (fake *FakeFetchIntervalUpdater) UpdateFetchInterval(arg1 *db.Repository) {
 	fake.recordInvocation("UpdateFetchInterval", []interface{}{arg1})
 	fake.updateFetchIntervalMutex.Unlock()
 	if fake.UpdateFetchIntervalStub != nil {
-		fake.UpdateFetchIntervalStub(arg1)
+		return fake.UpdateFetchIntervalStub(arg1)
+	} else {
+		return fake.updateFetchIntervalReturns.result1
 	}
 }
 
@@ -39,6 +44,13 @@ func (fake *FakeFetchIntervalUpdater) UpdateFetchIntervalArgsForCall(i int) *db.
 	fake.updateFetchIntervalMutex.RLock()
 	defer fake.updateFetchIntervalMutex.RUnlock()
 	return fake.updateFetchIntervalArgsForCall[i].arg1
+}
+
+func (fake *FakeFetchIntervalUpdater) UpdateFetchIntervalReturns(result1 error) {
+	fake.UpdateFetchIntervalStub = nil
+	fake.updateFetchIntervalReturns = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeFetchIntervalUpdater) Invocations() map[string][][]interface{} {

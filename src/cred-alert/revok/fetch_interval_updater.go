@@ -9,7 +9,7 @@ import (
 //go:generate counterfeiter . FetchIntervalUpdater
 
 type FetchIntervalUpdater interface {
-	UpdateFetchInterval(*db.Repository)
+	UpdateFetchInterval(*db.Repository) error
 }
 
 type fetchIntervalUpdater struct {
@@ -30,7 +30,7 @@ func NewFetchIntervalUpdater(
 	}
 }
 
-func (f *fetchIntervalUpdater) UpdateFetchInterval(repository *db.Repository) {
+func (f *fetchIntervalUpdater) UpdateFetchInterval(repository *db.Repository) error {
 	lastActivity, err := f.repositoryRepository.LastActivity(repository)
 	var fetchInterval time.Duration
 
@@ -55,5 +55,5 @@ func (f *fetchIntervalUpdater) UpdateFetchInterval(repository *db.Repository) {
 		fetchInterval = f.minimumInterval
 	}
 
-	f.repositoryRepository.UpdateFetchInterval(repository, fetchInterval)
+	return f.repositoryRepository.UpdateFetchInterval(repository, fetchInterval)
 }

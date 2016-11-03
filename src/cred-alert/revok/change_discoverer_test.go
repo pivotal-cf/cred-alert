@@ -25,6 +25,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("ChangeDiscoverer", func() {
@@ -83,9 +84,10 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 		fetchIntervalUpdater = &revokfakes.FakeFetchIntervalUpdater{}
 
-		fetchIntervalUpdater.UpdateFetchIntervalStub = func(repo *db.Repository) {
+		fetchIntervalUpdater.UpdateFetchIntervalStub = func(repo *db.Repository) error {
 			defer GinkgoRecover()
 			Expect(fetchedRepositoryIds).To(ContainElement(repo.ID))
+			return nil
 		}
 
 		emitter = &metricsfakes.FakeEmitter{}
@@ -298,6 +300,16 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 				passedRepo := fetchIntervalUpdater.UpdateFetchIntervalArgsForCall(0)
 				Expect(passedRepo).To(Equal(&repo))
+			})
+
+			Context("when there is an error updating fetch interval", func() {
+				BeforeEach(func() {
+					fetchIntervalUpdater.UpdateFetchIntervalReturns(errors.New("some-error"))
+				})
+
+				It("logs the error", func() {
+					Eventually(logger).Should(Say("failed-to-update-fetch-interval"))
+				})
 			})
 
 			Context("when there is an error scanning a change", func() {

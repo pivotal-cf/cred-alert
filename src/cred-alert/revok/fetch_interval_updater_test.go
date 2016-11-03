@@ -4,6 +4,7 @@ import (
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/revok"
+	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -83,5 +84,14 @@ var _ = Describe("Fetch Interval Updater", func() {
 
 	It("sets the correct fetch interval if the repository's never been changed", func() {
 		ItSetsTheCorrectInterval(0, db.NoChangesError, maximumInterval)
+	})
+
+	It("returns an error if it fails to update the fetch interval", func() {
+		expectedError := errors.New("My Special Error")
+
+		repositoryRepository.UpdateFetchIntervalReturns(expectedError)
+
+		err := fetchIntervalUpdater.UpdateFetchInterval(repo)
+		Expect(err).To(Equal(expectedError))
 	})
 })
