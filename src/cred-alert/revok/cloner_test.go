@@ -40,6 +40,8 @@ var _ = Describe("Cloner", func() {
 		cloneFailedMetric  *metricsfakes.FakeCounter
 		repoPath           string
 		repo               *git.Repository
+		potatoesHeadSHA    string
+		tomatoesHeadSHA    string
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -86,7 +88,6 @@ var _ = Describe("Cloner", func() {
 
 		workdir, err = ioutil.TempDir("", "revok-test")
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 
 	AfterEach(func() {
@@ -117,8 +118,10 @@ var _ = Describe("Cloner", func() {
 
 	Context("when there are multiple branches", func() {
 		BeforeEach(func() {
-			createCommit("refs/heads/potatoes", repoPath, "some-potato", []byte("credential"), "Initial commit on potatoes", nil)
-			createCommit("refs/heads/tomatoes", repoPath, "some-tomato", []byte("credential"), "Initial commit on tomatoes", nil)
+			result := createCommit("refs/heads/potatoes", repoPath, "some-potato", []byte("credential"), "Initial commit on potatoes", nil)
+			potatoesHeadSHA = result.To.String()
+			result = createCommit("refs/heads/tomatoes", repoPath, "some-tomato", []byte("credential"), "Initial commit on tomatoes", nil)
+			tomatoesHeadSHA = result.To.String()
 		})
 
 		Context("when there is a message on the clone message channel", func() {
@@ -152,29 +155,20 @@ var _ = Describe("Cloner", func() {
 			It("tries to scan all branches", func() {
 				Eventually(scanner.ScanCallCount).Should(Equal(2))
 
-				it, err := repo.NewReferenceIterator()
-				Expect(err).ToNot(HaveOccurred())
-				head, err := it.Next()
-				Expect(err).ToNot(HaveOccurred())
-				expectedStartSHA := head.Target().String()
+				var startSHAs []string
+				var actualScannedOids []map[git.Oid]struct{}
+				for i := 0; i < scanner.ScanCallCount(); i++ {
+					_, owner, repository, scannedOids, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+					Expect(owner).To(Equal("some-owner"))
+					Expect(repository).To(Equal("some-repo"))
+					Expect(stopSHA).To(Equal(""))
 
-				_, owner, repository, scannedOids, startSHA, stopSHA := scanner.ScanArgsForCall(0)
+					startSHAs = append(startSHAs, startSHA)
+					actualScannedOids = append(actualScannedOids, scannedOids)
+				}
 
-				Expect(owner).To(Equal("some-owner"))
-				Expect(repository).To(Equal("some-repo"))
-				Expect(startSHA).To(Equal(expectedStartSHA))
-				Expect(stopSHA).To(Equal(""))
-
-				head, err = it.Next()
-				Expect(err).ToNot(HaveOccurred())
-				expectedStartSHA = head.Target().String()
-
-				_, owner, repository, scannedOids2, startSHA, stopSHA := scanner.ScanArgsForCall(1)
-				Expect(owner).To(Equal("some-owner"))
-				Expect(repository).To(Equal("some-repo"))
-				Expect(startSHA).To(Equal(expectedStartSHA))
-				Expect(stopSHA).To(Equal(""))
-				Expect(fmt.Sprintf("%p", scannedOids)).To(BeIdenticalTo(fmt.Sprintf("%p", scannedOids2)))
+				Expect(startSHAs).To(ConsistOf(tomatoesHeadSHA, potatoesHeadSHA))
+				Expect(fmt.Sprintf("%p", actualScannedOids[0])).To(Equal(fmt.Sprintf("%p", actualScannedOids[1])))
 			})
 
 			It("increments the successful clone metric", func() {
