@@ -1,6 +1,13 @@
 package metrics
 
-import "cred-alert/datadog"
+import (
+	"cred-alert/datadog"
+	"cred-alert/net"
+	"net/http"
+	"time"
+
+	"code.cloudfoundry.org/clock"
+)
 
 //go:generate counterfeiter . Emitter
 
@@ -17,7 +24,14 @@ func BuildEmitter(apiKey string, environment string) Emitter {
 		}
 	}
 
-	client := datadog.NewClient(apiKey)
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	}
+	retryingClient := net.NewRetryingClient(httpClient, clock.NewClock())
+	client := datadog.NewClient(apiKey, retryingClient)
 
 	return NewEmitter(client, environment)
 }

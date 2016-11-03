@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"time"
 
-	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -68,17 +67,10 @@ type client struct {
 	client net.Client
 }
 
-func NewClient(apiKey string) Client {
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
-		Transport: &http.Transport{
-			DisableKeepAlives: true,
-		},
-	}
-
+func NewClient(apiKey string, httpClient net.Client) Client {
 	return &client{
 		apiKey: apiKey,
-		client: net.NewRetryingClient(httpClient, clock.NewClock()),
+		client: httpClient,
 	}
 }
 
@@ -94,11 +86,9 @@ func (c *client) BuildMetric(metricType string, metricName string, count float32
 }
 
 func (c *client) PublishSeries(logger lager.Logger, series Series) {
-	request := request{
+	payload, err := json.Marshal(request{
 		Series: series,
-	}
-
-	payload, err := json.Marshal(request)
+	})
 	if err != nil {
 		logger.Error("failed", err)
 		return
