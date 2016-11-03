@@ -7,10 +7,24 @@ import (
 	"github.com/google/go-github/github"
 )
 
+type GitHubRepository struct {
+	Name          string
+	Owner         string
+	SSHURL        string
+	Private       bool
+	DefaultBranch string
+	RawJSON       []byte
+}
+
+type GitHubOrganization struct {
+	Name string `json:"login:`
+}
+
 //go:generate counterfeiter . GitHubClient
 
 type GitHubClient interface {
-	ListRepositories(lager.Logger) ([]GitHubRepository, error)
+	ListRepositoriesByOrg(lager.Logger, string) ([]GitHubRepository, error)
+	ListOrganizations(lager.Logger) ([]GitHubOrganization, error)
 }
 
 type client struct {
@@ -25,17 +39,17 @@ func NewGitHubClient(
 	}
 }
 
-func (c *client) ListRepositories(logger lager.Logger) ([]GitHubRepository, error) {
-	logger = logger.Session("list-originalRepositories")
+func (c *client) ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]GitHubRepository, error) {
+	logger = logger.Session("list-repositories-by-org")
 
-	opts := &github.RepositoryListOptions{
+	opts := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{PerPage: 30},
 	}
 
 	var repos []GitHubRepository
 
 	for {
-		rs, resp, err := c.ghClient.Repositories.List("", opts)
+		rs, resp, err := c.ghClient.Repositories.ListByOrg(orgName, opts)
 		if err != nil {
 			logger.Error("failed", err, lager.Data{
 				"fetching-page": opts.ListOptions.Page,
@@ -70,11 +84,34 @@ func (c *client) ListRepositories(logger lager.Logger) ([]GitHubRepository, erro
 	return repos, nil
 }
 
-type GitHubRepository struct {
-	Name          string
-	Owner         string
-	SSHURL        string
-	Private       bool
-	DefaultBranch string
-	RawJSON       []byte
+func (c *client) ListOrganizations(logger lager.Logger) ([]GitHubOrganization, error) {
+	logger = logger.Session("list-organizations")
+
+	var orgs []GitHubOrganization
+
+	listOptions := &github.ListOptions{PerPage: 30}
+
+	for {
+		os, resp, err := c.ghClient.Organizations.List("", listOptions)
+		if err != nil {
+			logger.Error("failed", err, lager.Data{
+				"fetching-page": listOptions.Page,
+			})
+			return nil, err
+		}
+
+		for _, org := range os {
+			orgs = append(orgs, GitHubOrganization{
+				Name: *org.Login,
+			})
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		listOptions.Page = resp.NextPage
+	}
+
+	return orgs, nil
 }

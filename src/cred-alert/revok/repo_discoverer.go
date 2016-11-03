@@ -81,10 +81,21 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 	logger = logger.Session("work")
 	defer logger.Info("done")
 
-	repos, err := r.ghClient.ListRepositories(logger)
+	orgs, err := r.ghClient.ListOrganizations(logger)
 	if err != nil {
-		logger.Error("failed-to-get-github-repositories", err)
+		logger.Error("failed-to-get-github-orgs", err)
 		return
+	}
+
+	var repos []GitHubRepository
+	for _, o := range orgs {
+		rs, err := r.ghClient.ListRepositoriesByOrg(logger, o.Name)
+		if err != nil {
+			logger.Error("failed-to-get-github-repositories-by-org", err)
+			return
+		}
+
+		repos = append(repos, rs...)
 	}
 
 	dbRepos, err := r.repositoryRepository.All()
