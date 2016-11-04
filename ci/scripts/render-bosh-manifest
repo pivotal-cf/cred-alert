@@ -4,7 +4,9 @@ set -e
 
 cat > credentials.yml <<EOF
 revok-github-access-token: $GITHUB_ACCESS_TOKEN
-revok-github-webhook-secret: $GITHUB_WEBHOOK_SECRET
+revok-pivotal-cf-github-webhook-secret: $GITHUB_WEBHOOK_SECRET_PIVOTAL_CF
+revok-cloudfoundry-github-webhook-secret: $GITHUB_WEBHOOK_SECRET_CLOUDFOUNDRY
+revok-cloudfoundry-incubator-github-webhook-secret: $GITHUB_WEBHOOK_SECRET_CLOUDFOUNDRY_INCUBATOR
 
 revok-mysql-username: $MYSQL_USERNAME
 revok-mysql-password: $MYSQL_PASSWORD
