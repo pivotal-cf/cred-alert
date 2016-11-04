@@ -22,22 +22,22 @@ case $1 in
     echo $$ > $PIDFILE
 
     exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/revok-ingestor \
-      --port <%= p("webhook.port") %> \
-      <% p("webhook.github_secret_keys").each do |secret| %> \
-      --github-webhook-secret-token <%= secret %> \
-      <% end %> \
-      --pubsub-project-name <%= p("pubsub.project_name") %> \
-      --pubsub-topic <%= p("pubsub.topic") %> \
-      <% if_p("metrics.datadog_api_key") do |api_key| %> \
-      --datadog-api-key <%= api_key %> \
-      <% end %> \
-      <% if_p("metrics.sentry_dsn") do |dsn| %> \
-      --sentry-dsn <%= dsn %> \
-      <% end %> \
-      <% if_p("metrics.environment") do |env| %> \
-      --environment <%= env %> \
-      <% end %> \
-      1>>$LOG_DIR/ingestor.stdout.log \
+      --port <%= p("webhook.port") %>                                        \
+      <% p("webhook.github_secret_keys").each do |secret| %>                 \
+      --github-webhook-secret-token <%= secret %>                            \
+      <% end %>                                                              \
+      --pubsub-project-name <%= p("pubsub.project_name") %>                  \
+      --pubsub-topic <%= p("pubsub.topic") %>                                \
+      <% if_p("metrics.datadog_api_key") do |api_key| %>                     \
+      --datadog-api-key <%= api_key %>                                       \
+      <% end %>                                                              \
+      <% if_p("metrics.sentry_dsn") do |dsn| %>                              \
+      --sentry-dsn <%= dsn %>                                                \
+      <% end %>                                                              \
+      <% if_p("metrics.environment") do |env| %>                             \
+      --environment <%= env %>                                               \
+      <% end %>                                                              \
+      1>>$LOG_DIRgingestor.stdout.log                                        \
       2>>$LOG_DIR/ingestor.stderr.log
 
     ;;
