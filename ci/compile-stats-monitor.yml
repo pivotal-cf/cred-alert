@@ -10,7 +10,7 @@ inputs:
 - name: cred-alert
 
 outputs:
-- name: cred-alert-components
+- name: binary
 
 run:
-  path: cred-alert/ci/scripts/compile-components
+  path: cred-alert/ci/scripts/compile-stats-monitor

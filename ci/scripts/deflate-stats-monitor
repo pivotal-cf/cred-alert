@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e -u
+
+INPUT="${PWD}/binary"
+OUTPUT="${PWD}/tarball"
+
+pushd "${INPUT}"
+  tar czvf "${OUTPUT}/stats-monitor-rc.tgz" stats-monitor
+popd

@@ -8,10 +8,10 @@ image_resource:
 
 inputs:
 - name: cred-alert
-- name: cred-alert-bundle
+- name: stats-monitor-rc
 
 outputs:
-- name: cred-alert-components
+- name: binary
 
 run:
-  path: cred-alert/ci/scripts/unbundle-components
+  path: cred-alert/ci/scripts/inflate-stats-monitor

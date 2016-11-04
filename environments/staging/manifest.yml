@@ -1,34 +1,4 @@
 applications:
-- name: cred-alert-ingestor-staging
-  instances: 2
-  memory: 128M
-  disk_quota: 1024M
-  host: cred-alert-staging
-  domain: cfapps.io
-  buildpack: binary_buildpack
-  stack: cflinuxfs2
-  command: ./cred-alert-ingestor
-  services:
-  - cred-alert-staging-logs
-  env:
-    ENVIRONMENT: "staging"
-
-- name: cred-alert-worker-staging
-  instances: 1
-  memory: 128M
-  disk_quota: 1024M
-  no-route: true
-  health-check-type: none
-  buildpack: binary_buildpack
-  stack: cflinuxfs2
-  command: ./cred-alert-worker
-  services:
-  - cred-alert-staging-logs
-  - cred-alert-mysql
-  env:
-    IGNORED_REPOS: ".*-credentials$,.*-pool(?:s)?$,.*deployments.*,.*envs.*,.*-locks$"
-    ENVIRONMENT: "staging"
-
 - name: stats-monitor-staging
   instances: 1
   memory: 128M

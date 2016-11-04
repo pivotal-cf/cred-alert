@@ -8,10 +8,10 @@ image_resource:
 
 inputs:
 - name: cred-alert
-- name: cred-alert-components
+- name: binary
 
 outputs:
-- name: cred-alert-bundle
+- name: tarball
 
 run:
-  path: cred-alert/ci/scripts/bundle-components
+  path: cred-alert/ci/scripts/deflate-stats-monitor

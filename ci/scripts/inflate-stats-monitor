@@ -2,8 +2,8 @@
 
 set -e -u
 
-INPUT="${PWD}/cred-alert-bundle"
-OUTPUT="${PWD}/cred-alert-components"
+INPUT="${PWD}/stats-monitor-rc"
+OUTPUT="${PWD}/binary"
 
 pushd "${INPUT}"
   tar xzvf *.tgz -C "${OUTPUT}"
