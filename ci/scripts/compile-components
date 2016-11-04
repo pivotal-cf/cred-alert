@@ -7,8 +7,4 @@ export PATH="${GOPATH}/bin:${PATH}"
 
 OUTPUT="${PWD}/cred-alert-components"
 
-for component in cred-alert-ingestor cred-alert-worker stats-monitor; do
-  echo "Building ${component}..."
-  GOARCH=amd64 GOOS=linux go build -x -v -o "${OUTPUT}/${component}" "cred-alert/cmd/${component}"
-done
-
+GOARCH=amd64 GOOS=linux go build -x -v -o "${OUTPUT}/stats-monitor" cred-alert/cmd/stats-monitor
