@@ -10,12 +10,6 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-//go:generate counterfeiter . PubSubProcessor
-
-type PubSubProcessor interface {
-	Process(lager.Logger, *pubsub.Message) (bool, error)
-}
-
 type pubSubSubscriber struct {
 	logger       lager.Logger
 	subscription *pubsub.Subscription
