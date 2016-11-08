@@ -1,6 +1,7 @@
 package gitclient
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 )
 
 const defaultRemoteName = "origin"
+
+var ErrInterrupted = errors.New("interrupted")
 
 type client struct {
 	cloneOptions *git.CloneOptions
@@ -23,7 +26,7 @@ type Client interface {
 	Fetch(string) (map[string][]*git.Oid, error)
 	HardReset(string, *git.Oid) error
 	Diff(repositoryPath string, a, b *git.Oid) (string, error)
-	AllBlobsForRef(string, string, *io.PipeWriter) error
+	AllBlobsForRef(context.Context, string, string, *io.PipeWriter) error
 }
 
 func New(privateKeyPath, publicKeyPath string) *client {
@@ -200,7 +203,7 @@ func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, er
 // io.PipeReader and io.PipeWriter. Either the call to AllBlobsForRef or the
 // code that reads from the reader will need to run in a goroutine to prevent
 // deadlock.
-func (c *client) AllBlobsForRef(repositoryPath string, refName string, w *io.PipeWriter) error {
+func (c *client) AllBlobsForRef(ctx context.Context, repositoryPath string, refName string, w *io.PipeWriter) error {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
 		return err
@@ -252,25 +255,38 @@ func (c *client) AllBlobsForRef(repositoryPath string, refName string, w *io.Pip
 	}
 	defer tree.Free()
 
+	var interrupted bool
 	err = tree.Walk(func(s string, entry *git.TreeEntry) int {
-		if entry.Type == git.ObjectBlob {
-			object, err := repo.Lookup(entry.Id)
-			if err != nil {
-				return -1
-			}
-			defer object.Free()
+		select {
+		case <-ctx.Done():
+			interrupted = true
+			return -1
 
-			blob, err := object.AsBlob()
-			if err != nil {
-				return -1
-			}
-			defer blob.Free()
+		default:
+			if entry.Type == git.ObjectBlob {
+				object, err := repo.Lookup(entry.Id)
+				if err != nil {
+					return -1
+				}
+				defer object.Free()
 
-			w.Write(blob.Contents())
+				blob, err := object.AsBlob()
+				if err != nil {
+					return -1
+				}
+				defer blob.Free()
+
+				w.Write(blob.Contents())
+			}
+
+			return 0
 		}
-
-		return 0
 	})
+
+	if interrupted {
+		w.CloseWithError(ErrInterrupted)
+		return ErrInterrupted
+	}
 
 	if err != nil {
 		w.CloseWithError(err)

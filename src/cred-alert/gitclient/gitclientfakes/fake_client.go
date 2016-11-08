@@ -2,6 +2,7 @@
 package gitclientfakes
 
 import (
+	"context"
 	"cred-alert/gitclient"
 	"io"
 	"sync"
@@ -59,12 +60,13 @@ type FakeClient struct {
 		result1 string
 		result2 error
 	}
-	AllBlobsForRefStub        func(string, string, *io.PipeWriter) error
+	AllBlobsForRefStub        func(context.Context, string, string, *io.PipeWriter) error
 	allBlobsForRefMutex       sync.RWMutex
 	allBlobsForRefArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
-		arg3 *io.PipeWriter
+		arg3 string
+		arg4 *io.PipeWriter
 	}
 	allBlobsForRefReturns struct {
 		result1 error
@@ -247,17 +249,18 @@ func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) AllBlobsForRef(arg1 string, arg2 string, arg3 *io.PipeWriter) error {
+func (fake *FakeClient) AllBlobsForRef(arg1 context.Context, arg2 string, arg3 string, arg4 *io.PipeWriter) error {
 	fake.allBlobsForRefMutex.Lock()
 	fake.allBlobsForRefArgsForCall = append(fake.allBlobsForRefArgsForCall, struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
-		arg3 *io.PipeWriter
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("AllBlobsForRef", []interface{}{arg1, arg2, arg3})
+		arg3 string
+		arg4 *io.PipeWriter
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("AllBlobsForRef", []interface{}{arg1, arg2, arg3, arg4})
 	fake.allBlobsForRefMutex.Unlock()
 	if fake.AllBlobsForRefStub != nil {
-		return fake.AllBlobsForRefStub(arg1, arg2, arg3)
+		return fake.AllBlobsForRefStub(arg1, arg2, arg3, arg4)
 	} else {
 		return fake.allBlobsForRefReturns.result1
 	}
@@ -269,10 +272,10 @@ func (fake *FakeClient) AllBlobsForRefCallCount() int {
 	return len(fake.allBlobsForRefArgsForCall)
 }
 
-func (fake *FakeClient) AllBlobsForRefArgsForCall(i int) (string, string, *io.PipeWriter) {
+func (fake *FakeClient) AllBlobsForRefArgsForCall(i int) (context.Context, string, string, *io.PipeWriter) {
 	fake.allBlobsForRefMutex.RLock()
 	defer fake.allBlobsForRefMutex.RUnlock()
-	return fake.allBlobsForRefArgsForCall[i].arg1, fake.allBlobsForRefArgsForCall[i].arg2, fake.allBlobsForRefArgsForCall[i].arg3
+	return fake.allBlobsForRefArgsForCall[i].arg1, fake.allBlobsForRefArgsForCall[i].arg2, fake.allBlobsForRefArgsForCall[i].arg3, fake.allBlobsForRefArgsForCall[i].arg4
 }
 
 func (fake *FakeClient) AllBlobsForRefReturns(result1 error) {
