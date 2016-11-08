@@ -30,8 +30,6 @@ var _ = Describe("Notifications", func() {
 		sendErr error
 	)
 
-	//==================================================================================
-
 	BeforeEach(func() {
 		server = ghttp.NewServer()
 		whitelistRules = []string{}
@@ -56,8 +54,6 @@ var _ = Describe("Notifications", func() {
 			),
 		)
 	}
-
-	//=================================================================================
 
 	Describe("with an empty webhook URL", func() {
 		JustBeforeEach(func() {
@@ -392,13 +388,7 @@ var _ = Describe("Notifications", func() {
 			})
 		})
 	})
-
 })
-
-//========================================================================================================
-
-//========================================================================================================
-//Sample test data functions
 
 func createNotificationType1(repo string, isPrivate bool, file string, lineNumber int) notifications.Notification {
 	return notifications.Notification{
