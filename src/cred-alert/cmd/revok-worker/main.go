@@ -149,7 +149,14 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
 	repoWhitelist := notifications.BuildWhitelist(opts.Whitelist...)
-	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookURL, clock, repoWhitelist)
+
+	var notifier notifications.Notifier
+	if opts.Slack.WebhookURL != "" {
+		notifier = notifications.NewSlackNotifier(opts.Slack.WebhookURL, clock, repoWhitelist)
+	} else {
+		notifier = notifications.NewNullNotifier()
+	}
+
 	sniffer := sniff.NewDefaultSniffer()
 	ancestryScanner := revok.NewScanner(
 		gitClient,
