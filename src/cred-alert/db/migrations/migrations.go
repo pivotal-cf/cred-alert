@@ -16,4 +16,5 @@ var Migrations = []migration.Migrator{
 	AddCredentialCountToRepositories,
 	AddFailedMessages,
 	AddFetchInterval,
+	DropDiffScans,
 }

@@ -28,16 +28,6 @@ var _ = Describe("Database Connections", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Describe("auto-migrations", func() {
-		It("creates the DiffScan table", func() {
-			Expect(database.HasTable(&db.DiffScan{})).To(BeTrue())
-		})
-
-		It("creates the Commit table", func() {
-			Expect(database.HasTable(&db.Commit{})).To(BeTrue())
-		})
-	})
-
 	Describe("CommitRepository", func() {
 		var (
 			commitRepository db.CommitRepository
@@ -155,63 +145,6 @@ var _ = Describe("Database Connections", func() {
 				Expect(logger).To(gbytes.Say("finding-repo.failed"))
 				Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, repoName)))
 			})
-		})
-	})
-
-	Describe("DiffScanRepository", func() {
-		var (
-			diffScanRepository db.DiffScanRepository
-			fakeDiffScan       *db.DiffScan
-		)
-
-		BeforeEach(func() {
-			diffScanRepository = db.NewDiffScanRepository(database)
-			fakeDiffScan = &db.DiffScan{
-				Owner:           "my-org",
-				Repository:      "my-repo",
-				FromCommit:      "sha-1",
-				ToCommit:        "sha-2",
-				CredentialFound: false,
-			}
-		})
-
-		It("Saves a diff scan", func() {
-			err := diffScanRepository.SaveDiffScan(logger, fakeDiffScan)
-			Expect(err).ToNot(HaveOccurred())
-			var diffs []db.DiffScan
-			err = database.Last(&diffs).Error
-			Expect(err).ToNot(HaveOccurred())
-			Expect(diffs).To(HaveLen(1))
-			Expect(diffs[0].Owner).To(Equal(fakeDiffScan.Owner))
-			Expect(diffs[0].Repository).To(Equal(fakeDiffScan.Repository))
-			Expect(diffs[0].ToCommit).To(Equal(fakeDiffScan.ToCommit))
-			Expect(diffs[0].FromCommit).To(Equal(fakeDiffScan.FromCommit))
-		})
-
-		It("Returns any error", func() {
-			findError := errors.New("save diff error")
-			database.AddError(findError)
-			err := diffScanRepository.SaveDiffScan(logger, fakeDiffScan)
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(findError))
-		})
-
-		It("should log successfully saving", func() {
-			diffScanRepository.SaveDiffScan(logger, fakeDiffScan)
-			Expect(logger).To(gbytes.Say("saving-diffscan"))
-			Expect(logger).To(gbytes.Say("saving-diffscan.done"))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"credential-found":%v`, fakeDiffScan.CredentialFound)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"from-commit":"%s"`, fakeDiffScan.FromCommit)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"owner":"%s"`, fakeDiffScan.Owner)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"repository":"%s"`, fakeDiffScan.Repository)))
-			Expect(logger).To(gbytes.Say(fmt.Sprintf(`"to-commit":"%s"`, fakeDiffScan.ToCommit)))
-		})
-
-		It("should log error saving", func() {
-			findError := errors.New("save diff error")
-			database.AddError(findError)
-			diffScanRepository.SaveDiffScan(logger, fakeDiffScan)
-			Expect(logger).To(gbytes.Say("saving-diffscan.failed"))
 		})
 	})
 })

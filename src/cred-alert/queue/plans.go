@@ -2,42 +2,7 @@ package queue
 
 import "encoding/json"
 
-const DefaultScanDepth = 10
-
-type DiffScanPlan struct {
-	Owner      string `json:"owner"`
-	Repository string `json:"repository"`
-	Private    bool   `json:"private"`
-	From       string `json:"from"`
-	To         string `json:"to"`
-}
-
-func (p DiffScanPlan) Task(id string) Task {
-	payload, _ := json.Marshal(p)
-
-	return basicTask{
-		id:      id,
-		typee:   TaskTypeDiffScan,
-		payload: string(payload),
-	}
-}
-
-type RefScanPlan struct {
-	Owner      string `json:"owner"`
-	Repository string `json:"repository"`
-	Private    bool   `json:"private"`
-	Ref        string `json:"ref"`
-}
-
-func (p RefScanPlan) Task(id string) Task {
-	payload, _ := json.Marshal(p)
-
-	return basicTask{
-		id:      id,
-		typee:   TaskTypeRefScan,
-		payload: string(payload),
-	}
-}
+const TaskTypePushEvent = "push-event"
 
 type PushEventPlan struct {
 	Owner      string `json:"owner"`
@@ -53,42 +18,6 @@ func (p PushEventPlan) Task(id string) Task {
 	return basicTask{
 		id:      id,
 		typee:   TaskTypePushEvent,
-		payload: string(payload),
-	}
-}
-
-type CommitMessageScanPlan struct {
-	Owner      string `json:"owner"`
-	Repository string `json:"repository"`
-	SHA        string `json:"sha"`
-	Message    string `json:"message"`
-	Private    bool   `json:"private"`
-}
-
-func (p CommitMessageScanPlan) Task(id string) Task {
-	payload, _ := json.Marshal(p)
-
-	return basicTask{
-		id:      id,
-		typee:   TaskTypeCommitMessageScan,
-		payload: string(payload),
-	}
-}
-
-type AncestryScanPlan struct {
-	Owner      string `json:"owner"`
-	Repository string `json:"repository"`
-	Private    bool   `json:"private"`
-	SHA        string `json:"sha"`
-	Depth      int    `json:"depth"`
-}
-
-func (a AncestryScanPlan) Task(id string) Task {
-	payload, _ := json.Marshal(a)
-
-	return basicTask{
-		id:      id,
-		typee:   TaskTypeAncestryScan,
 		payload: string(payload),
 	}
 }

@@ -11,15 +11,6 @@ type Model struct {
 	UpdatedAt time.Time
 }
 
-type DiffScan struct {
-	Model
-	Owner           string
-	Repository      string
-	FromCommit      string
-	ToCommit        string
-	CredentialFound bool
-}
-
 type Commit struct {
 	Model
 	Owner      string

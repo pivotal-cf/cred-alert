@@ -20,7 +20,7 @@ var _ = Describe("Ingestor", func() {
 		in ingestor.Ingestor
 
 		emitter   *metricsfakes.FakeEmitter
-		taskQueue *queuefakes.FakeQueue
+		enqueuer  *queuefakes.FakeEnqueuer
 		generator *queuefakes.FakeUUIDGenerator
 
 		logger *lagertest.TestLogger
@@ -36,7 +36,7 @@ var _ = Describe("Ingestor", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("event-handler")
 		emitter = &metricsfakes.FakeEmitter{}
-		taskQueue = &queuefakes.FakeQueue{}
+		enqueuer = &queuefakes.FakeEnqueuer{}
 		generator = &queuefakes.FakeUUIDGenerator{}
 
 		requestCounter = &metricsfakes.FakeCounter{}
@@ -65,14 +65,14 @@ var _ = Describe("Ingestor", func() {
 	})
 
 	JustBeforeEach(func() {
-		in = ingestor.NewIngestor(taskQueue, emitter, "cred_alert", generator)
+		in = ingestor.NewIngestor(enqueuer, emitter, "cred_alert", generator)
 		ingestErr = in.IngestPushScan(logger, scan, "github-id")
 	})
 
 	It("tries to enqueue a PushEventPlan", func() {
 		Expect(ingestErr).NotTo(HaveOccurred())
 
-		Expect(taskQueue.EnqueueCallCount()).To(Equal(1))
+		Expect(enqueuer.EnqueueCallCount()).To(Equal(1))
 
 		expectedTask1 := queue.PushEventPlan{
 			Owner:      "owner",
@@ -82,7 +82,7 @@ var _ = Describe("Ingestor", func() {
 			Private:    true,
 		}.Task("id-1")
 
-		builtTask := taskQueue.EnqueueArgsForCall(0)
+		builtTask := enqueuer.EnqueueArgsForCall(0)
 		Expect(builtTask).To(Equal(expectedTask1))
 	})
 
@@ -104,7 +104,7 @@ var _ = Describe("Ingestor", func() {
 
 	Context("when enqueuing a task fails", func() {
 		BeforeEach(func() {
-			taskQueue.EnqueueReturns(errors.New("disaster"))
+			enqueuer.EnqueueReturns(errors.New("disaster"))
 		})
 
 		It("returns an error", func() {
