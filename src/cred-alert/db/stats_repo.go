@@ -9,7 +9,6 @@ type StatsRepository interface {
 	DisabledRepositoryCount() (int, error)
 	CredentialCount() (int, error)
 	FetchCount() (int, error)
-	DeadLetterCount() (int, error)
 }
 
 type statsRepository struct {
@@ -58,15 +57,6 @@ func (r *statsRepository) CredentialCount() (int, error) {
 func (r *statsRepository) FetchCount() (int, error) {
 	var count int
 	err := r.db.Model(&Fetch{}).Count(&count).Error
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (r *statsRepository) DeadLetterCount() (int, error) {
-	var count int
-	err := r.db.Model(&FailedMessage{}).Where("dead_lettered = ?", true).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
