@@ -1,10 +1,9 @@
-package revok_test
+package queue_test
 
 import (
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/queue"
-	"cred-alert/revok"
 	"cred-alert/revok/revokfakes"
 	"errors"
 
@@ -30,7 +29,7 @@ var _ = Describe("PushEventProcessor", func() {
 		logger = lagertest.NewTestLogger("ingestor")
 		changeDiscoverer = &revokfakes.FakeChangeDiscoverer{}
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		pushEventProcessor = revok.NewPushEventProcessor(changeDiscoverer, repositoryRepository)
+		pushEventProcessor = queue.NewPushEventProcessor(changeDiscoverer, repositoryRepository)
 	})
 
 	Context("when the payload is a valid JSON PushEventPlan", func() {

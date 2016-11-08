@@ -1,9 +1,9 @@
-package revok
+package queue
 
 import (
 	"bytes"
 	"cred-alert/db"
-	"cred-alert/queue"
+	"cred-alert/revok"
 	"encoding/json"
 	"errors"
 
@@ -14,10 +14,13 @@ import (
 
 type pushEventProcessor struct {
 	db               db.RepositoryRepository
-	changeDiscoverer ChangeDiscoverer
+	changeDiscoverer revok.ChangeDiscoverer
 }
 
-func NewPushEventProcessor(changeDiscoverer ChangeDiscoverer, db db.RepositoryRepository) *pushEventProcessor {
+func NewPushEventProcessor(
+	changeDiscoverer revok.ChangeDiscoverer,
+	db db.RepositoryRepository,
+) *pushEventProcessor {
 	return &pushEventProcessor{
 		db:               db,
 		changeDiscoverer: changeDiscoverer,
@@ -27,7 +30,7 @@ func NewPushEventProcessor(changeDiscoverer ChangeDiscoverer, db db.RepositoryRe
 func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Message) (bool, error) {
 	decoder := json.NewDecoder(bytes.NewBuffer(message.Data))
 
-	var p queue.PushEventPlan
+	var p PushEventPlan
 	err := decoder.Decode(&p)
 	if err != nil {
 		return false, err
