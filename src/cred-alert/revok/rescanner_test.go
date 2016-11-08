@@ -15,6 +15,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
@@ -133,13 +134,13 @@ var _ = Describe("Rescanner", func() {
 	It("repeats each prior scan for the previous rules version", func() {
 		Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
 
-		_, owner, repository, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(0)
+		_, owner, repository, _, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(0)
 		Expect(owner).To(Equal("some-owner"))
 		Expect(repository).To(Equal("some-repository"))
 		Expect(startSHA).To(Equal("some-start-sha"))
 		Expect(stopSHA).To(Equal(""))
 
-		_, owner, repository, startSHA, stopSHA = scanner.ScanNoNotifyArgsForCall(1)
+		_, owner, repository, _, startSHA, stopSHA = scanner.ScanNoNotifyArgsForCall(1)
 		Expect(owner).To(Equal("some-other-owner"))
 		Expect(repository).To(Equal("some-other-repository"))
 		Expect(startSHA).To(Equal("some-other-start-sha"))
@@ -232,7 +233,7 @@ var _ = Describe("Rescanner", func() {
 				}, nil
 			}
 
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, string, string) ([]db.Credential, error) {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error) {
 				if scanner.ScanNoNotifyCallCount() == 1 {
 					return []db.Credential{
 						{
@@ -291,7 +292,7 @@ var _ = Describe("Rescanner", func() {
 
 	Context("when no new credentials are found", func() {
 		BeforeEach(func() {
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, string, string) ([]db.Credential, error) {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error) {
 				if scanner.ScanNoNotifyCallCount() == 1 {
 					return []db.Credential{
 						{
@@ -339,7 +340,7 @@ var _ = Describe("Rescanner", func() {
 
 	Context("when doing a scan fails", func() {
 		BeforeEach(func() {
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, string, string) ([]db.Credential, error) {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error) {
 				if scanner.ScanNoNotifyCallCount() == 1 {
 					return nil, errors.New("an-error")
 				}
@@ -350,7 +351,7 @@ var _ = Describe("Rescanner", func() {
 
 		It("should continue on to the next repository", func() {
 			Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
-			_, owner, repository, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(1)
+			_, owner, repository, _, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(1)
 			Expect(owner).To(Equal("some-other-owner"))
 			Expect(repository).To(Equal("some-other-repository"))
 			Expect(startSHA).To(Equal("some-other-start-sha"))

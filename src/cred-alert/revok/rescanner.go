@@ -9,6 +9,7 @@ import (
 	"cred-alert/sniff"
 
 	"code.cloudfoundry.org/lager"
+	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 )
 
@@ -96,6 +97,7 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		logger,
 		priorScan.Owner,
 		priorScan.Repository,
+		map[git.Oid]struct{}{},
 		priorScan.StartSHA,
 		priorScan.StopSHA,
 	)

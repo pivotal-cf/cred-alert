@@ -19,7 +19,7 @@ import (
 
 type Scanner interface {
 	Scan(lager.Logger, string, string, map[git.Oid]struct{}, string, string) error
-	ScanNoNotify(lager.Logger, string, string, string, string) ([]db.Credential, error)
+	ScanNoNotify(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error)
 }
 
 type scanner struct {
@@ -64,7 +64,7 @@ func (s *scanner) Scan(
 		return err
 	}
 
-	credentials, err := s.scan(logger, dbRepository, scannedOids, startSHA, stopSHA)
+	credentials, err := s.ScanNoNotify(logger, owner, repository, scannedOids, startSHA, stopSHA)
 	if err != nil {
 		return err
 	}
@@ -97,6 +97,7 @@ func (s *scanner) ScanNoNotify(
 	logger lager.Logger,
 	owner string,
 	repository string,
+	scannedOids map[git.Oid]struct{},
 	startSHA string,
 	stopSHA string,
 ) ([]db.Credential, error) {
@@ -106,7 +107,6 @@ func (s *scanner) ScanNoNotify(
 		return nil, err
 	}
 
-	scannedOids := map[git.Oid]struct{}{}
 	credentials, err := s.scan(logger, dbRepository, scannedOids, startSHA, stopSHA)
 	if err != nil {
 		return nil, err
