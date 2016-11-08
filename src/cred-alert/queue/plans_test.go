@@ -29,9 +29,5 @@ var _ = Describe("Plans", func() {
 						"to": "sha-2"
 				}`))
 		})
-
-		It("is a queueable plan", func() {
-			var _ queue.Plan = queue.PushEventPlan{}
-		})
 	})
 })
