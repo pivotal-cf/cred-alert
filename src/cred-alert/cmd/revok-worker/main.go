@@ -71,7 +71,7 @@ type Opts struct {
 	} `group:"Metrics Options"`
 
 	Slack struct {
-		WebhookUrl string `long:"slack-webhook-url" description:"Slack webhook URL" env:"SLACK_WEBHOOK_URL" value-name:"WEBHOOK"`
+		WebhookURL string `long:"slack-webhook-url" description:"Slack webhook URL" env:"SLACK_WEBHOOK_URL" value-name:"WEBHOOK"`
 	} `group:"Slack Options"`
 
 	MySQL struct {
@@ -149,7 +149,7 @@ func main() {
 	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
 	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
 	repoWhitelist := notifications.BuildWhitelist(opts.Whitelist...)
-	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookUrl, clock, repoWhitelist)
+	notifier := notifications.NewSlackNotifier(opts.Slack.WebhookURL, clock, repoWhitelist)
 	sniffer := sniff.NewDefaultSniffer()
 	ancestryScanner := revok.NewScanner(
 		gitClient,
