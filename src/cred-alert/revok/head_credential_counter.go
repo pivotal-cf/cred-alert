@@ -119,7 +119,12 @@ func (c *headCredentialCounter) work(
 			err := c.repositoryRepository.UpdateCredentialCount(&repository, credCount)
 			if err != nil {
 				repoLogger.Error("failed-to-update-credential-count", err)
+				continue
 			}
+
+			repoLogger.Info("updated-credential-count", lager.Data{
+				"count": credCount,
+			})
 		}
 	}
 }
