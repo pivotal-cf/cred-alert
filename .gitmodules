@@ -77,14 +77,6 @@
 	path = src/github.com/go-sql-driver/mysql
 	url = https://github.com/go-sql-driver/mysql
 	branch = master
-[submodule "src/github.com/mitchellh/mapstructure"]
-	path = src/github.com/mitchellh/mapstructure
-	url = https://github.com/mitchellh/mapstructure
-	branch = master
-[submodule "src/github.com/cloudfoundry-community/go-cfenv"]
-	path = src/github.com/cloudfoundry-community/go-cfenv
-	url = https://github.com/cloudfoundry-community/go-cfenv
-	branch = master
 [submodule "src/github.com/BurntSushi/migration"]
 	path = src/github.com/BurntSushi/migration
 	url = https://github.com/BurntSushi/migration
