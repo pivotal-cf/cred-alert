@@ -11,12 +11,12 @@ import (
 )
 
 type FakeClient struct {
-	AllBranchesStub        func(string) (map[string]string, error)
-	allBranchesMutex       sync.RWMutex
-	allBranchesArgsForCall []struct {
+	BranchTargetsStub        func(string) (map[string]string, error)
+	branchTargetsMutex       sync.RWMutex
+	branchTargetsArgsForCall []struct {
 		arg1 string
 	}
-	allBranchesReturns struct {
+	branchTargetsReturns struct {
 		result1 map[string]string
 		result2 error
 	}
@@ -84,35 +84,35 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) AllBranches(arg1 string) (map[string]string, error) {
-	fake.allBranchesMutex.Lock()
-	fake.allBranchesArgsForCall = append(fake.allBranchesArgsForCall, struct {
+func (fake *FakeClient) BranchTargets(arg1 string) (map[string]string, error) {
+	fake.branchTargetsMutex.Lock()
+	fake.branchTargetsArgsForCall = append(fake.branchTargetsArgsForCall, struct {
 		arg1 string
 	}{arg1})
-	fake.recordInvocation("AllBranches", []interface{}{arg1})
-	fake.allBranchesMutex.Unlock()
-	if fake.AllBranchesStub != nil {
-		return fake.AllBranchesStub(arg1)
+	fake.recordInvocation("BranchTargets", []interface{}{arg1})
+	fake.branchTargetsMutex.Unlock()
+	if fake.BranchTargetsStub != nil {
+		return fake.BranchTargetsStub(arg1)
 	} else {
-		return fake.allBranchesReturns.result1, fake.allBranchesReturns.result2
+		return fake.branchTargetsReturns.result1, fake.branchTargetsReturns.result2
 	}
 }
 
-func (fake *FakeClient) AllBranchesCallCount() int {
-	fake.allBranchesMutex.RLock()
-	defer fake.allBranchesMutex.RUnlock()
-	return len(fake.allBranchesArgsForCall)
+func (fake *FakeClient) BranchTargetsCallCount() int {
+	fake.branchTargetsMutex.RLock()
+	defer fake.branchTargetsMutex.RUnlock()
+	return len(fake.branchTargetsArgsForCall)
 }
 
-func (fake *FakeClient) AllBranchesArgsForCall(i int) string {
-	fake.allBranchesMutex.RLock()
-	defer fake.allBranchesMutex.RUnlock()
-	return fake.allBranchesArgsForCall[i].arg1
+func (fake *FakeClient) BranchTargetsArgsForCall(i int) string {
+	fake.branchTargetsMutex.RLock()
+	defer fake.branchTargetsMutex.RUnlock()
+	return fake.branchTargetsArgsForCall[i].arg1
 }
 
-func (fake *FakeClient) AllBranchesReturns(result1 map[string]string, result2 error) {
-	fake.AllBranchesStub = nil
-	fake.allBranchesReturns = struct {
+func (fake *FakeClient) BranchTargetsReturns(result1 map[string]string, result2 error) {
+	fake.BranchTargetsStub = nil
+	fake.branchTargetsReturns = struct {
 		result1 map[string]string
 		result2 error
 	}{result1, result2}
@@ -331,8 +331,8 @@ func (fake *FakeClient) AllBlobsForRefReturns(result1 error) {
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.allBranchesMutex.RLock()
-	defer fake.allBranchesMutex.RUnlock()
+	fake.branchTargetsMutex.RLock()
+	defer fake.branchTargetsMutex.RUnlock()
 	fake.cloneMutex.RLock()
 	defer fake.cloneMutex.RUnlock()
 	fake.getParentsMutex.RLock()

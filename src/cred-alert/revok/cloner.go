@@ -105,7 +105,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 
 	scannedOids := map[git.Oid]struct{}{}
 
-	branches, err := c.gitClient.AllBranches(dest)
+	branches, err := c.gitClient.BranchTargets(dest)
 	if err != nil {
 		workLogger.Error("failed-to-get-branches", err)
 		return
