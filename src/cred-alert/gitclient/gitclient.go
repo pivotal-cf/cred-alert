@@ -21,6 +21,7 @@ type client struct {
 //go:generate counterfeiter . Client
 
 type Client interface {
+	AllBranches(string) (map[string]string, error)
 	Clone(string, string) (*git.Repository, error)
 	GetParents(*git.Repository, *git.Oid) ([]*git.Oid, error)
 	Fetch(string) (map[string][]*git.Oid, error)
@@ -42,6 +43,46 @@ func New(privateKeyPath, publicKeyPath string) *client {
 			},
 		},
 	}
+}
+
+func (c *client) AllBranches(repositoryPath string) (map[string]string, error) {
+	repo, err := git.OpenRepository(repositoryPath)
+	if err != nil {
+		return nil, err
+	}
+	defer repo.Free()
+
+	it, err := repo.NewBranchIterator(git.BranchAll)
+	if err != nil {
+		return nil, err
+	}
+
+	var branch *git.Branch
+	branches := map[string]string{}
+	for {
+		branch, _, err = it.Next()
+		if err != nil {
+			break
+		}
+
+		branchName, err := branch.Name()
+		if err != nil {
+			break
+		}
+
+		target := branch.Target()
+		if target == nil { // origin/HEAD has no target
+			continue
+		}
+
+		branches[branchName] = branch.Target().String()
+	}
+
+	if branch != nil {
+		branch.Free()
+	}
+
+	return branches, nil
 }
 
 func (c *client) Clone(sshURL, dest string) (*git.Repository, error) {

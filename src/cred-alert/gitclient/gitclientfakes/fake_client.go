@@ -11,6 +11,15 @@ import (
 )
 
 type FakeClient struct {
+	AllBranchesStub        func(string) (map[string]string, error)
+	allBranchesMutex       sync.RWMutex
+	allBranchesArgsForCall []struct {
+		arg1 string
+	}
+	allBranchesReturns struct {
+		result1 map[string]string
+		result2 error
+	}
 	CloneStub        func(string, string) (*git.Repository, error)
 	cloneMutex       sync.RWMutex
 	cloneArgsForCall []struct {
@@ -73,6 +82,40 @@ type FakeClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeClient) AllBranches(arg1 string) (map[string]string, error) {
+	fake.allBranchesMutex.Lock()
+	fake.allBranchesArgsForCall = append(fake.allBranchesArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("AllBranches", []interface{}{arg1})
+	fake.allBranchesMutex.Unlock()
+	if fake.AllBranchesStub != nil {
+		return fake.AllBranchesStub(arg1)
+	} else {
+		return fake.allBranchesReturns.result1, fake.allBranchesReturns.result2
+	}
+}
+
+func (fake *FakeClient) AllBranchesCallCount() int {
+	fake.allBranchesMutex.RLock()
+	defer fake.allBranchesMutex.RUnlock()
+	return len(fake.allBranchesArgsForCall)
+}
+
+func (fake *FakeClient) AllBranchesArgsForCall(i int) string {
+	fake.allBranchesMutex.RLock()
+	defer fake.allBranchesMutex.RUnlock()
+	return fake.allBranchesArgsForCall[i].arg1
+}
+
+func (fake *FakeClient) AllBranchesReturns(result1 map[string]string, result2 error) {
+	fake.AllBranchesStub = nil
+	fake.allBranchesReturns = struct {
+		result1 map[string]string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeClient) Clone(arg1 string, arg2 string) (*git.Repository, error) {
@@ -288,6 +331,8 @@ func (fake *FakeClient) AllBlobsForRefReturns(result1 error) {
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.allBranchesMutex.RLock()
+	defer fake.allBranchesMutex.RUnlock()
 	fake.cloneMutex.RLock()
 	defer fake.cloneMutex.RUnlock()
 	fake.getParentsMutex.RLock()

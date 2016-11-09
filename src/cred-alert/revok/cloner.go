@@ -103,37 +103,22 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	repo, err := git.OpenRepository(dest)
-	if err != nil {
-		workLogger.Error("failed-to-find-db-repo", err)
-		return
-	}
-
-	it, err := repo.NewBranchIterator(git.BranchAll)
-	if err != nil {
-		workLogger.Error("failed-to-get-branch-iterator", err)
-		return
-	}
-
 	scannedOids := map[git.Oid]struct{}{}
-	for {
-		branch, _, err := it.Next()
-		if err != nil {
-			break
-		}
 
-		branchName, err := branch.Name()
-		if err != nil {
-			break
-		}
+	branches, err := c.gitClient.AllBranches(dest)
+	if err != nil {
+		workLogger.Error("failed-to-get-branches", err)
+		return
+	}
 
+	for branchName, target := range branches {
 		err = c.scanner.Scan(
 			workLogger,
 			msg.Owner,
 			msg.Repository,
 			scannedOids,
 			branchName,
-			branch.Target().String(),
+			target,
 			"",
 		)
 
