@@ -231,7 +231,7 @@ var _ = Describe("Scan Repository", func() {
 
 		BeforeEach(func() {
 			_, err := database.DB().Exec(`
-					INSERT INTO repositories ( name, owner, raw_json)
+					INSERT INTO repositories (name, owner, raw_json)
 					VALUES (
 						'some-repo',
 						'some-owner',

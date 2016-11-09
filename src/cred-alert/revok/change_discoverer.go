@@ -136,7 +136,6 @@ func (c *changeDiscoverer) Fetch(
 	logger lager.Logger,
 	repo db.Repository,
 ) error {
-
 	repoLogger := logger.WithData(lager.Data{
 		"owner":      repo.Owner,
 		"repository": repo.Name,
