@@ -9,15 +9,16 @@ import (
 )
 
 type FakeScanRepository struct {
-	StartStub        func(logger lager.Logger, scanType, startSHA, stopSHA string, repository *db.Repository, fetch *db.Fetch) db.ActiveScan
+	StartStub        func(lager.Logger, string, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan
 	startMutex       sync.RWMutex
 	startArgsForCall []struct {
-		logger     lager.Logger
-		scanType   string
-		startSHA   string
-		stopSHA    string
-		repository *db.Repository
-		fetch      *db.Fetch
+		arg1 lager.Logger
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+		arg6 *db.Repository
+		arg7 *db.Fetch
 	}
 	startReturns struct {
 		result1 db.ActiveScan
@@ -36,20 +37,21 @@ type FakeScanRepository struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeScanRepository) Start(logger lager.Logger, scanType string, startSHA string, stopSHA string, repository *db.Repository, fetch *db.Fetch) db.ActiveScan {
+func (fake *FakeScanRepository) Start(arg1 lager.Logger, arg2 string, arg3 string, arg4 string, arg5 string, arg6 *db.Repository, arg7 *db.Fetch) db.ActiveScan {
 	fake.startMutex.Lock()
 	fake.startArgsForCall = append(fake.startArgsForCall, struct {
-		logger     lager.Logger
-		scanType   string
-		startSHA   string
-		stopSHA    string
-		repository *db.Repository
-		fetch      *db.Fetch
-	}{logger, scanType, startSHA, stopSHA, repository, fetch})
-	fake.recordInvocation("Start", []interface{}{logger, scanType, startSHA, stopSHA, repository, fetch})
+		arg1 lager.Logger
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+		arg6 *db.Repository
+		arg7 *db.Fetch
+	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
+	fake.recordInvocation("Start", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.startMutex.Unlock()
 	if fake.StartStub != nil {
-		return fake.StartStub(logger, scanType, startSHA, stopSHA, repository, fetch)
+		return fake.StartStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	} else {
 		return fake.startReturns.result1
 	}
@@ -61,10 +63,10 @@ func (fake *FakeScanRepository) StartCallCount() int {
 	return len(fake.startArgsForCall)
 }
 
-func (fake *FakeScanRepository) StartArgsForCall(i int) (lager.Logger, string, string, string, *db.Repository, *db.Fetch) {
+func (fake *FakeScanRepository) StartArgsForCall(i int) (lager.Logger, string, string, string, string, *db.Repository, *db.Fetch) {
 	fake.startMutex.RLock()
 	defer fake.startMutex.RUnlock()
-	return fake.startArgsForCall[i].logger, fake.startArgsForCall[i].scanType, fake.startArgsForCall[i].startSHA, fake.startArgsForCall[i].stopSHA, fake.startArgsForCall[i].repository, fake.startArgsForCall[i].fetch
+	return fake.startArgsForCall[i].arg1, fake.startArgsForCall[i].arg2, fake.startArgsForCall[i].arg3, fake.startArgsForCall[i].arg4, fake.startArgsForCall[i].arg5, fake.startArgsForCall[i].arg6, fake.startArgsForCall[i].arg7
 }
 
 func (fake *FakeScanRepository) StartReturns(result1 db.ActiveScan) {

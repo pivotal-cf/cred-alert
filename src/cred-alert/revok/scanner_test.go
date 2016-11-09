@@ -70,7 +70,7 @@ var _ = Describe("Scanner", func() {
 
 		scanRepository = &dbfakes.FakeScanRepository{}
 		firstScan = &dbfakes.FakeActiveScan{}
-		scanRepository.StartStub = func(lager.Logger, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
+		scanRepository.StartStub = func(lager.Logger, string, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
 			return firstScan
 		}
 
@@ -128,13 +128,13 @@ var _ = Describe("Scanner", func() {
 	})
 
 	It("sniffs", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(sniffer.SniffCallCount).Should(Equal(1))
 	})
 
 	It("records credentials found in the repository", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 		credential := firstScan.RecordCredentialArgsForCall(0)
@@ -149,11 +149,12 @@ var _ = Describe("Scanner", func() {
 	})
 
 	It("tries to store information in the database about found credentials", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(scanRepository.StartCallCount).Should(Equal(1))
-		_, scanType, startSHA, stopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
+		_, scanType, branch, startSHA, stopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
 		Expect(scanType).To(Equal("repo-scan"))
+		Expect(branch).To(Equal("some-branch"))
 		Expect(startSHA).To(Equal(result.To.String()))
 		Expect(stopSHA).To(Equal(""))
 		Expect(repository.ID).To(BeNumerically("==", 42))
@@ -164,7 +165,7 @@ var _ = Describe("Scanner", func() {
 	})
 
 	It("sends notifications about found credentials", func() {
-		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(notifier.SendBatchNotificationCallCount()).To(Equal(1))
 
@@ -172,6 +173,7 @@ var _ = Describe("Scanner", func() {
 		Expect(notifications).To(HaveLen(1))
 		Expect(notifications[0].Owner).To(Equal("some-owner"))
 		Expect(notifications[0].Repository).To(Equal("some-repository"))
+		Expect(notifications[0].Branch).To(Equal("some-branch"))
 		Expect(notifications[0].SHA).To(Equal(result.To.String()))
 		Expect(notifications[0].Path).To(Equal("some-file"))
 		Expect(notifications[0].LineNumber).To(Equal(1))
@@ -184,7 +186,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("does not send notifications about credentials", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "refs/heads/topicA", result.To.String(), "")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(notifier.SendBatchNotificationCallCount()).To(BeZero())
 		})
@@ -201,7 +203,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("scans from the given SHA to the beginning of the repository", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), "")
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(3))
 			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(3))
@@ -209,18 +211,19 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("doesn't scan past the SHA to stop at if provided", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), stopSHA)
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), stopSHA)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sniffer.SniffCallCount).Should(Equal(2))
 			Eventually(firstScan.RecordCredentialCallCount).Should(Equal(2))
 		})
 
 		It("starts the scan with the start and stop SHA", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), stopSHA)
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), stopSHA)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, scanType, actualStartSHA, actualStopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
+			_, scanType, branch, actualStartSHA, actualStopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
 			Expect(scanType).To(Equal("repo-scan"))
+			Expect(branch).To(Equal("some-branch"))
 			Expect(actualStartSHA).To(Equal(result.To.String()))
 			Expect(actualStopSHA).To(Equal(stopSHA))
 			Expect(repository.ID).To(BeNumerically("==", 42))
@@ -244,7 +247,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("scans all parents", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, mergeCommitResult.To.String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", mergeCommitResult.To.String(), "")
 			Expect(err).NotTo(HaveOccurred())
 
 			actualCredPaths := []string{}
@@ -270,11 +273,11 @@ var _ = Describe("Scanner", func() {
 			secondMasterCommitResult := createCommit("refs/heads/master", baseRepoPath, "second-commit-file", []byte("credential"), "second commit", nil)
 			thirdMasterCommitResult := createCommit("refs/heads/master", baseRepoPath, "third-commit-file", []byte("credential"), "third commit", nil)
 
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, thirdMasterCommitResult.To.String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", thirdMasterCommitResult.To.String(), "")
 			Expect(err).NotTo(HaveOccurred())
 
 			scan = &dbfakes.FakeActiveScan{}
-			scanRepository.StartStub = func(lager.Logger, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
+			scanRepository.StartStub = func(lager.Logger, string, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
 				return scan
 			}
 
@@ -290,7 +293,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("scans only the never-before seen commits", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, mergeCommitResult.To.String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", mergeCommitResult.To.String(), "")
 			Expect(err).NotTo(HaveOccurred())
 
 			actualCredPaths := []string{}
@@ -307,7 +310,7 @@ var _ = Describe("Scanner", func() {
 		m := map[git.Oid]struct{}{
 			*result.To: struct{}{},
 		}
-		err := scanner.Scan(logger, "some-owner", "some-repository", m, result.To.String(), "")
+		err := scanner.Scan(logger, "some-owner", "some-repository", m, "some-branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(firstScan.RecordCredentialCallCount()).To(BeZero())
 	})
@@ -318,7 +321,7 @@ var _ = Describe("Scanner", func() {
 		})
 
 		It("does not try to scan", func() {
-			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, result.To.String(), "")
+			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), "")
 			Expect(err).To(HaveOccurred())
 			Consistently(scanRepository.StartCallCount).Should(BeZero())
 		})

@@ -18,8 +18,8 @@ import (
 //go:generate counterfeiter . Scanner
 
 type Scanner interface {
-	Scan(lager.Logger, string, string, map[git.Oid]struct{}, string, string) error
-	ScanNoNotify(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error)
+	Scan(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error
+	ScanNoNotify(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error)
 }
 
 type scanner struct {
@@ -55,6 +55,7 @@ func (s *scanner) Scan(
 	owner string,
 	repository string,
 	scannedOids map[git.Oid]struct{},
+	branch string,
 	startSHA string,
 	stopSHA string,
 ) error {
@@ -64,7 +65,7 @@ func (s *scanner) Scan(
 		return err
 	}
 
-	credentials, err := s.ScanNoNotify(logger, owner, repository, scannedOids, startSHA, stopSHA)
+	credentials, err := s.ScanNoNotify(logger, owner, repository, scannedOids, branch, startSHA, stopSHA)
 	if err != nil {
 		return err
 	}
@@ -75,6 +76,7 @@ func (s *scanner) Scan(
 		batch = append(batch, notifications.Notification{
 			Owner:      credential.Owner,
 			Repository: credential.Repository,
+			Branch:     branch,
 			SHA:        credential.SHA,
 			Path:       credential.Path,
 			LineNumber: credential.LineNumber,
@@ -98,6 +100,7 @@ func (s *scanner) ScanNoNotify(
 	owner string,
 	repository string,
 	scannedOids map[git.Oid]struct{},
+	branch string,
 	startSHA string,
 	stopSHA string,
 ) ([]db.Credential, error) {
@@ -107,7 +110,7 @@ func (s *scanner) ScanNoNotify(
 		return nil, err
 	}
 
-	credentials, err := s.scan(logger, dbRepository, scannedOids, startSHA, stopSHA)
+	credentials, err := s.scan(logger, dbRepository, scannedOids, branch, startSHA, stopSHA)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +122,7 @@ func (s *scanner) scan(
 	logger lager.Logger,
 	dbRepository db.Repository,
 	scannedOids map[git.Oid]struct{},
+	branch string,
 	startSHA string,
 	stopSHA string,
 ) ([]db.Credential, error) {
@@ -145,7 +149,7 @@ func (s *scanner) scan(
 	}
 
 	quietLogger := kolsch.NewLogger()
-	scan := s.scanRepository.Start(quietLogger, "repo-scan", startSHA, stopSHA, &dbRepository, nil)
+	scan := s.scanRepository.Start(quietLogger, "repo-scan", branch, startSHA, stopSHA, &dbRepository, nil)
 
 	var credentials []db.Credential
 

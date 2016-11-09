@@ -17,4 +17,5 @@ var Migrations = []migration.Migrator{
 	AddFailedMessages,
 	AddFetchInterval,
 	DropDiffScans,
+	AddBranchToScans,
 }

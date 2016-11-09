@@ -98,6 +98,7 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		priorScan.Owner,
 		priorScan.Repository,
 		map[git.Oid]struct{}{},
+		priorScan.Branch,
 		priorScan.StartSHA,
 		priorScan.StopSHA,
 	)

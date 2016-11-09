@@ -184,12 +184,18 @@ func (c *changeDiscoverer) Fetch(
 		return err
 	}
 
-	quietLogger := kolsch.NewLogger()
-
 	scannedOids := map[git.Oid]struct{}{}
 
-	for _, oids := range changes {
-		err := c.scanner.Scan(quietLogger, repo.Owner, repo.Name, scannedOids, oids[1].String(), oids[0].String())
+	for branch, oids := range changes {
+		err := c.scanner.Scan(
+			kolsch.NewLogger(),
+			repo.Owner,
+			repo.Name,
+			scannedOids,
+			branch,
+			oids[1].String(),
+			oids[0].String(),
+		)
 		if err != nil {
 			c.scanFailedCounter.Inc(repoLogger)
 		} else {

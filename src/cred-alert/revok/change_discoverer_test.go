@@ -236,17 +236,21 @@ var _ = Describe("ChangeDiscoverer", func() {
 			It("scans only the changes", func() {
 				Eventually(scanner.ScanCallCount).Should(Equal(2)) // 2 new commits
 
+				var branches []string
 				for i := 0; i < scanner.ScanCallCount(); i++ {
-					_, owner, name, _, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+					_, owner, name, _, branch, startSHA, stopSHA := scanner.ScanArgsForCall(i)
 					Expect(owner).To(Equal("some-owner"))
 					Expect(name).To(Equal("some-repo"))
 
+					branches = append(branches, branch)
 					for _, result := range results {
 						if result.To.String() == startSHA {
 							Expect(stopSHA).To(Equal(result.From.String()))
 						}
 					}
 				}
+
+				Expect(branches).To(ConsistOf("refs/remotes/origin/master", "refs/remotes/origin/topicA"))
 			})
 
 			It("tries to store information in the database about the fetch", func() {
@@ -314,7 +318,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 			Context("when there is an error scanning a change", func() {
 				BeforeEach(func() {
-					scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) error {
+					scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error {
 						if scanner.ScanCallCount() == 1 {
 							return nil
 						}

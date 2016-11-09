@@ -27,6 +27,7 @@ type Scan struct {
 	ScanStart time.Time
 	ScanEnd   time.Time
 
+	Branch   string
 	StartSHA string
 	StopSHA  string
 

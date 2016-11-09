@@ -156,19 +156,22 @@ var _ = Describe("Cloner", func() {
 				Eventually(scanner.ScanCallCount).Should(Equal(2))
 
 				var startSHAs []string
+				var branches []string
 				var actualScannedOids []map[git.Oid]struct{}
 				for i := 0; i < scanner.ScanCallCount(); i++ {
-					_, owner, repository, scannedOids, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+					_, owner, repository, scannedOids, branch, startSHA, stopSHA := scanner.ScanArgsForCall(i)
 					Expect(owner).To(Equal("some-owner"))
 					Expect(repository).To(Equal("some-repo"))
 					Expect(stopSHA).To(Equal(""))
 
 					startSHAs = append(startSHAs, startSHA)
 					actualScannedOids = append(actualScannedOids, scannedOids)
+					branches = append(branches, branch)
 				}
 
 				Expect(startSHAs).To(ConsistOf(tomatoesHeadSHA, potatoesHeadSHA))
 				Expect(fmt.Sprintf("%p", actualScannedOids[0])).To(Equal(fmt.Sprintf("%p", actualScannedOids[1])))
+				Expect(branches).To(ConsistOf("origin/tomatoes", "origin/potatoes"))
 			})
 
 			It("increments the successful clone metric", func() {

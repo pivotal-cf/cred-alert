@@ -46,6 +46,7 @@ var _ = Describe("Rescanner", func() {
 		scanRepository.ScansNotYetRunWithVersionReturns([]db.PriorScan{
 			{
 				ID:         1,
+				Branch:     "some-branch",
 				StartSHA:   "some-start-sha",
 				StopSHA:    "",
 				Repository: "some-repository",
@@ -53,6 +54,7 @@ var _ = Describe("Rescanner", func() {
 			},
 			{
 				ID:         2,
+				Branch:     "some-other-branch",
 				StartSHA:   "some-other-start-sha",
 				StopSHA:    "some-stop-sha",
 				Repository: "some-other-repository",
@@ -134,15 +136,17 @@ var _ = Describe("Rescanner", func() {
 	It("repeats each prior scan for the previous rules version", func() {
 		Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
 
-		_, owner, repository, _, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(0)
+		_, owner, repository, _, branch, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(0)
 		Expect(owner).To(Equal("some-owner"))
 		Expect(repository).To(Equal("some-repository"))
+		Expect(branch).To(Equal("some-branch"))
 		Expect(startSHA).To(Equal("some-start-sha"))
 		Expect(stopSHA).To(Equal(""))
 
-		_, owner, repository, _, startSHA, stopSHA = scanner.ScanNoNotifyArgsForCall(1)
+		_, owner, repository, _, branch, startSHA, stopSHA = scanner.ScanNoNotifyArgsForCall(1)
 		Expect(owner).To(Equal("some-other-owner"))
 		Expect(repository).To(Equal("some-other-repository"))
+		Expect(branch).To(Equal("some-other-branch"))
 		Expect(startSHA).To(Equal("some-other-start-sha"))
 		Expect(stopSHA).To(Equal("some-stop-sha"))
 	})
@@ -233,7 +237,7 @@ var _ = Describe("Rescanner", func() {
 				}, nil
 			}
 
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error) {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
 				if scanner.ScanNoNotifyCallCount() == 1 {
 					return []db.Credential{
 						{
@@ -292,7 +296,7 @@ var _ = Describe("Rescanner", func() {
 
 	Context("when no new credentials are found", func() {
 		BeforeEach(func() {
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error) {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
 				if scanner.ScanNoNotifyCallCount() == 1 {
 					return []db.Credential{
 						{
@@ -340,7 +344,7 @@ var _ = Describe("Rescanner", func() {
 
 	Context("when doing a scan fails", func() {
 		BeforeEach(func() {
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string) ([]db.Credential, error) {
+			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
 				if scanner.ScanNoNotifyCallCount() == 1 {
 					return nil, errors.New("an-error")
 				}
@@ -351,9 +355,10 @@ var _ = Describe("Rescanner", func() {
 
 		It("should continue on to the next repository", func() {
 			Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
-			_, owner, repository, _, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(1)
+			_, owner, repository, _, branch, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(1)
 			Expect(owner).To(Equal("some-other-owner"))
 			Expect(repository).To(Equal("some-other-repository"))
+			Expect(branch).To(Equal("some-other-branch"))
 			Expect(startSHA).To(Equal("some-other-start-sha"))
 			Expect(stopSHA).To(Equal("some-stop-sha"))
 		})

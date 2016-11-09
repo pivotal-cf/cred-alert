@@ -12,7 +12,7 @@ import (
 //go:generate counterfeiter . ScanRepository
 
 type ScanRepository interface {
-	Start(logger lager.Logger, scanType, startSHA, stopSHA string, repository *Repository, fetch *Fetch) ActiveScan
+	Start(lager.Logger, string, string, string, string, *Repository, *Fetch) ActiveScan
 	ScansNotYetRunWithVersion(lager.Logger, int) ([]PriorScan, error)
 }
 
@@ -31,6 +31,7 @@ func NewScanRepository(db *gorm.DB, clock clock.Clock) ScanRepository {
 func (repo *scanRepository) Start(
 	logger lager.Logger,
 	scanType string,
+	branch string,
 	startSHA string,
 	stopSHA string,
 	repository *Repository,
@@ -53,6 +54,7 @@ func (repo *scanRepository) Start(
 		typee:      scanType,
 		startTime:  repo.clock.Now(),
 
+		branch:   branch,
 		startSHA: startSHA,
 		stopSHA:  stopSHA,
 	}
@@ -75,6 +77,7 @@ type activeScan struct {
 	repository *Repository
 	fetch      *Fetch
 
+	branch   string
 	startSHA string
 	stopSHA  string
 
@@ -91,6 +94,7 @@ func (s *activeScan) Finish() error {
 		RulesVersion: sniff.RulesVersion,
 		ScanStart:    s.startTime,
 		ScanEnd:      s.clock.Now(),
+		Branch:       s.branch,
 		StartSHA:     s.startSHA,
 		StopSHA:      s.stopSHA,
 		Credentials:  s.credentials,
@@ -117,6 +121,7 @@ func (s *activeScan) Finish() error {
 
 type PriorScan struct {
 	ID          int
+	Branch      string
 	StartSHA    string
 	StopSHA     string
 	Repository  string
@@ -131,6 +136,7 @@ func (repo *scanRepository) ScansNotYetRunWithVersion(logger lager.Logger, versi
 
 	rows, err := repo.db.DB().Query(`
     SELECT s.id,
+           s.branch,
            s.start_sha,
            s.stop_sha,
            r.owner,
@@ -162,6 +168,7 @@ func (repo *scanRepository) ScansNotYetRunWithVersion(logger lager.Logger, versi
 		previousScans []PriorScan
 
 		id             int
+		branch         string
 		startSHA       string
 		stopSHA        string
 		owner          string
@@ -169,13 +176,14 @@ func (repo *scanRepository) ScansNotYetRunWithVersion(logger lager.Logger, versi
 	)
 
 	for rows.Next() {
-		scanErr := rows.Scan(&id, &startSHA, &stopSHA, &owner, &repositoryName)
+		scanErr := rows.Scan(&id, &branch, &startSHA, &stopSHA, &owner, &repositoryName)
 		if scanErr != nil {
 			logger.Error("failed-to-scan-row", err)
 			return nil, scanErr
 		}
 		previousScans = append(previousScans, PriorScan{
 			ID:         id,
+			Branch:     branch,
 			StartSHA:   startSHA,
 			StopSHA:    stopSHA,
 			Owner:      owner,

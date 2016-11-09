@@ -18,7 +18,8 @@ type Notification struct {
 	Repository string
 	Private    bool
 
-	SHA string
+	Branch string
+	SHA    string
 
 	Path       string
 	LineNumber int

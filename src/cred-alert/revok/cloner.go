@@ -122,7 +122,20 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 			break
 		}
 
-		err = c.scanner.Scan(workLogger, msg.Owner, msg.Repository, scannedOids, branch.Target().String(), "")
+		branchName, err := branch.Name()
+		if err != nil {
+			break
+		}
+
+		err = c.scanner.Scan(
+			workLogger,
+			msg.Owner,
+			msg.Repository,
+			scannedOids,
+			branchName,
+			branch.Target().String(),
+			"",
+		)
 
 		if err != nil {
 			c.scanFailedCounter.Inc(workLogger)
