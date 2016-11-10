@@ -3,6 +3,7 @@ package revok
 import (
 	"cred-alert/db"
 	"cred-alert/revokpb"
+	"sort"
 
 	"code.cloudfoundry.org/lager"
 
@@ -31,8 +32,11 @@ func NewRevokServer(logger lager.Logger, db db.RepositoryRepository) RevokServer
 	}
 }
 
-func (s *revokServer) GetCredentialCounts(ctx context.Context, in *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error) {
-	logger := s.logger.Session("get-credential-counts")
+func (s *revokServer) GetCredentialCounts(
+	ctx context.Context,
+	in *revokpb.CredentialCountRequest,
+) (*revokpb.CredentialCountResponse, error) {
+	logger := s.logger.Session("get-organization-credential-counts")
 
 	repositories, err := s.db.All()
 	if err != nil {
@@ -40,14 +44,28 @@ func (s *revokServer) GetCredentialCounts(ctx context.Context, in *revokpb.Crede
 		return nil, err
 	}
 
-	response := &revokpb.CredentialCountResponse{}
+	orgCounts := map[string]float64{}
 	for i := range repositories {
-		response.CredentialCounts = append(response.CredentialCounts, &revokpb.CredentialCount{
-			Owner:      repositories[i].Owner,
-			Repository: repositories[i].Name,
-			Count:      repositories[i].CredentialCount,
-		})
+		for _, branchCountInt := range repositories[i].CredentialCounts {
+			if branchCount, ok := branchCountInt.(float64); ok {
+				orgCounts[repositories[i].Owner] += branchCount
+			}
+		}
+	}
 
+	orgNames := []string{}
+	for name, _ := range orgCounts {
+		orgNames = append(orgNames, name)
+	}
+	sort.Strings(orgNames)
+
+	response := &revokpb.CredentialCountResponse{}
+	for _, orgName := range orgNames {
+		occ := &revokpb.OrganizationCredentialCount{
+			Owner: orgName,
+			Count: int64(orgCounts[orgName]),
+		}
+		response.CredentialCounts = append(response.CredentialCounts, occ)
 	}
 
 	return response, nil

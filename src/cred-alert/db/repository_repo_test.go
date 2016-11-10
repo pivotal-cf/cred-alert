@@ -598,18 +598,28 @@ var _ = Describe("RepositoryRepo", func() {
 		})
 
 		It("updates the credential count on the repository", func() {
-			err := repo.UpdateCredentialCount(repository, uint(42))
+			expectedCredentialCounts := map[string]uint{
+				"some-branch":       42,
+				"some-other-branch": 84,
+			}
+
+			err := repo.UpdateCredentialCount(repository, expectedCredentialCounts)
 			Expect(err).NotTo(HaveOccurred())
 
-			var count int
+			var counts []byte
 			err = database.DB().QueryRow(`
-				SELECT credential_count
+				SELECT credential_counts
 				FROM repositories
 				WHERE id = ?
-			`, repository.ID).Scan(&count)
+			`, repository.ID).Scan(&counts)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(count).To(Equal(42))
+			actualCredentialCounts := make(map[string]interface{})
+			err = json.Unmarshal(counts, &actualCredentialCounts)
+			Expect(err).NotTo(HaveOccurred())
+			for k, v := range actualCredentialCounts {
+				Expect(v).To(BeNumerically("==", expectedCredentialCounts[k]))
+			}
 		})
 	})
 })

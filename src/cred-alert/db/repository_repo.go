@@ -2,6 +2,7 @@ package db
 
 import (
 	"cred-alert/sniff"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -25,11 +26,12 @@ type RepositoryRepository interface {
 	Find(owner string, name string) (Repository, error)
 
 	All() ([]Repository, error)
+	AllForOrganization(string) ([]Repository, error)
 	NotScannedWithVersion(int) ([]Repository, error)
 
 	MarkAsCloned(string, string, string) error
 	RegisterFailedFetch(lager.Logger, *Repository) error
-	UpdateCredentialCount(*Repository, uint) error
+	UpdateCredentialCount(*Repository, map[string]uint) error
 
 	DueForFetch() ([]Repository, error)
 	UpdateFetchInterval(*Repository, time.Duration) error
@@ -72,6 +74,16 @@ func (r *repositoryRepository) All() ([]Repository, error) {
 	}
 
 	return existingRepositories, nil
+}
+
+func (r *repositoryRepository) AllForOrganization(owner string) ([]Repository, error) {
+	var repositories []Repository
+	err := r.db.Where("owner = ?", owner).Find(&repositories).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return repositories, nil
 }
 
 func (r *repositoryRepository) MarkAsCloned(owner, name, path string) error {
@@ -180,12 +192,17 @@ func (r *repositoryRepository) RegisterFailedFetch(
 	return tx.Commit()
 }
 
-func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, count uint) error {
-	_, err := r.db.DB().Exec(`
+func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, credentialCounts map[string]uint) error {
+	credentialCountJSON, err := json.Marshal(credentialCounts)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.DB().Exec(`
 		UPDATE repositories
-		SET credential_count = ?
+		SET credential_counts = ?
 		WHERE id = ?
-	`, count, repository.ID)
+	`, credentialCountJSON, repository.ID)
 
 	return err
 }

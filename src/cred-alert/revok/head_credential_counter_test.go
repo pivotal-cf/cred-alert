@@ -4,7 +4,6 @@ import (
 	"context"
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
-	"cred-alert/gitclient"
 	"cred-alert/gitclient/gitclientfakes"
 	"cred-alert/revok"
 	"cred-alert/scanners"
@@ -12,7 +11,6 @@ import (
 	"cred-alert/sniff/snifffakes"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"time"
@@ -45,10 +43,6 @@ var _ = Describe("HeadCredentialCounter", func() {
 		clock = fakeclock.NewFakeClock(time.Now())
 		interval = 1 * time.Hour
 		gitClient = &gitclientfakes.FakeClient{}
-		gitClient.AllBlobsForRefStub = func(ctx context.Context, path string, ref string, w *io.PipeWriter) error {
-			w.Close()
-			return nil
-		}
 
 		sniffer = &snifffakes.FakeSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
@@ -118,120 +112,105 @@ var _ = Describe("HeadCredentialCounter", func() {
 			repositoryRepository.AllReturns([]db.Repository{repo1, repo2}, nil)
 		})
 
-		It("tries to get the blobs for each repository", func() {
-			Eventually(gitClient.AllBlobsForRefCallCount).Should(Equal(2))
-			_, path, ref, writer := gitClient.AllBlobsForRefArgsForCall(0)
-			Expect(path).To(Equal("some-path"))
-			Expect(ref).To(Equal("refs/remotes/origin/some-branch"))
-			Expect(writer).To(BeAssignableToTypeOf(&io.PipeWriter{}))
+		It("tries to get the credential counts for each repository", func() {
+			Eventually(gitClient.BranchCredentialCountsCallCount).Should(Equal(2))
 
-			_, path, ref, writer = gitClient.AllBlobsForRefArgsForCall(1)
+			_, _, path, _ := gitClient.BranchCredentialCountsArgsForCall(0)
+			Expect(path).To(Equal("some-path"))
+
+			_, _, path, _ = gitClient.BranchCredentialCountsArgsForCall(1)
 			Expect(path).To(Equal("some-other-path"))
-			Expect(ref).To(Equal("refs/remotes/origin/some-other-branch"))
-			Expect(writer).To(BeAssignableToTypeOf(&io.PipeWriter{}))
 		})
 
-		Context("when there are blobs for the repository", func() {
+		Context("when there are credentials for the repository", func() {
 			BeforeEach(func() {
-				gitClient.AllBlobsForRefStub = func(ctx context.Context, path string, ref string, w *io.PipeWriter) error {
-					switch ref {
-					case "refs/remotes/origin/some-branch":
-						w.Write([]byte("credential\n"))
-						w.Write([]byte("credential\n"))
-						w.Close()
-					case "refs/remotes/origin/some-other-branch":
-						w.Write([]byte("credential\n"))
-						w.Close()
-					default:
-						panic(fmt.Sprintf("no stub for '%s'", ref))
-					}
+				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer) (map[string]uint, error) {
+					defer GinkgoRecover()
 
-					return nil
+					switch path {
+					case "some-path":
+						return map[string]uint{
+							"branch-1": 1,
+							"branch-2": 2,
+						}, nil
+					case "some-other-path":
+						return map[string]uint{
+							"branch-3": 3,
+							"branch-4": 4,
+						}, nil
+					default:
+						panic(fmt.Sprintf("no stub for '%s'", path))
+					}
 				}
 			})
 
 			It("tries to store the count of credentials in the repository in the database", func() {
 				Eventually(repositoryRepository.UpdateCredentialCountCallCount).Should(Equal(2))
-				repo, count := repositoryRepository.UpdateCredentialCountArgsForCall(0)
+				repo, counts := repositoryRepository.UpdateCredentialCountArgsForCall(0)
 				Expect(repo).To(Equal(&repo1))
-				Expect(count).To(Equal(uint(2)))
+				Expect(counts).To(Equal(map[string]uint{
+					"branch-1": 1,
+					"branch-2": 2,
+				}))
 
-				repo, count = repositoryRepository.UpdateCredentialCountArgsForCall(1)
+				repo, counts = repositoryRepository.UpdateCredentialCountArgsForCall(1)
 				Expect(repo).To(Equal(&repo2))
-				Expect(count).To(Equal(uint(1)))
+				Expect(counts).To(Equal(map[string]uint{
+					"branch-3": 3,
+					"branch-4": 4,
+				}))
 			})
 		})
 
 		Context("when it is signaled in the middle of work", func() {
 			BeforeEach(func() {
+				gitClient.BranchTargetsReturns(map[string]string{"some-branch": "some-target"}, nil)
+
 				var repositories []db.Repository
 				for i := 0; i < 50; i++ {
 					repositories = append(repositories, db.Repository{
-						Path:          fmt.Sprintf("some-path-%d", i),
-						DefaultBranch: "some-branch",
+						Path: fmt.Sprintf("some-path-%d", i),
 					})
 				}
 
 				repositoryRepository.AllReturns(repositories, nil)
-
-				gitClient.AllBlobsForRefStub = func(ctx context.Context, path string, ref string, w *io.PipeWriter) error {
-					w.Write([]byte("credential\n"))
-					w.Close()
-
-					return nil
-				}
 			})
 
 			It("exits gracefully and quickly", func() {
 				process.Signal(os.Interrupt)
 
 				// give the counts time to converge; they should eventually be the same
-				Eventually(repositoryRepository.UpdateCredentialCountCallCount, 2*time.Second).Should(BeNumerically("~", gitClient.AllBlobsForRefCallCount(), 1))
+				Eventually(repositoryRepository.UpdateCredentialCountCallCount, 2*time.Second).Should(BeNumerically("~", gitClient.BranchCredentialCountsCallCount(), 1))
 			})
 		})
 
 		Context("when getting blobs returns an error", func() {
 			BeforeEach(func() {
-				gitClient.AllBlobsForRefStub = func(ctx context.Context, path string, ref string, w *io.PipeWriter) error {
-					switch ref {
-					case "refs/remotes/origin/some-branch":
-						err := errors.New("an-error")
-						w.CloseWithError(err)
-						return err
-					case "refs/remotes/origin/some-other-branch":
-						w.Write([]byte("credential\n"))
-						w.Close()
-						return nil
+				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer) (map[string]uint, error) {
+					defer GinkgoRecover()
+
+					switch path {
+					case "some-path":
+						return nil, errors.New("an-error")
+					case "some-other-path":
+						return map[string]uint{
+							"branch-3": 3,
+							"branch-4": 4,
+						}, nil
 					default:
-						panic(fmt.Sprintf("no stub for '%s'", ref))
+						panic(fmt.Sprintf("no stub for '%s'", path))
 					}
 				}
 			})
 
 			It("continues to the next repository", func() {
 				Eventually(repositoryRepository.UpdateCredentialCountCallCount).Should(Equal(1))
-				repo, count := repositoryRepository.UpdateCredentialCountArgsForCall(0)
+				repo, counts := repositoryRepository.UpdateCredentialCountArgsForCall(0)
 				Expect(repo).To(Equal(&repo2))
-				Expect(count).To(Equal(uint(1)))
-			})
-		})
-
-		Context("when getting blobs returns gitclient.ErrInterrupted", func() {
-			BeforeEach(func() {
-				gitClient.AllBlobsForRefStub = func(ctx context.Context, path string, ref string, w *io.PipeWriter) error {
-					switch ref {
-					case "refs/remotes/origin/some-branch":
-						err := gitclient.ErrInterrupted
-						w.CloseWithError(err)
-						return err
-					default:
-						panic(fmt.Sprintf("no stub for '%s'", ref))
-					}
-				}
-			})
-
-			It("returns immediately", func() {
-				Consistently(repositoryRepository.UpdateCredentialCountCallCount).Should(BeZero())
+				Expect(counts).To(Equal(map[string]uint{
+					"branch-3": 3,
+					"branch-4": 4,
+				}))
 			})
 		})
 	})

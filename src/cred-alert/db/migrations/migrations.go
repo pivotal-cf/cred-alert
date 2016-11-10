@@ -18,4 +18,5 @@ var Migrations = []migration.Migrator{
 	AddFetchInterval,
 	DropDiffScans,
 	AddBranchToScans,
+	ChangeCredentialCountToText,
 }

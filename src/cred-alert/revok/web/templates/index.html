@@ -20,29 +20,6 @@
         </tr>
         {{end}}
       </table>
-
-      <br />
-      <br />
-      <hr>
-
-      <h3>Credential Counts By Repository</h3>
-      {{range .Organizations}}
-      <div style="float:left;">
-	<table id="#{{.Name}}" class="pure-table pure-table-bordered">
-	  <caption>{{.Name}}</caption>
-	  <thead>
-	    <th>Repository</th>
-	    <th>Credential Count</th>
-	  </thead>
-
-	  {{range .Repositories}}
-	  <tr>
-	    <td>{{.Name}}</a></td>
-	    <td>{{.CredentialCount}}</td>
-	  </tr>
-	  {{end}}
-	</table>
-      {{end}}
     </div>
   </body>
 </html>

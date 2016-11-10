@@ -43,6 +43,15 @@ type FakeRepositoryRepository struct {
 		result1 []db.Repository
 		result2 error
 	}
+	AllForOrganizationStub        func(string) ([]db.Repository, error)
+	allForOrganizationMutex       sync.RWMutex
+	allForOrganizationArgsForCall []struct {
+		arg1 string
+	}
+	allForOrganizationReturns struct {
+		result1 []db.Repository
+		result2 error
+	}
 	NotScannedWithVersionStub        func(int) ([]db.Repository, error)
 	notScannedWithVersionMutex       sync.RWMutex
 	notScannedWithVersionArgsForCall []struct {
@@ -71,11 +80,11 @@ type FakeRepositoryRepository struct {
 	registerFailedFetchReturns struct {
 		result1 error
 	}
-	UpdateCredentialCountStub        func(*db.Repository, uint) error
+	UpdateCredentialCountStub        func(*db.Repository, map[string]uint) error
 	updateCredentialCountMutex       sync.RWMutex
 	updateCredentialCountArgsForCall []struct {
 		arg1 *db.Repository
-		arg2 uint
+		arg2 map[string]uint
 	}
 	updateCredentialCountReturns struct {
 		result1 error
@@ -236,6 +245,40 @@ func (fake *FakeRepositoryRepository) AllReturns(result1 []db.Repository, result
 	}{result1, result2}
 }
 
+func (fake *FakeRepositoryRepository) AllForOrganization(arg1 string) ([]db.Repository, error) {
+	fake.allForOrganizationMutex.Lock()
+	fake.allForOrganizationArgsForCall = append(fake.allForOrganizationArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("AllForOrganization", []interface{}{arg1})
+	fake.allForOrganizationMutex.Unlock()
+	if fake.AllForOrganizationStub != nil {
+		return fake.AllForOrganizationStub(arg1)
+	} else {
+		return fake.allForOrganizationReturns.result1, fake.allForOrganizationReturns.result2
+	}
+}
+
+func (fake *FakeRepositoryRepository) AllForOrganizationCallCount() int {
+	fake.allForOrganizationMutex.RLock()
+	defer fake.allForOrganizationMutex.RUnlock()
+	return len(fake.allForOrganizationArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) AllForOrganizationArgsForCall(i int) string {
+	fake.allForOrganizationMutex.RLock()
+	defer fake.allForOrganizationMutex.RUnlock()
+	return fake.allForOrganizationArgsForCall[i].arg1
+}
+
+func (fake *FakeRepositoryRepository) AllForOrganizationReturns(result1 []db.Repository, result2 error) {
+	fake.AllForOrganizationStub = nil
+	fake.allForOrganizationReturns = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepositoryRepository) NotScannedWithVersion(arg1 int) ([]db.Repository, error) {
 	fake.notScannedWithVersionMutex.Lock()
 	fake.notScannedWithVersionArgsForCall = append(fake.notScannedWithVersionArgsForCall, struct {
@@ -339,11 +382,11 @@ func (fake *FakeRepositoryRepository) RegisterFailedFetchReturns(result1 error) 
 	}{result1}
 }
 
-func (fake *FakeRepositoryRepository) UpdateCredentialCount(arg1 *db.Repository, arg2 uint) error {
+func (fake *FakeRepositoryRepository) UpdateCredentialCount(arg1 *db.Repository, arg2 map[string]uint) error {
 	fake.updateCredentialCountMutex.Lock()
 	fake.updateCredentialCountArgsForCall = append(fake.updateCredentialCountArgsForCall, struct {
 		arg1 *db.Repository
-		arg2 uint
+		arg2 map[string]uint
 	}{arg1, arg2})
 	fake.recordInvocation("UpdateCredentialCount", []interface{}{arg1, arg2})
 	fake.updateCredentialCountMutex.Unlock()
@@ -360,7 +403,7 @@ func (fake *FakeRepositoryRepository) UpdateCredentialCountCallCount() int {
 	return len(fake.updateCredentialCountArgsForCall)
 }
 
-func (fake *FakeRepositoryRepository) UpdateCredentialCountArgsForCall(i int) (*db.Repository, uint) {
+func (fake *FakeRepositoryRepository) UpdateCredentialCountArgsForCall(i int) (*db.Repository, map[string]uint) {
 	fake.updateCredentialCountMutex.RLock()
 	defer fake.updateCredentialCountMutex.RUnlock()
 	return fake.updateCredentialCountArgsForCall[i].arg1, fake.updateCredentialCountArgsForCall[i].arg2
@@ -478,6 +521,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.findMutex.RUnlock()
 	fake.allMutex.RLock()
 	defer fake.allMutex.RUnlock()
+	fake.allForOrganizationMutex.RLock()
+	defer fake.allForOrganizationMutex.RUnlock()
 	fake.notScannedWithVersionMutex.RLock()
 	defer fake.notScannedWithVersionMutex.RUnlock()
 	fake.markAsClonedMutex.RLock()

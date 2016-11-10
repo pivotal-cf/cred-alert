@@ -28,15 +28,9 @@ func NewIndexHandler(
 	}
 }
 
-type Repository struct {
-	Name            string
-	CredentialCount uint32
-}
-
 type Organization struct {
 	Name            string
-	Repositories    []Repository
-	CredentialCount uint32
+	CredentialCount int64
 }
 
 type TemplateData struct {
@@ -52,29 +46,17 @@ func (h indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgs := map[string]*Organization{}
-	templateOrgs := []*Organization{}
+	orgs := []*Organization{}
 	for _, r := range response.CredentialCounts {
-		org, seen := orgs[r.Owner]
-		if !seen {
-			org = &Organization{
-				Name:            r.Owner,
-				CredentialCount: r.Count,
-			}
-			templateOrgs = append(templateOrgs, org)
-			orgs[r.Owner] = org
-		}
-
-		org.CredentialCount += r.Count
-		org.Repositories = append(org.Repositories, Repository{
-			Name:            r.Repository,
+		orgs = append(orgs, &Organization{
+			Name:            r.Owner,
 			CredentialCount: r.Count,
 		})
 	}
 
 	buf := bytes.NewBuffer([]byte{})
 	err = h.template.Execute(buf, TemplateData{
-		Organizations: templateOrgs,
+		Organizations: orgs,
 	})
 
 	if err != nil {

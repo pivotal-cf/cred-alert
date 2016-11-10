@@ -1,11 +1,18 @@
 package gitclient
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"cred-alert/mimetype"
+	"cred-alert/scanners"
+	"cred-alert/scanners/filescanner"
+	"cred-alert/sniff"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
+
+	"code.cloudfoundry.org/lager"
 
 	git "github.com/libgit2/git2go"
 )
@@ -27,7 +34,7 @@ type Client interface {
 	Fetch(string) (map[string][]*git.Oid, error)
 	HardReset(string, *git.Oid) error
 	Diff(repositoryPath string, a, b *git.Oid) (string, error)
-	AllBlobsForRef(context.Context, string, string, *io.PipeWriter) error
+	BranchCredentialCounts(context.Context, lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
 }
 
 func New(privateKeyPath, publicKeyPath string) *client {
@@ -239,103 +246,128 @@ func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, er
 	return strings.Join(results, "\n"), nil
 }
 
-// AllBlobsForRef will write to the provided io.PipeWriter all of the contents
-// of the blobs of the tree specified by refName. Use io.Pipe() to construct an
-// io.PipeReader and io.PipeWriter. Either the call to AllBlobsForRef or the
-// code that reads from the reader will need to run in a goroutine to prevent
-// deadlock.
-func (c *client) AllBlobsForRef(ctx context.Context, repositoryPath string, refName string, w *io.PipeWriter) error {
+func (c *client) BranchCredentialCounts(
+	ctx context.Context,
+	logger lager.Logger,
+	repositoryPath string,
+	sniffer sniff.Sniffer,
+) (map[string]uint, error) {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer repo.Free()
 
-	referenceIterator, err := repo.NewReferenceIterator()
+	it, err := repo.NewBranchIterator(git.BranchAll)
 	if err != nil {
-		return err
-	}
-	defer referenceIterator.Free()
-
-	var oid *git.Oid
-	for {
-		ref, err := referenceIterator.Next()
-		if git.IsErrorCode(err, git.ErrIterOver) {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		defer ref.Free()
-
-		if ref.Name() == refName {
-			oid = ref.Target()
-			break
-		}
+		return nil, err
 	}
 
-	if oid == nil {
-		return errors.New(fmt.Sprintf("unable to find ref matching %s", refName))
-	}
-
-	object, err := repo.Lookup(oid)
-	if err != nil {
-		return err
-	}
-	defer object.Free()
-
-	commit, err := object.AsCommit()
-	if err != nil {
-		return err
-	}
-	defer commit.Free()
-
-	tree, err := commit.Tree()
-	if err != nil {
-		return err
-	}
-	defer tree.Free()
-
+	var branch *git.Branch
+	var target *git.Oid
+	var commit *git.Commit
+	var tree *git.Tree
+	var branchName string
+	var blob *git.Blob
 	var interrupted bool
-	err = tree.Walk(func(s string, entry *git.TreeEntry) int {
-		select {
-		case <-ctx.Done():
-			interrupted = true
-			return -1
 
-		default:
-			if entry.Type == git.ObjectBlob {
-				object, err := repo.Lookup(entry.Id)
-				if err != nil {
-					return -1
-				}
-				defer object.Free()
+	entryCounts := make(map[git.Oid]uint)
+	branchCounts := make(map[string]uint)
 
-				blob, err := object.AsBlob()
-				if err != nil {
-					return -1
-				}
-				defer blob.Free()
-
-				w.Write(blob.Contents())
-			}
-
-			return 0
+	for {
+		branch, _, err = it.Next()
+		if err != nil {
+			break
 		}
-	})
 
-	if interrupted {
-		w.CloseWithError(ErrInterrupted)
-		return ErrInterrupted
+		target = branch.Target()
+		if target == nil {
+			continue
+		}
+
+		commit, err = repo.LookupCommit(target)
+		if err != nil {
+			return nil, err
+		}
+
+		tree, err = commit.Tree()
+		if err != nil {
+			return nil, err
+		}
+
+		branchName, err = branch.Name()
+		if err != nil {
+			return nil, err
+		}
+
+		err = tree.Walk(func(s string, entry *git.TreeEntry) int {
+			select {
+			case <-ctx.Done():
+				interrupted = true
+				return -1
+
+			default:
+				if entry.Type == git.ObjectBlob {
+					if count, ok := entryCounts[*entry.Id]; ok {
+						if count > 0 {
+							branchCounts[branchName] += count
+						}
+						return 0
+					}
+
+					blob, err = repo.LookupBlob(entry.Id)
+					if err != nil {
+						return -1
+					}
+
+					var count uint
+					r := bufio.NewReader(bytes.NewReader(blob.Contents()))
+					mime := mimetype.Mimetype(logger, r)
+					if mime == "" || strings.HasPrefix(mime, "text") {
+						sniffer.Sniff(
+							logger,
+							filescanner.New(r, entry.Name),
+							func(lager.Logger, scanners.Violation) error {
+								count++
+								return nil
+							},
+						)
+					}
+
+					entryCounts[*entry.Id] = count
+					branchCounts[branchName] += count
+				}
+
+				return 0
+			}
+		})
+
+		if interrupted {
+			return nil, ErrInterrupted
+		}
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if err != nil {
-		w.CloseWithError(err)
-		return err
+	if blob != nil {
+		blob.Free()
 	}
 
-	w.Close()
-	return nil
+	if tree != nil {
+		tree.Free()
+	}
+
+	if commit != nil {
+		commit.Free()
+	}
+
+	if branch != nil {
+		branch.Free()
+	}
+
+	return branchCounts, nil
 }
 
 func objectToTree(repo *git.Repository, oid *git.Oid) (*git.Tree, error) {

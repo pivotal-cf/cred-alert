@@ -5,13 +5,8 @@ import (
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
-	"cred-alert/scanners"
-	"cred-alert/scanners/filescanner"
 	"cred-alert/sniff"
-	"fmt"
-	"io"
 	"os"
-	"sync"
 	"time"
 
 	"code.cloudfoundry.org/clock"
@@ -92,51 +87,18 @@ func (c *headCredentialCounter) work(
 			"path": repository.Path,
 		})
 
-		r, w := io.Pipe()
-
-		errCh := make(chan error)
-		go func() {
-			errCh <- c.gitClient.AllBlobsForRef(ctx, repository.Path, fmt.Sprintf("refs/remotes/origin/%s", repository.DefaultBranch), w)
-		}()
-
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		var credCount uint
-		go func() {
-			defer wg.Done()
-			_ = c.sniffer.Sniff(
-				quietLogger,
-				filescanner.New(r, ""), // no filename necessary
-				func(lager.Logger, scanners.Violation) error {
-					credCount++
-					return nil
-				})
-		}()
-
-		select {
-		case err := <-errCh:
-			if err != nil {
-				if err == gitclient.ErrInterrupted {
-					return
-				}
-				repoLogger.Error("failed-to-get-blobs", err)
-				continue
-			}
-		case <-signals:
-			cancel()
-			return
+		credentialCounts, err := c.gitClient.BranchCredentialCounts(ctx, quietLogger, repository.Path, c.sniffer)
+		if err != nil {
+			repoLogger.Error("failed-to-get-credential-counts", err)
+			continue
 		}
 
-		wg.Wait()
-
-		err := c.repositoryRepository.UpdateCredentialCount(&repository, credCount)
+		err = c.repositoryRepository.UpdateCredentialCount(&repository, credentialCounts)
 		if err != nil {
 			repoLogger.Error("failed-to-update-credential-count", err)
 			continue
 		}
 
-		repoLogger.Info("updated-credential-count", lager.Data{
-			"count": credCount,
-		})
+		repoLogger.Info("updated-credential-count")
 	}
 }

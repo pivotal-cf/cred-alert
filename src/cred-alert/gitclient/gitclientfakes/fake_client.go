@@ -4,10 +4,12 @@ package gitclientfakes
 import (
 	"context"
 	"cred-alert/gitclient"
-	"io"
+	"cred-alert/sniff"
 	"sync"
 
 	git "github.com/libgit2/git2go"
+
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeClient struct {
@@ -69,16 +71,17 @@ type FakeClient struct {
 		result1 string
 		result2 error
 	}
-	AllBlobsForRefStub        func(context.Context, string, string, *io.PipeWriter) error
-	allBlobsForRefMutex       sync.RWMutex
-	allBlobsForRefArgsForCall []struct {
+	BranchCredentialCountsStub        func(context.Context, lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
+	branchCredentialCountsMutex       sync.RWMutex
+	branchCredentialCountsArgsForCall []struct {
 		arg1 context.Context
-		arg2 string
+		arg2 lager.Logger
 		arg3 string
-		arg4 *io.PipeWriter
+		arg4 sniff.Sniffer
 	}
-	allBlobsForRefReturns struct {
-		result1 error
+	branchCredentialCountsReturns struct {
+		result1 map[string]uint
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -292,40 +295,41 @@ func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) AllBlobsForRef(arg1 context.Context, arg2 string, arg3 string, arg4 *io.PipeWriter) error {
-	fake.allBlobsForRefMutex.Lock()
-	fake.allBlobsForRefArgsForCall = append(fake.allBlobsForRefArgsForCall, struct {
+func (fake *FakeClient) BranchCredentialCounts(arg1 context.Context, arg2 lager.Logger, arg3 string, arg4 sniff.Sniffer) (map[string]uint, error) {
+	fake.branchCredentialCountsMutex.Lock()
+	fake.branchCredentialCountsArgsForCall = append(fake.branchCredentialCountsArgsForCall, struct {
 		arg1 context.Context
-		arg2 string
+		arg2 lager.Logger
 		arg3 string
-		arg4 *io.PipeWriter
+		arg4 sniff.Sniffer
 	}{arg1, arg2, arg3, arg4})
-	fake.recordInvocation("AllBlobsForRef", []interface{}{arg1, arg2, arg3, arg4})
-	fake.allBlobsForRefMutex.Unlock()
-	if fake.AllBlobsForRefStub != nil {
-		return fake.AllBlobsForRefStub(arg1, arg2, arg3, arg4)
+	fake.recordInvocation("BranchCredentialCounts", []interface{}{arg1, arg2, arg3, arg4})
+	fake.branchCredentialCountsMutex.Unlock()
+	if fake.BranchCredentialCountsStub != nil {
+		return fake.BranchCredentialCountsStub(arg1, arg2, arg3, arg4)
 	} else {
-		return fake.allBlobsForRefReturns.result1
+		return fake.branchCredentialCountsReturns.result1, fake.branchCredentialCountsReturns.result2
 	}
 }
 
-func (fake *FakeClient) AllBlobsForRefCallCount() int {
-	fake.allBlobsForRefMutex.RLock()
-	defer fake.allBlobsForRefMutex.RUnlock()
-	return len(fake.allBlobsForRefArgsForCall)
+func (fake *FakeClient) BranchCredentialCountsCallCount() int {
+	fake.branchCredentialCountsMutex.RLock()
+	defer fake.branchCredentialCountsMutex.RUnlock()
+	return len(fake.branchCredentialCountsArgsForCall)
 }
 
-func (fake *FakeClient) AllBlobsForRefArgsForCall(i int) (context.Context, string, string, *io.PipeWriter) {
-	fake.allBlobsForRefMutex.RLock()
-	defer fake.allBlobsForRefMutex.RUnlock()
-	return fake.allBlobsForRefArgsForCall[i].arg1, fake.allBlobsForRefArgsForCall[i].arg2, fake.allBlobsForRefArgsForCall[i].arg3, fake.allBlobsForRefArgsForCall[i].arg4
+func (fake *FakeClient) BranchCredentialCountsArgsForCall(i int) (context.Context, lager.Logger, string, sniff.Sniffer) {
+	fake.branchCredentialCountsMutex.RLock()
+	defer fake.branchCredentialCountsMutex.RUnlock()
+	return fake.branchCredentialCountsArgsForCall[i].arg1, fake.branchCredentialCountsArgsForCall[i].arg2, fake.branchCredentialCountsArgsForCall[i].arg3, fake.branchCredentialCountsArgsForCall[i].arg4
 }
 
-func (fake *FakeClient) AllBlobsForRefReturns(result1 error) {
-	fake.AllBlobsForRefStub = nil
-	fake.allBlobsForRefReturns = struct {
-		result1 error
-	}{result1}
+func (fake *FakeClient) BranchCredentialCountsReturns(result1 map[string]uint, result2 error) {
+	fake.BranchCredentialCountsStub = nil
+	fake.branchCredentialCountsReturns = struct {
+		result1 map[string]uint
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
@@ -343,8 +347,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.hardResetMutex.RUnlock()
 	fake.diffMutex.RLock()
 	defer fake.diffMutex.RUnlock()
-	fake.allBlobsForRefMutex.RLock()
-	defer fake.allBlobsForRefMutex.RUnlock()
+	fake.branchCredentialCountsMutex.RLock()
+	defer fake.branchCredentialCountsMutex.RUnlock()
 	return fake.invocations
 }
 

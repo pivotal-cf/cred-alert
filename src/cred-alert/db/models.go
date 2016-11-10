@@ -77,7 +77,7 @@ type Repository struct {
 
 	FetchIntervalSeconds int `gorm:"column:fetch_interval"`
 
-	CredentialCount uint32
+	CredentialCounts PropertyMap `sql:"type:longtext;not null;default:'{}'"`
 }
 
 type Fetch struct {

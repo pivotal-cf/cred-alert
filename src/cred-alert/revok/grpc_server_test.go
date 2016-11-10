@@ -13,17 +13,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-
-	"github.com/tedsuo/ifrit"
-	"github.com/tedsuo/ifrit/ginkgomon"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/ginkgomon"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var _ = Describe("GrpcServer", func() {
@@ -41,11 +38,10 @@ var _ = Describe("GrpcServer", func() {
 		listenAddr = fmt.Sprintf(":%d", GinkgoParallelNode()+9000)
 		revokServer = &revokfakes.FakeRevokServer{}
 		revokServer.GetCredentialCountsReturns(&revokpb.CredentialCountResponse{
-			CredentialCounts: []*revokpb.CredentialCount{
+			CredentialCounts: []*revokpb.OrganizationCredentialCount{
 				{
-					Owner:      "some-owner",
-					Repository: "some-repo",
-					Count:      42,
+					Owner: "some-owner",
+					Count: 42,
 				},
 			},
 		}, nil)
@@ -109,18 +105,7 @@ var _ = Describe("GrpcServer", func() {
 
 			client = revokpb.NewRevokClient(conn)
 
-			request = &revokpb.CredentialCountRequest{
-				Organizations: []*revokpb.Organization{
-					{
-						Name: "some-org",
-						Repositories: []*revokpb.Repository{
-							{
-								Name: "some-repo",
-							},
-						},
-					},
-				},
-			}
+			request = &revokpb.CredentialCountRequest{}
 		})
 
 		AfterEach(func() {
