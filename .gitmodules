@@ -45,10 +45,6 @@
 	path = src/github.com/jinzhu/gorm
 	url = https://github.com/jinzhu/gorm
 	branch = master
-[submodule "src/github.com/mattn/go-sqlite3"]
-	path = src/github.com/mattn/go-sqlite3
-	url = https://github.com/mattn/go-sqlite3
-	branch = master
 [submodule "src/github.com/satori/go.uuid"]
 	path = src/github.com/satori/go.uuid
 	url = https://github.com/satori/go.uuid
@@ -132,4 +128,12 @@
 [submodule "src/cloud.google.com/go"]
 	path = src/cloud.google.com/go
 	url = https://code.googlesource.com/gocloud
+	branch = master
+[submodule "src/github.com/tedsuo/rata"]
+	path = src/github.com/tedsuo/rata
+	url = https://github.com/tedsuo/rata
+	branch = master
+[submodule "src/github.com/bmizerany/pat"]
+	path = src/github.com/bmizerany/pat
+	url = https://github.com/bmizerany/pat
 	branch = master

@@ -1,4 +1,4 @@
-package web
+package api
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type handler struct {
+type indexHandler struct {
 	logger        lager.Logger
 	template      *template.Template
 	rpcServerAddr string
@@ -24,7 +24,7 @@ type handler struct {
 	rootCAs       *x509.CertPool
 }
 
-func NewHandler(
+func NewIndexHandler(
 	logger lager.Logger,
 	template *template.Template,
 	rpcServerAddr string,
@@ -32,7 +32,7 @@ func NewHandler(
 	clientCert tls.Certificate,
 	rootCAs *x509.CertPool,
 ) http.Handler {
-	return &handler{
+	return &indexHandler{
 		logger:        logger,
 		template:      template,
 		rpcServerAddr: rpcServerAddr,
@@ -57,7 +57,7 @@ type TemplateData struct {
 	Organizations []*Organization
 }
 
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	transportCreds := credentials.NewTLS(&tls.Config{
 		ServerName:   h.serverName,
 		Certificates: []tls.Certificate{h.clientCert},

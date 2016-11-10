@@ -6,11 +6,11 @@ gosub list \
   -t cred-alert/cmd/cred-alert-cli \
   -a cred-alert/cmd/revok-worker \
   -a cred-alert/cmd/revok-ingestor \
+  -a cred-alert/cmd/credential-count-publisher \
   -a teamstr/cmd/teamstr \
   -a github.com/onsi/ginkgo \
   -a github.com/onsi/gomega \
   -a github.com/golang/protobuf \
   -a github.com/jinzhu/gorm \
-  -a github.com/mattn/go-sqlite3 \
   -a github.com/libgit2/git2go \
   | xargs gosub sync

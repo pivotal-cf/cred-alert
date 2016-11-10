@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cred-alert/revok/api"
 	"cred-alert/revok/web"
 	"crypto/tls"
 	"crypto/x509"
@@ -73,19 +74,20 @@ func main() {
 		log.Fatalf("failed to append certs from pem: %s", err.Error())
 	}
 
-	runner := sigmon.New(
-		http_server.New(
-			listenAddr,
-			web.NewHandler(
-				logger,
-				layout,
-				serverAddr,
-				opts.RPCServerAddress,
-				clientCert,
-				rootCertPool,
-			),
-		),
+	handler, err := api.NewHandler(
+		logger,
+		layout,
+		serverAddr,
+		opts.RPCServerAddress,
+		clientCert,
+		rootCertPool,
 	)
+
+	if err != nil {
+		log.Fatalf("failed to create handler: %s", err.Error())
+	}
+
+	runner := sigmon.New(http_server.New(listenAddr, handler))
 
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
