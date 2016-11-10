@@ -2,8 +2,7 @@ package api
 
 import (
 	"cred-alert/revok/web"
-	"crypto/tls"
-	"crypto/x509"
+	"cred-alert/revokpb"
 	"html/template"
 	"net/http"
 
@@ -14,18 +13,12 @@ import (
 func NewHandler(
 	logger lager.Logger,
 	template *template.Template,
-	rpcServerAddr string,
-	serverName string,
-	clientCert tls.Certificate,
-	rootCAs *x509.CertPool,
+	client revokpb.RevokClient,
 ) (http.Handler, error) {
 	indexHandler := NewIndexHandler(
 		logger,
 		template,
-		rpcServerAddr,
-		serverName,
-		clientCert,
-		rootCAs,
+		client,
 	)
 
 	handlers := rata.Handlers{

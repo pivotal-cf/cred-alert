@@ -4,41 +4,27 @@ import (
 	"bytes"
 	"context"
 	"cred-alert/revokpb"
-	"crypto/tls"
-	"crypto/x509"
 	"html/template"
 	"net/http"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 
 	"code.cloudfoundry.org/lager"
 )
 
 type indexHandler struct {
-	logger        lager.Logger
-	template      *template.Template
-	rpcServerAddr string
-	serverName    string
-	clientCert    tls.Certificate
-	rootCAs       *x509.CertPool
+	logger   lager.Logger
+	template *template.Template
+	client   revokpb.RevokClient
 }
 
 func NewIndexHandler(
 	logger lager.Logger,
 	template *template.Template,
-	rpcServerAddr string,
-	serverName string,
-	clientCert tls.Certificate,
-	rootCAs *x509.CertPool,
+	client revokpb.RevokClient,
 ) http.Handler {
 	return &indexHandler{
-		logger:        logger,
-		template:      template,
-		rpcServerAddr: rpcServerAddr,
-		serverName:    serverName,
-		clientCert:    clientCert,
-		rootCAs:       rootCAs,
+		logger:   logger,
+		template: template,
+		client:   client,
 	}
 }
 
@@ -58,24 +44,8 @@ type TemplateData struct {
 }
 
 func (h indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	transportCreds := credentials.NewTLS(&tls.Config{
-		ServerName:   h.serverName,
-		Certificates: []tls.Certificate{h.clientCert},
-		RootCAs:      h.rootCAs,
-	})
-
-	dialOption := grpc.WithTransportCredentials(transportCreds)
-	conn, err := grpc.Dial(h.rpcServerAddr, dialOption)
-	if err != nil {
-		h.logger.Error("dial-error", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer conn.Close()
-
-	client := revokpb.NewRevokClient(conn)
 	request := &revokpb.CredentialCountRequest{}
-	response, err := client.GetCredentialCounts(context.Background(), request)
+	response, err := h.client.GetCredentialCounts(context.Background(), request)
 	if err != nil {
 		h.logger.Error("failed-to-get-credential-counts", err)
 		w.WriteHeader(http.StatusInternalServerError)

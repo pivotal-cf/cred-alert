@@ -3,6 +3,7 @@ package main
 import (
 	"cred-alert/revok/api"
 	"cred-alert/revok/web"
+	"cred-alert/revokpb"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -10,6 +11,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"code.cloudfoundry.org/lager"
 	flags "github.com/jessevdk/go-flags"
@@ -74,13 +78,23 @@ func main() {
 		log.Fatalf("failed to append certs from pem: %s", err.Error())
 	}
 
+	transportCreds := credentials.NewTLS(&tls.Config{
+		ServerName:   opts.RPCServerAddress,
+		Certificates: []tls.Certificate{clientCert},
+		RootCAs:      rootCertPool,
+	})
+
+	dialOption := grpc.WithTransportCredentials(transportCreds)
+	conn, err := grpc.Dial(serverAddr, dialOption)
+	if err != nil {
+		log.Fatalf("failed to create handler: %s", err.Error())
+	}
+	defer conn.Close()
+
 	handler, err := api.NewHandler(
 		logger,
 		layout,
-		serverAddr,
-		opts.RPCServerAddress,
-		clientCert,
-		rootCertPool,
+		revokpb.NewRevokClient(conn),
 	)
 
 	if err != nil {
