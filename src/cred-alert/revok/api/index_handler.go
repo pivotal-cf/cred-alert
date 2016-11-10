@@ -37,7 +37,7 @@ type TemplateData struct {
 	Organizations []*Organization
 }
 
-func (h indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	request := &revokpb.CredentialCountRequest{}
 	response, err := h.client.GetCredentialCounts(context.Background(), request)
 	if err != nil {
