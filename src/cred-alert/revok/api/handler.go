@@ -1,29 +1,26 @@
 package api
 
 import (
-	"cred-alert/revok/web"
 	"cred-alert/revokpb"
 	"html/template"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/tedsuo/rata"
 )
 
 func NewHandler(
 	logger lager.Logger,
 	template *template.Template,
 	client revokpb.RevokClient,
-) (http.Handler, error) {
+) http.Handler {
 	indexHandler := NewIndexHandler(
 		logger,
 		template,
 		client,
 	)
 
-	handlers := rata.Handlers{
-		web.Index: indexHandler,
-	}
+	mux := http.NewServeMux()
+	mux.Handle("/", indexHandler)
 
-	return rata.NewRouter(web.Routes, handlers)
+	return mux
 }
