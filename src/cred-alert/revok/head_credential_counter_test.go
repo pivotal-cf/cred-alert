@@ -4,6 +4,7 @@ import (
 	"context"
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
+	"cred-alert/gitclient"
 	"cred-alert/gitclient/gitclientfakes"
 	"cred-alert/revok"
 	"cred-alert/scanners"
@@ -214,6 +215,19 @@ var _ = Describe("HeadCredentialCounter", func() {
 					"branch-3": 3,
 					"branch-4": 4,
 				}))
+			})
+		})
+
+		Context("when getting blobs returns gitclient.ErrInterrupted", func() {
+			BeforeEach(func() {
+				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
+					defer GinkgoRecover()
+					return nil, gitclient.ErrInterrupted
+				}
+			})
+
+			It("returns immediately", func() {
+				Consistently(repositoryRepository.UpdateCredentialCountCallCount).Should(BeZero())
 			})
 		})
 	})
