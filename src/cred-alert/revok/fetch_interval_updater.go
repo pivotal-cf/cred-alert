@@ -35,7 +35,7 @@ func (f *fetchIntervalUpdater) UpdateFetchInterval(repository *db.Repository) er
 	var fetchInterval time.Duration
 
 	if err == nil {
-		duration := time.Now().Sub(lastActivity)
+		duration := time.Since(lastActivity)
 
 		c := math.Pow(float64(f.maximumInterval)/float64(f.minimumInterval), 1.0/3.0)
 
