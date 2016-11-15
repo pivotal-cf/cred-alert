@@ -37,6 +37,7 @@ type Opts struct {
 var (
 	indexLayout        *template.Template
 	organizationLayout *template.Template
+	repositoryLayout   *template.Template
 	logger             lager.Logger
 )
 
@@ -52,6 +53,12 @@ func init() {
 		log.Fatalf("failed loading asset: %s", err.Error())
 	}
 	organizationLayout = template.Must(template.New("organization.html").Parse(string(bs)))
+
+	bs, err = web.Asset("web/templates/repository.html")
+	if err != nil {
+		log.Fatalf("failed loading asset: %s", err.Error())
+	}
+	repositoryLayout = template.Must(template.New("repository.html").Parse(string(bs)))
 
 	logger = lager.NewLogger("credential-count-publisher")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
@@ -104,6 +111,7 @@ func main() {
 	handler, err := rata.NewRouter(web.Routes, rata.Handlers{
 		web.Index:        api.NewIndexHandler(logger, indexLayout, revokClient),
 		web.Organization: api.NewOrganizationHandler(logger, organizationLayout, revokClient),
+		web.Repository:   api.NewRepositoryHandler(logger, repositoryLayout, revokClient),
 	})
 
 	if err != nil {

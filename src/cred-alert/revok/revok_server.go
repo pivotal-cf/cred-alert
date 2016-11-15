@@ -19,6 +19,7 @@ import (
 type RevokServer interface {
 	GetCredentialCounts(context.Context, *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error)
 	GetOrganizationCredentialCounts(context.Context, *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error)
+	GetRepositoryCredentialCounts(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error)
 }
 
 type revokServer struct {
@@ -84,19 +85,52 @@ func (s *revokServer) GetOrganizationCredentialCounts(
 		return nil, err
 	}
 
-	repoCounts := map[string]float64{}
+	repoCounts := map[*db.Repository]float64{}
 	for i := range repositories {
 		for _, branchCountInt := range repositories[i].CredentialCounts {
 			if branchCount, ok := branchCountInt.(float64); ok {
-				repoCounts[repositories[i].Name] += branchCount
+				repoCounts[&repositories[i]] += branchCount
 			}
 		}
 	}
 
 	response := &revokpb.OrganizationCredentialCountResponse{}
-	for repo, count := range repoCounts {
+	for repository, count := range repoCounts {
 		occ := &revokpb.RepositoryCredentialCount{
-			Name:  repo,
+			Owner: repository.Owner,
+			Name:  repository.Name,
+			Count: int64(count),
+		}
+
+		response.CredentialCounts = append(response.CredentialCounts, occ)
+	}
+
+	return response, nil
+}
+
+func (s *revokServer) GetRepositoryCredentialCounts(
+	ctx context.Context,
+	in *revokpb.RepositoryCredentialCountRequest,
+) (*revokpb.RepositoryCredentialCountResponse, error) {
+	logger := s.logger.Session("get-repository-credential-counts")
+
+	repository, err := s.db.Find(in.Owner, in.Name)
+	if err != nil {
+		logger.Error("failed-getting-repository-from-db", err)
+		return nil, err
+	}
+
+	branchCounts := map[string]float64{}
+	for branch, countInt := range repository.CredentialCounts {
+		if branchCount, ok := countInt.(float64); ok {
+			branchCounts[branch] += branchCount
+		}
+	}
+
+	response := &revokpb.RepositoryCredentialCountResponse{}
+	for branch, count := range branchCounts {
+		occ := &revokpb.BranchCredentialCount{
+			Name:  branch,
 			Count: int64(count),
 		}
 

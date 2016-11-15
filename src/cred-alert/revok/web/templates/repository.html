@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Credential Count by Organization</title>
+    <title>CCP</title>
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
   </head>
   <body>
     <div id="content">
-      <h3>Credential Counts By Repository</h3>
+      <h3>Credential Counts By Branch</h3>
       <table class="pure-table pure-table-bordered">
         <thead>
-          <th>Repository</th>
+          <th>Branch</th>
           <th>Credential Count</th>
         </thead>
 
         {{range .}}
         <tr>
-          <td><a href="/organizations/{{.Owner}}/repositories/{{.Name}}">{{.Name}}</a></td>
+          <td>{{.Name}}</td>
           <td>{{.CredentialCount}}</td>
         </tr>
         {{end}}
