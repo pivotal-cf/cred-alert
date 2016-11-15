@@ -6,16 +6,16 @@
   </head>
   <body>
     <div id="content">
-      <h3>Credential Counts By Organization</h3>
+      <h3>Credential Counts By Repository</h3>
       <table class="pure-table pure-table-bordered">
         <thead>
-          <th>Organization</th>
+          <th>Repository</th>
           <th>Credential Count</th>
         </thead>
 
         {{range .}}
         <tr>
-          <td><a href="/organizations/{{.Name}}">{{.Name}}</a></td>
+          <td>{{.Name}}</td>
           <td>{{.CredentialCount}}</td>
         </tr>
         {{end}}

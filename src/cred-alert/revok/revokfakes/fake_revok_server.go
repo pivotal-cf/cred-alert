@@ -20,6 +20,16 @@ type FakeRevokServer struct {
 		result1 *revokpb.CredentialCountResponse
 		result2 error
 	}
+	GetOrganizationCredentialCountsStub        func(context.Context, *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error)
+	getOrganizationCredentialCountsMutex       sync.RWMutex
+	getOrganizationCredentialCountsArgsForCall []struct {
+		arg1 context.Context
+		arg2 *revokpb.OrganizationCredentialCountRequest
+	}
+	getOrganizationCredentialCountsReturns struct {
+		result1 *revokpb.OrganizationCredentialCountResponse
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -59,11 +69,48 @@ func (fake *FakeRevokServer) GetCredentialCountsReturns(result1 *revokpb.Credent
 	}{result1, result2}
 }
 
+func (fake *FakeRevokServer) GetOrganizationCredentialCounts(arg1 context.Context, arg2 *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error) {
+	fake.getOrganizationCredentialCountsMutex.Lock()
+	fake.getOrganizationCredentialCountsArgsForCall = append(fake.getOrganizationCredentialCountsArgsForCall, struct {
+		arg1 context.Context
+		arg2 *revokpb.OrganizationCredentialCountRequest
+	}{arg1, arg2})
+	fake.recordInvocation("GetOrganizationCredentialCounts", []interface{}{arg1, arg2})
+	fake.getOrganizationCredentialCountsMutex.Unlock()
+	if fake.GetOrganizationCredentialCountsStub != nil {
+		return fake.GetOrganizationCredentialCountsStub(arg1, arg2)
+	} else {
+		return fake.getOrganizationCredentialCountsReturns.result1, fake.getOrganizationCredentialCountsReturns.result2
+	}
+}
+
+func (fake *FakeRevokServer) GetOrganizationCredentialCountsCallCount() int {
+	fake.getOrganizationCredentialCountsMutex.RLock()
+	defer fake.getOrganizationCredentialCountsMutex.RUnlock()
+	return len(fake.getOrganizationCredentialCountsArgsForCall)
+}
+
+func (fake *FakeRevokServer) GetOrganizationCredentialCountsArgsForCall(i int) (context.Context, *revokpb.OrganizationCredentialCountRequest) {
+	fake.getOrganizationCredentialCountsMutex.RLock()
+	defer fake.getOrganizationCredentialCountsMutex.RUnlock()
+	return fake.getOrganizationCredentialCountsArgsForCall[i].arg1, fake.getOrganizationCredentialCountsArgsForCall[i].arg2
+}
+
+func (fake *FakeRevokServer) GetOrganizationCredentialCountsReturns(result1 *revokpb.OrganizationCredentialCountResponse, result2 error) {
+	fake.GetOrganizationCredentialCountsStub = nil
+	fake.getOrganizationCredentialCountsReturns = struct {
+		result1 *revokpb.OrganizationCredentialCountResponse
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRevokServer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getCredentialCountsMutex.RLock()
 	defer fake.getCredentialCountsMutex.RUnlock()
+	fake.getOrganizationCredentialCountsMutex.RLock()
+	defer fake.getOrganizationCredentialCountsMutex.RUnlock()
 	return fake.invocations
 }
 

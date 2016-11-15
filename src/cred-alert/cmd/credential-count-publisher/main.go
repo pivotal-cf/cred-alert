@@ -20,6 +20,7 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
+	"github.com/tedsuo/rata"
 )
 
 type Opts struct {
@@ -34,8 +35,9 @@ type Opts struct {
 }
 
 var (
-	layout *template.Template
-	logger lager.Logger
+	indexLayout        *template.Template
+	organizationLayout *template.Template
+	logger             lager.Logger
 )
 
 func init() {
@@ -43,7 +45,13 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed loading asset: %s", err.Error())
 	}
-	layout = template.Must(template.New("index.html").Parse(string(bs)))
+	indexLayout = template.Must(template.New("index.html").Parse(string(bs)))
+
+	bs, err = web.Asset("web/templates/organization.html")
+	if err != nil {
+		log.Fatalf("failed loading asset: %s", err.Error())
+	}
+	organizationLayout = template.Must(template.New("organization.html").Parse(string(bs)))
 
 	logger = lager.NewLogger("credential-count-publisher")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
@@ -91,11 +99,12 @@ func main() {
 	}
 	defer conn.Close()
 
-	handler, err := api.NewHandler(
-		logger,
-		layout,
-		revokpb.NewRevokClient(conn),
-	)
+	revokClient := revokpb.NewRevokClient(conn)
+
+	handler, err := rata.NewRouter(web.Routes, rata.Handlers{
+		web.Index:        api.NewIndexHandler(logger, indexLayout, revokClient),
+		web.Organization: api.NewOrganizationHandler(logger, organizationLayout, revokClient),
+	})
 
 	if err != nil {
 		log.Fatalf("failed to create handler: %s", err.Error())

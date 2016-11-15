@@ -15,15 +15,8 @@ func NewHandler(
 	template *template.Template,
 	client revokpb.RevokClient,
 ) (http.Handler, error) {
-	indexHandler := NewIndexHandler(
-		logger,
-		template,
-		client,
-	)
-
-	handlers := rata.Handlers{
-		web.Index: indexHandler,
-	}
-
-	return rata.NewRouter(web.Routes, handlers)
+	return rata.NewRouter(web.Routes, rata.Handlers{
+		web.Index:        NewIndexHandler(logger, template, client),
+		web.Organization: NewOrganizationHandler(logger, template, client),
+	})
 }

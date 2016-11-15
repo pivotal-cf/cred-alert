@@ -4,6 +4,7 @@ package revokpb;
 
 service Revok {
   rpc GetCredentialCounts(CredentialCountRequest) returns (CredentialCountResponse) {}
+  rpc GetOrganizationCredentialCounts(OrganizationCredentialCountRequest) returns (OrganizationCredentialCountResponse) {}
 }
 
 message CredentialCountRequest {}
@@ -19,4 +20,13 @@ message CredentialCountResponse {
 
 message OrganizationCredentialCountRequest {
   string owner = 1;
+}
+
+message RepositoryCredentialCount {
+  string name = 1;
+  int64 count = 2;
+}
+
+message OrganizationCredentialCountResponse {
+  repeated RepositoryCredentialCount credentialCounts = 1;
 }

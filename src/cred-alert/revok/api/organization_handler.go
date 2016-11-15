@@ -7,52 +7,56 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/tedsuo/rata"
+
 	"code.cloudfoundry.org/lager"
 )
 
-type indexHandler struct {
+type organizationHandler struct {
 	logger   lager.Logger
 	template *template.Template
 	client   revokpb.RevokClient
 }
 
-func NewIndexHandler(
+func NewOrganizationHandler(
 	logger lager.Logger,
 	template *template.Template,
 	client revokpb.RevokClient,
 ) http.Handler {
-	return &indexHandler{
+	return &organizationHandler{
 		logger:   logger,
 		template: template,
 		client:   client,
 	}
 }
 
-type Organization struct {
+type Repository struct {
 	Name            string
 	CredentialCount int64
 }
 
-func (h *indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	request := &revokpb.CredentialCountRequest{}
-	response, err := h.client.GetCredentialCounts(context.Background(), request)
+func (h *organizationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	request := &revokpb.OrganizationCredentialCountRequest{
+		Owner: rata.Param(r, "organization"),
+	}
+
+	response, err := h.client.GetOrganizationCredentialCounts(context.Background(), request)
 	if err != nil {
-		h.logger.Error("failed-to-get-credential-counts", err)
+		h.logger.Error("failed-to-get-organization-credential-counts", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	orgs := []*Organization{}
+	repos := []*Repository{}
 	for _, r := range response.CredentialCounts {
-		orgs = append(orgs, &Organization{
-			Name:            r.Owner,
+		repos = append(repos, &Repository{
+			Name:            r.Name,
 			CredentialCount: r.Count,
 		})
 	}
 
 	buf := bytes.NewBuffer([]byte{})
-	err = h.template.Execute(buf, orgs)
-
+	err = h.template.Execute(buf, repos)
 	if err != nil {
 		h.logger.Error("failed-to-execute-template", err)
 		w.WriteHeader(http.StatusInternalServerError)

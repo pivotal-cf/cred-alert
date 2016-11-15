@@ -18,6 +18,7 @@ import (
 
 type RevokServer interface {
 	GetCredentialCounts(context.Context, *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error)
+	GetOrganizationCredentialCounts(context.Context, *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error)
 }
 
 type revokServer struct {
@@ -65,6 +66,40 @@ func (s *revokServer) GetCredentialCounts(
 			Owner: orgName,
 			Count: int64(orgCounts[orgName]),
 		}
+		response.CredentialCounts = append(response.CredentialCounts, occ)
+	}
+
+	return response, nil
+}
+
+func (s *revokServer) GetOrganizationCredentialCounts(
+	ctx context.Context,
+	in *revokpb.OrganizationCredentialCountRequest,
+) (*revokpb.OrganizationCredentialCountResponse, error) {
+	logger := s.logger.Session("get-repository-credential-counts")
+
+	repositories, err := s.db.AllForOrganization(in.Owner)
+	if err != nil {
+		logger.Error("failed-getting-repositories-from-db", err)
+		return nil, err
+	}
+
+	repoCounts := map[string]float64{}
+	for i := range repositories {
+		for _, branchCountInt := range repositories[i].CredentialCounts {
+			if branchCount, ok := branchCountInt.(float64); ok {
+				repoCounts[repositories[i].Name] += branchCount
+			}
+		}
+	}
+
+	response := &revokpb.OrganizationCredentialCountResponse{}
+	for repo, count := range repoCounts {
+		occ := &revokpb.RepositoryCredentialCount{
+			Name:  repo,
+			Count: int64(count),
+		}
+
 		response.CredentialCounts = append(response.CredentialCounts, occ)
 	}
 
