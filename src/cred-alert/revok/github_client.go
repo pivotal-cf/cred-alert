@@ -17,7 +17,7 @@ type GitHubRepository struct {
 }
 
 type GitHubOrganization struct {
-	Name string `json:"login:`
+	Name string `json:"login"`
 }
 
 //go:generate counterfeiter . GitHubClient
