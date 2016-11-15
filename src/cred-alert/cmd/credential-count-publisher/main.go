@@ -91,11 +91,15 @@ func main() {
 	}
 	defer conn.Close()
 
-	handler := api.NewHandler(
+	handler, err := api.NewHandler(
 		logger,
 		layout,
 		revokpb.NewRevokClient(conn),
 	)
+
+	if err != nil {
+		log.Fatalf("failed to create handler: %s", err.Error())
+	}
 
 	runner := sigmon.New(http_server.New(listenAddr, handler))
 
