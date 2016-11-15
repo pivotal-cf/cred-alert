@@ -15,23 +15,23 @@ import (
 )
 
 type grpcServer struct {
-	logger      lager.Logger
-	listenAddr  string
-	revokServer RevokServer
-	tlsConfig   *tls.Config
+	logger     lager.Logger
+	listenAddr string
+	server     Server
+	tlsConfig  *tls.Config
 }
 
 func NewGRPCServer(
 	logger lager.Logger,
 	listenAddr string,
-	revokServer RevokServer,
+	server Server,
 	tlsConfig *tls.Config,
 ) ifrit.Runner {
 	return &grpcServer{
-		logger:      logger,
-		listenAddr:  listenAddr,
-		revokServer: revokServer,
-		tlsConfig:   tlsConfig,
+		logger:     logger,
+		listenAddr: listenAddr,
+		server:     server,
+		tlsConfig:  tlsConfig,
 	}
 }
 
@@ -44,12 +44,12 @@ func (s *grpcServer) Run(signals <-chan os.Signal, ready chan<- struct{}) error 
 	}
 
 	serverOption := grpc.Creds(credentials.NewTLS(s.tlsConfig))
-	server := grpc.NewServer(serverOption)
-	revokpb.RegisterRevokServer(server, s.revokServer)
+	grpcServer := grpc.NewServer(serverOption)
+	revokpb.RegisterRevokServer(grpcServer, s.server)
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- server.Serve(lis)
+		errCh <- grpcServer.Serve(lis)
 	}()
 
 	close(ready)
@@ -60,7 +60,7 @@ func (s *grpcServer) Run(signals <-chan os.Signal, ready chan<- struct{}) error 
 	case err = <-errCh:
 		return err
 	case <-signals:
-		server.GracefulStop()
+		grpcServer.GracefulStop()
 	}
 
 	logger.Info("exiting")

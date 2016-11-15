@@ -12,11 +12,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("RevokServer", func() {
+var _ = Describe("Server", func() {
 	Describe("GetCredentialCounts", func() {
 		var (
 			repoDB *dbfakes.FakeRepositoryRepository
-			server revok.RevokServer
+			server revok.Server
 
 			ctx     context.Context
 			request *revokpb.CredentialCountRequest
@@ -55,7 +55,7 @@ var _ = Describe("RevokServer", func() {
 			ctx = context.Background()
 			request = &revokpb.CredentialCountRequest{}
 
-			server = revok.NewRevokServer(logger, repoDB)
+			server = revok.NewServer(logger, repoDB)
 		})
 
 		JustBeforeEach(func() {

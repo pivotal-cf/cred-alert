@@ -14,27 +14,27 @@ import (
 
 //go:generate go-bindata -o web/bindata.go -ignore bindata -pkg web web/templates/...
 
-//go:generate counterfeiter . RevokServer
+//go:generate counterfeiter . Server
 
-type RevokServer interface {
+type Server interface {
 	GetCredentialCounts(context.Context, *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error)
 	GetOrganizationCredentialCounts(context.Context, *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error)
 	GetRepositoryCredentialCounts(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error)
 }
 
-type revokServer struct {
+type server struct {
 	logger lager.Logger
 	db     db.RepositoryRepository
 }
 
-func NewRevokServer(logger lager.Logger, db db.RepositoryRepository) RevokServer {
-	return &revokServer{
+func NewServer(logger lager.Logger, db db.RepositoryRepository) Server {
+	return &server{
 		logger: logger,
 		db:     db,
 	}
 }
 
-func (s *revokServer) GetCredentialCounts(
+func (s *server) GetCredentialCounts(
 	ctx context.Context,
 	in *revokpb.CredentialCountRequest,
 ) (*revokpb.CredentialCountResponse, error) {
@@ -73,7 +73,7 @@ func (s *revokServer) GetCredentialCounts(
 	return response, nil
 }
 
-func (s *revokServer) GetOrganizationCredentialCounts(
+func (s *server) GetOrganizationCredentialCounts(
 	ctx context.Context,
 	in *revokpb.OrganizationCredentialCountRequest,
 ) (*revokpb.OrganizationCredentialCountResponse, error) {
@@ -110,7 +110,7 @@ func (s *revokServer) GetOrganizationCredentialCounts(
 	return response, nil
 }
 
-func (s *revokServer) GetRepositoryCredentialCounts(
+func (s *server) GetRepositoryCredentialCounts(
 	ctx context.Context,
 	in *revokpb.RepositoryCredentialCountRequest,
 ) (*revokpb.RepositoryCredentialCountResponse, error) {

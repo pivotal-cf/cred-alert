@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-type FakeRevokServer struct {
+type FakeServer struct {
 	GetCredentialCountsStub        func(context.Context, *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error)
 	getCredentialCountsMutex       sync.RWMutex
 	getCredentialCountsArgsForCall []struct {
@@ -44,7 +44,7 @@ type FakeRevokServer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRevokServer) GetCredentialCounts(arg1 context.Context, arg2 *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error) {
+func (fake *FakeServer) GetCredentialCounts(arg1 context.Context, arg2 *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error) {
 	fake.getCredentialCountsMutex.Lock()
 	fake.getCredentialCountsArgsForCall = append(fake.getCredentialCountsArgsForCall, struct {
 		arg1 context.Context
@@ -59,19 +59,19 @@ func (fake *FakeRevokServer) GetCredentialCounts(arg1 context.Context, arg2 *rev
 	}
 }
 
-func (fake *FakeRevokServer) GetCredentialCountsCallCount() int {
+func (fake *FakeServer) GetCredentialCountsCallCount() int {
 	fake.getCredentialCountsMutex.RLock()
 	defer fake.getCredentialCountsMutex.RUnlock()
 	return len(fake.getCredentialCountsArgsForCall)
 }
 
-func (fake *FakeRevokServer) GetCredentialCountsArgsForCall(i int) (context.Context, *revokpb.CredentialCountRequest) {
+func (fake *FakeServer) GetCredentialCountsArgsForCall(i int) (context.Context, *revokpb.CredentialCountRequest) {
 	fake.getCredentialCountsMutex.RLock()
 	defer fake.getCredentialCountsMutex.RUnlock()
 	return fake.getCredentialCountsArgsForCall[i].arg1, fake.getCredentialCountsArgsForCall[i].arg2
 }
 
-func (fake *FakeRevokServer) GetCredentialCountsReturns(result1 *revokpb.CredentialCountResponse, result2 error) {
+func (fake *FakeServer) GetCredentialCountsReturns(result1 *revokpb.CredentialCountResponse, result2 error) {
 	fake.GetCredentialCountsStub = nil
 	fake.getCredentialCountsReturns = struct {
 		result1 *revokpb.CredentialCountResponse
@@ -79,7 +79,7 @@ func (fake *FakeRevokServer) GetCredentialCountsReturns(result1 *revokpb.Credent
 	}{result1, result2}
 }
 
-func (fake *FakeRevokServer) GetOrganizationCredentialCounts(arg1 context.Context, arg2 *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error) {
+func (fake *FakeServer) GetOrganizationCredentialCounts(arg1 context.Context, arg2 *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error) {
 	fake.getOrganizationCredentialCountsMutex.Lock()
 	fake.getOrganizationCredentialCountsArgsForCall = append(fake.getOrganizationCredentialCountsArgsForCall, struct {
 		arg1 context.Context
@@ -94,19 +94,19 @@ func (fake *FakeRevokServer) GetOrganizationCredentialCounts(arg1 context.Contex
 	}
 }
 
-func (fake *FakeRevokServer) GetOrganizationCredentialCountsCallCount() int {
+func (fake *FakeServer) GetOrganizationCredentialCountsCallCount() int {
 	fake.getOrganizationCredentialCountsMutex.RLock()
 	defer fake.getOrganizationCredentialCountsMutex.RUnlock()
 	return len(fake.getOrganizationCredentialCountsArgsForCall)
 }
 
-func (fake *FakeRevokServer) GetOrganizationCredentialCountsArgsForCall(i int) (context.Context, *revokpb.OrganizationCredentialCountRequest) {
+func (fake *FakeServer) GetOrganizationCredentialCountsArgsForCall(i int) (context.Context, *revokpb.OrganizationCredentialCountRequest) {
 	fake.getOrganizationCredentialCountsMutex.RLock()
 	defer fake.getOrganizationCredentialCountsMutex.RUnlock()
 	return fake.getOrganizationCredentialCountsArgsForCall[i].arg1, fake.getOrganizationCredentialCountsArgsForCall[i].arg2
 }
 
-func (fake *FakeRevokServer) GetOrganizationCredentialCountsReturns(result1 *revokpb.OrganizationCredentialCountResponse, result2 error) {
+func (fake *FakeServer) GetOrganizationCredentialCountsReturns(result1 *revokpb.OrganizationCredentialCountResponse, result2 error) {
 	fake.GetOrganizationCredentialCountsStub = nil
 	fake.getOrganizationCredentialCountsReturns = struct {
 		result1 *revokpb.OrganizationCredentialCountResponse
@@ -114,7 +114,7 @@ func (fake *FakeRevokServer) GetOrganizationCredentialCountsReturns(result1 *rev
 	}{result1, result2}
 }
 
-func (fake *FakeRevokServer) GetRepositoryCredentialCounts(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error) {
+func (fake *FakeServer) GetRepositoryCredentialCounts(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error) {
 	fake.getRepositoryCredentialCountsMutex.Lock()
 	fake.getRepositoryCredentialCountsArgsForCall = append(fake.getRepositoryCredentialCountsArgsForCall, struct {
 		ctx context.Context
@@ -129,19 +129,19 @@ func (fake *FakeRevokServer) GetRepositoryCredentialCounts(ctx context.Context, 
 	}
 }
 
-func (fake *FakeRevokServer) GetRepositoryCredentialCountsCallCount() int {
+func (fake *FakeServer) GetRepositoryCredentialCountsCallCount() int {
 	fake.getRepositoryCredentialCountsMutex.RLock()
 	defer fake.getRepositoryCredentialCountsMutex.RUnlock()
 	return len(fake.getRepositoryCredentialCountsArgsForCall)
 }
 
-func (fake *FakeRevokServer) GetRepositoryCredentialCountsArgsForCall(i int) (context.Context, *revokpb.RepositoryCredentialCountRequest) {
+func (fake *FakeServer) GetRepositoryCredentialCountsArgsForCall(i int) (context.Context, *revokpb.RepositoryCredentialCountRequest) {
 	fake.getRepositoryCredentialCountsMutex.RLock()
 	defer fake.getRepositoryCredentialCountsMutex.RUnlock()
 	return fake.getRepositoryCredentialCountsArgsForCall[i].ctx, fake.getRepositoryCredentialCountsArgsForCall[i].in
 }
 
-func (fake *FakeRevokServer) GetRepositoryCredentialCountsReturns(result1 *revokpb.RepositoryCredentialCountResponse, result2 error) {
+func (fake *FakeServer) GetRepositoryCredentialCountsReturns(result1 *revokpb.RepositoryCredentialCountResponse, result2 error) {
 	fake.GetRepositoryCredentialCountsStub = nil
 	fake.getRepositoryCredentialCountsReturns = struct {
 		result1 *revokpb.RepositoryCredentialCountResponse
@@ -149,7 +149,7 @@ func (fake *FakeRevokServer) GetRepositoryCredentialCountsReturns(result1 *revok
 	}{result1, result2}
 }
 
-func (fake *FakeRevokServer) Invocations() map[string][][]interface{} {
+func (fake *FakeServer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getCredentialCountsMutex.RLock()
@@ -161,7 +161,7 @@ func (fake *FakeRevokServer) Invocations() map[string][][]interface{} {
 	return fake.invocations
 }
 
-func (fake *FakeRevokServer) recordInvocation(key string, args []interface{}) {
+func (fake *FakeServer) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -173,4 +173,4 @@ func (fake *FakeRevokServer) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ revok.RevokServer = new(FakeRevokServer)
+var _ revok.Server = new(FakeServer)

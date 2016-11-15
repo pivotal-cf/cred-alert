@@ -25,8 +25,8 @@ import (
 
 var _ = Describe("GrpcServer", func() {
 	var (
-		logger      lager.Logger
-		revokServer *revokfakes.FakeRevokServer
+		logger lager.Logger
+		server *revokfakes.FakeServer
 
 		listenAddr   string
 		runner       ifrit.Runner
@@ -36,8 +36,8 @@ var _ = Describe("GrpcServer", func() {
 
 	BeforeEach(func() {
 		listenAddr = fmt.Sprintf(":%d", GinkgoParallelNode()+9000)
-		revokServer = &revokfakes.FakeRevokServer{}
-		revokServer.GetCredentialCountsReturns(&revokpb.CredentialCountResponse{
+		server = &revokfakes.FakeServer{}
+		server.GetCredentialCountsReturns(&revokpb.CredentialCountResponse{
 			CredentialCounts: []*revokpb.OrganizationCredentialCount{
 				{
 					Owner: "some-owner",
@@ -67,7 +67,7 @@ var _ = Describe("GrpcServer", func() {
 			Certificates: []tls.Certificate{certificate},
 			ClientCAs:    rootCertPool,
 		}
-		runner = revok.NewGRPCServer(logger, listenAddr, revokServer, config)
+		runner = revok.NewGRPCServer(logger, listenAddr, server, config)
 		process = ginkgomon.Invoke(runner)
 	})
 
@@ -120,7 +120,7 @@ var _ = Describe("GrpcServer", func() {
 				_, err := client.GetCredentialCounts(context.Background(), request)
 				return err
 			}, 2*time.Second).ShouldNot(HaveOccurred())
-			Eventually(revokServer.GetCredentialCountsCallCount).Should(Equal(1))
+			Eventually(server.GetCredentialCountsCallCount).Should(Equal(1))
 		})
 	})
 })
