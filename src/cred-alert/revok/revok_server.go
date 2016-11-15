@@ -56,7 +56,7 @@ func (s *revokServer) GetCredentialCounts(
 	}
 
 	orgNames := []string{}
-	for name, _ := range orgCounts {
+	for name := range orgCounts {
 		orgNames = append(orgNames, name)
 	}
 	sort.Strings(orgNames)
