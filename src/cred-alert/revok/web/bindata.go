@@ -74,10 +74,11 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() ([]byte, error){
-	"web/templates/index.html": web_templates_index_html,
+	"web/templates/index.html":        web_templates_index_html,
 	"web/templates/organization.html": web_templates_organization_html,
-	"web/templates/repository.html": web_templates_repository_html,
+	"web/templates/repository.html":   web_templates_repository_html,
 }
+
 // AssetDir returns the file names below a certain
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
@@ -114,18 +115,16 @@ func AssetDir(name string) ([]string, error) {
 }
 
 type _bintree_t struct {
-	Func func() ([]byte, error)
+	Func     func() ([]byte, error)
 	Children map[string]*_bintree_t
 }
+
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
 	"web": &_bintree_t{nil, map[string]*_bintree_t{
 		"templates": &_bintree_t{nil, map[string]*_bintree_t{
-			"index.html": &_bintree_t{web_templates_index_html, map[string]*_bintree_t{
-			}},
-			"organization.html": &_bintree_t{web_templates_organization_html, map[string]*_bintree_t{
-			}},
-			"repository.html": &_bintree_t{web_templates_repository_html, map[string]*_bintree_t{
-			}},
+			"index.html":        &_bintree_t{web_templates_index_html, map[string]*_bintree_t{}},
+			"organization.html": &_bintree_t{web_templates_organization_html, map[string]*_bintree_t{}},
+			"repository.html":   &_bintree_t{web_templates_repository_html, map[string]*_bintree_t{}},
 		}},
 	}},
 }}
