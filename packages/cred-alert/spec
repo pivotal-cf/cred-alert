@@ -7,6 +7,7 @@ dependencies:
   - libssh2
 
 files:
+  - bitbucket.org/taruti/mimemagic/*.{go,c} # gosub
   - cloud.google.com/go/compute/metadata/*.{go,c} # gosub
   - cloud.google.com/go/internal/*.{go,c} # gosub
   - cloud.google.com/go/pubsub/*.{go,c} # gosub
@@ -22,6 +23,7 @@ files:
   - cred-alert/ingestor/*.{go,c} # gosub
   - cred-alert/kolsch/*.{go,c} # gosub
   - cred-alert/metrics/*.{go,c} # gosub
+  - cred-alert/mimetype/*.{go,c} # gosub
   - cred-alert/net/*.{go,c} # gosub
   - cred-alert/notifications/*.{go,c} # gosub
   - cred-alert/queue/*.{go,c} # gosub
