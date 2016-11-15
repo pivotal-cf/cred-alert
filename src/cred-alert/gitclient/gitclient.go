@@ -259,7 +259,7 @@ func (c *client) BranchCredentialCounts(
 	}
 	defer repo.Free()
 
-	it, err := repo.NewBranchIterator(git.BranchAll)
+	it, err := repo.NewBranchIterator(branchType)
 	if err != nil {
 		return nil, err
 	}
