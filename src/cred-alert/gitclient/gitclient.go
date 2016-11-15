@@ -34,7 +34,7 @@ type Client interface {
 	Fetch(string) (map[string][]*git.Oid, error)
 	HardReset(string, *git.Oid) error
 	Diff(repositoryPath string, a, b *git.Oid) (string, error)
-	BranchCredentialCounts(context.Context, lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
+	BranchCredentialCounts(context.Context, lager.Logger, string, sniff.Sniffer, git.BranchType) (map[string]uint, error)
 }
 
 func New(privateKeyPath, publicKeyPath string) *client {
@@ -251,6 +251,7 @@ func (c *client) BranchCredentialCounts(
 	logger lager.Logger,
 	repositoryPath string,
 	sniffer sniff.Sniffer,
+	branchType git.BranchType,
 ) (map[string]uint, error) {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {

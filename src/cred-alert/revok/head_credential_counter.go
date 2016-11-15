@@ -11,6 +11,7 @@ import (
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
+	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 )
 
@@ -87,7 +88,7 @@ func (c *headCredentialCounter) work(
 			"path": repository.Path,
 		})
 
-		credentialCounts, err := c.gitClient.BranchCredentialCounts(ctx, quietLogger, repository.Path, c.sniffer)
+		credentialCounts, err := c.gitClient.BranchCredentialCounts(ctx, quietLogger, repository.Path, c.sniffer, git.BranchRemote)
 		if err != nil {
 			repoLogger.Error("failed-to-get-credential-counts", err)
 			continue

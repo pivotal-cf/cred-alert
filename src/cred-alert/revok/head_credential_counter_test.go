@@ -18,6 +18,7 @@ import (
 	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	git "github.com/libgit2/git2go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
@@ -115,16 +116,18 @@ var _ = Describe("HeadCredentialCounter", func() {
 		It("tries to get the credential counts for each repository", func() {
 			Eventually(gitClient.BranchCredentialCountsCallCount).Should(Equal(2))
 
-			_, _, path, _ := gitClient.BranchCredentialCountsArgsForCall(0)
+			_, _, path, _, branchType := gitClient.BranchCredentialCountsArgsForCall(0)
 			Expect(path).To(Equal("some-path"))
+			Expect(branchType).To(Equal(git.BranchRemote))
 
-			_, _, path, _ = gitClient.BranchCredentialCountsArgsForCall(1)
+			_, _, path, _, branchType = gitClient.BranchCredentialCountsArgsForCall(1)
 			Expect(path).To(Equal("some-other-path"))
+			Expect(branchType).To(Equal(git.BranchRemote))
 		})
 
 		Context("when there are credentials for the repository", func() {
 			BeforeEach(func() {
-				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer) (map[string]uint, error) {
+				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
 					defer GinkgoRecover()
 
 					switch path {
@@ -186,7 +189,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 
 		Context("when getting blobs returns an error", func() {
 			BeforeEach(func() {
-				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer) (map[string]uint, error) {
+				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
 					defer GinkgoRecover()
 
 					switch path {
