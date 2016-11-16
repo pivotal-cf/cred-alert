@@ -19,4 +19,5 @@ var Migrations = []migration.Migrator{
 	DropDiffScans,
 	AddBranchToScans,
 	ChangeCredentialCountToText,
+	UpdateNullCredentialCounts,
 }
