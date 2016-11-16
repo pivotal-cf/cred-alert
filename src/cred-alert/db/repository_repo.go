@@ -50,7 +50,7 @@ func NewRepositoryRepository(db *gorm.DB) *repositoryRepository {
 
 func (r *repositoryRepository) Find(owner, name string) (Repository, error) {
 	var repository Repository
-	err := r.db.Where(Repository{Owner: owner, Name: name}).First(&repository).Error
+	err := r.db.Where("owner = ? AND name = ?", owner, name).First(&repository).Error
 	if err != nil {
 		return Repository{}, err
 	}
