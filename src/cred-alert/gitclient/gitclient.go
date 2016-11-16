@@ -263,6 +263,7 @@ func (c *client) BranchCredentialCounts(
 	if err != nil {
 		return nil, err
 	}
+	defer it.Free()
 
 	var branch *git.Branch
 	var target *git.Oid
