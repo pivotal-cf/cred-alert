@@ -27,14 +27,18 @@ func (r *fetchRepository) RegisterFetch(logger lager.Logger, fetch *Fetch) error
 
 	tx := r.db.Begin()
 
-	err := tx.Model(&fetch.Repository).Update("failed_fetches", 0).Error
-	if err != nil {
-		tx.Rollback()
-		logger.Error("failed-to-update-failed-fetches", err)
-		return err
+	if fetch.Repository != nil {
+		err := tx.Model(&fetch.Repository).Update("failed_fetches", 0).Error
+		if err != nil {
+			tx.Rollback()
+			logger.Error("failed-to-update-failed-fetches", err)
+			return err
+		}
+		fetch.RepositoryID = fetch.Repository.ID
+		fetch.Repository = nil
 	}
 
-	err = tx.Save(fetch).Error
+	err := tx.Save(fetch).Error
 	if err != nil {
 		tx.Rollback()
 		logger.Error("failed-to-save-fetch", err)

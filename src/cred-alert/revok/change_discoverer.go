@@ -166,7 +166,7 @@ func (c *changeDiscoverer) Fetch(
 	}
 
 	fetch := db.Fetch{
-		Repository: repo,
+		Repository: &repo,
 		Path:       repo.Path,
 		Changes:    bs,
 	}

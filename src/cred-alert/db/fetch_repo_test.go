@@ -102,7 +102,7 @@ var _ = Describe("FetchRepo", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			err = repo.RegisterFetch(logger, &db.Fetch{
-				Repository: *repository,
+				Repository: repository,
 				Path:       "path-to-repo-on-disk",
 				Changes:    bs,
 			})
@@ -130,7 +130,7 @@ var _ = Describe("FetchRepo", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				err = repo.RegisterFetch(logger, &db.Fetch{
-					Repository: *repository,
+					Repository: repository,
 					Path:       "path-to-repo-on-disk",
 					Changes:    bs,
 				})

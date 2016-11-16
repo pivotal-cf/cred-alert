@@ -20,4 +20,5 @@ var Migrations = []migration.Migrator{
 	AddBranchToScans,
 	ChangeCredentialCountToText,
 	UpdateNullCredentialCounts,
+	UpdateNullCredentialCountsAgain,
 }

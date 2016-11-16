@@ -82,7 +82,7 @@ type Repository struct {
 
 type Fetch struct {
 	Model
-	Repository   Repository
+	Repository   *Repository
 	RepositoryID uint
 
 	Path    string
