@@ -16,6 +16,7 @@ files:
   - code.cloudfoundry.org/lager/*.{go,c} # gosub
   - cred-alert/cmd/revok-ingestor/*.{go,c} # gosub
   - cred-alert/cmd/revok-worker/*.{go,c} # gosub
+  - cred-alert/crypto/*.{go,c} # gosub
   - cred-alert/datadog/*.{go,c} # gosub
   - cred-alert/db/*.{go,c} # gosub
   - cred-alert/db/migrations/*.{go,c} # gosub
