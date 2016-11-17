@@ -1,6 +1,9 @@
 package queue
 
 import (
+	"cred-alert/crypto"
+	"encoding/base64"
+
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
@@ -15,25 +18,37 @@ type Topic interface {
 type pubSubEnqueuer struct {
 	logger lager.Logger
 	topic  Topic
+	signer crypto.Signer
 }
 
-func NewPubSubEnqueuer(logger lager.Logger, topic Topic) Enqueuer {
+func NewPubSubEnqueuer(logger lager.Logger, topic Topic, signer crypto.Signer) Enqueuer {
 	return &pubSubEnqueuer{
 		logger: logger,
 		topic:  topic,
+		signer: signer,
 	}
 }
 
 func (p *pubSubEnqueuer) Enqueue(task Task) error {
-	message := &pubsub.Message{
-		Attributes: map[string]string{
-			"id":   task.ID(),
-			"type": task.Type(),
-		},
-		Data: []byte(task.Payload()),
+	payload := []byte(task.Payload())
+	signature, err := p.signer.Sign(payload)
+	if err != nil {
+		p.logger.Error("failed-to-sign", err)
+		return err
 	}
 
-	_, err := p.topic.Publish(context.TODO(), message)
+	endcodedSignature := base64.StdEncoding.EncodeToString(signature)
+
+	message := &pubsub.Message{
+		Attributes: map[string]string{
+			"id":        task.ID(),
+			"type":      task.Type(),
+			"signature": endcodedSignature,
+		},
+		Data: payload,
+	}
+
+	_, err = p.topic.Publish(context.TODO(), message)
 	if err != nil {
 		p.logger.Error("failed-to-publish", err)
 		return err

@@ -26,6 +26,7 @@ import (
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 
+	"cred-alert/crypto"
 	"cred-alert/db"
 	"cred-alert/db/migrations"
 	"cred-alert/gitclient"
@@ -59,8 +60,8 @@ type Opts struct {
 
 	PubSub struct {
 		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" required:"true"`
-
-		FetchHint struct {
+		PublicKey   string `long:"pubsub-public-key" description:"path to file containing PEM-encoded, unencrypted RSA public key" required:"true"`
+		FetchHint   struct {
 			Subscription string `long:"fetch-hint-pubsub-subscription" description:"PubSub Topic receive messages from" value-name:"NAME" required:"true"`
 		} `group:"PubSub Fetch Hint Options"`
 	} `group:"PubSub Options"`
@@ -218,9 +219,19 @@ func main() {
 		emitter,
 	)
 
+	publicKey, err := crypto.ReadRSAPublicKey(opts.PubSub.PublicKey)
+	if err != nil {
+		logger.Fatal("failed", err)
+		os.Exit(1)
+	}
+
+	verifier := crypto.NewRSAVerifier(publicKey)
+
 	pushEventProcessor := queue.NewPushEventProcessor(
 		changeDiscoverer,
 		repositoryRepository,
+		verifier,
+		emitter,
 	)
 
 	headCredentialCounter := revok.NewHeadCredentialCounter(

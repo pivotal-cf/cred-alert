@@ -6,6 +6,7 @@ description: |
 
 templates:
   ctl.erb: bin/ctl
+  pubsub_private_key.erb: config/pubsub_private_key
 
 packages:
 - cred-alert
@@ -28,6 +29,10 @@ properties:
   pubsub.topic:
     description: |
       The topic to send messages to.
+
+  pubsub.private_key:
+    description: |
+      PEM-encoded, unencrypted RSA private key used to sign messages
 
   metrics.datadog_api_key:
     description: |

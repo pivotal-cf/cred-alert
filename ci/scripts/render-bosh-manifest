@@ -47,4 +47,14 @@ for line in $RPC_SERVER_PRIVATE_KEY; do
   echo "  $line" >> credentials.yml
 done
 
+echo "revok-pubsub-public-key: |" >> credentials.yml
+for line in $PUBSUB_PUBLIC_KEY; do
+  echo "  $line" >> credentials.yml
+done
+
+echo "revok-pubsub-private-key: |" >> credentials.yml
+for line in $PUBSUB_PRIVATE_KEY; do
+  echo "  $line" >> credentials.yml
+done
+
 bosh-cli build-manifest $MANIFEST_PATH -l credentials.yml > manifest/manifest.yml

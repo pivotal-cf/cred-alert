@@ -10,6 +10,7 @@ templates:
   pre-start.erb: bin/pre-start
   github_private_key.erb: config/github_private_key
   github_public_key.erb: config/github_public_key
+  pubsub_public_key.erb: config/pubsub_public_key
   rpc_server_client_ca.erb: config/rpc_server_client_ca
   rpc_server_private_key.erb: config/rpc_server_private_key
   rpc_server_cert.erb: config/rpc_server_cert
@@ -30,6 +31,10 @@ properties:
   revok.pubsub.fetch_hint.subscription:
     description: |
       The subscription to recieve messages from about fetch hints.
+
+  revok.pubsub.public_key:
+    description: |
+      PEM-encoded, unencrypted RSA public key used to sign messages
 
   revok.repository_discovery_interval:
     description: |

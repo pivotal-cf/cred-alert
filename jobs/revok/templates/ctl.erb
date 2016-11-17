@@ -26,6 +26,7 @@ case $1 in
 
     exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/revok-worker \
       --pubsub-project-name <%= p("revok.pubsub.project_name") %> \
+      --pubsub-public-key /var/vcap/jobs/revok/config/pubsub_public_key \
       --fetch-hint-pubsub-subscription <%= p("revok.pubsub.fetch_hint.subscription") %> \
       --repository-discovery-interval <%= p("revok.repository_discovery_interval") %> \
       --change-discovery-interval <%= p("revok.change_discovery_interval") %> \

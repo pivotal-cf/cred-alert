@@ -14,6 +14,7 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	"golang.org/x/net/context"
 
+	"cred-alert/crypto"
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
 	"cred-alert/queue"
@@ -30,6 +31,7 @@ type Opts struct {
 	PubSub struct {
 		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" required:"true"`
 		Topic       string `long:"pubsub-topic" description:"PubSub Topic to send message to" value-name:"NAME" required:"true"`
+		PrivateKey  string `long:"pubsub-private-key" description:"path to file containing PEM-encoded, unencrypted RSA private key" required:"true"`
 	} `group:"PubSub Options"`
 
 	Metrics struct {
@@ -66,7 +68,14 @@ func main() {
 		os.Exit(1)
 	}
 	topic := pubSubClient.Topic(opts.PubSub.Topic)
-	enqueuer := queue.NewPubSubEnqueuer(logger, topic)
+
+	privateKey, err := crypto.ReadRSAPrivateKey(opts.PubSub.PrivateKey)
+	if err != nil {
+		logger.Fatal("failed", err)
+		os.Exit(1)
+	}
+	signer := crypto.NewRSASigner(privateKey)
+	enqueuer := queue.NewPubSubEnqueuer(logger, topic, signer)
 	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
 
 	router := http.NewServeMux()

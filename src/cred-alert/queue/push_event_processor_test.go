@@ -1,14 +1,16 @@
 package queue_test
 
 import (
+	"cred-alert/crypto/cryptofakes"
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
 	"cred-alert/revok/revokfakes"
 	"errors"
 
 	"cloud.google.com/go/pubsub"
-
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -21,15 +23,93 @@ var _ = Describe("PushEventProcessor", func() {
 		pushEventProcessor   queue.PubSubProcessor
 		changeDiscoverer     *revokfakes.FakeChangeDiscoverer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
-
-		message *pubsub.Message
+		verifier             *cryptofakes.FakeVerifier
+		message              *pubsub.Message
+		emitter              *metricsfakes.FakeEmitter
+		verifyFailedCounter  *metricsfakes.FakeCounter
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("ingestor")
 		changeDiscoverer = &revokfakes.FakeChangeDiscoverer{}
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		pushEventProcessor = queue.NewPushEventProcessor(changeDiscoverer, repositoryRepository)
+		verifier = &cryptofakes.FakeVerifier{}
+		verifyFailedCounter = &metricsfakes.FakeCounter{}
+		emitter = &metricsfakes.FakeEmitter{}
+		emitter.CounterStub = func(name string) metrics.Counter {
+			switch name {
+			case "queue.push_event_processor.verify.failed":
+				return verifyFailedCounter
+			default:
+				return &metricsfakes.FakeCounter{}
+			}
+		}
+
+		pushEventProcessor = queue.NewPushEventProcessor(changeDiscoverer, repositoryRepository, verifier, emitter)
+
+	})
+
+	It("verifies the signature", func() {
+		message = &pubsub.Message{
+			Attributes: map[string]string{
+				"signature": "c29tZS1zaWduYXR1cmU=",
+			},
+			Data: []byte("some-message"),
+		}
+
+		pushEventProcessor.Process(logger, message)
+
+		Expect(verifier.VerifyCallCount()).To(Equal(1))
+		message, signature := verifier.VerifyArgsForCall(0)
+		Expect(message).To(Equal([]byte("some-message")))
+		Expect(signature).To(Equal([]byte("some-signature")))
+	})
+
+	Context("when the signature fails to decode", func() {
+		BeforeEach(func() {
+			message = &pubsub.Message{
+				Attributes: map[string]string{
+					"signature": "Undecodable Signature",
+				},
+			}
+		})
+
+		It("returns an error", func() {
+			retriable, err := pushEventProcessor.Process(logger, message)
+
+			Expect(retriable).To(BeFalse())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("base64"))
+		})
+	})
+
+	Context("when the signature is invalid", func() {
+		var err error
+
+		BeforeEach(func() {
+			message = &pubsub.Message{
+				Attributes: map[string]string{
+					"signature": "InvalidSignature",
+				},
+			}
+
+			err = errors.New("invalid signature")
+
+			verifier.VerifyReturns(err)
+		})
+
+		It("returns an error", func() {
+			retriable, err := pushEventProcessor.Process(logger, message)
+			Expect(retriable).To(BeFalse())
+			Expect(err).To(Equal(err))
+		})
+
+		It("increments the error counter", func() {
+			pushEventProcessor.Process(logger, message)
+
+			Expect(verifyFailedCounter.IncCallCount()).To(Equal(1))
+			Expect(verifyFailedCounter.IncArgsForCall(0)).To(Equal(logger))
+		})
 	})
 
 	Context("when the payload is a valid JSON PushEventPlan", func() {
@@ -49,6 +129,11 @@ var _ = Describe("PushEventProcessor", func() {
 				},
 				Data: []byte(task.Payload()),
 			}
+		})
+
+		It("does not increment the verifyFailedCounter", func() {
+			pushEventProcessor.Process(logger, message)
+			Expect(verifyFailedCounter.IncCallCount()).To(Equal(0))
 		})
 
 		It("looks up the repository in the database", func() {
