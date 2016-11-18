@@ -24,45 +24,45 @@ case $1 in
 
     echo $$ > $PIDFILE
 
-    exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/revok-worker \
-      --pubsub-project-name <%= p("revok.pubsub.project_name") %> \
-      --pubsub-public-key /var/vcap/jobs/revok/config/pubsub_public_key \
-      --fetch-hint-pubsub-subscription <%= p("revok.pubsub.fetch_hint.subscription") %> \
-      --repository-discovery-interval <%= p("revok.repository_discovery_interval") %> \
-      --change-discovery-interval <%= p("revok.change_discovery_interval") %> \
-      --credential-counter-interval <%= p("revok.credential_counter_interval") %> \
-      --min-fetch-interval <%= p("revok.minimum_fetch_interval") %> \
-      --max-fetch-interval <%= p("revok.maximum_fetch_interval") %> \
-      --work-dir <%= p("revok.work_dir") %> \
-      --github-private-key-path /var/vcap/jobs/revok/config/github_private_key \
-      --github-public-key-path /var/vcap/jobs/revok/config/github_public_key \
-      --access-token <%= p("revok.github.access_token") %> \
-      --mysql-username <%= p("revok.mysql.username") %> \
-      --mysql-password <%= p("revok.mysql.password") %> \
-      --mysql-port <%= p("revok.mysql.port") %> \
-      --mysql-dbname <%= p("revok.mysql.db") %> \
-      --mysql-hostname <%= p("revok.mysql.hostname") %> \
-      --rpc-server-bind-ip <%= p("revok.rpc_server.bind_ip") %> \
-      --rpc-server-bind-port <%= p("revok.rpc_server.bind_port") %> \
-      --rpc-server-client-ca /var/vcap/jobs/revok/config/rpc_server_client_ca \
-      --rpc-server-cert /var/vcap/jobs/revok/config/rpc_server_cert \
-      --rpc-server-private-key /var/vcap/jobs/revok/config/rpc_server_private_key \
-      <% p("revok.ignore_patterns", []).each do |pattern| %> \
-      --ignore-pattern <%= pattern %> \
-      <% end %> \
-      <% if_p("revok.metrics.datadog_api_key") do |api_key| %> \
-      --datadog-api-key <%= api_key %> \
-      <% end %> \
-      <% if_p("revok.metrics.sentry_dsn") do |dsn| %> \
-      --sentry-dsn <%= dsn %> \
-      <% end %> \
-      <% if_p("revok.metrics.environment") do |env| %> \
-      --environment <%= env %> \
-      <% end %> \
-      <% if_p("revok.slack_webhook_url") do |webhook_url| %> \
-      --slack-webhook-url <%= webhook_url %> \
-      <% end %> \
-      1>>$LOG_DIR/revok.stdout.log \
+    exec chpst -u vcap:vcap -L $PIDFILE /var/vcap/packages/cred-alert/bin/revok-worker   \
+      --pubsub-project-name <%= p("revok.pubsub.project_name") %>                        \
+      --pubsub-public-key /var/vcap/jobs/revok/config/pubsub_public_key                  \
+      --fetch-hint-pubsub-subscription <%= p("revok.pubsub.fetch_hint.subscription") %>  \
+      --repository-discovery-interval <%= p("revok.repository_discovery_interval") %>    \
+      --change-discovery-interval <%= p("revok.change_discovery_interval") %>            \
+      --credential-counter-interval <%= p("revok.credential_counter_interval") %>        \
+      --min-fetch-interval <%= p("revok.minimum_fetch_interval") %>                      \
+      --max-fetch-interval <%= p("revok.maximum_fetch_interval") %>                      \
+      --work-dir <%= p("revok.work_dir") %>                                              \
+      --github-private-key-path /var/vcap/jobs/revok/config/github_private_key           \
+      --github-public-key-path /var/vcap/jobs/revok/config/github_public_key             \
+      --access-token <%= p("revok.github.access_token") %>                               \
+      --mysql-username <%= p("revok.mysql.username") %>                                  \
+      --mysql-password <%= p("revok.mysql.password") %>                                  \
+      --mysql-port <%= p("revok.mysql.port") %>                                          \
+      --mysql-dbname <%= p("revok.mysql.db") %>                                          \
+      --mysql-hostname <%= p("revok.mysql.hostname") %>                                  \
+      --rpc-server-bind-ip <%= p("revok.rpc_server.bind_ip") %>                          \
+      --rpc-server-bind-port <%= p("revok.rpc_server.bind_port") %>                      \
+      --rpc-server-client-ca /var/vcap/jobs/revok/config/rpc_server_client_ca            \
+      --rpc-server-cert /var/vcap/jobs/revok/config/rpc_server_cert                      \
+      --rpc-server-private-key /var/vcap/jobs/revok/config/rpc_server_private_key        \
+      <% p("revok.ignore_patterns", []).each do |pattern| %>                             \
+      --ignore-pattern <%= pattern %>                                                    \
+      <% end %>                                                                          \
+      <% if_p("revok.metrics.datadog_api_key") do |api_key| %>                           \
+      --datadog-api-key <%= api_key %>                                                   \
+      <% end %>                                                                          \
+      <% if_p("revok.metrics.sentry_dsn") do |dsn| %>                                    \
+      --sentry-dsn <%= dsn %>                                                            \
+      <% end %>                                                                          \
+      <% if_p("revok.metrics.environment") do |env| %>                                   \
+      --environment <%= env %>                                                           \
+      <% end %>                                                                          \
+      <% if_p("revok.slack_webhook_url") do |webhook_url| %>                             \
+      --slack-webhook-url <%= webhook_url %>                                             \
+      <% end %>                                                                          \
+      1>>$LOG_DIR/revok.stdout.log                                                       \
       2>>$LOG_DIR/revok.stderr.log
 
     ;;
