@@ -17,13 +17,15 @@ import (
 
 type Inflator interface {
 	Inflate(lager.Logger, string, string, string) error
+	LogPath() string
+	Close() error
 }
 
 type inflator struct {
 	logfile *os.File
 }
 
-func New() *inflator {
+func New() Inflator {
 	f, err := ioutil.TempFile("", "inflator-errors")
 	if err != nil {
 		panic("failed creating temp file: " + err.Error())

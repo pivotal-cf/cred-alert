@@ -279,10 +279,13 @@ index 940393e..fa5a232 100644
 			})
 		})
 
-		var ItShowsHowLongItTookAndHowManyCredentialsWereFound = func() {
+		var ItShowsHowLongInflationTook = func() {
 			It("shows how long the inflating took", func() {
 				Eventually(session.Out).Should(gbytes.Say(`Time taken \(inflating\):`))
 			})
+		}
+
+		var ItShowsHowLongItTookAndHowManyCredentialsWereFound = func() {
 
 			It("shows how long the scan took", func() {
 				Eventually(session.Out).Should(gbytes.Say(`Time taken \(scanning\):`))
@@ -300,6 +303,38 @@ index 940393e..fa5a232 100644
 		ItTellsPeopleHowToRemoveTheirCredentials()
 		ItTellsPeopleToUpdateIfTheBinaryIsOld()
 
+		Context("when the file is a folder", func() {
+			var (
+				inDir, outDir string
+			)
+
+			AfterEach(func() {
+				os.RemoveAll(inDir)
+				os.RemoveAll(outDir)
+			})
+
+			Context("when given a folder", func() {
+				BeforeEach(func() {
+					var err error
+					inDir, err = ioutil.TempDir("", "folder-in")
+					Expect(err).NotTo(HaveOccurred())
+
+					err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte(offendingText), 0644)
+					Expect(err).NotTo(HaveOccurred())
+
+					cmdArgs = []string{"-f", inDir}
+				})
+
+				It("scans each text file in the folder", func() {
+					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+				})
+
+				ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+				ItTellsPeopleHowToRemoveTheirCredentials()
+				ItTellsPeopleToUpdateIfTheBinaryIsOld()
+			})
+		})
+
 		Context("when the file is a zip file", func() {
 			var (
 				inDir, outDir string
@@ -316,7 +351,7 @@ index 940393e..fa5a232 100644
 					inDir, err = ioutil.TempDir("", "zipper-unzip-in")
 					Expect(err).NotTo(HaveOccurred())
 
-					err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte(offendingText), 0664)
+					err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte(offendingText), 0644)
 					Expect(err).NotTo(HaveOccurred())
 
 					outDir, err = ioutil.TempDir("", "zipper-unzip-out")
@@ -334,6 +369,7 @@ index 940393e..fa5a232 100644
 				})
 
 				ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+				ItShowsHowLongInflationTook()
 			})
 		})
 
@@ -374,6 +410,7 @@ index 940393e..fa5a232 100644
 			})
 
 			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+			ItShowsHowLongInflationTook()
 			ItShowsTheCredentialInTheOutput("AKIASOMEMORETEXTHERE")
 		})
 
@@ -412,6 +449,7 @@ index 940393e..fa5a232 100644
 			})
 
 			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+			ItShowsHowLongInflationTook()
 		})
 	})
 
