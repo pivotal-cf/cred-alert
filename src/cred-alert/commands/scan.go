@@ -27,12 +27,16 @@ import (
 	"cred-alert/sniff/matchers"
 )
 
+type Positional struct {
+	File string
+}
+
 type ScanCommand struct {
-	File            string `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
-	Diff            bool   `long:"diff" description:"content to be scanned is a git diff"`
-	ShowCredentials bool   `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
-	Regexp          string `long:"regexp" description:"override default regexp matcher" value-name:"REGEXP"`
-	RegexpFile      string `long:"regexp-file" description:"path to regexp file" value-name:"PATH"`
+	Diff            bool       `long:"diff" description:"content to be scanned is a git diff"`
+	ShowCredentials bool       `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
+	Regexp          string     `long:"regexp" description:"override default regexp matcher" value-name:"REGEXP"`
+	RegexpFile      string     `long:"regexp-file" description:"path to regexp file" value-name:"PATH"`
+	Args            Positional `positional-args:"yes"`
 }
 
 func (command *ScanCommand) Execute(args []string) error {
@@ -69,25 +73,25 @@ func (command *ScanCommand) Execute(args []string) error {
 
 	credsFound := 0
 
-	if command.File != "" {
-		fi, err := os.Stat(command.File)
+	if len(command.Args.File) > 0 {
+		fi, err := os.Stat(command.Args.File)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
 		if fi.IsDir() {
-			credsFound = scanDirectory(sniffer, command.File, command.ShowCredentials)
+			credsFound = scanDirectory(sniffer, command.Args.File, command.ShowCredentials)
 		} else {
-			fh, err := os.Open(command.File)
+			fh, err := os.Open(command.Args.File)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
 
 			br := bufio.NewReader(fh)
 			if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
-				credsFound = scanArchive(logger, sniffer, mime, inflate, command.File, command.ShowCredentials)
+				credsFound = scanArchive(logger, sniffer, mime, inflate, command.Args.File, command.ShowCredentials)
 			} else {
-				credsFound = scanFile(logger, sniffer, br, command.File, command.ShowCredentials)
+				credsFound = scanFile(logger, sniffer, br, command.Args.File, command.ShowCredentials)
 			}
 		}
 	} else if command.Diff {

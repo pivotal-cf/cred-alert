@@ -23,7 +23,7 @@ Use --help to see all options.
 
 #### Scan a file
 
-    $ ./cred-alert-cli scan -f src/cred-alert/product.zip
+    $ ./cred-alert-cli scan src/cred-alert/product.zip
 
 #### Scan from standard input
 

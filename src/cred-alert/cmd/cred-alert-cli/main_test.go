@@ -42,11 +42,12 @@ index 940393e..fa5a232 100644
 
 	BeforeEach(func() {
 		stdin = ""
+		cmdArgs = []string{}
 	})
 
 	JustBeforeEach(func() {
-		cmdArgs = append([]string{"scan"}, cmdArgs...)
-		cmd := exec.Command(cliPath, cmdArgs...)
+		finalArgs := append([]string{"scan"}, cmdArgs...)
+		cmd := exec.Command(cliPath, finalArgs...)
 		if stdin != "" {
 			cmd.Stdin = strings.NewReader(stdin)
 		}
@@ -247,7 +248,7 @@ index 940393e..fa5a232 100644
 		})
 	})
 
-	Context("when given a file flag", func() {
+	Context("when given a file positional arg", func() {
 		var tmpFile *os.File
 
 		BeforeEach(func() {
@@ -258,7 +259,7 @@ index 940393e..fa5a232 100644
 
 			ioutil.WriteFile(tmpFile.Name(), []byte(offendingText), os.ModePerm)
 
-			cmdArgs = []string{"-f", tmpFile.Name()}
+			cmdArgs = []string{tmpFile.Name()}
 		})
 
 		AfterEach(func() {
@@ -322,7 +323,7 @@ index 940393e..fa5a232 100644
 					err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte(offendingText), 0644)
 					Expect(err).NotTo(HaveOccurred())
 
-					cmdArgs = []string{"-f", inDir}
+					cmdArgs = []string{inDir}
 				})
 
 				It("scans each text file in the folder", func() {
@@ -361,7 +362,7 @@ index 940393e..fa5a232 100644
 					err = zipit(inDir, zipFilePath, "")
 					Expect(err).NotTo(HaveOccurred())
 
-					cmdArgs = []string{"-f", zipFilePath}
+					cmdArgs = []string{zipFilePath}
 				})
 
 				It("scans each text file in the zip", func() {
@@ -397,7 +398,7 @@ index 940393e..fa5a232 100644
 				err = compressor.WriteTar(inDir, tarFile)
 				Expect(err).NotTo(HaveOccurred())
 
-				cmdArgs = []string{"-f", tarFilePath}
+				cmdArgs = []string{tarFilePath}
 			})
 
 			AfterEach(func() {
@@ -436,7 +437,7 @@ index 940393e..fa5a232 100644
 				err = c.Compress(inDir, tarFilePath)
 				Expect(err).NotTo(HaveOccurred())
 
-				cmdArgs = []string{"-f", tarFilePath}
+				cmdArgs = []string{tarFilePath}
 			})
 
 			AfterEach(func() {
@@ -471,7 +472,7 @@ index 940393e..fa5a232 100644
 			})
 		})
 
-		Context("when given a file flag", func() {
+		Context("when given a file as positional argument", func() {
 			BeforeEach(func() {
 				var err error
 				tmpFile, err = ioutil.TempFile("", "cli-main-test")
@@ -480,7 +481,7 @@ index 940393e..fa5a232 100644
 
 				ioutil.WriteFile(tmpFile.Name(), []byte(politeText), os.ModePerm)
 
-				cmdArgs = []string{"-f", tmpFile.Name()}
+				cmdArgs = []string{tmpFile.Name()}
 			})
 
 			AfterEach(func() {
