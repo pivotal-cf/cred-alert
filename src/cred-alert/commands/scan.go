@@ -32,6 +32,7 @@ type Positional struct {
 }
 
 type ScanCommand struct {
+	File            string     `short:"f" long:"file" description:"the file to scan" value-name:"FILE"`
 	Diff            bool       `long:"diff" description:"content to be scanned is a git diff"`
 	ShowCredentials bool       `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
 	Regexp          string     `long:"regexp" description:"override default regexp matcher" value-name:"REGEXP"`
@@ -72,6 +73,11 @@ func (command *ScanCommand) Execute(args []string) error {
 	}()
 
 	credsFound := 0
+
+	if command.File != "" {
+		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "The -f flag is deprecated and will be removed in the future.")
+		command.Args.File = command.File
+	}
 
 	if len(command.Args.File) > 0 {
 		fi, err := os.Stat(command.Args.File)
