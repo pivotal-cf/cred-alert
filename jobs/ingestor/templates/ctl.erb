@@ -38,7 +38,7 @@ case $1 in
       <% if_p("metrics.environment") do |env| %>                             \
       --environment <%= env %>                                               \
       <% end %>                                                              \
-      1>>$LOG_DIRgingestor.stdout.log                                        \
+      1>>$LOG_DIR/ingestor.stdout.log                                        \
       2>>$LOG_DIR/ingestor.stderr.log
 
     ;;
