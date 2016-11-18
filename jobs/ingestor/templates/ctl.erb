@@ -20,6 +20,7 @@ case $1 in
     chown -R vcap:vcap $LOG_DIR
 
     echo $$ > $PIDFILE
+    chown -R vcap:vcap $PIDFILE
 
     exec chpst -u vcap:vcap -L $PIDFILE /var/vcap/packages/cred-alert/bin/revok-ingestor \
       --port <%= p("webhook.port") %>                                                    \

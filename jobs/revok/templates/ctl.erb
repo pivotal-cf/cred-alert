@@ -23,6 +23,7 @@ case $1 in
     chown -R vcap:vcap <%= p("revok.work_dir") %>
 
     echo $$ > $PIDFILE
+    chown -R vcap:vcap $PIDFILE
 
     exec chpst -u vcap:vcap -L $PIDFILE /var/vcap/packages/cred-alert/bin/revok-worker   \
       --pubsub-project-name <%= p("revok.pubsub.project_name") %>                        \
