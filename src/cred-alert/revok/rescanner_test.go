@@ -201,6 +201,7 @@ var _ = Describe("Rescanner", func() {
 
 		It("continues to the next prior scan for the previous rules version", func() {
 			Eventually(credentialRepository.ForScanWithIDCallCount).Should(Equal(2))
+			Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(1))
 			Consistently(scanner.ScanNoNotifyCallCount).Should(Equal(1))
 		})
 	})
