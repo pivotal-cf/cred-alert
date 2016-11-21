@@ -19,7 +19,7 @@ var _ = Describe("Assignment Matcher", func() {
 		matcher = matchers.Assignment()
 	})
 
-	DescribeTable("not matching other assignments",
+	DescribeTable("should not match",
 		func(content string, name ...string) {
 			fileName := "a-file.txt"
 			if len(name) > 0 {
@@ -50,7 +50,7 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("YAML assignment with fly placeholder", "suspect_password: {{placeholder-for-anything}}", "manifest.yml"),
 	)
 
-	DescribeTable("matching secret assignments",
+	DescribeTable("should match",
 		func(content string, expectedStart, expectedEnd int, maybeFilename ...string) {
 			fileName := "a-file.txt"
 			if len(maybeFilename) > 0 {
