@@ -497,11 +497,15 @@ index 940393e..fa5a232 100644
 			)
 			BeforeEach(func() {
 				var err error
-				err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte("no secrets here"), 0664)
+				inDir, err = ioutil.TempDir("", "files")
 				Expect(err).NotTo(HaveOccurred())
-				err = ioutil.WriteFile(path.Join(inDir, "file2"), []byte(offendingText), 0664)
+				fileWithNoCreds := path.Join(inDir, "file1")
+				fileWithAwsCreds := path.Join(inDir, "file2")
+				err = ioutil.WriteFile(fileWithNoCreds, []byte("no secrets here"), 0664)
 				Expect(err).NotTo(HaveOccurred())
-				cmdArgs = []string{"-f", "file2", "file1"}
+				err = ioutil.WriteFile(fileWithAwsCreds, []byte(offendingText), 0664)
+				Expect(err).NotTo(HaveOccurred())
+				cmdArgs = []string{"-f", fileWithAwsCreds, fileWithNoCreds}
 			})
 			AfterEach(func() {
 				os.RemoveAll(inDir)
