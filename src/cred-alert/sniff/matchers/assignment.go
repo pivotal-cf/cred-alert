@@ -9,7 +9,7 @@ import (
 const assignmentPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)["']?\s*(?:=|:|:=|=>)?\s*(["'])?[A-Z0-9.$+=&\\\/_\-\(\){} ]{12,}(["'])?`
 const yamlPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT):\s*["']?[A-Z0-9.$+=&\\\/_\-\(\){} ]{12,}`
 const guidPattern = `[A-F0-9]{8}-[A-F0-9]{4}-[1-5][A-F0-9]{3}-[A-F0-9]{4}-[A-F0-9]{12}`
-const placeholderPattern = `(?:\(\(|\{\{)\s*[A-Z0-9_.-]+\s*(?:\)\)|\}\})`
+const placeholderPattern = `(?:\(\(|\{\{)\s*[/A-Z0-9_.-]+\s*(?:\)\)|\}\})`
 
 func Assignment() Matcher {
 	return &assignmentMatcher{
