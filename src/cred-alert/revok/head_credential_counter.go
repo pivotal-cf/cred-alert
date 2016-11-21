@@ -82,24 +82,30 @@ func (c *headCredentialCounter) work(
 	}
 
 	for i := range repositories {
-		repository := repositories[i]
-		repoLogger := logger.WithData(lager.Data{
-			"ref":  repository.DefaultBranch,
-			"path": repository.Path,
-		})
+		select {
+		case <-signals:
+			cancel()
+			return
+		default:
+			repository := repositories[i]
+			repoLogger := logger.WithData(lager.Data{
+				"ref":  repository.DefaultBranch,
+				"path": repository.Path,
+			})
 
-		credentialCounts, err := c.gitClient.BranchCredentialCounts(ctx, quietLogger, repository.Path, c.sniffer, git.BranchRemote)
-		if err != nil {
-			repoLogger.Error("failed-to-get-credential-counts", err)
-			continue
+			credentialCounts, err := c.gitClient.BranchCredentialCounts(ctx, quietLogger, repository.Path, c.sniffer, git.BranchRemote)
+			if err != nil {
+				repoLogger.Error("failed-to-get-credential-counts", err)
+				continue
+			}
+
+			err = c.repositoryRepository.UpdateCredentialCount(&repository, credentialCounts)
+			if err != nil {
+				repoLogger.Error("failed-to-update-credential-count", err)
+				continue
+			}
+
+			repoLogger.Info("updated-credential-count")
 		}
-
-		err = c.repositoryRepository.UpdateCredentialCount(&repository, credentialCounts)
-		if err != nil {
-			repoLogger.Error("failed-to-update-credential-count", err)
-			continue
-		}
-
-		repoLogger.Info("updated-credential-count")
 	}
 }
