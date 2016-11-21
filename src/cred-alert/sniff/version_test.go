@@ -7,27 +7,20 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-const knownSHA = "a144a5b6a69d5911853e09884954ae360f56a184f7e9c2f6c007db730716f5a9"
+const expectedSHA = "a144a5b6a69d5911853e09884954ae360f56a184f7e9c2f6c007db730716f5a9"
 
-func shouldScan(fi os.FileInfo) bool {
-	if fi.IsDir() {
-		return false
-	}
-
-	if strings.HasSuffix(fi.Name(), "_test.go") {
-		return false
-	}
-
-	return true
+func shouldNotScan(fi os.FileInfo) bool {
+	return fi.IsDir() || strings.HasSuffix(fi.Name(), "_test.go")
 }
 
-var _ = Describe("Updating the RulesVersion", func() {
+var _ = Describe("RulesVersion", func() {
 	It("checks if the RulesVersion needs to be updated", func() {
 		pathsToScan := []string{}
 
@@ -35,7 +28,7 @@ var _ = Describe("Updating the RulesVersion", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		for _, file := range sniffFiles {
-			if !shouldScan(file) {
+			if shouldNotScan(file) {
 				continue
 			}
 
@@ -43,18 +36,18 @@ var _ = Describe("Updating the RulesVersion", func() {
 				continue
 			}
 
-			pathsToScan = append(pathsToScan, "./"+file.Name())
+			pathsToScan = append(pathsToScan, file.Name())
 		}
 
 		matcherFiles, err := ioutil.ReadDir("./matchers")
 		Expect(err).NotTo(HaveOccurred())
 
 		for _, file := range matcherFiles {
-			if !shouldScan(file) {
+			if shouldNotScan(file) {
 				continue
 			}
 
-			pathsToScan = append(pathsToScan, "./matchers/"+file.Name())
+			pathsToScan = append(pathsToScan, filepath.Join("matchers", file.Name()))
 		}
 
 		hasher := sha256.New()
@@ -82,6 +75,6 @@ If the scanning logic has changed then you need to update the SHA as above but
 also increment the RulesVersion in sniff/version.go.
 		`, currentSHA)
 
-		Expect(knownSHA).To(Equal(currentSHA), helpfulMessage)
+		Expect(expectedSHA).To(Equal(currentSHA), helpfulMessage)
 	})
 })
