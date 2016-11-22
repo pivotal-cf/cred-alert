@@ -248,7 +248,7 @@ index 940393e..fa5a232 100644
 		})
 	})
 
-	Context("when given a file positional arg", func() {
+	Context("when given a file flag", func() {
 		var tmpFile *os.File
 
 		BeforeEach(func() {
@@ -259,15 +259,22 @@ index 940393e..fa5a232 100644
 
 			ioutil.WriteFile(tmpFile.Name(), []byte(offendingText), os.ModePerm)
 
-			cmdArgs = []string{tmpFile.Name()}
+			cmdArgs = []string{"-f", tmpFile.Name()}
 		})
 
 		AfterEach(func() {
 			os.RemoveAll(tmpFile.Name())
 		})
 
+		ItTellsPeopleHowToRemoveTheirCredentials()
+		ItTellsPeopleToUpdateIfTheBinaryIsOld()
+
 		It("scans the file", func() {
 			Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+		})
+
+		It("exits with status 3", func() {
+			Eventually(session).Should(gexec.Exit(3))
 		})
 
 		Context("shows actual credential if show-suspected-credentials flag is set", func() {
@@ -287,7 +294,6 @@ index 940393e..fa5a232 100644
 		}
 
 		var ItShowsHowLongItTookAndHowManyCredentialsWereFound = func() {
-
 			It("shows how long the scan took", func() {
 				Eventually(session.Out).Should(gbytes.Say(`Time taken \(scanning\):`))
 			})
@@ -296,26 +302,6 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("Credentials found: 1"))
 			})
 		}
-
-		It("exits with status 3", func() {
-			Eventually(session).Should(gexec.Exit(3))
-		})
-
-
-		Context("when legacy -f flag points at the file", func() {
-			BeforeEach(func() {
-				cmdArgs = []string{"-f", tmpFile.Name()}
-			})
-			ItTellsPeopleHowToRemoveTheirCredentials()
-			ItTellsPeopleToUpdateIfTheBinaryIsOld()
-		})
-		Context("when file is passed as positional parameter", func() {
-			BeforeEach(func() {
-				cmdArgs = []string{tmpFile.Name()}
-			})
-			ItTellsPeopleHowToRemoveTheirCredentials()
-			ItTellsPeopleToUpdateIfTheBinaryIsOld()
-		})
 
 		Context("when the file is a folder", func() {
 			var (
@@ -336,31 +322,16 @@ index 940393e..fa5a232 100644
 					err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte(offendingText), 0644)
 					Expect(err).NotTo(HaveOccurred())
 
-					cmdArgs = []string{inDir}
+					cmdArgs = []string{"-f", inDir}
 				})
 
-				Context("when legacy -f flag points at the folder", func() {
-					BeforeEach(func() {
-						cmdArgs = []string{"-f", inDir}
-					})
-					It("scans each text file in the folder", func() {
-						Eventually(session.Out).Should(gbytes.Say("[CRED]"))
-					})
-					ItShowsHowLongItTookAndHowManyCredentialsWereFound()
-					ItTellsPeopleHowToRemoveTheirCredentials()
-					ItTellsPeopleToUpdateIfTheBinaryIsOld()
+				It("scans each text file in the folder", func() {
+					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 				})
-				Context("when folder is passed as positional parameter", func() {
-					BeforeEach(func() {
-						cmdArgs = []string{inDir}
-					})
-					It("scans each text file in the folder", func() {
-						Eventually(session.Out).Should(gbytes.Say("[CRED]"))
-					})
-					ItShowsHowLongItTookAndHowManyCredentialsWereFound()
-					ItTellsPeopleHowToRemoveTheirCredentials()
-					ItTellsPeopleToUpdateIfTheBinaryIsOld()
-				})
+
+				ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+				ItTellsPeopleHowToRemoveTheirCredentials()
+				ItTellsPeopleToUpdateIfTheBinaryIsOld()
 			})
 		})
 
@@ -368,6 +339,7 @@ index 940393e..fa5a232 100644
 			var (
 				inDir, outDir, zipFilePath string
 			)
+
 			BeforeEach(func() {
 				var err error
 				inDir, err = ioutil.TempDir("", "zipper-unzip-in")
@@ -383,33 +355,24 @@ index 940393e..fa5a232 100644
 				err = zipit(inDir, zipFilePath, "")
 				Expect(err).NotTo(HaveOccurred())
 			})
-			Context("when given a zip without prefix bytes", func() {
-				Context("when legacy -f flag points at a file", func() {
-					BeforeEach(func() {
-						cmdArgs = []string{"-f", zipFilePath}
-					})
-					It("scans each text file in the zip", func() {
-						Eventually(session.Out).Should(gbytes.Say("[CRED]"))
-					})
-					ItShowsHowLongItTookAndHowManyCredentialsWereFound()
-					ItShowsHowLongInflationTook()
-				})
-				Context("when file is passed as positional parameter", func() {
-					BeforeEach(func() {
-						cmdArgs = []string{zipFilePath}
-					})
-					It("scans each text file in the zip", func() {
-						Eventually(session.Out).Should(gbytes.Say("[CRED]"))
-					})
-					ItShowsHowLongItTookAndHowManyCredentialsWereFound()
-					ItShowsHowLongInflationTook()
-				})
-			})
+
 			AfterEach(func() {
 				os.RemoveAll(inDir)
 				os.RemoveAll(outDir)
 			})
 
+			Context("when given a zip without prefix bytes", func() {
+				BeforeEach(func() {
+					cmdArgs = []string{"-f", zipFilePath}
+				})
+
+				It("scans each text file in the zip", func() {
+					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
+				})
+
+				ItShowsHowLongItTookAndHowManyCredentialsWereFound()
+				ItShowsHowLongInflationTook()
+			})
 		})
 
 		Context("when the file is a tar file", func() {
@@ -436,7 +399,7 @@ index 940393e..fa5a232 100644
 				err = compressor.WriteTar(inDir, tarFile)
 				Expect(err).NotTo(HaveOccurred())
 
-				cmdArgs = []string{tarFilePath}
+				cmdArgs = []string{"-f", tarFilePath}
 			})
 
 			AfterEach(func() {
@@ -475,7 +438,7 @@ index 940393e..fa5a232 100644
 				err = c.Compress(inDir, tarFilePath)
 				Expect(err).NotTo(HaveOccurred())
 
-				cmdArgs = []string{tarFilePath}
+				cmdArgs = []string{"-f", tarFilePath}
 			})
 
 			AfterEach(func() {
@@ -489,36 +452,6 @@ index 940393e..fa5a232 100644
 
 			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 			ItShowsHowLongInflationTook()
-		})
-
-		Context("when both -f flag and a positional argument are present", func() {
-			var (
-				inDir string
-			)
-			BeforeEach(func() {
-				var err error
-				inDir, err = ioutil.TempDir("", "files")
-				Expect(err).NotTo(HaveOccurred())
-				fileWithNoCreds := path.Join(inDir, "file1")
-				fileWithAwsCreds := path.Join(inDir, "file2")
-				err = ioutil.WriteFile(fileWithNoCreds, []byte("no secrets here"), 0664)
-				Expect(err).NotTo(HaveOccurred())
-				err = ioutil.WriteFile(fileWithAwsCreds, []byte(offendingText), 0664)
-				Expect(err).NotTo(HaveOccurred())
-				cmdArgs = []string{"-f", fileWithAwsCreds, fileWithNoCreds}
-			})
-			AfterEach(func() {
-				os.RemoveAll(inDir)
-			})
-
-			It("the legacy flag takes precedence", func() {
-				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
-				Eventually(session.Out).Should(gbytes.Say("file2:3"))
-			})
-			It("the deprecation warning goes to stderr", func() {
-				Eventually(session.Err).Should(gbytes.Say("[WARN]"))
-				Eventually(session.Err).Should(gbytes.Say("-f flag is deprecated"))
-			})
 		})
 	})
 
@@ -540,7 +473,7 @@ index 940393e..fa5a232 100644
 			})
 		})
 
-		Context("when given a file as positional argument", func() {
+		Context("when given a file flag", func() {
 			BeforeEach(func() {
 				var err error
 				tmpFile, err = ioutil.TempFile("", "cli-main-test")
@@ -549,7 +482,7 @@ index 940393e..fa5a232 100644
 
 				ioutil.WriteFile(tmpFile.Name(), []byte(politeText), os.ModePerm)
 
-				cmdArgs = []string{tmpFile.Name()}
+				cmdArgs = []string{"-f", tmpFile.Name()}
 			})
 
 			AfterEach(func() {
