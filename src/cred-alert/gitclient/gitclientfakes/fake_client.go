@@ -7,9 +7,8 @@ import (
 	"cred-alert/sniff"
 	"sync"
 
-	git "github.com/libgit2/git2go"
-
 	"code.cloudfoundry.org/lager"
+	git "github.com/libgit2/git2go"
 )
 
 type FakeClient struct {

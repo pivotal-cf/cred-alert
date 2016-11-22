@@ -3,8 +3,8 @@ package crypto
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"errors"
 	"encoding/pem"
+	"errors"
 	"io/ioutil"
 )
 

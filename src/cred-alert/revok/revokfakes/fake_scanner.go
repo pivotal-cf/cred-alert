@@ -6,9 +6,8 @@ import (
 	"cred-alert/revok"
 	"sync"
 
-	git "github.com/libgit2/git2go"
-
 	"code.cloudfoundry.org/lager"
+	git "github.com/libgit2/git2go"
 )
 
 type FakeScanner struct {

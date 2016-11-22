@@ -20,6 +20,18 @@ type FakeInflator struct {
 	inflateReturns struct {
 		result1 error
 	}
+	LogPathStub        func() string
+	logPathMutex       sync.RWMutex
+	logPathArgsForCall []struct{}
+	logPathReturns     struct {
+		result1 string
+	}
+	CloseStub        func() error
+	closeMutex       sync.RWMutex
+	closeArgsForCall []struct{}
+	closeReturns     struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -60,11 +72,65 @@ func (fake *FakeInflator) InflateReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeInflator) LogPath() string {
+	fake.logPathMutex.Lock()
+	fake.logPathArgsForCall = append(fake.logPathArgsForCall, struct{}{})
+	fake.recordInvocation("LogPath", []interface{}{})
+	fake.logPathMutex.Unlock()
+	if fake.LogPathStub != nil {
+		return fake.LogPathStub()
+	} else {
+		return fake.logPathReturns.result1
+	}
+}
+
+func (fake *FakeInflator) LogPathCallCount() int {
+	fake.logPathMutex.RLock()
+	defer fake.logPathMutex.RUnlock()
+	return len(fake.logPathArgsForCall)
+}
+
+func (fake *FakeInflator) LogPathReturns(result1 string) {
+	fake.LogPathStub = nil
+	fake.logPathReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeInflator) Close() error {
+	fake.closeMutex.Lock()
+	fake.closeArgsForCall = append(fake.closeArgsForCall, struct{}{})
+	fake.recordInvocation("Close", []interface{}{})
+	fake.closeMutex.Unlock()
+	if fake.CloseStub != nil {
+		return fake.CloseStub()
+	} else {
+		return fake.closeReturns.result1
+	}
+}
+
+func (fake *FakeInflator) CloseCallCount() int {
+	fake.closeMutex.RLock()
+	defer fake.closeMutex.RUnlock()
+	return len(fake.closeArgsForCall)
+}
+
+func (fake *FakeInflator) CloseReturns(result1 error) {
+	fake.CloseStub = nil
+	fake.closeReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeInflator) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.inflateMutex.RLock()
 	defer fake.inflateMutex.RUnlock()
+	fake.logPathMutex.RLock()
+	defer fake.logPathMutex.RUnlock()
+	fake.closeMutex.RLock()
+	defer fake.closeMutex.RUnlock()
 	return fake.invocations
 }
 
