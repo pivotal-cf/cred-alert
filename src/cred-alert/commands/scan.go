@@ -122,7 +122,7 @@ func (command *ScanCommand) Execute(args []string) error {
 					os.RemoveAll(inflateDir)
 				})
 
-				inflateArchive(logger, inflate, inflateDir, mime, command.File)
+				inflateArchive(quietLogger, inflate, inflateDir, mime, command.File)
 
 				violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
 				if err != nil {
