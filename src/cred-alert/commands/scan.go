@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -60,12 +61,14 @@ func (command *ScanCommand) Execute(args []string) error {
 		sniffer = sniff.NewDefaultSniffer()
 	}
 
-	signalsCh := make(chan os.Signal, 1)
+	signalsCh := make(chan os.Signal)
 	signal.Notify(signalsCh, os.Interrupt)
 
 	var exitFuncs []func()
 	go func() {
 		<-signalsCh
+		log.SetFlags(0)
+		log.Println("\ncleaning up...")
 		for _, f := range exitFuncs {
 			f()
 		}
