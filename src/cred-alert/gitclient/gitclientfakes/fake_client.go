@@ -2,7 +2,6 @@
 package gitclientfakes
 
 import (
-	"context"
 	"cred-alert/gitclient"
 	"cred-alert/sniff"
 	"sync"
@@ -70,14 +69,13 @@ type FakeClient struct {
 		result1 string
 		result2 error
 	}
-	BranchCredentialCountsStub        func(context.Context, lager.Logger, string, sniff.Sniffer, git.BranchType) (map[string]uint, error)
+	BranchCredentialCountsStub        func(lager.Logger, string, sniff.Sniffer, git.BranchType) (map[string]uint, error)
 	branchCredentialCountsMutex       sync.RWMutex
 	branchCredentialCountsArgsForCall []struct {
-		arg1 context.Context
-		arg2 lager.Logger
-		arg3 string
-		arg4 sniff.Sniffer
-		arg5 git.BranchType
+		arg1 lager.Logger
+		arg2 string
+		arg3 sniff.Sniffer
+		arg4 git.BranchType
 	}
 	branchCredentialCountsReturns struct {
 		result1 map[string]uint
@@ -295,19 +293,18 @@ func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) BranchCredentialCounts(arg1 context.Context, arg2 lager.Logger, arg3 string, arg4 sniff.Sniffer, arg5 git.BranchType) (map[string]uint, error) {
+func (fake *FakeClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, arg3 sniff.Sniffer, arg4 git.BranchType) (map[string]uint, error) {
 	fake.branchCredentialCountsMutex.Lock()
 	fake.branchCredentialCountsArgsForCall = append(fake.branchCredentialCountsArgsForCall, struct {
-		arg1 context.Context
-		arg2 lager.Logger
-		arg3 string
-		arg4 sniff.Sniffer
-		arg5 git.BranchType
-	}{arg1, arg2, arg3, arg4, arg5})
-	fake.recordInvocation("BranchCredentialCounts", []interface{}{arg1, arg2, arg3, arg4, arg5})
+		arg1 lager.Logger
+		arg2 string
+		arg3 sniff.Sniffer
+		arg4 git.BranchType
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("BranchCredentialCounts", []interface{}{arg1, arg2, arg3, arg4})
 	fake.branchCredentialCountsMutex.Unlock()
 	if fake.BranchCredentialCountsStub != nil {
-		return fake.BranchCredentialCountsStub(arg1, arg2, arg3, arg4, arg5)
+		return fake.BranchCredentialCountsStub(arg1, arg2, arg3, arg4)
 	} else {
 		return fake.branchCredentialCountsReturns.result1, fake.branchCredentialCountsReturns.result2
 	}
@@ -319,10 +316,10 @@ func (fake *FakeClient) BranchCredentialCountsCallCount() int {
 	return len(fake.branchCredentialCountsArgsForCall)
 }
 
-func (fake *FakeClient) BranchCredentialCountsArgsForCall(i int) (context.Context, lager.Logger, string, sniff.Sniffer, git.BranchType) {
+func (fake *FakeClient) BranchCredentialCountsArgsForCall(i int) (lager.Logger, string, sniff.Sniffer, git.BranchType) {
 	fake.branchCredentialCountsMutex.RLock()
 	defer fake.branchCredentialCountsMutex.RUnlock()
-	return fake.branchCredentialCountsArgsForCall[i].arg1, fake.branchCredentialCountsArgsForCall[i].arg2, fake.branchCredentialCountsArgsForCall[i].arg3, fake.branchCredentialCountsArgsForCall[i].arg4, fake.branchCredentialCountsArgsForCall[i].arg5
+	return fake.branchCredentialCountsArgsForCall[i].arg1, fake.branchCredentialCountsArgsForCall[i].arg2, fake.branchCredentialCountsArgsForCall[i].arg3, fake.branchCredentialCountsArgsForCall[i].arg4
 }
 
 func (fake *FakeClient) BranchCredentialCountsReturns(result1 map[string]uint, result2 error) {

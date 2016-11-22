@@ -54,12 +54,12 @@ func (c *headCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struc
 
 	quietLogger := kolsch.NewLogger()
 
-	c.work(ctx, cancel, signals, logger, quietLogger)
+	c.work(cancel, signals, logger, quietLogger)
 
 	for {
 		select {
 		case <-timer.C():
-			c.work(ctx, cancel, signals, logger, quietLogger)
+			c.work(cancel, signals, logger, quietLogger)
 		case <-signals:
 			cancel()
 			return nil
@@ -70,7 +70,6 @@ func (c *headCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struc
 }
 
 func (c *headCredentialCounter) work(
-	ctx context.Context,
 	cancel context.CancelFunc,
 	signals <-chan os.Signal,
 	logger lager.Logger,
@@ -93,7 +92,7 @@ func (c *headCredentialCounter) work(
 				"path": repository.Path,
 			})
 
-			credentialCounts, err := c.gitClient.BranchCredentialCounts(ctx, quietLogger, repository.Path, c.sniffer, git.BranchRemote)
+			credentialCounts, err := c.gitClient.BranchCredentialCounts(quietLogger, repository.Path, c.sniffer, git.BranchRemote)
 			if err != nil {
 				repoLogger.Error("failed-to-get-credential-counts", err)
 				continue

@@ -1,7 +1,6 @@
 package revok_test
 
 import (
-	"context"
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
@@ -117,18 +116,18 @@ var _ = Describe("HeadCredentialCounter", func() {
 		It("tries to get the credential counts for each repository", func() {
 			Eventually(gitClient.BranchCredentialCountsCallCount).Should(Equal(2))
 
-			_, _, path, _, branchType := gitClient.BranchCredentialCountsArgsForCall(0)
+			_, path, _, branchType := gitClient.BranchCredentialCountsArgsForCall(0)
 			Expect(path).To(Equal("some-path"))
 			Expect(branchType).To(Equal(git.BranchRemote))
 
-			_, _, path, _, branchType = gitClient.BranchCredentialCountsArgsForCall(1)
+			_, path, _, branchType = gitClient.BranchCredentialCountsArgsForCall(1)
 			Expect(path).To(Equal("some-other-path"))
 			Expect(branchType).To(Equal(git.BranchRemote))
 		})
 
 		Context("when there are credentials for the repository", func() {
 			BeforeEach(func() {
-				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
+				gitClient.BranchCredentialCountsStub = func(l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
 					defer GinkgoRecover()
 
 					switch path {
@@ -190,7 +189,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 
 		Context("when getting blobs returns an error", func() {
 			BeforeEach(func() {
-				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
+				gitClient.BranchCredentialCountsStub = func(l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
 					defer GinkgoRecover()
 
 					switch path {
@@ -220,7 +219,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 
 		Context("when getting blobs returns gitclient.ErrInterrupted", func() {
 			BeforeEach(func() {
-				gitClient.BranchCredentialCountsStub = func(ctx context.Context, l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
+				gitClient.BranchCredentialCountsStub = func(l lager.Logger, path string, s sniff.Sniffer, bt git.BranchType) (map[string]uint, error) {
 					defer GinkgoRecover()
 					return nil, gitclient.ErrInterrupted
 				}

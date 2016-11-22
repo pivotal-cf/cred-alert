@@ -3,7 +3,6 @@ package gitclient
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"cred-alert/mimetype"
 	"cred-alert/scanners"
 	"cred-alert/scanners/filescanner"
@@ -34,7 +33,7 @@ type Client interface {
 	Fetch(string) (map[string][]*git.Oid, error)
 	HardReset(string, *git.Oid) error
 	Diff(repositoryPath string, a, b *git.Oid) (string, error)
-	BranchCredentialCounts(context.Context, lager.Logger, string, sniff.Sniffer, git.BranchType) (map[string]uint, error)
+	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer, git.BranchType) (map[string]uint, error)
 }
 
 func New(privateKeyPath, publicKeyPath string) *client {
@@ -247,7 +246,6 @@ func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, er
 }
 
 func (c *client) BranchCredentialCounts(
-	ctx context.Context,
 	logger lager.Logger,
 	repositoryPath string,
 	sniffer sniff.Sniffer,
@@ -271,7 +269,6 @@ func (c *client) BranchCredentialCounts(
 	var tree *git.Tree
 	var branchName string
 	var blob *git.Blob
-	var interrupted bool
 
 	entryCounts := make(map[git.Oid]uint)
 	branchCounts := make(map[string]uint)
@@ -303,50 +300,39 @@ func (c *client) BranchCredentialCounts(
 		}
 
 		err = tree.Walk(func(s string, entry *git.TreeEntry) int {
-			select {
-			case <-ctx.Done():
-				interrupted = true
-				return -1
-
-			default:
-				if entry.Type == git.ObjectBlob {
-					if count, ok := entryCounts[*entry.Id]; ok {
-						if count > 0 {
-							branchCounts[branchName] += count
-						}
-						return 0
+			if entry.Type == git.ObjectBlob {
+				if count, ok := entryCounts[*entry.Id]; ok {
+					if count > 0 {
+						branchCounts[branchName] += count
 					}
-
-					blob, err = repo.LookupBlob(entry.Id)
-					if err != nil {
-						return -1
-					}
-
-					var count uint
-					r := bufio.NewReader(bytes.NewReader(blob.Contents()))
-					mime := mimetype.Mimetype(logger, r)
-					if mime == "" || strings.HasPrefix(mime, "text") {
-						sniffer.Sniff(
-							logger,
-							filescanner.New(r, entry.Name),
-							func(lager.Logger, scanners.Violation) error {
-								count++
-								return nil
-							},
-						)
-					}
-
-					entryCounts[*entry.Id] = count
-					branchCounts[branchName] += count
+					return 0
 				}
 
-				return 0
-			}
-		})
+				blob, err = repo.LookupBlob(entry.Id)
+				if err != nil {
+					return -1
+				}
 
-		if interrupted {
-			return nil, ErrInterrupted
-		}
+				var count uint
+				r := bufio.NewReader(bytes.NewReader(blob.Contents()))
+				mime := mimetype.Mimetype(logger, r)
+				if mime == "" || strings.HasPrefix(mime, "text") {
+					sniffer.Sniff(
+						logger,
+						filescanner.New(r, entry.Name),
+						func(lager.Logger, scanners.Violation) error {
+							count++
+							return nil
+						},
+					)
+				}
+
+				entryCounts[*entry.Id] = count
+				branchCounts[branchName] += count
+			}
+
+			return 0
+		})
 
 		if err != nil {
 			return nil, err
