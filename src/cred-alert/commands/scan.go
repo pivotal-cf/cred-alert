@@ -60,51 +60,87 @@ func (command *ScanCommand) Execute(args []string) error {
 		sniffer = sniff.NewDefaultSniffer()
 	}
 
-	inflate := inflator.New()
-
-	exitFuncs := []func(){
-		func() { inflate.Close() },
-	}
-
 	signalsCh := make(chan os.Signal, 1)
 	signal.Notify(signalsCh, os.Interrupt)
 
+	var exitFuncs []func()
 	go func() {
-		for range signalsCh {
-			for _, f := range exitFuncs {
-				f()
-			}
-			os.Exit(1)
+		<-signalsCh
+		for _, f := range exitFuncs {
+			f()
 		}
+		os.Exit(1)
 	}()
 
-	credsFound := 0
+	var credsFound int
+	handler := func(logger lager.Logger, violation scanners.Violation) error {
+		line := violation.Line
+		credsFound++
+		output := fmt.Sprintf("%s %s:%d", red("[CRED]"), line.Path, line.LineNumber)
+		if command.ShowCredentials {
+			output = output + fmt.Sprintf(" [%s]", violation.Credential())
+		}
+		fmt.Println(output)
 
-	if command.File != "" {
+		return nil
+	}
+
+	quietLogger := kolsch.NewLogger()
+
+	switch {
+	case command.File != "":
 		fi, err := os.Stat(command.File)
 		if err != nil {
-			log.Fatalln(err.Error())
+			return err
 		}
 
 		if fi.IsDir() {
-			credsFound = scanDirectory(sniffer, command.File, command.ShowCredentials)
-		} else {
-			fh, err := os.Open(command.File)
+			dirScanner := dirscanner.New(handler, sniffer)
+			err = dirScanner.Scan(quietLogger, command.File)
 			if err != nil {
-				log.Fatalln(err.Error())
+				return err
+			}
+		} else {
+			file, err := os.Open(command.File)
+			if err != nil {
+				return err
 			}
 
-			br := bufio.NewReader(fh)
+			br := bufio.NewReader(file)
 			if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
-				credsFound = scanArchive(logger, sniffer, mime, inflate, command.File, command.ShowCredentials)
+				inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
+				if err != nil {
+					return err
+				}
+
+				inflate := inflator.New()
+				exitFuncs = append(exitFuncs, func() {
+					inflate.Close()
+					os.RemoveAll(inflateDir)
+				})
+
+				inflateArchive(logger, inflate, inflateDir, mime, command.File)
+
+				violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
+				if err != nil {
+					return err
+				}
+
+				archiveHandler := newArchiveHandler(handler, inflateDir, violationsDir)
+				scanner := dirscanner.New(archiveHandler, sniffer)
+
+				err = scanner.Scan(quietLogger, inflateDir)
+				if err != nil {
+					return err
+				}
 			} else {
-				credsFound = scanFile(logger, sniffer, br, command.File, command.ShowCredentials)
+				sniffer.Sniff(logger, filescanner.New(br, command.File), handler)
 			}
 		}
-	} else if command.Diff {
-		credsFound = scanDiff(logger, sniffer, command.ShowCredentials)
-	} else {
-		credsFound = scanFile(logger, sniffer, os.Stdin, "STDIN", command.ShowCredentials)
+	case command.Diff:
+		sniffer.Sniff(logger, diffscanner.NewDiffScanner(os.Stdin), handler)
+	default:
+		sniffer.Sniff(logger, filescanner.New(os.Stdin, "STDIN"), handler)
 	}
 
 	if credsFound > 0 {
@@ -139,55 +175,15 @@ func (command *ScanCommand) Execute(args []string) error {
 	return nil
 }
 
-func scanArchive(
-	logger lager.Logger,
-	sniffer sniff.Sniffer,
-	mime string,
-	inflate inflator.Inflator,
-	file string,
-	showCredentials bool,
-) int {
-	inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	defer os.RemoveAll(inflateDir)
-
-	inflateStart := time.Now()
-	fmt.Print("Inflating archive... ")
-	err = inflate.Inflate(logger, mime, file, inflateDir)
-	if err != nil {
-		fmt.Printf("%s\n", red("FAILED"))
-		log.Fatalln(err.Error())
-	}
-	fmt.Printf("%s\n", green("DONE"))
-
-	inflateDuration := time.Since(inflateStart)
-
-	fmt.Println()
-	fmt.Println("Time taken (inflating):", inflateDuration)
-	fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
-	fmt.Println()
-
-	return scanDirectory(sniffer, inflateDir, showCredentials)
-}
-
-func scanDirectory(
-	sniffer sniff.Sniffer,
-	scanDir string,
-	showCredentials bool,
-) int {
-	scanStart := time.Now()
-	credsFound := 0
-	violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	archiveViolationHandler := func(logger lager.Logger, violation scanners.Violation) error {
+func newArchiveHandler(
+	handler sniff.ViolationHandlerFunc,
+	inflateDir string,
+	violationsDir string,
+) sniff.ViolationHandlerFunc {
+	return func(logger lager.Logger, violation scanners.Violation) error {
 		line := violation.Line
-		credsFound++
 
-		relPath, err := filepath.Rel(scanDir, line.Path)
+		relPath, err := filepath.Rel(inflateDir, line.Path)
 		if err != nil {
 			return err
 		}
@@ -198,35 +194,40 @@ func scanDirectory(
 			return err
 		}
 
-		err = persistFile(line.Path, destPath)
+		err = copyFile(line.Path, destPath)
 		if err != nil {
 			return err
 		}
-		if showCredentials {
-			fmt.Printf("%s %s:%d [%s]\n", red("[CRED]"), destPath, line.LineNumber, violation.Credential())
-		} else {
-			fmt.Printf("%s %s:%d\n", red("[CRED]"), destPath, line.LineNumber)
-		}
 
-		return nil
+		return handler(logger, violation)
 	}
-
-	dirScanner := dirscanner.New(archiveViolationHandler, sniffer)
-	err = dirScanner.Scan(kolsch.NewLogger(), scanDir)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	fmt.Println()
-	fmt.Println("Scan complete!")
-	fmt.Println()
-	fmt.Println("Time taken (scanning):", time.Since(scanStart))
-	fmt.Println("Credentials found:", credsFound)
-
-	return credsFound
 }
 
-func persistFile(srcPath, destPath string) error {
+func inflateArchive(
+	logger lager.Logger,
+	inflate inflator.Inflator,
+	inflateDir string,
+	mime string,
+	file string,
+) error {
+	inflateStart := time.Now()
+	fmt.Print("Inflating archive... ")
+	err := inflate.Inflate(logger, mime, file, inflateDir)
+	if err != nil {
+		fmt.Printf("%s\n", red("FAILED"))
+		return err
+	}
+	fmt.Printf("%s\n", green("DONE"))
+
+	fmt.Println()
+	fmt.Println("Time taken (inflating):", time.Since(inflateStart))
+	fmt.Println("Any archive inflation errors can be found in: ", inflate.LogPath())
+	fmt.Println()
+
+	return nil
+}
+
+func copyFile(srcPath, destPath string) error {
 	destFile, err := os.Create(destPath)
 	if err != nil {
 		return err
@@ -241,41 +242,6 @@ func persistFile(srcPath, destPath string) error {
 
 	_, err = io.Copy(destFile, srcFile)
 	return err
-}
-
-func scanFile(logger lager.Logger, sniffer sniff.Sniffer, f io.Reader, name string, showCredentials bool) int {
-	scanner := filescanner.New(f, name)
-	return countWithSniffer(logger, sniffer, showCredentials, scanner)
-}
-
-func scanDiff(logger lager.Logger, sniffer sniff.Sniffer, showCredentials bool) int {
-	scanner := diffscanner.NewDiffScanner(os.Stdin)
-	return countWithSniffer(logger, sniffer, showCredentials, scanner)
-}
-
-func countWithSniffer(logger lager.Logger, sniffer sniff.Sniffer, showCredentials bool, scanner sniff.Scanner) int {
-	credsFound := 0
-
-	handler := func(logger lager.Logger, violation scanners.Violation) error {
-		credsFound++
-		output := fmt.Sprintf("%s ", red("[CRED]"))
-		if violation.Line.Path == ".git/COMMIT_EDITMSG" {
-			output = output + "line "
-		} else {
-			output = output + fmt.Sprintf("%s:", violation.Line.Path)
-		}
-		output = output + fmt.Sprintf("%d", violation.Line.LineNumber)
-		if showCredentials {
-			output = output + fmt.Sprintf(" [%s]", violation.Credential())
-		}
-		fmt.Println(output)
-
-		return nil
-	}
-
-	sniffer.Sniff(logger, scanner, handler)
-
-	return credsFound
 }
 
 func warnIfOldExecutable() {

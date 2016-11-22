@@ -293,16 +293,6 @@ index 940393e..fa5a232 100644
 			})
 		}
 
-		var ItShowsHowLongItTookAndHowManyCredentialsWereFound = func() {
-			It("shows how long the scan took", func() {
-				Eventually(session.Out).Should(gbytes.Say(`Time taken \(scanning\):`))
-			})
-
-			It("shows show many credentials were found", func() {
-				Eventually(session.Out).Should(gbytes.Say("Credentials found: 1"))
-			})
-		}
-
 		Context("when the file is a folder", func() {
 			var (
 				inDir, outDir string
@@ -329,7 +319,6 @@ index 940393e..fa5a232 100644
 					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 				})
 
-				ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 				ItTellsPeopleHowToRemoveTheirCredentials()
 				ItTellsPeopleToUpdateIfTheBinaryIsOld()
 			})
@@ -370,7 +359,6 @@ index 940393e..fa5a232 100644
 					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 				})
 
-				ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 				ItShowsHowLongInflationTook()
 			})
 		})
@@ -411,7 +399,6 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 			})
 
-			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 			ItShowsHowLongInflationTook()
 			ItShowsTheCredentialInTheOutput("AKIASOMEMORETEXTHERE")
 		})
@@ -450,7 +437,6 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
 			})
 
-			ItShowsHowLongItTookAndHowManyCredentialsWereFound()
 			ItShowsHowLongInflationTook()
 		})
 	})
