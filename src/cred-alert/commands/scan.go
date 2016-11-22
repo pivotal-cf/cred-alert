@@ -2,11 +2,9 @@ package commands
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -41,12 +39,25 @@ func (command *ScanCommand) Execute(args []string) error {
 	logger := lager.NewLogger("scan")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
-	var sniffer sniff.Sniffer
 	if command.Regexp != "" && command.RegexpFile != "" {
 		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Two options specified for Regexp, only using: --regexp", command.Regexp)
-		sniffer = createSniffer(command.Regexp, "")
-	} else {
-		sniffer = createSniffer(command.Regexp, command.RegexpFile)
+	}
+
+	var sniffer sniff.Sniffer
+	switch {
+	case command.Regexp != "":
+		sniffer = sniff.NewSniffer(matchers.Format(command.Regexp), nil)
+	case command.RegexpFile != "":
+		file, err := os.Open(command.RegexpFile)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		matcher := matchers.UpcasedMultiMatcherFromReader(file)
+		sniffer = sniff.NewSniffer(matcher, nil)
+	default:
+		sniffer = sniff.NewDefaultSniffer()
 	}
 
 	inflate := inflator.New()
@@ -213,39 +224,6 @@ func scanDirectory(
 	fmt.Println("Credentials found:", credsFound)
 
 	return credsFound
-}
-
-func createSniffer(regexp, regexpFile string) sniff.Sniffer {
-	if regexp != "" {
-		matcher := matchers.Format(regexp)
-		exclusionMatcher := matchers.NewNullMatcher()
-
-		return sniff.NewSniffer(matcher, exclusionMatcher)
-
-	} else if regexpFile != "" {
-		fh, err := os.Open(regexpFile)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-		defer fh.Close()
-
-		scanner := bufio.NewScanner(fh)
-		var multi []matchers.Matcher
-		for scanner.Scan() {
-			line := scanner.Bytes()
-			if len(line) == 0 {
-				continue
-			}
-			multi = append(multi, matchers.Format(string(bytes.ToUpper(line))))
-		}
-
-		matcher := matchers.UpcasedMulti(multi...)
-		exclusionMatcher := matchers.NewNullMatcher()
-
-		return sniff.NewSniffer(matcher, exclusionMatcher)
-	}
-
-	return sniff.NewDefaultSniffer()
 }
 
 func persistFile(srcPath, destPath string) error {

@@ -1,14 +1,32 @@
 package matchers
 
 import (
+	"bufio"
 	"bytes"
 	"cred-alert/scanners"
+	"io"
+	"strings"
 )
 
 func UpcasedMulti(matchers ...Matcher) Matcher {
 	return &multi{
 		matchers: matchers,
 	}
+}
+
+func UpcasedMultiMatcherFromReader(rd io.Reader) Matcher {
+	scanner := bufio.NewScanner(rd)
+
+	var matchers []Matcher
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(line) == 0 {
+			continue
+		}
+		matchers = append(matchers, Format(strings.ToUpper(line)))
+	}
+
+	return UpcasedMulti(matchers...)
 }
 
 type multi struct {
