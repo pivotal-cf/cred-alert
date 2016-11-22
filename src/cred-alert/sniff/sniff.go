@@ -78,8 +78,10 @@ func (s *sniffer) Sniff(
 	for scanner.Scan(logger) {
 		line := scanner.Line(logger)
 
-		if match, _, _ := s.exclusionMatcher.Match(line); match {
-			continue
+		if s.exclusionMatcher != nil {
+			if match, _, _ := s.exclusionMatcher.Match(line); match {
+				continue
+			}
 		}
 
 		if match, start, end := s.matcher.Match(line); match {
