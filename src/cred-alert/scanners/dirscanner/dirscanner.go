@@ -15,23 +15,23 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type dirScanner struct {
+type DirScanner struct {
 	handler func(lager.Logger, scanners.Violation) error
 	sniffer sniff.Sniffer
 }
 
-func New(handler func(lager.Logger, scanners.Violation) error, sniffer sniff.Sniffer) *dirScanner {
-	return &dirScanner{
+func New(handler func(lager.Logger, scanners.Violation) error, sniffer sniff.Sniffer) *DirScanner {
+	return &DirScanner{
 		handler: handler,
 		sniffer: sniffer,
 	}
 }
 
-func (s *dirScanner) Scan(logger lager.Logger, path string) error {
+func (s *DirScanner) Scan(logger lager.Logger, path string) error {
 	return s.scan(logger, path)
 }
 
-func (s *dirScanner) scan(
+func (s *DirScanner) scan(
 	logger lager.Logger,
 	path string,
 ) error {
