@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"time"
 
 	"github.com/kardianos/osext"
@@ -129,7 +128,7 @@ func (command *ScanCommand) Execute(args []string) error {
 					return err
 				}
 
-				archiveHandler := newArchiveHandler(handler, inflateDir, violationsDir)
+				archiveHandler := sniff.NewArchiveViolationHandlerFunc(inflateDir, violationsDir, handler)
 				scanner := dirscanner.New(archiveHandler, sniffer)
 
 				err = scanner.Scan(quietLogger, inflateDir)
@@ -176,34 +175,6 @@ func (command *ScanCommand) Execute(args []string) error {
 	}
 
 	return nil
-}
-
-func newArchiveHandler(
-	handler sniff.ViolationHandlerFunc,
-	inflateDir string,
-	violationsDir string,
-) sniff.ViolationHandlerFunc {
-	return func(logger lager.Logger, violation scanners.Violation) error {
-		line := violation.Line
-
-		relPath, err := filepath.Rel(inflateDir, line.Path)
-		if err != nil {
-			return err
-		}
-
-		destPath := filepath.Join(violationsDir, relPath)
-		err = os.MkdirAll(filepath.Dir(destPath), os.ModePerm)
-		if err != nil {
-			return err
-		}
-
-		err = copyFile(line.Path, destPath)
-		if err != nil {
-			return err
-		}
-
-		return handler(logger, violation)
-	}
 }
 
 func inflateArchive(

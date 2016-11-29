@@ -19,8 +19,6 @@ const cryptSHA256Pattern = `\$5\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{43}`
 const cryptSHA512Pattern = `\$6\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{86}`
 const rsaPrivateKeyHeaderPattern = `-----BEGIN RSA PRIVATE KEY-----`
 
-type ViolationHandlerFunc func(lager.Logger, scanners.Violation) error
-
 //go:generate counterfeiter . Scanner
 
 type Scanner interface {
