@@ -96,9 +96,20 @@ func (command *ScanCommand) Execute(args []string) error {
 			return err
 		}
 
+		violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
+		if err != nil {
+			return err
+		}
+
+		inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
+		if err != nil {
+			return err
+		}
+
+		archiveHandler := sniff.NewArchiveViolationHandlerFunc(inflateDir, violationsDir, handler)
+		scanner := dirscanner.New(sniffer, handler, archiveHandler, inflateDir)
 		if fi.IsDir() {
-			dirScanner := dirscanner.New(handler, sniffer)
-			err = dirScanner.Scan(quietLogger, command.File)
+			err = scanner.Scan(quietLogger, command.File)
 			if err != nil {
 				return err
 			}
@@ -110,10 +121,6 @@ func (command *ScanCommand) Execute(args []string) error {
 
 			br := bufio.NewReader(file)
 			if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
-				inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
-				if err != nil {
-					return err
-				}
 
 				inflate := inflator.New()
 				exitFuncs = append(exitFuncs, func() {
@@ -122,14 +129,6 @@ func (command *ScanCommand) Execute(args []string) error {
 				})
 
 				inflateArchive(quietLogger, inflate, inflateDir, mime, command.File)
-
-				violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
-				if err != nil {
-					return err
-				}
-
-				archiveHandler := sniff.NewArchiveViolationHandlerFunc(inflateDir, violationsDir, handler)
-				scanner := dirscanner.New(archiveHandler, sniffer)
 
 				err = scanner.Scan(quietLogger, inflateDir)
 				if err != nil {

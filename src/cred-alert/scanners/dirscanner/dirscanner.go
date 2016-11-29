@@ -2,6 +2,7 @@ package dirscanner
 
 import (
 	"bufio"
+	"cred-alert/inflator"
 	"cred-alert/mimetype"
 	"cred-alert/scanners"
 	"cred-alert/scanners/filescanner"
@@ -16,28 +17,53 @@ import (
 )
 
 type DirScanner struct {
-	handler func(lager.Logger, scanners.Violation) error
-	sniffer sniff.Sniffer
+	handler                    func(lager.Logger, scanners.Violation) error
+	sniffer                    sniff.Sniffer
+	inflateDir                 string
+	archiveHandler             func(lager.Logger, scanners.Violation) error
+	inflator                   inflator.Inflator
+	scannedDirContainsArchives bool
 }
 
-func New(handler func(lager.Logger, scanners.Violation) error, sniffer sniff.Sniffer) *DirScanner {
+func New(
+	sniffer sniff.Sniffer,
+	handler sniff.ViolationHandlerFunc,
+	archiveHandler sniff.ViolationHandlerFunc,
+	inflateDir string,
+) *DirScanner {
 	return &DirScanner{
-		handler: handler,
-		sniffer: sniffer,
+		sniffer:        sniffer,
+		handler:        handler,
+		archiveHandler: archiveHandler,
+		inflateDir:     inflateDir,
+		inflator:       inflator.New(),
 	}
 }
 
 func (s *DirScanner) Scan(logger lager.Logger, path string) error {
-	return s.scan(logger, path)
+	err := s.scan(logger, path, s.handler)
+	if err != nil {
+		return err
+	}
+
+	if s.scannedDirContainsArchives {
+		err = s.scan(logger, s.inflateDir, s.archiveHandler)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *DirScanner) scan(
 	logger lager.Logger,
 	path string,
+	handler sniff.ViolationHandlerFunc,
 ) error {
 	children, err := ioutil.ReadDir(path)
 	if err != nil {
-		log.Println("failed to read dir:", path)
+		log.Printf("failed to read dir: %s", path)
 		return nil
 	}
 
@@ -52,7 +78,7 @@ func (s *DirScanner) scan(
 		wholePath := filepath.Join(path, child.Name())
 
 		if child.IsDir() {
-			err := s.scan(logger, wholePath)
+			err := s.scan(logger, wholePath, handler)
 			if err != nil {
 				return err
 			}
@@ -71,16 +97,21 @@ func (s *DirScanner) scan(
 
 		if probablyIsText(child.Name()) {
 			scanner := filescanner.New(f, wholePath)
-			err := s.sniffer.Sniff(logger, scanner, s.handler)
+			err := s.sniffer.Sniff(logger, scanner, handler)
 			if err != nil {
 				return err
 			}
 		} else {
 			br := bufio.NewReader(f)
-			mime := mimetype.Mimetype(logger, br)
-			if mime == "" || strings.HasPrefix(mime, "text") {
+			mime, isArchive := mimetype.IsArchive(logger, br)
+			if isArchive {
+				s.scannedDirContainsArchives = true
+				destPath := filepath.Join(s.inflateDir, path, child.Name())
+				srcPath := filepath.Join(path, child.Name())
+				_ = s.inflator.Inflate(logger, mime, srcPath, destPath)
+			} else if mime == "" || strings.HasPrefix(mime, "text") {
 				scanner := filescanner.New(br, wholePath)
-				err := s.sniffer.Sniff(logger, scanner, s.handler)
+				err := s.sniffer.Sniff(logger, scanner, handler)
 				if err != nil {
 					return err
 				}
