@@ -85,6 +85,8 @@ private_key: "fake_should_not_match"
 private_key: "example_should_not_match"
 private_key: "FaKe_should_not_match"
 private_key: "ExAmPlE_should_not_match"
+private_key: "replace_should_not_match"
+private_key: "change_should_not_match"
 
 ## UUID
 v1_private_key: 416a0dc0-4f63-11e6-9abc-0000000341c5 # should_not_match

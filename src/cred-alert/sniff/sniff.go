@@ -10,6 +10,8 @@ import (
 
 const bashStringInterpolationPattern = `"$`
 const fakePattern = `FAKE`
+const changePattern = `CHANGE`
+const replacePattern = `REPLACE`
 const examplePattern = `EXAMPLE`
 
 const awsAccessKeyIDPattern = `AKIA[A-Z0-9]{16}`
@@ -59,6 +61,8 @@ func NewDefaultSniffer() Sniffer {
 			matchers.Substring(bashStringInterpolationPattern),
 			matchers.Substring(fakePattern),
 			matchers.Substring(examplePattern),
+			matchers.Substring(changePattern),
+			matchers.Substring(replacePattern),
 		),
 	}
 }
