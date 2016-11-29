@@ -62,8 +62,10 @@ var _ = Describe("DirScanner", func() {
 		It("scans a directory", func() {
 			err := scanner.Scan(logger, tmpDir)
 			Expect(err).NotTo(HaveOccurred())
+
 			Expect(sniffer.SniffCallCount()).To(Equal(2))
 			Expect(credentialCount).To(Equal(2))
+			Expect(handlerCallCount).To(Equal(2))
 		})
 	})
 })
