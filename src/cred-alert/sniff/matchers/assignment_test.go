@@ -50,6 +50,7 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("YAML assignment with placeholder with spaces", "suspect_password: (( placeholder-for-anything ))", "manifest.yml"),
 		Entry("YAML assignment with placeholder with tabs", "suspect_password: ((	placeholder-for-anything	))", "manifest.yml"),
 		Entry("YAML assignment with fly placeholder", "suspect_password: {{placeholder-for-anything}}", "manifest.yml"),
+		Entry("YAML assignment with lots of whitespace before the value", `suspect_password:            ""`, "manifest.yml"),
 	)
 
 	DescribeTable("should match",

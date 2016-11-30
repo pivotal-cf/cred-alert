@@ -6,25 +6,30 @@ import (
 	"regexp"
 )
 
-const assignmentPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)["']?\s*(?:=|:|:=|=>)?\s*(["'])?[A-Z0-9.$+=&\\\/_\-\(\){} ]{12,}(["'])?`
-const yamlPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT):\s*["']?[A-Z0-9.$+=&\\\/_\-\(\){} ]{12,}`
+const assignmentPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)\s*(?::=|=>|=|:|\s)\s*([\w\S-]+)`
+const nonYamlAssignmentPattern = `["'].{12,}["']`
+const yamlAssignmentPattern = `["']?[\w\-\(\){}]{12,}["']?`
+
 const guidPattern = `[A-F0-9]{8}-[A-F0-9]{4}-[1-5][A-F0-9]{3}-[A-F0-9]{4}-[A-F0-9]{12}`
 const placeholderPattern = `(?:\(\(|\{\{)\s*[/A-Z0-9_.-]+\s*(?:\)\)|\}\})`
 
 func Assignment() Matcher {
 	return &assignmentMatcher{
-		assignmentPattern:  regexp.MustCompile(assignmentPattern),
-		yamlPattern:        regexp.MustCompile(yamlPattern),
+		assignmentPattern:        regexp.MustCompile(assignmentPattern),
+		nonYamlAssignmentPattern: regexp.MustCompile(nonYamlAssignmentPattern),
+		yamlAssignmentPattern:    regexp.MustCompile(yamlAssignmentPattern),
+
 		guidPattern:        regexp.MustCompile(guidPattern),
 		placeholderPattern: regexp.MustCompile(placeholderPattern),
 	}
 }
 
 type assignmentMatcher struct {
-	assignmentPattern  *regexp.Regexp
-	yamlPattern        *regexp.Regexp
-	guidPattern        *regexp.Regexp
-	placeholderPattern *regexp.Regexp
+	assignmentPattern        *regexp.Regexp
+	nonYamlAssignmentPattern *regexp.Regexp
+	yamlAssignmentPattern    *regexp.Regexp
+	guidPattern              *regexp.Regexp
+	placeholderPattern       *regexp.Regexp
 }
 
 func (m *assignmentMatcher) Match(line *scanners.Line) (bool, int, int) {
@@ -33,7 +38,8 @@ func (m *assignmentMatcher) Match(line *scanners.Line) (bool, int, int) {
 		return false, 0, 0
 	}
 
-	content := line.Content[matchIndexPairs[0]:matchIndexPairs[1]]
+	content := line.Content[matchIndexPairs[2]:matchIndexPairs[3]]
+
 	if m.guidPattern.Match(content) {
 		return false, 0, 0
 	}
@@ -44,9 +50,14 @@ func (m *assignmentMatcher) Match(line *scanners.Line) (bool, int, int) {
 			return false, 0, 0
 		}
 
-		return m.yamlPattern.Match(content), matchIndexPairs[0], matchIndexPairs[1]
+		if m.yamlAssignmentPattern.Match(content) {
+			return true, matchIndexPairs[0], matchIndexPairs[1]
+		}
 	}
 
-	quoteExists := matchIndexPairs[3] != -1
-	return quoteExists, matchIndexPairs[0], matchIndexPairs[1]
+	if m.nonYamlAssignmentPattern.Match(line.Content) {
+		return true, matchIndexPairs[0], matchIndexPairs[1]
+	}
+
+	return false, 0, 0
 }

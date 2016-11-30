@@ -76,8 +76,6 @@ variable_with_password_in_it: "should_not_match"
 ## Special Character Exclusions
 ### Bash
 private_key: "${should_not_match}"
-### Misc.
-private_key: "%%%_should_not_match"
 
 ## Content Exclusions
 private_key: "too-short" # should_not_match
