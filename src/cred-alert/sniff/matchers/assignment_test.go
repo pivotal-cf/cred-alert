@@ -49,7 +49,6 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("YAML assignment with CredHub placeholder", `suspect_password: "((/director/nats/password))"`, "manifest.yml"),
 		Entry("YAML assignment with placeholder with spaces", "suspect_password: (( placeholder-for-anything ))", "manifest.yml"),
 		Entry("YAML assignment with placeholder with tabs", "suspect_password: ((	placeholder-for-anything	))", "manifest.yml"),
-		Entry("YAML assignment with placeholder with no whitespace", "suspect_password:((placeholder-for-anything))", "manifest.yml"),
 		Entry("YAML assignment with fly placeholder", "suspect_password: {{placeholder-for-anything}}", "manifest.yml"),
 	)
 
