@@ -40,19 +40,33 @@ import (
 )
 
 func main() {
-	var opts config.WorkerOpts
+	var cfg *config.WorkerConfig
+	var flagOpts config.WorkerOpts
 
 	logger := lager.NewLogger("revok-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
 	logger.Debug("starting")
 
-	_, err := flags.Parse(&opts)
+	_, err := flags.Parse(&flagOpts)
 	if err != nil {
 		os.Exit(1)
 	}
 
-	errs := opts.Validate()
+	if flagOpts.ConfigFile != "" {
+		bs, err := ioutil.ReadFile(string(flagOpts.ConfigFile))
+		if err != nil {
+			logger.Error("failed-opening-config-file", err)
+			os.Exit(1)
+		}
+
+		cfg, err = config.LoadWorkerConfig(bs)
+		cfg.Merge(flagOpts.WorkerConfig)
+	} else {
+		cfg = flagOpts.WorkerConfig
+	}
+
+	errs := cfg.Validate()
 	if errs != nil {
 		for _, err := range errs {
 			fmt.Println(err.Error())
@@ -60,17 +74,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	if opts.Metrics.SentryDSN != "" {
-		logger.RegisterSink(revok.NewSentrySink(opts.Metrics.SentryDSN, opts.Metrics.Environment))
+	if cfg.Metrics.SentryDSN != "" {
+		logger.RegisterSink(revok.NewSentrySink(cfg.Metrics.SentryDSN, cfg.Metrics.Environment))
 	}
 
-	workdir := opts.WorkDir
+	workdir := cfg.WorkDir
 	_, err = os.Lstat(workdir)
 	if err != nil {
 		log.Fatalf("workdir error: %s", err)
 	}
 
-	dbURI := db.NewDSN(opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.DBName, opts.MySQL.Hostname, int(opts.MySQL.Port))
+	dbURI := db.NewDSN(cfg.MySQL.Username, cfg.MySQL.Password, cfg.MySQL.DBName, cfg.MySQL.Hostname, int(cfg.MySQL.Port))
 	database, err := migrations.LockDBAndMigrate(logger, "mysql", dbURI)
 	if err != nil {
 		log.Fatalf("db error: %s", err)
@@ -87,17 +101,17 @@ func main() {
 	fetchRepository := db.NewFetchRepository(database)
 	fetchIntervalUpdater := revok.NewFetchIntervalUpdater(
 		repositoryRepository,
-		opts.MinFetchInterval,
-		opts.MaxFetchInterval,
+		cfg.MinFetchInterval,
+		cfg.MaxFetchInterval,
 	)
 	credentialRepository := db.NewCredentialRepository(database)
-	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
-	gitClient := gitclient.New(opts.GitHub.PrivateKeyPath, opts.GitHub.PublicKeyPath)
-	repoWhitelist := notifications.BuildWhitelist(opts.Whitelist...)
+	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
+	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
+	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
 
 	var notifier notifications.Notifier
-	if opts.Slack.WebhookURL != "" {
-		notifier = notifications.NewSlackNotifier(opts.Slack.WebhookURL, clock, repoWhitelist)
+	if cfg.Slack.WebhookURL != "" {
+		notifier = notifications.NewSlackNotifier(cfg.Slack.WebhookURL, clock, repoWhitelist)
 	} else {
 		notifier = notifications.NewNullNotifier()
 	}
@@ -127,7 +141,7 @@ func main() {
 		logger,
 		gitClient,
 		clock,
-		opts.ChangeDiscoveryInterval,
+		cfg.ChangeDiscoveryInterval,
 		ancestryScanner,
 		repositoryRepository,
 		fetchRepository,
@@ -156,7 +170,7 @@ func main() {
 		logger,
 		repositoryRepository,
 		clock,
-		opts.CredentialCounterInterval,
+		cfg.CredentialCounterInterval,
 		gitClient,
 		sniffer,
 	)
@@ -170,14 +184,14 @@ func main() {
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}
 
-	if opts.IsRPCConfigured() {
+	if cfg.IsRPCConfigured() {
 		certificate, err := tls.LoadX509KeyPair(
-			opts.RPC.Certificate,
-			opts.RPC.PrivateKey,
+			cfg.RPC.Certificate,
+			cfg.RPC.PrivateKey,
 		)
 
 		clientCertPool := x509.NewCertPool()
-		bs, err := ioutil.ReadFile(opts.RPC.ClientCACertificate)
+		bs, err := ioutil.ReadFile(cfg.RPC.ClientCACertificate)
 		if err != nil {
 			log.Fatalf("failed to read client ca certificate: %s", err.Error())
 		}
@@ -189,7 +203,7 @@ func main() {
 
 		grpcServer := revok.NewGRPCServer(
 			logger,
-			fmt.Sprintf("%s:%d", opts.RPCBindIP, opts.RPCBindPort),
+			fmt.Sprintf("%s:%d", cfg.RPCBindIP, cfg.RPCBindPort),
 			revok.NewServer(logger, repositoryRepository),
 			&tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
@@ -204,16 +218,16 @@ func main() {
 		})
 	}
 
-	if opts.IsPubSubConfigured() {
-		pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
+	if cfg.IsPubSubConfigured() {
+		pubSubClient, err := pubsub.NewClient(context.Background(), cfg.PubSub.ProjectName)
 		if err != nil {
 			logger.Fatal("failed", err)
 			os.Exit(1)
 		}
 
-		subscription := pubSubClient.Subscription(opts.PubSub.FetchHint.Subscription)
+		subscription := pubSubClient.Subscription(cfg.PubSub.FetchHint.Subscription)
 
-		publicKey, err := crypto.ReadRSAPublicKey(opts.PubSub.PublicKey)
+		publicKey, err := crypto.ReadRSAPublicKey(cfg.PubSub.PublicKey)
 		if err != nil {
 			logger.Fatal("failed", err)
 			os.Exit(1)
@@ -231,12 +245,12 @@ func main() {
 		})
 	}
 
-	if opts.GitHub.AccessToken != "" {
+	if cfg.GitHub.AccessToken != "" {
 		githubHTTPClient := &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &oauth2.Transport{
 				Source: oauth2.StaticTokenSource(
-					&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
+					&oauth2.Token{AccessToken: cfg.GitHub.AccessToken},
 				),
 				Base: &http.Transport{
 					DisableKeepAlives: true,
@@ -252,7 +266,7 @@ func main() {
 			cloneMsgCh,
 			ghClient,
 			clock,
-			opts.RepositoryDiscoveryInterval,
+			cfg.RepositoryDiscoveryInterval,
 			repositoryRepository,
 		)
 
