@@ -31,12 +31,12 @@ set -x
 
 cd bumped-bosh-release/
 
-git config --global user.email "ci@localhost"
-git config --global user.name "CI Bot"
-
 # work-around Go BOSH CLI trying to rename blobs downloaded into ~/.root/tmp
 # into release dir, which is invalid cross-device link
 export HOME=$PWD
+
+git config --global user.name "Blob Bumper"
+git config --global user.email "pcf-security-enablement+blob-bumper@pivotal.io"
 
 bosh -n add-blob $blob_dir/*.tar.gz ${BLOB_DESTINATION}/${BLOB_NAME}.tar.gz
 bosh -n upload-blobs
