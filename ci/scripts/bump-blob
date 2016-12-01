@@ -29,17 +29,17 @@ set +x
 echo "$BOSH_PRIVATE_CONFIG" > bumped-bosh-release/config/private.yml
 set -x
 
-cd bumped-bosh-release/
+pushd bumped-bosh-release
+  # work-around Go BOSH CLI trying to rename blobs downloaded into ~/.root/tmp
+  # into release dir, which is invalid cross-device link
+  export HOME=$PWD
 
-# work-around Go BOSH CLI trying to rename blobs downloaded into ~/.root/tmp
-# into release dir, which is invalid cross-device link
-export HOME=$PWD
+  git config --global user.name "Blob Bumper"
+  git config --global user.email "pcf-security-enablement+blob-bumper@pivotal.io"
 
-git config --global user.name "Blob Bumper"
-git config --global user.email "pcf-security-enablement+blob-bumper@pivotal.io"
+  bosh -n add-blob $blob_dir/*.tar.gz ${BLOB_DESTINATION}/${BLOB_NAME}.tar.gz
+  bosh -n upload-blobs
 
-bosh -n add-blob $blob_dir/*.tar.gz ${BLOB_DESTINATION}/${BLOB_NAME}.tar.gz
-bosh -n upload-blobs
-
-git add -A
-git commit -m "update ${BLOB_NAME} blob to ${BLOB_VERSION}"
+  git add config/blobs.yml
+  git commit -m "update ${BLOB_NAME} blob to ${BLOB_VERSION}"
+popd
