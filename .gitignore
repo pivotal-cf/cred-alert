@@ -2,9 +2,6 @@
 /bin
 /pkg
 
-# Git (Bumping Blobs)
-/.gitconfig
-
 # BOSH
 config/private.yml
 config/dev.yml
