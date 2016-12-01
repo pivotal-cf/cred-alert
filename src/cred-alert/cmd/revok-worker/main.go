@@ -41,8 +41,8 @@ import (
 type Opts struct {
 	LogLevel                    string        `long:"log-level" description:"log level to use"`
 	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" required:"true"`
-	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
-	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" required:"true" value-name:"SCAN_INTERVAL" default:"1h"`
+	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" value-name:"SCAN_INTERVAL" default:"1h"`
+	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" value-name:"SCAN_INTERVAL" default:"1h"`
 	MinFetchInterval            time.Duration `long:"min-fetch-interval" description:"the minimum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MIN_FETCH_INTERVAL" default:"6h"`
 	MaxFetchInterval            time.Duration `long:"max-fetch-interval" description:"the maximum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MAX_FETCH_INTERVAL" default:"168h"`
 	CredentialCounterInterval   time.Duration `long:"credential-counter-interval" description:"how frequently to update the current count of credentials in each branch of a repository" value-name:"SCAN_INTERVAL" default:"24h"`
