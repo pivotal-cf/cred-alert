@@ -26,6 +26,7 @@ import (
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 
+	"cred-alert/config"
 	"cred-alert/crypto"
 	"cred-alert/db"
 	"cred-alert/db/migrations"
@@ -38,61 +39,8 @@ import (
 	"cred-alert/sniff"
 )
 
-type Opts struct {
-	LogLevel                    string        `long:"log-level" description:"log level to use"`
-	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" required:"true"`
-	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" value-name:"SCAN_INTERVAL" default:"1h"`
-	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" value-name:"SCAN_INTERVAL" default:"1h"`
-	MinFetchInterval            time.Duration `long:"min-fetch-interval" description:"the minimum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MIN_FETCH_INTERVAL" default:"6h"`
-	MaxFetchInterval            time.Duration `long:"max-fetch-interval" description:"the maximum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MAX_FETCH_INTERVAL" default:"168h"`
-	CredentialCounterInterval   time.Duration `long:"credential-counter-interval" description:"how frequently to update the current count of credentials in each branch of a repository" value-name:"SCAN_INTERVAL" default:"24h"`
-
-	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX"`
-
-	RPCBindIP   string `long:"rpc-server-bind-ip" default:"0.0.0.0" description:"IP address on which to listen for RPC traffic."`
-	RPCBindPort uint16 `long:"rpc-server-bind-port" default:"50051" description:"Port on which to listen for RPC traffic."`
-
-	GitHub struct {
-		AccessToken    string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" required:"true"`
-		PrivateKeyPath string `long:"github-private-key-path" description:"private key to use for GitHub auth" required:"true" value-name:"SSH_KEY"`
-		PublicKeyPath  string `long:"github-public-key-path" description:"public key to use for GitHub auth" required:"true" value-name:"SSH_KEY"`
-	} `group:"GitHub Options"`
-
-	PubSub struct {
-		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" required:"true"`
-		PublicKey   string `long:"pubsub-public-key" description:"path to file containing PEM-encoded, unencrypted RSA public key" required:"true"`
-		FetchHint   struct {
-			Subscription string `long:"fetch-hint-pubsub-subscription" description:"PubSub Topic receive messages from" value-name:"NAME" required:"true"`
-		} `group:"PubSub Fetch Hint Options"`
-	} `group:"PubSub Options"`
-
-	Metrics struct {
-		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN"`
-		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
-		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
-	} `group:"Metrics Options"`
-
-	Slack struct {
-		WebhookURL string `long:"slack-webhook-url" description:"Slack webhook URL" env:"SLACK_WEBHOOK_URL" value-name:"WEBHOOK"`
-	} `group:"Slack Options"`
-
-	MySQL struct {
-		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME" required:"true"`
-		Password string `long:"mysql-password" description:"MySQL password" value-name:"PASSWORD"`
-		Hostname string `long:"mysql-hostname" description:"MySQL hostname" value-name:"HOSTNAME" required:"true"`
-		Port     uint16 `long:"mysql-port" description:"MySQL port" value-name:"PORT" default:"3306"`
-		DBName   string `long:"mysql-dbname" description:"MySQL database name" value-name:"DBNAME" required:"true"`
-	}
-
-	RPC struct {
-		ClientCACertificate string `long:"rpc-server-client-ca" description:"Path to client CA certificate" required:"true"`
-		Certificate         string `long:"rpc-server-cert" description:"Path to RPC server certificate" required:"true"`
-		PrivateKey          string `long:"rpc-server-private-key" description:"Path to RPC server private key" required:"true"`
-	}
-}
-
 func main() {
-	var opts Opts
+	var opts config.WorkerOpts
 
 	logger := lager.NewLogger("revok-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
@@ -101,6 +49,14 @@ func main() {
 
 	_, err := flags.Parse(&opts)
 	if err != nil {
+		os.Exit(1)
+	}
+
+	errs := opts.Validate()
+	if errs != nil {
+		for _, err := range errs {
+			fmt.Println(err.Error())
+		}
 		os.Exit(1)
 	}
 
@@ -114,18 +70,6 @@ func main() {
 		log.Fatalf("workdir error: %s", err)
 	}
 
-	githubHTTPClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &oauth2.Transport{
-			Source: oauth2.StaticTokenSource(
-				&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
-			),
-			Base: &http.Transport{
-				DisableKeepAlives: true,
-			},
-		},
-	}
-
 	dbURI := db.NewDSN(opts.MySQL.Username, opts.MySQL.Password, opts.MySQL.DBName, opts.MySQL.Hostname, int(opts.MySQL.Port))
 	database, err := migrations.LockDBAndMigrate(logger, "mysql", dbURI)
 	if err != nil {
@@ -137,7 +81,6 @@ func main() {
 	clock := clock.NewClock()
 
 	cloneMsgCh := make(chan revok.CloneMsg)
-	ghClient := revok.NewGitHubClient(github.NewClient(githubHTTPClient))
 
 	scanRepository := db.NewScanRepository(database, clock)
 	repositoryRepository := db.NewRepositoryRepository(database)
@@ -168,16 +111,6 @@ func main() {
 		sniffer,
 		notifier,
 		emitter,
-	)
-
-	repoDiscoverer := revok.NewRepoDiscoverer(
-		logger,
-		workdir,
-		cloneMsgCh,
-		ghClient,
-		clock,
-		opts.RepositoryDiscoveryInterval,
-		repositoryRepository,
 	)
 
 	cloner := revok.NewCloner(
@@ -219,21 +152,6 @@ func main() {
 		emitter,
 	)
 
-	publicKey, err := crypto.ReadRSAPublicKey(opts.PubSub.PublicKey)
-	if err != nil {
-		logger.Fatal("failed", err)
-		os.Exit(1)
-	}
-
-	verifier := crypto.NewRSAVerifier(publicKey)
-
-	pushEventProcessor := queue.NewPushEventProcessor(
-		changeDiscoverer,
-		repositoryRepository,
-		verifier,
-		emitter,
-	)
-
 	headCredentialCounter := revok.NewHeadCredentialCounter(
 		logger,
 		repositoryRepository,
@@ -243,51 +161,108 @@ func main() {
 		sniffer,
 	)
 
-	certificate, err := tls.LoadX509KeyPair(
-		opts.RPC.Certificate,
-		opts.RPC.PrivateKey,
-	)
-
-	clientCertPool := x509.NewCertPool()
-	bs, err := ioutil.ReadFile(opts.RPC.ClientCACertificate)
-	if err != nil {
-		log.Fatalf("failed to read client ca certificate: %s", err.Error())
-	}
-
-	ok := clientCertPool.AppendCertsFromPEM(bs)
-	if !ok {
-		log.Fatalf("failed to append client certs from pem: %s", err.Error())
-	}
-
-	grpcServer := revok.NewGRPCServer(
-		logger,
-		fmt.Sprintf("%s:%d", opts.RPCBindIP, opts.RPCBindPort),
-		revok.NewServer(logger, repositoryRepository),
-		&tls.Config{
-			ClientAuth:   tls.RequireAndVerifyClientCert,
-			Certificates: []tls.Certificate{certificate},
-			ClientCAs:    clientCertPool,
-		},
-	)
-
-	pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
-	if err != nil {
-		logger.Fatal("failed", err)
-		os.Exit(1)
-	}
-	hintSubscription := pubSubClient.Subscription(opts.PubSub.FetchHint.Subscription)
-
-	runner := sigmon.New(grouper.NewParallel(os.Interrupt, []grouper.Member{
-		{"repo-discoverer", repoDiscoverer},
+	members := []grouper.Member{
 		{"cloner", cloner},
 		{"change-discoverer", changeDiscoverer},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
-		{"github-hint-handler", queue.NewPubSubSubscriber(logger, hintSubscription, pushEventProcessor)},
 		{"head-credential-counter", headCredentialCounter},
-		{"grpc-server", grpcServer},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
-	}))
+	}
+
+	if opts.IsRPCConfigured() {
+		certificate, err := tls.LoadX509KeyPair(
+			opts.RPC.Certificate,
+			opts.RPC.PrivateKey,
+		)
+
+		clientCertPool := x509.NewCertPool()
+		bs, err := ioutil.ReadFile(opts.RPC.ClientCACertificate)
+		if err != nil {
+			log.Fatalf("failed to read client ca certificate: %s", err.Error())
+		}
+
+		ok := clientCertPool.AppendCertsFromPEM(bs)
+		if !ok {
+			log.Fatalf("failed to append client certs from pem: %s", err.Error())
+		}
+
+		grpcServer := revok.NewGRPCServer(
+			logger,
+			fmt.Sprintf("%s:%d", opts.RPCBindIP, opts.RPCBindPort),
+			revok.NewServer(logger, repositoryRepository),
+			&tls.Config{
+				ClientAuth:   tls.RequireAndVerifyClientCert,
+				Certificates: []tls.Certificate{certificate},
+				ClientCAs:    clientCertPool,
+			},
+		)
+
+		members = append(members, grouper.Member{
+			Name:   "grpc-server",
+			Runner: grpcServer,
+		})
+	}
+
+	if opts.IsPubSubConfigured() {
+		pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
+		if err != nil {
+			logger.Fatal("failed", err)
+			os.Exit(1)
+		}
+
+		subscription := pubSubClient.Subscription(opts.PubSub.FetchHint.Subscription)
+
+		publicKey, err := crypto.ReadRSAPublicKey(opts.PubSub.PublicKey)
+		if err != nil {
+			logger.Fatal("failed", err)
+			os.Exit(1)
+		}
+		pushEventProcessor := queue.NewPushEventProcessor(
+			changeDiscoverer,
+			repositoryRepository,
+			crypto.NewRSAVerifier(publicKey),
+			emitter,
+		)
+
+		members = append(members, grouper.Member{
+			Name:   "github-hint-handler",
+			Runner: queue.NewPubSubSubscriber(logger, subscription, pushEventProcessor),
+		})
+	}
+
+	if opts.GitHub.AccessToken != "" {
+		githubHTTPClient := &http.Client{
+			Timeout: 30 * time.Second,
+			Transport: &oauth2.Transport{
+				Source: oauth2.StaticTokenSource(
+					&oauth2.Token{AccessToken: opts.GitHub.AccessToken},
+				),
+				Base: &http.Transport{
+					DisableKeepAlives: true,
+				},
+			},
+		}
+
+		ghClient := revok.NewGitHubClient(github.NewClient(githubHTTPClient))
+
+		repoDiscoverer := revok.NewRepoDiscoverer(
+			logger,
+			workdir,
+			cloneMsgCh,
+			ghClient,
+			clock,
+			opts.RepositoryDiscoveryInterval,
+			repositoryRepository,
+		)
+
+		members = append(members, grouper.Member{
+			Name:   "repo-discoverer",
+			Runner: repoDiscoverer,
+		})
+	}
+
+	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
 
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {
