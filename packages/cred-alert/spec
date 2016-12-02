@@ -16,6 +16,8 @@ files:
   - code.cloudfoundry.org/lager/*.{go,c} # gosub
   - cred-alert/cmd/revok-ingestor/*.{go,c} # gosub
   - cred-alert/cmd/revok-worker/*.{go,c} # gosub
+  - cred-alert/cmdflag/*.{go,c} # gosub
+  - cred-alert/config/*.{go,c} # gosub
   - cred-alert/crypto/*.{go,c} # gosub
   - cred-alert/datadog/*.{go,c} # gosub
   - cred-alert/db/*.{go,c} # gosub
@@ -94,3 +96,4 @@ files:
   - google.golang.org/grpc/naming/*.{go,c} # gosub
   - google.golang.org/grpc/peer/*.{go,c} # gosub
   - google.golang.org/grpc/transport/*.{go,c} # gosub
+  - gopkg.in/yaml.v2/*.{go,c} # gosub
