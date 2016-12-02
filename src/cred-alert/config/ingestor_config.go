@@ -23,9 +23,9 @@ type IngestorGitHub struct {
 }
 
 type IngestorPubSub struct {
-	ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" yaml:"project_name"`
-	Topic       string `long:"pubsub-topic" description:"PubSub Topic to send message to" value-name:"NAME" yaml:"topic"`
-	PrivateKey  string `long:"pubsub-private-key" description:"path to file containing PEM-encoded, unencrypted RSA private key" yaml:"private_key_path"`
+	ProjectName    string           `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" yaml:"project_name"`
+	Topic          string           `long:"pubsub-topic" description:"PubSub Topic to send message to" value-name:"NAME" yaml:"topic"`
+	PrivateKeyPath cmdflag.FileFlag `long:"pubsub-private-key" description:"path to file containing PEM-encoded, unencrypted RSA private key" yaml:"private_key_path"`
 }
 
 type IngestorMetrics struct {
@@ -63,7 +63,7 @@ func (c *IngestorConfig) Validate() []error {
 		errs = append(errs, errors.New("no pubsub topic specified"))
 	}
 
-	if c.PubSub.PrivateKey == "" {
+	if string(c.PubSub.PrivateKeyPath) == "" {
 		errs = append(errs, errors.New("no pubsub private key specified"))
 	}
 

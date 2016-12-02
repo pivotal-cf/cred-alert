@@ -18,9 +18,9 @@ var _ = Describe("IngestorConfig", func() {
 			c = &config.IngestorConfig{
 				Port: 42,
 				PubSub: config.IngestorPubSub{
-					ProjectName: "orig-pubsub-project-name",
-					Topic:       "orig-pubsub-topic",
-					PrivateKey:  "orig-example-pubsub-private-key",
+					ProjectName:    "orig-pubsub-project-name",
+					Topic:          "orig-pubsub-topic",
+					PrivateKeyPath: "orig-example-pubsub-private-key",
 				},
 			}
 
@@ -44,9 +44,9 @@ var _ = Describe("IngestorConfig", func() {
 			Expect(c).To(Equal(&config.IngestorConfig{
 				Port: 42,
 				PubSub: config.IngestorPubSub{
-					ProjectName: "new-pubsub-project-name",
-					Topic:       "orig-pubsub-topic",
-					PrivateKey:  "orig-example-pubsub-private-key",
+					ProjectName:    "new-pubsub-project-name",
+					Topic:          "orig-pubsub-topic",
+					PrivateKeyPath: "orig-example-pubsub-private-key",
 				},
 				GitHub: config.IngestorGitHub{
 					WebhookSecretTokens: []string{"some", "tokens"},

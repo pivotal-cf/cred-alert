@@ -40,15 +40,15 @@ type WorkerConfig struct {
 	RPCBindPort uint16 `long:"rpc-server-bind-port" default:"50051" description:"Port on which to listen for RPC traffic." yaml:"rpc_bind_port"`
 
 	GitHub struct {
-		AccessToken    string `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" yaml:"access_token"`
-		PrivateKeyPath string `long:"github-private-key-path" description:"private key to use for GitHub auth" value-name:"SSH_KEY" yaml:"private_key_path"`
-		PublicKeyPath  string `long:"github-public-key-path" description:"public key to use for GitHub auth" value-name:"SSH_KEY" yaml:"public_key_path"`
+		AccessToken    string           `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" yaml:"access_token"`
+		PrivateKeyPath cmdflag.FileFlag `long:"github-private-key-path" description:"private key to use for GitHub auth" value-name:"SSH_KEY" yaml:"private_key_path"`
+		PublicKeyPath  cmdflag.FileFlag `long:"github-public-key-path" description:"public key to use for GitHub auth" value-name:"SSH_KEY" yaml:"public_key_path"`
 	} `group:"GitHub Options" yaml:"github"`
 
 	PubSub struct {
-		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" yaml:"project_name"`
-		PublicKey   string `long:"pubsub-public-key" description:"path to file containing PEM-encoded, unencrypted RSA public key" yaml:"public_key_path"`
-		FetchHint   struct {
+		ProjectName   string           `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" yaml:"project_name"`
+		PublicKeyPath cmdflag.FileFlag `long:"pubsub-public-key" description:"path to file containing PEM-encoded, unencrypted RSA public key" yaml:"public_key_path"`
+		FetchHint     struct {
 			Subscription string `long:"fetch-hint-pubsub-subscription" description:"PubSub Topic receive messages from" value-name:"NAME" yaml:"subscription"`
 		} `group:"PubSub Fetch Hint Options" yaml:"fetch_hint"`
 	} `group:"PubSub Options" yaml:"pubsub"`
@@ -72,9 +72,9 @@ type WorkerConfig struct {
 	} `group:"MySQL Options" yaml:"mysql"`
 
 	RPC struct {
-		ClientCACertificate string `long:"rpc-server-client-ca" description:"Path to client CA certificate" yaml:"client_ca_certificate_path"`
-		Certificate         string `long:"rpc-server-cert" description:"Path to RPC server certificate" yaml:"certificate_path"`
-		PrivateKey          string `long:"rpc-server-private-key" description:"Path to RPC server private key" yaml:"private_key_path"`
+		ClientCACertificatePath cmdflag.FileFlag `long:"rpc-server-client-ca" description:"Path to client CA certificate" yaml:"client_ca_certificate_path"`
+		CertificatePath         cmdflag.FileFlag `long:"rpc-server-cert" description:"Path to RPC server certificate" yaml:"certificate_path"`
+		PrivateKeyPath          cmdflag.FileFlag `long:"rpc-server-private-key" description:"Path to RPC server private key" yaml:"private_key_path"`
 	} `group:"RPC Options" yaml:"rpc"`
 }
 
@@ -98,17 +98,17 @@ func (c *WorkerConfig) Validate() []error {
 	}
 
 	if !allBlankOrAllSet(
-		c.RPC.ClientCACertificate,
-		c.RPC.Certificate,
-		c.RPC.PrivateKey,
+		string(c.RPC.ClientCACertificatePath),
+		string(c.RPC.CertificatePath),
+		string(c.RPC.PrivateKeyPath),
 	) {
 		errs = append(errs, errors.New("all rpc options required if any are set"))
 	}
 
 	if !allBlankOrAllSet(
-		c.PubSub.ProjectName,
-		c.PubSub.FetchHint.Subscription,
-		c.PubSub.PublicKey,
+		string(c.PubSub.ProjectName),
+		string(c.PubSub.FetchHint.Subscription),
+		string(c.PubSub.PublicKeyPath),
 	) {
 		errs = append(errs, errors.New("all pubsub options required if any are set"))
 	}
@@ -118,9 +118,9 @@ func (c *WorkerConfig) Validate() []error {
 
 func (c *WorkerConfig) IsRPCConfigured() bool {
 	return allSet(
-		c.RPC.ClientCACertificate,
-		c.RPC.Certificate,
-		c.RPC.PrivateKey,
+		string(c.RPC.ClientCACertificatePath),
+		string(c.RPC.CertificatePath),
+		string(c.RPC.PrivateKeyPath),
 	)
 }
 
@@ -128,7 +128,7 @@ func (c *WorkerConfig) IsPubSubConfigured() bool {
 	return allSet(
 		c.PubSub.ProjectName,
 		c.PubSub.FetchHint.Subscription,
-		c.PubSub.PublicKey,
+		string(c.PubSub.PublicKeyPath),
 	)
 }
 

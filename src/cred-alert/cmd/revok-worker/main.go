@@ -106,7 +106,7 @@ func main() {
 	)
 	credentialRepository := db.NewCredentialRepository(database)
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
-	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
+	gitClient := gitclient.New(string(cfg.GitHub.PrivateKeyPath), string(cfg.GitHub.PublicKeyPath))
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
 
 	var notifier notifications.Notifier
@@ -186,12 +186,12 @@ func main() {
 
 	if cfg.IsRPCConfigured() {
 		certificate, err := tls.LoadX509KeyPair(
-			cfg.RPC.Certificate,
-			cfg.RPC.PrivateKey,
+			string(cfg.RPC.CertificatePath),
+			string(cfg.RPC.PrivateKeyPath),
 		)
 
 		clientCertPool := x509.NewCertPool()
-		bs, err := ioutil.ReadFile(cfg.RPC.ClientCACertificate)
+		bs, err := ioutil.ReadFile(string(cfg.RPC.ClientCACertificatePath))
 		if err != nil {
 			log.Fatalf("failed to read client ca certificate: %s", err.Error())
 		}
@@ -227,7 +227,7 @@ func main() {
 
 		subscription := pubSubClient.Subscription(cfg.PubSub.FetchHint.Subscription)
 
-		publicKey, err := crypto.ReadRSAPublicKey(cfg.PubSub.PublicKey)
+		publicKey, err := crypto.ReadRSAPublicKey(string(cfg.PubSub.PublicKeyPath))
 		if err != nil {
 			logger.Fatal("failed", err)
 			os.Exit(1)
