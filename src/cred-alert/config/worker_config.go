@@ -35,9 +35,6 @@ type WorkerConfig struct {
 
 	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX" yaml:"whitelist"`
 
-	RPCBindIP   string `long:"rpc-server-bind-ip" default:"0.0.0.0" description:"IP address on which to listen for RPC traffic." yaml:"rpc_bind_ip"`
-	RPCBindPort uint16 `long:"rpc-server-bind-port" default:"50051" description:"Port on which to listen for RPC traffic." yaml:"rpc_bind_port"`
-
 	GitHub struct {
 		AccessToken    string           `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" yaml:"access_token"`
 		PrivateKeyPath cmdflag.FileFlag `long:"github-private-key-path" description:"private key to use for GitHub auth" value-name:"SSH_KEY" yaml:"private_key_path"`
@@ -74,7 +71,9 @@ type WorkerConfig struct {
 		ClientCACertificatePath cmdflag.FileFlag `long:"rpc-server-client-ca" description:"Path to client CA certificate" yaml:"client_ca_certificate_path"`
 		CertificatePath         cmdflag.FileFlag `long:"rpc-server-cert" description:"Path to RPC server certificate" yaml:"certificate_path"`
 		PrivateKeyPath          cmdflag.FileFlag `long:"rpc-server-private-key" description:"Path to RPC server private key" yaml:"private_key_path"`
-	} `group:"RPC Options" yaml:"rpc"`
+		BindIP                  string           `long:"rpc-server-bind-ip" default:"0.0.0.0" description:"IP address on which to listen for RPC traffic." yaml:"rpc_bind_ip"`
+		BindPort                uint16           `long:"rpc-server-bind-port" default:"50051" description:"Port on which to listen for RPC traffic." yaml:"rpc_bind_port"`
+	} `group:"RPC Options" yaml:"rpc_server"`
 }
 
 func (c *WorkerConfig) Validate() []error {

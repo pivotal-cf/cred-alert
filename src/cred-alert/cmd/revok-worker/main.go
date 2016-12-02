@@ -203,7 +203,7 @@ func main() {
 
 		grpcServer := revok.NewGRPCServer(
 			logger,
-			fmt.Sprintf("%s:%d", cfg.RPCBindIP, cfg.RPCBindPort),
+			fmt.Sprintf("%s:%d", cfg.RPC.BindIP, cfg.RPC.BindPort),
 			revok.NewServer(logger, repositoryRepository),
 			&tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
