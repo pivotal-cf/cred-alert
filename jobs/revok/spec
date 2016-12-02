@@ -8,6 +8,7 @@ description: |
 templates:
   ctl.erb: bin/ctl
   pre-start.erb: bin/pre-start
+  config.yml.erb: config/config.yml
   github_private_key.erb: config/github_private_key
   github_public_key.erb: config/github_public_key
   pubsub_public_key.erb: config/pubsub_public_key

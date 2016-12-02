@@ -6,6 +6,7 @@ description: |
 
 templates:
   ctl.erb: bin/ctl
+  config.yml.erb: config/config.yml
   pubsub_private_key.erb: config/pubsub_private_key
 
 packages:

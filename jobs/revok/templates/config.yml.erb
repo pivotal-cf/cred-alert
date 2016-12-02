@@ -1,0 +1,60 @@
+---
+work_dir: <%= p("revok.work_dir") %>
+repository_discovery_interval: <%= p("revok.repository_discovery_interval") %>
+change_discovery_interval: <%= p("revok.change_discovery_interval") %>
+min_fetch_interval: <%= p("revok.minimum_fetch_interval") %>
+max_fetch_interval: <%= p("revok.maximum_fetch_interval") %>
+credential_counter_interval: <%= p("revok.credential_counter_interval") %>
+
+<% if_p("revok.ignore_patterns") do |ignore_patterns| %>
+whitelist: <%= ignore_patterns %>
+<% end %>
+
+<% if_p("revok.github.access_token", "revok.github.private_key", "revok.github.public_key") do |access_token, _, _| %>
+github:
+  access_token: <%= access_token %>
+  private_key_path: /var/vcap/jobs/revok/config/github_private_key
+  public_key_path: /var/vcap/jobs/revok/config/github_public_key
+<% end %>
+
+<% if_p("revok.pubsub.project_name", "revok.pubsub.fetch_hint.subscription", "revok.pubsub.public_key") do |project_name, subscription, _| %>
+pubsub:
+  project_name: <%= project_name %>
+  public_key_path: /var/vcap/jobs/revok/config/pubsub_public_key
+  fetch_hint:
+    subscription: <%= subscription %>
+<% end %>
+
+metrics:
+<% if_p("revok.metrics.datadog_api_key") do |datadog_api_key| %>
+  datadog_api_key: <%= datadog_api_key %>
+<% end %>
+<% if_p("revok.metrics.sentry_dsn") do |sentry_dsn| %>
+  sentry_dsn: <%= sentry_dsn %>
+<% end %>
+<% if_p("revok.metrics.environment") do |environment| %>
+  environment: <%= environment %>
+<% end %>
+
+<% if_p("revok.slack.webhook_url") do |webhook_url| %>
+slack:
+  webhook_url: <%= webhook_url %>
+<% end %>
+
+<% if_p("revok.mysql.username", "revok.mysql.password", "revok.mysql.hostname", "revok.mysql.port", "revok.mysql.db_name") do |username, password, hostname, port, db_name| %>
+mysql:
+  username: <%= username %>
+  password: <%= password %>
+  hostname: <%= hostname %>
+  port: <%= port %>
+  db_name: <%= db_name %>
+<% end %>
+
+<% if_p("revok.rpc_server.bind_ip", "revok.rpc_server.bind_port", "revok.rpc_server.client_ca", "revok.rpc_server.cert", "revok.rpc_server.private_key") do |bind_ip, bind_port, _, _, _| %>
+rpc_server:
+  bind_ip: <%= bind_ip %>
+  bind_port: <%= bind_port %>
+  client_ca_certificate_path: /var/vcap/jobs/revok/config/rpc_server_client_ca
+  certificate_path: /var/vcap/jobs/revok/config/rpc_server_cert
+  private_key_path: /var/vcap/jobs/revok/config/rpc_server_private_key
+<% end %>

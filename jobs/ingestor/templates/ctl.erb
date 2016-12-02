@@ -23,22 +23,7 @@ case $1 in
     chown -R vcap:vcap $PIDFILE
 
     exec chpst -u vcap:vcap -L $PIDFILE /var/vcap/packages/cred-alert/bin/revok-ingestor \
-      --port <%= p("webhook.port") %>                                                    \
-      <% p("webhook.github_secret_keys").each do |secret| %>                             \
-      --github-webhook-secret-token <%= secret %>                                        \
-      <% end %>                                                                          \
-      --pubsub-project-name <%= p("pubsub.project_name") %>                              \
-      --pubsub-topic <%= p("pubsub.topic") %>                                            \
-      --pubsub-private-key /var/vcap/jobs/ingestor/config/pubsub_private_key             \
-      <% if_p("metrics.datadog_api_key") do |api_key| %>                                 \
-      --datadog-api-key <%= api_key %>                                                   \
-      <% end %>                                                                          \
-      <% if_p("metrics.sentry_dsn") do |dsn| %>                                          \
-      --sentry-dsn <%= dsn %>                                                            \
-      <% end %>                                                                          \
-      <% if_p("metrics.environment") do |env| %>                                         \
-      --environment <%= env %>                                                           \
-      <% end %>                                                                          \
+      --config-file /var/vcap/jobs/ingestor/config/config.yml                            \
       1>>$LOG_DIR/ingestor.stdout.log                                                    \
       2>>$LOG_DIR/ingestor.stderr.log
 

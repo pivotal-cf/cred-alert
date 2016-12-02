@@ -1,0 +1,26 @@
+---
+<% if_p("webhook.port") do |port| %>
+port: <%= port %>
+<% end %>
+
+<% if_p("webhook.github_secret_keys") do |secret_keys| %>
+webhook_secret_tokens: <%= secret_keys %>
+<% end %>
+
+<% if_p("pubsub.project_name", "pubsub.topic", "pubsub.private_key") do |project_name, topic, _| %>
+pubsub:
+  project_name: <%= project_name %>
+  topic: <%= topic %>
+  private_key_path: /var/vcap/jobs/ingestor/config/pubsub_private_key
+<% end %>
+
+metrics:
+<% if_p("metrics.datadog_api_key") do |datadog_api_key| %>
+  datadog_api_key: <%= datadog_api_key %>
+<% end %>
+<% if_p("metrics.sentry_dsn") do |sentry_dsn| %>
+  sentry_dsn: <%= sentry_dsn %>
+<% end %>
+<% if_p("metrics.environment") do |environment| %>
+  environment: <%= environment %>
+<% end %>
