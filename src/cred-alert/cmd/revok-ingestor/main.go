@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	"golang.org/x/net/context"
 
+	"cred-alert/config"
 	"cred-alert/crypto"
 	"cred-alert/ingestor"
 	"cred-alert/metrics"
@@ -21,55 +23,57 @@ import (
 	"cred-alert/revok"
 )
 
-type Opts struct {
-	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT"`
-
-	GitHub struct {
-		WebhookSecretTokens []string `short:"w" long:"github-webhook-secret-token" description:"github webhook secret token" env:"GITHUB_WEBHOOK_SECRET_TOKENS" env-delim:"," value-name:"TOKENS" required:"true"`
-	} `group:"GitHub Options"`
-
-	PubSub struct {
-		ProjectName string `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" required:"true"`
-		Topic       string `long:"pubsub-topic" description:"PubSub Topic to send message to" value-name:"NAME" required:"true"`
-		PrivateKey  string `long:"pubsub-private-key" description:"path to file containing PEM-encoded, unencrypted RSA private key" required:"true"`
-	} `group:"PubSub Options"`
-
-	Metrics struct {
-		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN"`
-		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY"`
-		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development"`
-	} `group:"Metrics Options"`
-}
-
 func main() {
-	var opts Opts
+	var cfg *config.IngestorConfig
+	var flagOpts config.IngestorOpts
 
 	logger := lager.NewLogger("revok-ingestor")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
 	logger.Debug("starting")
 
-	_, err := flags.ParseArgs(&opts, os.Args)
+	_, err := flags.ParseArgs(&flagOpts, os.Args)
 	if err != nil {
 		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
 
-	if opts.Metrics.SentryDSN != "" {
-		logger.RegisterSink(revok.NewSentrySink(opts.Metrics.SentryDSN, opts.Metrics.Environment))
+	if flagOpts.ConfigFile != "" {
+		bs, err := ioutil.ReadFile(string(flagOpts.ConfigFile))
+		if err != nil {
+			logger.Error("failed-opening-config-file", err)
+			os.Exit(1)
+		}
+
+		cfg, err = config.LoadIngestorConfig(bs)
+		cfg.Merge(flagOpts.IngestorConfig)
+	} else {
+		cfg = flagOpts.IngestorConfig
 	}
 
-	emitter := metrics.BuildEmitter(opts.Metrics.DatadogAPIKey, opts.Metrics.Environment)
+	errs := cfg.Validate()
+	if errs != nil {
+		for _, err := range errs {
+			fmt.Println(err.Error())
+		}
+		os.Exit(1)
+	}
+
+	if cfg.IsSentryConfigured() {
+		logger.RegisterSink(revok.NewSentrySink(cfg.Metrics.SentryDSN, cfg.Metrics.Environment))
+	}
+
+	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
 	generator := queue.NewGenerator()
 
-	pubSubClient, err := pubsub.NewClient(context.Background(), opts.PubSub.ProjectName)
+	pubSubClient, err := pubsub.NewClient(context.Background(), cfg.PubSub.ProjectName)
 	if err != nil {
 		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
-	topic := pubSubClient.Topic(opts.PubSub.Topic)
+	topic := pubSubClient.Topic(cfg.PubSub.Topic)
 
-	privateKey, err := crypto.ReadRSAPrivateKey(opts.PubSub.PrivateKey)
+	privateKey, err := crypto.ReadRSAPrivateKey(cfg.PubSub.PrivateKey)
 	if err != nil {
 		logger.Fatal("failed", err)
 		os.Exit(1)
@@ -79,17 +83,17 @@ func main() {
 	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
 
 	router := http.NewServeMux()
-	router.Handle("/webhook", ingestor.NewHandler(logger, in, opts.GitHub.WebhookSecretTokens))
+	router.Handle("/webhook", ingestor.NewHandler(logger, in, cfg.GitHub.WebhookSecretTokens))
 	router.Handle("/healthcheck", revok.ObliviousHealthCheck())
 
 	members := []grouper.Member{
-		{"api", http_server.New(fmt.Sprintf(":%d", opts.Port), router)},
+		{"api", http_server.New(fmt.Sprintf(":%d", cfg.Port), router)},
 	}
 
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
 
 	serverLogger := logger.Session("server", lager.Data{
-		"port": opts.Port,
+		"port": cfg.Port,
 	})
 	serverLogger.Info("starting")
 	err = <-ifrit.Invoke(runner).Wait()
