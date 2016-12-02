@@ -41,13 +41,13 @@ slack:
   webhook_url: <%= webhook_url %>
 <% end %>
 
-<% if_p("revok.mysql.username", "revok.mysql.password", "revok.mysql.hostname", "revok.mysql.port", "revok.mysql.db_name") do |username, password, hostname, port, db_name| %>
+<% if_p("revok.mysql.username", "revok.mysql.password", "revok.mysql.hostname", "revok.mysql.port", "revok.mysql.db") do |username, password, hostname, port, db| %>
 mysql:
   username: <%= username %>
   password: <%= password %>
   hostname: <%= hostname %>
   port: <%= port %>
-  db_name: <%= db_name %>
+  db_name: <%= db %>
 <% end %>
 
 <% if_p("revok.rpc_server.bind_ip", "revok.rpc_server.bind_port", "revok.rpc_server.client_ca", "revok.rpc_server.cert", "revok.rpc_server.private_key") do |bind_ip, bind_port, _, _, _| %>

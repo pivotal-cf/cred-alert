@@ -4,7 +4,8 @@ port: <%= port %>
 <% end %>
 
 <% if_p("webhook.github_secret_keys") do |secret_keys| %>
-webhook_secret_tokens: <%= secret_keys %>
+github:
+  webhook_secret_tokens: <%= secret_keys %>
 <% end %>
 
 <% if_p("pubsub.project_name", "pubsub.topic", "pubsub.private_key") do |project_name, topic, _| %>

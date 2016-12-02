@@ -44,7 +44,7 @@ type IngestorConfig struct {
 	Port uint16 `short:"p" long:"port" description:"the port to listen on" default:"8080" env:"PORT" value-name:"PORT" yaml:"port"`
 
 	GitHub  IngestorGitHub  `group:"GitHub Options" yaml:"github"`
-	PubSub  IngestorPubSub  `group:"PubSub Options" yaml:"pub_sub"`
+	PubSub  IngestorPubSub  `group:"PubSub Options" yaml:"pubsub"`
 	Metrics IngestorMetrics `group:"Metrics Options" yaml:"metrics"`
 }
 
