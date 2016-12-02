@@ -26,7 +26,6 @@ type WorkerOpts struct {
 }
 
 type WorkerConfig struct {
-	LogLevel                    string        `long:"log-level" description:"log level to use" yaml:"log_level"`
 	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" yaml:"work_dir"`
 	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" value-name:"SCAN_INTERVAL" default:"1h" yaml:"repository_discovery_interval"`
 	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" value-name:"SCAN_INTERVAL" default:"1h" yaml:"change_discovery_interval"`

@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"cred-alert/config"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,14 +17,14 @@ var _ = Describe("WorkerConfig", func() {
 
 		BeforeEach(func() {
 			c = &config.WorkerConfig{
-				LogLevel: "orig-log-level",
-				WorkDir:  "orig-work-dir",
+				RepositoryDiscoveryInterval: 1 * time.Hour,
+				WorkDir:                     "orig-work-dir",
 			}
 
 			other = &config.WorkerConfig{
-				LogLevel:  "",
-				WorkDir:   "new-work-dir",
-				Whitelist: []string{"some-whitelist"},
+				RepositoryDiscoveryInterval: 0,
+				WorkDir:                     "new-work-dir",
+				Whitelist:                   []string{"some-whitelist"},
 			}
 		})
 
@@ -34,9 +35,9 @@ var _ = Describe("WorkerConfig", func() {
 		It("replaces values on the destination when a non-default value is present on the source", func() {
 			Expect(mergeErr).NotTo(HaveOccurred())
 			Expect(c).To(Equal(&config.WorkerConfig{
-				LogLevel:  "orig-log-level",
-				WorkDir:   "new-work-dir",
-				Whitelist: []string{"some-whitelist"},
+				RepositoryDiscoveryInterval: 1 * time.Hour,
+				WorkDir:                     "new-work-dir",
+				Whitelist:                   []string{"some-whitelist"},
 			}))
 		})
 	})
