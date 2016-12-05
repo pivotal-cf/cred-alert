@@ -44,6 +44,6 @@ if ! [ -e ${RELEASE_YML} ]; then
   git commit -m "release v${VERSION}"
 fi
 
-bosh -n create-release --tarball ${RELEASE_YML}
+bosh -n create-release --tarball ${RELEASE_TGZ} ${RELEASE_YML}
 
 mv ${RELEASE_TGZ} ${FINAL_RELEASE_TARBALL}
