@@ -2,7 +2,7 @@
 
 set -e
 
-OUTPUT="$PWD/bosh-rc"
+RELEASE_TGZ="${PWD}/bosh-rc/revok-${VERSION}.tgz"
 VERSION="$(cat version/version)"
 
 pushd cred-alert/
@@ -10,6 +10,8 @@ pushd cred-alert/
   # into release dir, which is invalid cross-device link
   export HOME=$PWD
 
-  bosh -n create-release --tarball --name revok --version "$VERSION"
-  mv releases/revok/revok-*.tgz "$OUTPUT"
+  bosh -n create-release \
+    --name revok \
+    --version "$VERSION" \
+    --tarball $RELEASE_TGZ
 popd

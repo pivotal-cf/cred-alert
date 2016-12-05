@@ -7,8 +7,8 @@ CANDIDATE_DIR=$PWD/bosh-rc
 BOSH_RELEASE_DIR=$PWD/bosh-release
 
 # outputs
-FINAL_RELEASE_TARBALL=$PWD/final-release-tarball
-FINAL_RELEASE_REPO=$PWD/final-release-repo
+FINAL_RELEASE_TARBALL="${PWD}/final-release-tarball/${RELEASE_NAME}-${VERSION}.tgz"
+FINAL_RELEASE_REPO="${PWD}/final-release-repo"
 
 VERSION=$(cat ./version/version)
 if [ -z "$VERSION" ]; then
@@ -29,7 +29,6 @@ git config --global user.name "CI Bot"
 cd $FINAL_RELEASE_REPO
 
 RELEASE_YML=$PWD/releases/$RELEASE_NAME/$RELEASE_NAME-${VERSION}.yml
-RELEASE_TGZ=$PWD/releases/$RELEASE_NAME/$RELEASE_NAME-${VERSION}.tgz
 
 # be idempotent
 if ! [ -e ${RELEASE_YML} ]; then
@@ -44,6 +43,4 @@ if ! [ -e ${RELEASE_YML} ]; then
   git commit -m "release v${VERSION}"
 fi
 
-bosh -n create-release --tarball ${RELEASE_TGZ} ${RELEASE_YML}
-
-mv ${RELEASE_TGZ} ${FINAL_RELEASE_TARBALL}
+bosh -n create-release --tarball ${FINAL_RELEASE_TARBALL} ${RELEASE_YML}
