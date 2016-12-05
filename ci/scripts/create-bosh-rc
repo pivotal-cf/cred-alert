@@ -2,8 +2,8 @@
 
 set -e
 
-RELEASE_TGZ="${PWD}/bosh-rc/revok-${VERSION}.tgz"
 VERSION="$(cat version/version)"
+RELEASE_TGZ="${PWD}/bosh-rc/revok-${VERSION}.tgz"
 
 pushd cred-alert/
   # work-around Go BOSH CLI trying to rename blobs downloaded into ~/.root/tmp
