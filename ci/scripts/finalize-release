@@ -7,7 +7,7 @@ CANDIDATE_DIR=$PWD/bosh-rc
 BOSH_RELEASE_DIR=$PWD/bosh-release
 
 # outputs
-FINAL_RELEASE_TARBALL="${PWD}/final-release-tarball/${RELEASE_NAME}-${VERSION}.tgz"
+FINAL_RELEASE_TARBALL_DIR="${PWD}/final-release-tarball"
 FINAL_RELEASE_REPO="${PWD}/final-release-repo"
 
 VERSION=$(cat ./version/version)
@@ -15,6 +15,8 @@ if [ -z "$VERSION" ]; then
   echo "Version number not found in ./version/version"
   exit 1
 fi
+
+FINAL_RELEASE_TARBALL="${FINAL_RELEASE_TARBALL_DIR}/${RELEASE_NAME}-${VERSION}.tgz"
 
 git clone $BOSH_RELEASE_DIR $FINAL_RELEASE_REPO
 
