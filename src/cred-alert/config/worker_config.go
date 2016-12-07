@@ -27,11 +27,11 @@ type WorkerOpts struct {
 
 type WorkerConfig struct {
 	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" yaml:"work_dir"`
-	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" value-name:"SCAN_INTERVAL" default:"1h" yaml:"repository_discovery_interval"`
-	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" value-name:"SCAN_INTERVAL" default:"1h" yaml:"change_discovery_interval"`
-	MinFetchInterval            time.Duration `long:"min-fetch-interval" description:"the minimum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MIN_FETCH_INTERVAL" default:"6h" yaml:"min_fetch_interval"`
-	MaxFetchInterval            time.Duration `long:"max-fetch-interval" description:"the maximum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MAX_FETCH_INTERVAL" default:"168h" yaml:"max_fetch_interval"`
-	CredentialCounterInterval   time.Duration `long:"credential-counter-interval" description:"how frequently to update the current count of credentials in each branch of a repository" value-name:"SCAN_INTERVAL" default:"24h" yaml:"credential_counter_interval"`
+	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" value-name:"SCAN_INTERVAL" yaml:"repository_discovery_interval"`
+	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" value-name:"SCAN_INTERVAL" yaml:"change_discovery_interval"`
+	MinFetchInterval            time.Duration `long:"min-fetch-interval" description:"the minimum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MIN_FETCH_INTERVAL" yaml:"min_fetch_interval"`
+	MaxFetchInterval            time.Duration `long:"max-fetch-interval" description:"the maximum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MAX_FETCH_INTERVAL" yaml:"max_fetch_interval"`
+	CredentialCounterInterval   time.Duration `long:"credential-counter-interval" description:"how frequently to update the current count of credentials in each branch of a repository" value-name:"SCAN_INTERVAL" yaml:"credential_counter_interval"`
 
 	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX" yaml:"whitelist"`
 
@@ -52,7 +52,7 @@ type WorkerConfig struct {
 	Metrics struct {
 		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN" yaml:"sentry_dsn"`
 		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY" yaml:"datadog_api_key"`
-		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" default:"development" yaml:"environment"`
+		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" yaml:"environment"`
 	} `group:"Metrics Options" yaml:"metrics"`
 
 	Slack struct {
@@ -63,7 +63,7 @@ type WorkerConfig struct {
 		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME" yaml:"username"`
 		Password string `long:"mysql-password" description:"MySQL password" value-name:"PASSWORD" yaml:"password"`
 		Hostname string `long:"mysql-hostname" description:"MySQL hostname" value-name:"HOSTNAME" yaml:"hostname"`
-		Port     uint16 `long:"mysql-port" description:"MySQL port" value-name:"PORT" default:"3306" yaml:"port"`
+		Port     uint16 `long:"mysql-port" description:"MySQL port" value-name:"PORT" yaml:"port"`
 		DBName   string `long:"mysql-dbname" description:"MySQL database name" value-name:"DBNAME" yaml:"db_name"`
 	} `group:"MySQL Options" yaml:"mysql"`
 
@@ -71,8 +71,8 @@ type WorkerConfig struct {
 		ClientCACertificatePath cmdflag.FileFlag `long:"rpc-server-client-ca" description:"Path to client CA certificate" yaml:"client_ca_certificate_path"`
 		CertificatePath         cmdflag.FileFlag `long:"rpc-server-cert" description:"Path to RPC server certificate" yaml:"certificate_path"`
 		PrivateKeyPath          cmdflag.FileFlag `long:"rpc-server-private-key" description:"Path to RPC server private key" yaml:"private_key_path"`
-		BindIP                  string           `long:"rpc-server-bind-ip" default:"0.0.0.0" description:"IP address on which to listen for RPC traffic." yaml:"rpc_bind_ip"`
-		BindPort                uint16           `long:"rpc-server-bind-port" default:"50051" description:"Port on which to listen for RPC traffic." yaml:"rpc_bind_port"`
+		BindIP                  string           `long:"rpc-server-bind-ip" description:"IP address on which to listen for RPC traffic." yaml:"rpc_bind_ip"`
+		BindPort                uint16           `long:"rpc-server-bind-port" description:"Port on which to listen for RPC traffic." yaml:"rpc_bind_port"`
 	} `group:"RPC Options" yaml:"rpc_server"`
 }
 
