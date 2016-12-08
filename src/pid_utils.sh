@@ -48,10 +48,10 @@ wait_pidfile() {
           if [ $countdown -eq 0 ]; then
             if [ "$force" = "1" ]; then
               echo -ne "\nKill timed out, using kill -QUIT on $pid to get stacks... "
-              kill -QUIT $pid
+              kill -QUIT $pid || true
               sleep 1
               echo -ne "\nKill timed out, using kill -KILL on $pid to make it go away... "
-              kill -KILL $pid
+              kill -KILL $pid || true
               sleep 0.5
             fi
             break
@@ -61,7 +61,7 @@ wait_pidfile() {
         fi
       done
       if [ -e /proc/$pid ]; then
-        echo "Timed Out"
+        echo "Timed out! Process is still alive. Maybe it is stuck in I/O wait?"
       else
         echo "Stopped"
       fi
