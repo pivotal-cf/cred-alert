@@ -113,21 +113,13 @@ func (c *changeDiscoverer) work(signals <-chan os.Signal, cancel context.CancelF
 
 	c.fetchedRepositoryGauge.Update(logger, float32(len(repos)))
 
-	if len(repos) > 0 {
-		repoFetchDelay := time.Duration(c.interval.Nanoseconds()/int64(len(repos))) * time.Nanosecond
-		waitCh := c.clock.NewTicker(repoFetchDelay).C()
-
-		for i := range repos {
-			select {
-			case <-signals:
-				cancel()
-				return
-			default:
-				_ = c.Fetch(logger, repos[i])
-				if i < len(repos)-1 {
-					<-waitCh
-				}
-			}
+	for i := range repos {
+		select {
+		case <-signals:
+			cancel()
+			return
+		default:
+			_ = c.Fetch(logger, repos[i])
 		}
 	}
 }
