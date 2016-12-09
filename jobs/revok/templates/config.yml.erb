@@ -36,7 +36,7 @@ metrics:
   environment: <%= environment %>
 <% end %>
 
-<% if_p("revok.slack.webhook_url") do |webhook_url| %>
+<% if_p("revok.slack_webhook_url") do |webhook_url| %>
 slack:
   webhook_url: <%= webhook_url %>
 <% end %>
