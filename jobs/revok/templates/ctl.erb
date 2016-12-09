@@ -19,6 +19,10 @@ case $1 in
     mkdir -p $LOG_DIR
     chown -R vcap:vcap $LOG_DIR
 
+    # chowning the working directory can take a *long* time since it contains a
+    # huge amount of source code
+    #
+    # let's just do it once when the directory is first made
     if [ ! -d <%= p("revok.work_dir") %> ]; then
       mkdir -p <%= p("revok.work_dir") %>
       chown -R vcap:vcap <%= p("revok.work_dir") %>
