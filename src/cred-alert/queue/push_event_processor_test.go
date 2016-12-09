@@ -108,7 +108,6 @@ var _ = Describe("PushEventProcessor", func() {
 			pushEventProcessor.Process(logger, message)
 
 			Expect(verifyFailedCounter.IncCallCount()).To(Equal(1))
-			Expect(verifyFailedCounter.IncArgsForCall(0)).To(Equal(logger))
 		})
 	})
 

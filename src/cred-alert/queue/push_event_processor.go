@@ -36,13 +36,21 @@ func NewPushEventProcessor(
 }
 
 func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Message) (bool, error) {
+	logger = logger.Session("processing-push-event")
+
 	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
 	if err != nil {
+		logger.Error("signature-malformed", err, lager.Data{
+			"signature": message.Attributes["signature"],
+		})
 		return false, err
 	}
 
 	err = h.verifier.Verify(message.Data, decodedSignature)
 	if err != nil {
+		logger.Error("signature-invalid", err, lager.Data{
+			"signature": message.Attributes["signature"],
+		})
 		h.verifyFailedCounter.Inc(logger)
 		return false, err
 	}
@@ -52,15 +60,24 @@ func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Messag
 	var p PushEventPlan
 	err = decoder.Decode(&p)
 	if err != nil {
+		logger.Error("payload-malformed", err)
 		return false, err
 	}
 
 	if len(p.Owner) == 0 || len(p.Repository) == 0 {
-		return false, errors.New("invalid payload: missing owner or repository")
+		err := errors.New("invalid payload: missing owner or repository")
+		logger.Error("payload-incomplete", err)
+		return false, err
 	}
+
+	logger = logger.WithData(lager.Data{
+		"repository": p.Repository,
+		"owner":      p.Owner,
+	})
 
 	repo, err := h.db.Find(p.Owner, p.Repository)
 	if err != nil {
+		logger.Error("repository-lookup-failed", err)
 		return false, err
 	}
 
