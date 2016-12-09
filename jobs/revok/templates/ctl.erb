@@ -11,10 +11,7 @@ source /var/vcap/packages/pid_utils_revok/pid_utils.sh
 case $1 in
 
   start)
-    if [ -f "$PIDFILE" ]; then
-      echo "pidfile already exists; exiting"
-      exit 1
-    fi
+    pid_guard $PIDFILE "revok"
 
     mkdir -p $RUN_DIR
     chown -R vcap:vcap $RUN_DIR
@@ -22,8 +19,10 @@ case $1 in
     mkdir -p $LOG_DIR
     chown -R vcap:vcap $LOG_DIR
 
-    mkdir -p <%= p("revok.work_dir") %>
-    chown -R vcap:vcap <%= p("revok.work_dir") %>
+    if [ ! -d <%= p("revok.work_dir") %> ]; then
+      mkdir -p <%= p("revok.work_dir") %>
+      chown -R vcap:vcap <%= p("revok.work_dir") %>
+    fi
 
     echo $$ > $PIDFILE
     chown -R vcap:vcap $PIDFILE
