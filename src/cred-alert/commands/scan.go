@@ -3,7 +3,6 @@ package commands
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -198,23 +197,6 @@ func inflateArchive(
 	fmt.Println()
 
 	return nil
-}
-
-func copyFile(srcPath, destPath string) error {
-	destFile, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	srcFile, err := os.Open(srcPath)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	_, err = io.Copy(destFile, srcFile)
-	return err
 }
 
 func warnIfOldExecutable() {

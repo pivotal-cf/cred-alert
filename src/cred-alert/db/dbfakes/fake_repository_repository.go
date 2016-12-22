@@ -10,14 +10,6 @@ import (
 )
 
 type FakeRepositoryRepository struct {
-	FindOrCreateStub        func(*db.Repository) error
-	findOrCreateMutex       sync.RWMutex
-	findOrCreateArgsForCall []struct {
-		arg1 *db.Repository
-	}
-	findOrCreateReturns struct {
-		result1 error
-	}
 	CreateStub        func(*db.Repository) error
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
@@ -116,39 +108,6 @@ type FakeRepositoryRepository struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeRepositoryRepository) FindOrCreate(arg1 *db.Repository) error {
-	fake.findOrCreateMutex.Lock()
-	fake.findOrCreateArgsForCall = append(fake.findOrCreateArgsForCall, struct {
-		arg1 *db.Repository
-	}{arg1})
-	fake.recordInvocation("FindOrCreate", []interface{}{arg1})
-	fake.findOrCreateMutex.Unlock()
-	if fake.FindOrCreateStub != nil {
-		return fake.FindOrCreateStub(arg1)
-	} else {
-		return fake.findOrCreateReturns.result1
-	}
-}
-
-func (fake *FakeRepositoryRepository) FindOrCreateCallCount() int {
-	fake.findOrCreateMutex.RLock()
-	defer fake.findOrCreateMutex.RUnlock()
-	return len(fake.findOrCreateArgsForCall)
-}
-
-func (fake *FakeRepositoryRepository) FindOrCreateArgsForCall(i int) *db.Repository {
-	fake.findOrCreateMutex.RLock()
-	defer fake.findOrCreateMutex.RUnlock()
-	return fake.findOrCreateArgsForCall[i].arg1
-}
-
-func (fake *FakeRepositoryRepository) FindOrCreateReturns(result1 error) {
-	fake.FindOrCreateStub = nil
-	fake.findOrCreateReturns = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *FakeRepositoryRepository) Create(arg1 *db.Repository) error {
@@ -513,8 +472,6 @@ func (fake *FakeRepositoryRepository) LastActivityReturns(result1 time.Time, res
 func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.findOrCreateMutex.RLock()
-	defer fake.findOrCreateMutex.RUnlock()
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	fake.findMutex.RLock()

@@ -20,7 +20,6 @@ var (
 //go:generate counterfeiter . RepositoryRepository
 
 type RepositoryRepository interface {
-	FindOrCreate(*Repository) error
 	Create(*Repository) error
 
 	Find(owner string, name string) (Repository, error)
@@ -55,11 +54,6 @@ func (r *repositoryRepository) Find(owner, name string) (Repository, error) {
 		return Repository{}, err
 	}
 	return repository, nil
-}
-
-func (r *repositoryRepository) FindOrCreate(repository *Repository) error {
-	r2 := Repository{Name: repository.Name, Owner: repository.Owner}
-	return r.db.Where(r2).FirstOrCreate(repository).Error
 }
 
 func (r *repositoryRepository) Create(repository *Repository) error {
