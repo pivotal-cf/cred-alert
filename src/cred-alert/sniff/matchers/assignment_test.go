@@ -50,6 +50,8 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("YAML assignment with placeholder with spaces", "suspect_password: (( placeholder-for-anything ))", "manifest.yml"),
 		Entry("YAML assignment with placeholder with tabs", "suspect_password: ((	placeholder-for-anything	))", "manifest.yml"),
 		Entry("YAML assignment with fly placeholder", "suspect_password: {{placeholder-for-anything}}", "manifest.yml"),
+		Entry("YAML assignment with ERB", "suspect_password: <%= placeholder-for-anything %>", "manifest.yml"),
+		Entry("YAML assignment with ERB in quotes", "suspect_password: \"<%= placeholder-for-anything %>\"", "manifest.yml"),
 		Entry("YAML assignment with lots of whitespace before the value", `suspect_password:            ""`, "manifest.yml"),
 	)
 
@@ -89,6 +91,9 @@ var _ = Describe("Assignment Matcher", func() {
 		Entry("simple assignment with strange characters", `password = '.$+=&/\\should_match' # comment`, 0, 33),
 		Entry("YAML assignment", "password: should_match", 0, 22, "manifest.yml"),
 		Entry("YAML assignment of quoted string", "password: 'should_match'", 0, 24, "something.yml"),
+		Entry("YAML assignment of single quoted string with spaces", "password: 'should match'", 0, 24, "something.yml"),
+		Entry("YAML assignment of double quoted string with spaces", "password: \"should match\"", 0, 24, "something.yml"),
+		Entry("YAML assignment of string with spaces", "password: should match", 0, 22, "something.yml"),
 		Entry("YAML assignment with a silly extension", "password: should_match", 0, 22, "manifest.yaml"),
 		Entry("YAML assignment with mismatched placeholder values", "password: {(should_match)}", 0, 26, "manifest.yaml"),
 		Entry("YAML assignment with non-placeholder", "suspect_password: placeholder-for-anything", 8, 42, "manifest.yml"),

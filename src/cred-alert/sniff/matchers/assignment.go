@@ -6,12 +6,13 @@ import (
 	"regexp"
 )
 
-const assignmentPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)\s*(?::=|=>|=|:|\s)\s*([\w\S-]+)`
+const assignmentPattern = `(?:SECRET|PRIVATE[-_]?KEY|PASSWORD|SALT)\s*(?::=|=>|=|:|\s)\s*('[^']+'|"[^"]+"|.+)`
 const nonYamlAssignmentPattern = `["'].{12,}["']`
-const yamlAssignmentPattern = `["']?[\w\-\(\){}]{12,}["']?`
+const yamlAssignmentPattern = `["']?[\s\w\-\(\){}]{12,}["']?`
 
 const guidPattern = `[A-F0-9]{8}-[A-F0-9]{4}-[1-5][A-F0-9]{3}-[A-F0-9]{4}-[A-F0-9]{12}`
 const placeholderPattern = `(?:\(\(|\{\{)\s*[\w/.-]+\s*(?:\)\)|\}\})`
+const erbPattern = `<%=.+%>`
 
 func Assignment() Matcher {
 	return &assignmentMatcher{
@@ -21,6 +22,7 @@ func Assignment() Matcher {
 
 		guidPattern:        regexp.MustCompile(guidPattern),
 		placeholderPattern: regexp.MustCompile(placeholderPattern),
+		erbPattern:         regexp.MustCompile(erbPattern),
 	}
 }
 
@@ -30,6 +32,7 @@ type assignmentMatcher struct {
 	yamlAssignmentPattern    *regexp.Regexp
 	guidPattern              *regexp.Regexp
 	placeholderPattern       *regexp.Regexp
+	erbPattern               *regexp.Regexp
 }
 
 func (m *assignmentMatcher) Match(line *scanners.Line) (bool, int, int) {
@@ -47,6 +50,10 @@ func (m *assignmentMatcher) Match(line *scanners.Line) (bool, int, int) {
 	ext := filepath.Ext(line.Path)
 	if ext == ".yml" || ext == ".yaml" {
 		if m.placeholderPattern.Match(content) {
+			return false, 0, 0
+		}
+
+		if m.erbPattern.Match(content) {
 			return false, 0, 0
 		}
 
