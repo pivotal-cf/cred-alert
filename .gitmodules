@@ -137,3 +137,7 @@
 	path = src/github.com/bmizerany/pat
 	url = https://github.com/bmizerany/pat
 	branch = master
+[submodule "src/github.com/robfig/cron"]
+	path = src/github.com/robfig/cron
+	url = https://github.com/robfig/cron
+	branch = master
