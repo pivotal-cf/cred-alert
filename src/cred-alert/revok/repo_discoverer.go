@@ -104,11 +104,8 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 		return
 	}
 
-	knownRepos := make(map[string]struct{}, len(dbRepos))
-	for _, existingRepo := range dbRepos {
-		key := fmt.Sprintf("%s-%s", existingRepo.Owner, existingRepo.Name)
-		knownRepos[key] = struct{}{}
-	}
+	knownRepos := NewRepoSet(len(dbRepos))
+	knownRepos.AddAll(dbRepos)
 
 	for _, repo := range repos {
 		select {
@@ -116,8 +113,7 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 			cancel()
 			return
 		default:
-			key := fmt.Sprintf("%s-%s", repo.Owner, repo.Name)
-			if _, found := knownRepos[key]; found {
+			if knownRepos.Contains(repo) {
 				continue
 			}
 
@@ -144,4 +140,34 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 			}
 		}
 	}
+}
+
+type repoSet struct {
+	set map[string]struct{}
+}
+
+func NewRepoSet(sizeHint int) *repoSet {
+	return &repoSet{
+		set: make(map[string]struct{}, sizeHint),
+	}
+}
+
+func (s *repoSet) AddAll(repos []db.Repository) {
+	for _, repo := range repos {
+		s.Add(repo)
+	}
+}
+
+func (s *repoSet) Add(repo db.Repository) {
+	s.set[s.key(repo.Owner, repo.Name)] = struct{}{}
+}
+
+func (s *repoSet) Contains(repo GitHubRepository) bool {
+	_, found := s.set[s.key(repo.Owner, repo.Name)]
+
+	return found
+}
+
+func (s *repoSet) key(owner string, name string) string {
+	return fmt.Sprintf("%s/%s", owner, name)
 }
