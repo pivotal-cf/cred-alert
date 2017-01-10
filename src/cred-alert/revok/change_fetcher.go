@@ -17,15 +17,15 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-//go:generate counterfeiter . ChangeDiscoverer
+//go:generate counterfeiter . ChangeFetcher
 
-type ChangeDiscoverer interface {
+type ChangeFetcher interface {
 	ifrit.Runner
 
 	Fetch(lager.Logger, db.Repository) error
 }
 
-type changeDiscoverer struct {
+type changeFetcher struct {
 	logger               lager.Logger
 	gitClient            gitclient.Client
 	clock                clock.Clock
@@ -44,7 +44,7 @@ type changeDiscoverer struct {
 	scanFailedCounter      metrics.Counter
 }
 
-func NewChangeDiscoverer(
+func NewChangeFetcher(
 	logger lager.Logger,
 	gitClient gitclient.Client,
 	clock clock.Clock,
@@ -54,8 +54,8 @@ func NewChangeDiscoverer(
 	fetchRepository db.FetchRepository,
 	fetchIntervalUpdater FetchIntervalUpdater,
 	emitter metrics.Emitter,
-) ChangeDiscoverer {
-	return &changeDiscoverer{
+) ChangeFetcher {
+	return &changeFetcher{
 		logger:               logger,
 		gitClient:            gitClient,
 		clock:                clock,
@@ -75,8 +75,8 @@ func NewChangeDiscoverer(
 	}
 }
 
-func (c *changeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	logger := c.logger.Session("change-discoverer")
+func (c *changeFetcher) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+	logger := c.logger.Session("change-fetcher")
 	logger.Info("started")
 
 	close(ready)
@@ -102,7 +102,7 @@ func (c *changeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	}
 }
 
-func (c *changeDiscoverer) work(signals <-chan os.Signal, cancel context.CancelFunc, logger lager.Logger) {
+func (c *changeFetcher) work(signals <-chan os.Signal, cancel context.CancelFunc, logger lager.Logger) {
 	c.runCounter.Inc(logger)
 
 	repos, err := c.repositoryRepository.DueForFetch()
@@ -124,7 +124,7 @@ func (c *changeDiscoverer) work(signals <-chan os.Signal, cancel context.CancelF
 	}
 }
 
-func (c *changeDiscoverer) Fetch(
+func (c *changeFetcher) Fetch(
 	logger lager.Logger,
 	repo db.Repository,
 ) error {

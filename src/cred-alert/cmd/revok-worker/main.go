@@ -137,7 +137,7 @@ func main() {
 		emitter,
 	)
 
-	changeDiscoverer := revok.NewChangeDiscoverer(
+	changeFetcher := revok.NewChangeFetcher(
 		logger,
 		gitClient,
 		clock,
@@ -177,7 +177,7 @@ func main() {
 
 	members := []grouper.Member{
 		{"cloner", cloner},
-		{"change-discoverer", changeDiscoverer},
+		{"change-fetcher", changeFetcher},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
 		{"head-credential-counter", headCredentialCounter},
@@ -233,7 +233,7 @@ func main() {
 			os.Exit(1)
 		}
 		pushEventProcessor := queue.NewPushEventProcessor(
-			changeDiscoverer,
+			changeFetcher,
 			repositoryRepository,
 			crypto.NewRSAVerifier(publicKey),
 			emitter,

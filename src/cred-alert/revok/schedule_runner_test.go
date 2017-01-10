@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("Schedule Runner", func() {
 	var (
-		runner *revok.ScheduleRunner
+		runner  *revok.ScheduleRunner
 		process ifrit.Process
 	)
 

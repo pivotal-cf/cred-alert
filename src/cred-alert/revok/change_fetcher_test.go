@@ -28,7 +28,7 @@ import (
 	. "github.com/onsi/gomega/gbytes"
 )
 
-var _ = Describe("ChangeDiscoverer", func() {
+var _ = Describe("ChangeFetcher", func() {
 	var (
 		logger               *lagertest.TestLogger
 		gitClient            gitclient.Client
@@ -122,7 +122,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 		emitter.GaugeReturns(reposToFetch)
 
 		var err error
-		remoteRepoPath, err = ioutil.TempDir("", "change-discoverer-remote-repo")
+		remoteRepoPath, err = ioutil.TempDir("", "change-fetcher-remote-repo")
 		Expect(err).NotTo(HaveOccurred())
 
 		remoteRepo, err := git.InitRepository(remoteRepoPath, false)
@@ -131,7 +131,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 
 		createCommit("refs/heads/master", remoteRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
 
-		repoToFetchPath, err = ioutil.TempDir("", "change-discoverer-repo-to-fetch")
+		repoToFetchPath, err = ioutil.TempDir("", "change-fetcher-repo-to-fetch")
 		Expect(err).NotTo(HaveOccurred())
 
 		repoToFetch, err = git.Clone(remoteRepoPath, repoToFetchPath, &git.CloneOptions{})
@@ -140,7 +140,7 @@ var _ = Describe("ChangeDiscoverer", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = revok.NewChangeDiscoverer(
+		runner = revok.NewChangeFetcher(
 			logger,
 			gitClient,
 			clock,

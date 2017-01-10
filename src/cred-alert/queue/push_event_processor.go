@@ -16,20 +16,20 @@ import (
 
 type pushEventProcessor struct {
 	db                  db.RepositoryRepository
-	changeDiscoverer    revok.ChangeDiscoverer
+	changeFetcher       revok.ChangeFetcher
 	verifier            crypto.Verifier
 	verifyFailedCounter metrics.Counter
 }
 
 func NewPushEventProcessor(
-	changeDiscoverer revok.ChangeDiscoverer,
+	changeFetcher revok.ChangeFetcher,
 	db db.RepositoryRepository,
 	verifier crypto.Verifier,
 	emitter metrics.Emitter,
 ) *pushEventProcessor {
 	return &pushEventProcessor{
 		db:                  db,
-		changeDiscoverer:    changeDiscoverer,
+		changeFetcher:       changeFetcher,
 		verifier:            verifier,
 		verifyFailedCounter: emitter.Counter("queue.push_event_processor.verify.failed"),
 	}
@@ -81,7 +81,7 @@ func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Messag
 		return false, err
 	}
 
-	err = h.changeDiscoverer.Fetch(logger, repo)
+	err = h.changeFetcher.Fetch(logger, repo)
 	if err != nil {
 		return true, err
 	}

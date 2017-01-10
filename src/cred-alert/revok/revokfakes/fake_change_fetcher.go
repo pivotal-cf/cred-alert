@@ -10,7 +10,7 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type FakeChangeDiscoverer struct {
+type FakeChangeFetcher struct {
 	RunStub        func(signals <-chan os.Signal, ready chan<- struct{}) error
 	runMutex       sync.RWMutex
 	runArgsForCall []struct {
@@ -33,7 +33,7 @@ type FakeChangeDiscoverer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+func (fake *FakeChangeFetcher) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	fake.runMutex.Lock()
 	fake.runArgsForCall = append(fake.runArgsForCall, struct {
 		signals <-chan os.Signal
@@ -48,26 +48,26 @@ func (fake *FakeChangeDiscoverer) Run(signals <-chan os.Signal, ready chan<- str
 	}
 }
 
-func (fake *FakeChangeDiscoverer) RunCallCount() int {
+func (fake *FakeChangeFetcher) RunCallCount() int {
 	fake.runMutex.RLock()
 	defer fake.runMutex.RUnlock()
 	return len(fake.runArgsForCall)
 }
 
-func (fake *FakeChangeDiscoverer) RunArgsForCall(i int) (<-chan os.Signal, chan<- struct{}) {
+func (fake *FakeChangeFetcher) RunArgsForCall(i int) (<-chan os.Signal, chan<- struct{}) {
 	fake.runMutex.RLock()
 	defer fake.runMutex.RUnlock()
 	return fake.runArgsForCall[i].signals, fake.runArgsForCall[i].ready
 }
 
-func (fake *FakeChangeDiscoverer) RunReturns(result1 error) {
+func (fake *FakeChangeFetcher) RunReturns(result1 error) {
 	fake.RunStub = nil
 	fake.runReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeChangeDiscoverer) Fetch(arg1 lager.Logger, arg2 db.Repository) error {
+func (fake *FakeChangeFetcher) Fetch(arg1 lager.Logger, arg2 db.Repository) error {
 	fake.fetchMutex.Lock()
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
 		arg1 lager.Logger
@@ -82,26 +82,26 @@ func (fake *FakeChangeDiscoverer) Fetch(arg1 lager.Logger, arg2 db.Repository) e
 	}
 }
 
-func (fake *FakeChangeDiscoverer) FetchCallCount() int {
+func (fake *FakeChangeFetcher) FetchCallCount() int {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeChangeDiscoverer) FetchArgsForCall(i int) (lager.Logger, db.Repository) {
+func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (lager.Logger, db.Repository) {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	return fake.fetchArgsForCall[i].arg1, fake.fetchArgsForCall[i].arg2
 }
 
-func (fake *FakeChangeDiscoverer) FetchReturns(result1 error) {
+func (fake *FakeChangeFetcher) FetchReturns(result1 error) {
 	fake.FetchStub = nil
 	fake.fetchReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeChangeDiscoverer) Invocations() map[string][][]interface{} {
+func (fake *FakeChangeFetcher) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.runMutex.RLock()
@@ -111,7 +111,7 @@ func (fake *FakeChangeDiscoverer) Invocations() map[string][][]interface{} {
 	return fake.invocations
 }
 
-func (fake *FakeChangeDiscoverer) recordInvocation(key string, args []interface{}) {
+func (fake *FakeChangeFetcher) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -123,4 +123,4 @@ func (fake *FakeChangeDiscoverer) recordInvocation(key string, args []interface{
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ revok.ChangeDiscoverer = new(FakeChangeDiscoverer)
+var _ revok.ChangeFetcher = new(FakeChangeFetcher)

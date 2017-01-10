@@ -21,7 +21,7 @@ var _ = Describe("PushEventProcessor", func() {
 	var (
 		logger               *lagertest.TestLogger
 		pushEventProcessor   queue.PubSubProcessor
-		changeDiscoverer     *revokfakes.FakeChangeDiscoverer
+		changeFetcher        *revokfakes.FakeChangeFetcher
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		verifier             *cryptofakes.FakeVerifier
 		message              *pubsub.Message
@@ -31,7 +31,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("ingestor")
-		changeDiscoverer = &revokfakes.FakeChangeDiscoverer{}
+		changeFetcher = &revokfakes.FakeChangeFetcher{}
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 		verifier = &cryptofakes.FakeVerifier{}
 		verifyFailedCounter = &metricsfakes.FakeCounter{}
@@ -45,7 +45,7 @@ var _ = Describe("PushEventProcessor", func() {
 			}
 		}
 
-		pushEventProcessor = queue.NewPushEventProcessor(changeDiscoverer, repositoryRepository, verifier, emitter)
+		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, repositoryRepository, verifier, emitter)
 
 	})
 
@@ -159,14 +159,14 @@ var _ = Describe("PushEventProcessor", func() {
 
 			It("tries to do a fetch", func() {
 				pushEventProcessor.Process(logger, message)
-				Expect(changeDiscoverer.FetchCallCount()).To(Equal(1))
-				_, actualRepository := changeDiscoverer.FetchArgsForCall(0)
+				Expect(changeFetcher.FetchCallCount()).To(Equal(1))
+				_, actualRepository := changeFetcher.FetchArgsForCall(0)
 				Expect(actualRepository).To(Equal(*expectedRepository))
 			})
 
 			Context("when the fetch succeeds", func() {
 				BeforeEach(func() {
-					changeDiscoverer.FetchReturns(nil)
+					changeFetcher.FetchReturns(nil)
 				})
 
 				It("does not retry or return an error", func() {
@@ -178,7 +178,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 			Context("when the fetch fails", func() {
 				BeforeEach(func() {
-					changeDiscoverer.FetchReturns(errors.New("an-error"))
+					changeFetcher.FetchReturns(errors.New("an-error"))
 				})
 
 				It("returns an error that can be retried", func() {
@@ -196,7 +196,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 			It("does not try to do a fetch", func() {
 				pushEventProcessor.Process(logger, message)
-				Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
+				Expect(changeFetcher.FetchCallCount()).To(BeZero())
 			})
 
 			It("returns an error that cannot be retried", func() {
@@ -227,7 +227,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 		It("does not try to do a fetch", func() {
 			pushEventProcessor.Process(logger, message)
-			Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
+			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an error that cannot be retried", func() {
@@ -259,7 +259,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 		It("does not try to do a fetch", func() {
 			pushEventProcessor.Process(logger, message)
-			Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
+			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {
@@ -291,7 +291,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 		It("does not try to do a fetch", func() {
 			pushEventProcessor.Process(logger, message)
-			Expect(changeDiscoverer.FetchCallCount()).To(BeZero())
+			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {

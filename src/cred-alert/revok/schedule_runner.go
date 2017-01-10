@@ -8,7 +8,7 @@ import (
 )
 
 type ScheduleRunner struct {
-	cron *cron.Cron
+	cron    *cron.Cron
 	cronMut *sync.Mutex
 
 	jobWg *sync.WaitGroup
@@ -16,9 +16,9 @@ type ScheduleRunner struct {
 
 func NewScheduleRunner() *ScheduleRunner {
 	return &ScheduleRunner{
-		cron: cron.New(),
+		cron:    cron.New(),
 		cronMut: &sync.Mutex{},
-		jobWg: &sync.WaitGroup{},
+		jobWg:   &sync.WaitGroup{},
 	}
 }
 
