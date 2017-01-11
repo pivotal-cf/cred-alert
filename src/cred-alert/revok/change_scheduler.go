@@ -1,11 +1,13 @@
 package revok
 
 import (
-	"code.cloudfoundry.org/lager"
-	"cred-alert/db"
 	"fmt"
 	"hash/fnv"
 	"os"
+
+	"code.cloudfoundry.org/lager"
+
+	"cred-alert/db"
 )
 
 //go:generate counterfeiter . Scheduler
@@ -47,7 +49,7 @@ func (s *ChangeScheduler) ScheduleActiveRepos(logger lager.Logger) error {
 
 	repos, err := s.repoRepo.Active()
 	if err != nil {
-		logger.Error("fetching-active-repos", err)
+		logger.Error("failed-to-fetch-active-repos", err)
 		return err
 	}
 
@@ -59,6 +61,10 @@ func (s *ChangeScheduler) ScheduleActiveRepos(logger lager.Logger) error {
 			_ = s.fetcher.Fetch(logger, repo)
 		})
 	}
+
+	logger.Info("finished-scheduling", lager.Data{
+		"count": len(repos),
+	})
 
 	return nil
 }
