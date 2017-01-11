@@ -1,126 +1,57 @@
 package revok
 
 import (
-	"context"
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
 	"cred-alert/metrics"
 	"encoding/json"
-	"os"
-	"time"
 
 	git "github.com/libgit2/git2go"
-	"github.com/tedsuo/ifrit"
 
-	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
 
 //go:generate counterfeiter . ChangeFetcher
 
 type ChangeFetcher interface {
-	ifrit.Runner
-
 	Fetch(lager.Logger, db.Repository) error
 }
 
 type changeFetcher struct {
 	logger               lager.Logger
 	gitClient            gitclient.Client
-	clock                clock.Clock
-	interval             time.Duration
 	scanner              Scanner
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
-	fetchIntervalUpdater FetchIntervalUpdater
 
-	fetchTimer             metrics.Timer
-	fetchedRepositoryGauge metrics.Gauge
-	runCounter             metrics.Counter
-	fetchSuccessCounter    metrics.Counter
-	fetchFailedCounter     metrics.Counter
-	scanSuccessCounter     metrics.Counter
-	scanFailedCounter      metrics.Counter
+	fetchTimer          metrics.Timer
+	fetchSuccessCounter metrics.Counter
+	fetchFailedCounter  metrics.Counter
+	scanSuccessCounter  metrics.Counter
+	scanFailedCounter   metrics.Counter
 }
 
 func NewChangeFetcher(
 	logger lager.Logger,
 	gitClient gitclient.Client,
-	clock clock.Clock,
-	interval time.Duration,
 	scanner Scanner,
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
-	fetchIntervalUpdater FetchIntervalUpdater,
 	emitter metrics.Emitter,
 ) ChangeFetcher {
 	return &changeFetcher{
 		logger:               logger,
 		gitClient:            gitClient,
-		clock:                clock,
-		interval:             interval,
 		scanner:              scanner,
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
-		fetchIntervalUpdater: fetchIntervalUpdater,
 
-		fetchTimer:             emitter.Timer("revok.change_discoverer.fetch_time"),
-		fetchedRepositoryGauge: emitter.Gauge("revok.change_discoverer.repositories_to_fetch"),
-		runCounter:             emitter.Counter("revok.change_discoverer.run"),
-		fetchSuccessCounter:    emitter.Counter("revok.change_discoverer.fetch.success"),
-		fetchFailedCounter:     emitter.Counter("revok.change_discoverer.fetch.failed"),
-		scanSuccessCounter:     emitter.Counter("revok.change_discoverer.scan.success"),
-		scanFailedCounter:      emitter.Counter("revok.change_discoverer.scan.failed"),
-	}
-}
-
-func (c *changeFetcher) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	logger := c.logger.Session("change-fetcher")
-	logger.Info("started")
-
-	close(ready)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	c.work(signals, cancel, logger)
-
-	timer := c.clock.NewTicker(c.interval)
-
-	for {
-		select {
-		case <-timer.C():
-			c.work(signals, cancel, logger)
-		case <-ctx.Done():
-			logger.Info("done")
-			timer.Stop()
-			return nil
-		case <-signals:
-			cancel()
-		}
-	}
-}
-
-func (c *changeFetcher) work(signals <-chan os.Signal, cancel context.CancelFunc, logger lager.Logger) {
-	c.runCounter.Inc(logger)
-
-	repos, err := c.repositoryRepository.DueForFetch()
-	if err != nil {
-		logger.Error("failed-getting-repos", err)
-		return
-	}
-
-	c.fetchedRepositoryGauge.Update(logger, float32(len(repos)))
-
-	for i := range repos {
-		select {
-		case <-signals:
-			cancel()
-			return
-		default:
-			_ = c.Fetch(logger, repos[i])
-		}
+		fetchTimer:          emitter.Timer("revok.change_discoverer.fetch_time"),
+		fetchSuccessCounter: emitter.Counter("revok.change_discoverer.fetch.success"),
+		fetchFailedCounter:  emitter.Counter("revok.change_discoverer.fetch.failed"),
+		scanSuccessCounter:  emitter.Counter("revok.change_discoverer.scan.success"),
+		scanFailedCounter:   emitter.Counter("revok.change_discoverer.scan.failed"),
 	}
 }
 
@@ -166,12 +97,6 @@ func (c *changeFetcher) Fetch(
 	err = c.fetchRepository.RegisterFetch(repoLogger, &fetch)
 	if err != nil {
 		repoLogger.Error("failed-to-save-fetch", err)
-		return err
-	}
-
-	err = c.fetchIntervalUpdater.UpdateFetchInterval(&repo)
-	if err != nil {
-		repoLogger.Error("failed-to-update-fetch-interval", err)
 		return err
 	}
 

@@ -28,9 +28,6 @@ type WorkerOpts struct {
 type WorkerConfig struct {
 	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" yaml:"work_dir"`
 	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" value-name:"SCAN_INTERVAL" yaml:"repository_discovery_interval"`
-	ChangeDiscoveryInterval     time.Duration `long:"change-discovery-interval" description:"how frequently to fetch changes for repositories on disk and scan the changes" value-name:"SCAN_INTERVAL" yaml:"change_discovery_interval"`
-	MinFetchInterval            time.Duration `long:"min-fetch-interval" description:"the minimum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MIN_FETCH_INTERVAL" yaml:"min_fetch_interval"`
-	MaxFetchInterval            time.Duration `long:"max-fetch-interval" description:"the maximum frequency to fetch changes for repositories on disk and scan the changes" value-name:"MAX_FETCH_INTERVAL" yaml:"max_fetch_interval"`
 	CredentialCounterInterval   time.Duration `long:"credential-counter-interval" description:"how frequently to update the current count of credentials in each branch of a repository" value-name:"SCAN_INTERVAL" yaml:"credential_counter_interval"`
 
 	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX" yaml:"whitelist"`

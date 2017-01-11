@@ -99,11 +99,6 @@ func main() {
 	scanRepository := db.NewScanRepository(database, clock)
 	repositoryRepository := db.NewRepositoryRepository(database)
 	fetchRepository := db.NewFetchRepository(database)
-	fetchIntervalUpdater := revok.NewFetchIntervalUpdater(
-		repositoryRepository,
-		cfg.MinFetchInterval,
-		cfg.MaxFetchInterval,
-	)
 	credentialRepository := db.NewCredentialRepository(database)
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
 	gitClient := gitclient.New(string(cfg.GitHub.PrivateKeyPath), string(cfg.GitHub.PublicKeyPath))
@@ -130,12 +125,9 @@ func main() {
 	changeFetcher := revok.NewChangeFetcher(
 		logger,
 		gitClient,
-		clock,
-		cfg.ChangeDiscoveryInterval,
 		ancestryScanner,
 		repositoryRepository,
 		fetchRepository,
-		fetchIntervalUpdater,
 		emitter,
 	)
 

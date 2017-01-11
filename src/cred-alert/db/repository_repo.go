@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"code.cloudfoundry.org/lager"
 
@@ -32,10 +31,6 @@ type RepositoryRepository interface {
 	MarkAsCloned(string, string, string) error
 	RegisterFailedFetch(lager.Logger, *Repository) error
 	UpdateCredentialCount(*Repository, map[string]uint) error
-
-	DueForFetch() ([]Repository, error)
-	UpdateFetchInterval(*Repository, time.Duration) error
-	LastActivity(*Repository) (time.Time, error)
 }
 
 type repositoryRepository struct {
@@ -208,107 +203,6 @@ func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, cre
 		SET credential_counts = ?
 		WHERE id = ?
 	`, credentialCountJSON, repository.ID)
-
-	return err
-}
-
-func (r *repositoryRepository) DueForFetch() ([]Repository, error) {
-	ids := []int{}
-
-	// old fetches
-	rows, err := r.db.Raw(`
-		SELECT r.id
-		FROM repositories r
-			JOIN (SELECT repository_id, MAX(created_at) AS last_activity
-				FROM fetches
-				WHERE changes != '{}'
-				GROUP BY repository_id
-			) activity
-			ON activity.repository_id = r.id
-	  WHERE UTC_TIMESTAMP() - INTERVAL r.fetch_interval SECOND > last_activity
-		AND r.disabled = false
-		AND r.cloned = true
-	`).Rows()
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		scanErr := rows.Scan(&id)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		ids = append(ids, id)
-	}
-
-	// never been fetched
-	rows, err = r.db.Raw(`
-    SELECT r.id
-    FROM   repositories r
-           LEFT JOIN fetches f
-             ON r.id = f.repository_id
-    WHERE  f.repository_id IS NULL
-	`).Rows()
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		scanErr := rows.Scan(&id)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		ids = append(ids, id)
-	}
-
-	var repositories []Repository
-	err = r.db.Model(&Repository{}).Where("id IN (?)", ids).Find(&repositories).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return repositories, nil
-}
-
-func (r *repositoryRepository) LastActivity(repository *Repository) (time.Time, error) {
-	var createdAt time.Time
-
-	err := r.db.DB().QueryRow(`
-		SELECT MAX(created_at)
-		  FROM fetches
-		  WHERE repository_id = ?
-			AND changes != '{}'
-	`, repository.ID).Scan(&createdAt)
-
-	if err != nil {
-		err = r.db.DB().QueryRow(`
-		SELECT MAX(created_at)
-		  FROM fetches
-		  WHERE repository_id = ?
-	`, repository.ID).Scan(&createdAt)
-
-		if err != nil {
-			return createdAt, NeverBeenFetchedError
-		} else {
-			return createdAt, NoChangesError
-		}
-	}
-
-	return createdAt, nil
-}
-
-func (r *repositoryRepository) UpdateFetchInterval(repository *Repository, interval time.Duration) error {
-	_, err := r.db.DB().Exec(`
-		UPDATE repositories
-		SET fetch_interval = ?
-		WHERE id = ?
-	`, int(interval.Seconds()), repository.ID)
 
 	return err
 }

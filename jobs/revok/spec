@@ -45,24 +45,6 @@ properties:
       as frequently.
     default: 1h
 
-  revok.change_discovery_interval:
-    description: |
-      The interval, in Go duration format (e.g. 1m = 1 minute), on which to
-      query Git repositories on disk for changes.
-    default: 1h
-
-  revok.minimum_fetch_interval:
-    description: |
-      The minimum interval, in Go duration format (e.g. 1m = 1 minute), on which to
-      fetch a Git repository
-    default: 6h
-
-  revok.maximum_fetch_interval:
-    description: |
-      The maximum interval, in Go duration format (e.g. 1m = 1 minute), on which to
-      fetch a Git repository
-    default: 168h
-
   revok.credential_counter_interval:
     description: |
       The interval, in Go duration format (e.g. 1m = 1 minute), on which to

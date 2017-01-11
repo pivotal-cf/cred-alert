@@ -4,7 +4,6 @@ package dbfakes
 import (
 	"cred-alert/db"
 	"sync"
-	"time"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -87,31 +86,6 @@ type FakeRepositoryRepository struct {
 	}
 	updateCredentialCountReturns struct {
 		result1 error
-	}
-	DueForFetchStub        func() ([]db.Repository, error)
-	dueForFetchMutex       sync.RWMutex
-	dueForFetchArgsForCall []struct{}
-	dueForFetchReturns     struct {
-		result1 []db.Repository
-		result2 error
-	}
-	UpdateFetchIntervalStub        func(*db.Repository, time.Duration) error
-	updateFetchIntervalMutex       sync.RWMutex
-	updateFetchIntervalArgsForCall []struct {
-		arg1 *db.Repository
-		arg2 time.Duration
-	}
-	updateFetchIntervalReturns struct {
-		result1 error
-	}
-	LastActivityStub        func(*db.Repository) (time.Time, error)
-	lastActivityMutex       sync.RWMutex
-	lastActivityArgsForCall []struct {
-		arg1 *db.Repository
-	}
-	lastActivityReturns struct {
-		result1 time.Time
-		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -408,100 +382,6 @@ func (fake *FakeRepositoryRepository) UpdateCredentialCountReturns(result1 error
 	}{result1}
 }
 
-func (fake *FakeRepositoryRepository) DueForFetch() ([]db.Repository, error) {
-	fake.dueForFetchMutex.Lock()
-	fake.dueForFetchArgsForCall = append(fake.dueForFetchArgsForCall, struct{}{})
-	fake.recordInvocation("DueForFetch", []interface{}{})
-	fake.dueForFetchMutex.Unlock()
-	if fake.DueForFetchStub != nil {
-		return fake.DueForFetchStub()
-	} else {
-		return fake.dueForFetchReturns.result1, fake.dueForFetchReturns.result2
-	}
-}
-
-func (fake *FakeRepositoryRepository) DueForFetchCallCount() int {
-	fake.dueForFetchMutex.RLock()
-	defer fake.dueForFetchMutex.RUnlock()
-	return len(fake.dueForFetchArgsForCall)
-}
-
-func (fake *FakeRepositoryRepository) DueForFetchReturns(result1 []db.Repository, result2 error) {
-	fake.DueForFetchStub = nil
-	fake.dueForFetchReturns = struct {
-		result1 []db.Repository
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeRepositoryRepository) UpdateFetchInterval(arg1 *db.Repository, arg2 time.Duration) error {
-	fake.updateFetchIntervalMutex.Lock()
-	fake.updateFetchIntervalArgsForCall = append(fake.updateFetchIntervalArgsForCall, struct {
-		arg1 *db.Repository
-		arg2 time.Duration
-	}{arg1, arg2})
-	fake.recordInvocation("UpdateFetchInterval", []interface{}{arg1, arg2})
-	fake.updateFetchIntervalMutex.Unlock()
-	if fake.UpdateFetchIntervalStub != nil {
-		return fake.UpdateFetchIntervalStub(arg1, arg2)
-	} else {
-		return fake.updateFetchIntervalReturns.result1
-	}
-}
-
-func (fake *FakeRepositoryRepository) UpdateFetchIntervalCallCount() int {
-	fake.updateFetchIntervalMutex.RLock()
-	defer fake.updateFetchIntervalMutex.RUnlock()
-	return len(fake.updateFetchIntervalArgsForCall)
-}
-
-func (fake *FakeRepositoryRepository) UpdateFetchIntervalArgsForCall(i int) (*db.Repository, time.Duration) {
-	fake.updateFetchIntervalMutex.RLock()
-	defer fake.updateFetchIntervalMutex.RUnlock()
-	return fake.updateFetchIntervalArgsForCall[i].arg1, fake.updateFetchIntervalArgsForCall[i].arg2
-}
-
-func (fake *FakeRepositoryRepository) UpdateFetchIntervalReturns(result1 error) {
-	fake.UpdateFetchIntervalStub = nil
-	fake.updateFetchIntervalReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeRepositoryRepository) LastActivity(arg1 *db.Repository) (time.Time, error) {
-	fake.lastActivityMutex.Lock()
-	fake.lastActivityArgsForCall = append(fake.lastActivityArgsForCall, struct {
-		arg1 *db.Repository
-	}{arg1})
-	fake.recordInvocation("LastActivity", []interface{}{arg1})
-	fake.lastActivityMutex.Unlock()
-	if fake.LastActivityStub != nil {
-		return fake.LastActivityStub(arg1)
-	} else {
-		return fake.lastActivityReturns.result1, fake.lastActivityReturns.result2
-	}
-}
-
-func (fake *FakeRepositoryRepository) LastActivityCallCount() int {
-	fake.lastActivityMutex.RLock()
-	defer fake.lastActivityMutex.RUnlock()
-	return len(fake.lastActivityArgsForCall)
-}
-
-func (fake *FakeRepositoryRepository) LastActivityArgsForCall(i int) *db.Repository {
-	fake.lastActivityMutex.RLock()
-	defer fake.lastActivityMutex.RUnlock()
-	return fake.lastActivityArgsForCall[i].arg1
-}
-
-func (fake *FakeRepositoryRepository) LastActivityReturns(result1 time.Time, result2 error) {
-	fake.LastActivityStub = nil
-	fake.lastActivityReturns = struct {
-		result1 time.Time
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -523,12 +403,6 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.registerFailedFetchMutex.RUnlock()
 	fake.updateCredentialCountMutex.RLock()
 	defer fake.updateCredentialCountMutex.RUnlock()
-	fake.dueForFetchMutex.RLock()
-	defer fake.dueForFetchMutex.RUnlock()
-	fake.updateFetchIntervalMutex.RLock()
-	defer fake.updateFetchIntervalMutex.RUnlock()
-	fake.lastActivityMutex.RLock()
-	defer fake.lastActivityMutex.RUnlock()
 	return fake.invocations
 }
 

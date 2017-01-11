@@ -1,9 +1,6 @@
 ---
 work_dir: <%= p("revok.work_dir") %>
 repository_discovery_interval: <%= p("revok.repository_discovery_interval") %>
-change_discovery_interval: <%= p("revok.change_discovery_interval") %>
-min_fetch_interval: <%= p("revok.minimum_fetch_interval") %>
-max_fetch_interval: <%= p("revok.maximum_fetch_interval") %>
 credential_counter_interval: <%= p("revok.credential_counter_interval") %>
 
 <% if_p("revok.ignore_patterns") do |ignore_patterns| %>
