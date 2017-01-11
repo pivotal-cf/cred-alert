@@ -25,6 +25,7 @@ type RepositoryRepository interface {
 	Find(owner string, name string) (Repository, error)
 
 	All() ([]Repository, error)
+	Active() ([]Repository, error)
 	AllForOrganization(string) ([]Repository, error)
 	NotScannedWithVersion(int) ([]Repository, error)
 
@@ -68,6 +69,16 @@ func (r *repositoryRepository) All() ([]Repository, error) {
 	}
 
 	return existingRepositories, nil
+}
+
+func (r *repositoryRepository) Active() ([]Repository, error) {
+	var repos []Repository
+	err := r.db.Where("disabled = ? AND cloned = ?", false, true).Find(&repos).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return repos, nil
 }
 
 func (r *repositoryRepository) AllForOrganization(owner string) ([]Repository, error) {

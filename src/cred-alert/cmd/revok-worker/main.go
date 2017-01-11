@@ -149,6 +149,15 @@ func main() {
 		emitter,
 	)
 
+	changeScheduleRunner := revok.NewScheduleRunner()
+
+	changeScheduler := revok.NewChangeScheduler(
+		logger,
+		repositoryRepository,
+		changeScheduleRunner,
+		changeFetcher,
+	)
+
 	dirscanUpdater := revok.NewRescanner(
 		logger,
 		scanRepository,
@@ -177,10 +186,10 @@ func main() {
 
 	members := []grouper.Member{
 		{"cloner", cloner},
-		{"change-fetcher", changeFetcher},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
 		{"head-credential-counter", headCredentialCounter},
+		{"change-schedule-runner", changeScheduleRunner},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}
 
@@ -276,7 +285,25 @@ func main() {
 		})
 	}
 
-	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
+	startupTasks := []grouper.Member{
+		{
+			Name:   "schedule-fetches",
+			Runner: changeScheduler,
+		},
+	}
+
+	system := []grouper.Member{
+		{
+			Name:   "servers",
+			Runner: grouper.NewParallel(os.Interrupt, members),
+		},
+		{
+			Name:   "startup-tasks",
+			Runner: grouper.NewParallel(os.Interrupt, startupTasks),
+		},
+	}
+
+	runner := sigmon.New(grouper.NewOrdered(os.Interrupt, system))
 
 	err = <-ifrit.Invoke(runner).Wait()
 	if err != nil {

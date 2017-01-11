@@ -35,6 +35,13 @@ type FakeRepositoryRepository struct {
 		result1 []db.Repository
 		result2 error
 	}
+	ActiveStub        func() ([]db.Repository, error)
+	activeMutex       sync.RWMutex
+	activeArgsForCall []struct{}
+	activeReturns     struct {
+		result1 []db.Repository
+		result2 error
+	}
 	AllForOrganizationStub        func(string) ([]db.Repository, error)
 	allForOrganizationMutex       sync.RWMutex
 	allForOrganizationArgsForCall []struct {
@@ -199,6 +206,32 @@ func (fake *FakeRepositoryRepository) AllCallCount() int {
 func (fake *FakeRepositoryRepository) AllReturns(result1 []db.Repository, result2 error) {
 	fake.AllStub = nil
 	fake.allReturns = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRepositoryRepository) Active() ([]db.Repository, error) {
+	fake.activeMutex.Lock()
+	fake.activeArgsForCall = append(fake.activeArgsForCall, struct{}{})
+	fake.recordInvocation("Active", []interface{}{})
+	fake.activeMutex.Unlock()
+	if fake.ActiveStub != nil {
+		return fake.ActiveStub()
+	} else {
+		return fake.activeReturns.result1, fake.activeReturns.result2
+	}
+}
+
+func (fake *FakeRepositoryRepository) ActiveCallCount() int {
+	fake.activeMutex.RLock()
+	defer fake.activeMutex.RUnlock()
+	return len(fake.activeArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) ActiveReturns(result1 []db.Repository, result2 error) {
+	fake.ActiveStub = nil
+	fake.activeReturns = struct {
 		result1 []db.Repository
 		result2 error
 	}{result1, result2}
@@ -478,6 +511,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.findMutex.RUnlock()
 	fake.allMutex.RLock()
 	defer fake.allMutex.RUnlock()
+	fake.activeMutex.RLock()
+	defer fake.activeMutex.RUnlock()
 	fake.allForOrganizationMutex.RLock()
 	defer fake.allForOrganizationMutex.RUnlock()
 	fake.notScannedWithVersionMutex.RLock()

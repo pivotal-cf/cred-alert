@@ -241,6 +241,66 @@ var _ = Describe("RepositoryRepo", func() {
 		})
 	})
 
+	Describe("Active", func() {
+		var (
+			savedRepository db.Repository
+		)
+
+		BeforeEach(func() {
+			repository := &db.Repository{
+				Name:                 "some-repo",
+				Owner:                "some-owner",
+				SSHURL:               "some-url",
+				Private:              true,
+				DefaultBranch:        "some-branch",
+				RawJSON:              []byte("some-json"),
+				Cloned:               true,
+				FetchIntervalSeconds: 8 * 60 * 60,
+			}
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).
+				Last(&savedRepository).Error
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when the repository is enabled and cloned", func() {
+			It("does not return the repository", func() {
+				repos, err := repo.Active()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(repos).To(ConsistOf(savedRepository))
+			})
+		})
+
+		Context("when the repository is disabled", func() {
+			BeforeEach(func() {
+				_, err := database.DB().Exec(`UPDATE repositories SET disabled = true WHERE id = ?`, savedRepository.ID)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not return the repository", func() {
+				repos, err := repo.Active()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(repos).To(BeEmpty())
+			})
+		})
+
+		Context("when the repository has not been cloned", func() {
+			BeforeEach(func() {
+				err := database.Model(&db.Repository{}).Where("id = ?", savedRepository.ID).Update("cloned", false).Error
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not return the repository", func() {
+				repos, err := repo.Active()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(repos).To(BeEmpty())
+			})
+		})
+	})
+
 	Describe("LastActivity", func() {
 		var (
 			repository *db.Repository
