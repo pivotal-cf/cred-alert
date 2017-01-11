@@ -149,7 +149,7 @@ func main() {
 		emitter,
 	)
 
-	changeScheduleRunner := revok.NewScheduleRunner()
+	changeScheduleRunner := revok.NewScheduleRunner(logger)
 
 	changeScheduler := revok.NewChangeScheduler(
 		logger,

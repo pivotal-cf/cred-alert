@@ -1,6 +1,7 @@
 package revok_test
 
 import (
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 
 	. "github.com/onsi/ginkgo"
@@ -16,10 +17,16 @@ var _ = Describe("Schedule Runner", func() {
 	var (
 		runner  *revok.ScheduleRunner
 		process ifrit.Process
+
+		logger *lagertest.TestLogger
 	)
 
+	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("schedule-runner")
+	})
+
 	JustBeforeEach(func() {
-		runner = revok.NewScheduleRunner()
+		runner = revok.NewScheduleRunner(logger)
 		process = ifrit.Invoke(runner)
 	})
 
