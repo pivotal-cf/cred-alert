@@ -104,7 +104,7 @@ func (c *headCredentialCounter) work(
 				continue
 			}
 
-			repoLogger.Info("updated-credential-count")
+			repoLogger.Debug("updated-credential-count")
 		}
 	}
 }
