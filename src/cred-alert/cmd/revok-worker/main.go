@@ -127,16 +127,6 @@ func main() {
 		emitter,
 	)
 
-	cloner := revok.NewCloner(
-		logger,
-		workdir,
-		cloneMsgCh,
-		gitClient,
-		repositoryRepository,
-		ancestryScanner,
-		emitter,
-	)
-
 	changeFetcher := revok.NewChangeFetcher(
 		logger,
 		gitClient,
@@ -156,6 +146,17 @@ func main() {
 		repositoryRepository,
 		changeScheduleRunner,
 		changeFetcher,
+	)
+
+	cloner := revok.NewCloner(
+		logger,
+		workdir,
+		cloneMsgCh,
+		gitClient,
+		repositoryRepository,
+		ancestryScanner,
+		emitter,
+		changeScheduler,
 	)
 
 	dirscanUpdater := revok.NewRescanner(

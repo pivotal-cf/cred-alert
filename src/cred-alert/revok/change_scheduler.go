@@ -25,7 +25,7 @@ type ChangeScheduler struct {
 
 func NewChangeScheduler(logger lager.Logger, repoRepo db.RepositoryRepository, scheduler Scheduler, fetcher ChangeFetcher) *ChangeScheduler {
 	return &ChangeScheduler{
-		logger:    logger,
+		logger:    logger.Session("change-scheduler"),
 		repoRepo:  repoRepo,
 		scheduler: scheduler,
 		fetcher:   fetcher,
@@ -44,8 +44,20 @@ func (s *ChangeScheduler) Run(signals <-chan os.Signal, ready chan<- struct{}) e
 	return nil
 }
 
+func (s *ChangeScheduler) ScheduleRepo(logger lager.Logger, repo db.Repository) {
+	logger = logger.Session("schedule-repo")
+
+	schedule := scheduleForRepo(repo)
+
+	s.scheduler.ScheduleWork(schedule, func() {
+		_ = s.fetcher.Fetch(s.logger, repo)
+	})
+
+	logger.Info("finished-scheduling")
+}
+
 func (s *ChangeScheduler) ScheduleActiveRepos(logger lager.Logger) error {
-	logger = logger.Session("schedule-repos")
+	logger = logger.Session("schedule-active-repos")
 
 	repos, err := s.repoRepo.Active()
 	if err != nil {
@@ -58,7 +70,7 @@ func (s *ChangeScheduler) ScheduleActiveRepos(logger lager.Logger) error {
 		schedule := scheduleForRepo(repo)
 
 		s.scheduler.ScheduleWork(schedule, func() {
-			_ = s.fetcher.Fetch(logger, repo)
+			_ = s.fetcher.Fetch(s.logger, repo)
 		})
 	}
 

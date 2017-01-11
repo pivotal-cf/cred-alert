@@ -13,17 +13,26 @@ import (
 	"github.com/tedsuo/ifrit"
 )
 
+//go:generate counterfeiter . RepoChangeScheduler
+
+type RepoChangeScheduler interface {
+	ScheduleRepo(lager.Logger, db.Repository)
+}
+
 type Cloner struct {
-	logger               lager.Logger
+	logger lager.Logger
+
 	workdir              string
 	workCh               chan CloneMsg
 	gitClient            gitclient.Client
 	repositoryRepository db.RepositoryRepository
-	cloneSuccessCounter  metrics.Counter
-	cloneFailedCounter   metrics.Counter
-	scanSuccessCounter   metrics.Counter
-	scanFailedCounter    metrics.Counter
 	scanner              Scanner
+	scheduler            RepoChangeScheduler
+
+	cloneSuccessCounter metrics.Counter
+	cloneFailedCounter  metrics.Counter
+	scanSuccessCounter  metrics.Counter
+	scanFailedCounter   metrics.Counter
 }
 
 func NewCloner(
@@ -34,6 +43,7 @@ func NewCloner(
 	repositoryRepository db.RepositoryRepository,
 	scanner Scanner,
 	emitter metrics.Emitter,
+	scheduler RepoChangeScheduler,
 ) ifrit.Runner {
 	return &Cloner{
 		logger:               logger,
@@ -42,6 +52,7 @@ func NewCloner(
 		gitClient:            gitClient,
 		repositoryRepository: repositoryRepository,
 		scanner:              scanner,
+		scheduler:            scheduler,
 		scanSuccessCounter:   emitter.Counter("revok.cloner.scan.success"),
 		scanFailedCounter:    emitter.Counter("revok.cloner.scan.failed"),
 		cloneSuccessCounter:  emitter.Counter("revok.cloner.clone.success"),
@@ -97,11 +108,13 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	_, err = c.repositoryRepository.Find(msg.Owner, msg.Repository)
+	repo, err := c.repositoryRepository.Find(msg.Owner, msg.Repository)
 	if err != nil {
 		workLogger.Error("failed-to-find-db-repo", err)
 		return
 	}
+
+	c.scheduler.ScheduleRepo(logger, repo)
 
 	scannedOids := map[git.Oid]struct{}{}
 

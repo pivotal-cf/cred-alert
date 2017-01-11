@@ -4,8 +4,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/robfig/cron"
 	"code.cloudfoundry.org/lager"
+	"github.com/robfig/cron"
 )
 
 type ScheduleRunner struct {
@@ -19,7 +19,7 @@ type ScheduleRunner struct {
 
 func NewScheduleRunner(logger lager.Logger) *ScheduleRunner {
 	return &ScheduleRunner{
-		logger: logger,
+		logger:  logger,
 		cron:    cron.New(),
 		cronMut: &sync.Mutex{},
 		jobWg:   &sync.WaitGroup{},

@@ -37,78 +37,103 @@ var _ = Describe("Change Scheduler", func() {
 		changeScheduler = revok.NewChangeScheduler(logger, repositoryRepo, scheduler, fetcher)
 	})
 
-	Context("when there are active repositories", func() {
-		var (
-			repo1 db.Repository
-			repo2 db.Repository
-		)
-
-		BeforeEach(func() {
-			repo1 = db.Repository{
+	Describe("scheduling a single repository", func() {
+		It("schedules a fetch for each active repository", func() {
+			repo := db.Repository{
 				Name:  "repo-name",
 				Owner: "repo-owner",
 			}
 
-			repo2 = db.Repository{
-				Name:  "other-repo-name",
-				Owner: "other-repo-owner",
-			}
+			changeScheduler.ScheduleRepo(logger, repo)
 
-			repositoryRepo.ActiveReturns([]db.Repository{
-				repo1,
-				repo2,
-			}, nil)
-		})
+			Expect(scheduler.ScheduleWorkCallCount()).Should(Equal(1))
 
-		It("schedules a fetch for each active repository", func() {
-			err := changeScheduler.ScheduleActiveRepos(logger)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(scheduler.ScheduleWorkCallCount()).Should(Equal(2))
-
-			_, firstJob := scheduler.ScheduleWorkArgsForCall(0)
-			_, secondJob := scheduler.ScheduleWorkArgsForCall(1)
+			_, submittedWork := scheduler.ScheduleWorkArgsForCall(0)
 
 			Expect(fetcher.FetchCallCount()).To(BeZero())
 
-			firstJob()
+			submittedWork()
 
 			Expect(fetcher.FetchCallCount()).To(Equal(1))
 			_, passedRepo := fetcher.FetchArgsForCall(0)
-			Expect(passedRepo).To(Equal(repo1))
-
-			secondJob()
-
-			Expect(fetcher.FetchCallCount()).To(Equal(2))
-			_, passedRepo = fetcher.FetchArgsForCall(1)
-			Expect(passedRepo).To(Equal(repo2))
-		})
-
-		It("distributes fetches across a time period", func() {
-			err := changeScheduler.ScheduleActiveRepos(logger)
-			Expect(err).NotTo(HaveOccurred())
-
-			firstCron, _ := scheduler.ScheduleWorkArgsForCall(0)
-			secondCron, _ := scheduler.ScheduleWorkArgsForCall(1)
-
-			_, err = cron.Parse(firstCron)
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = cron.Parse(secondCron)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(firstCron).ToNot(Equal(secondCron))
+			Expect(passedRepo).To(Equal(repo))
 		})
 	})
 
-	Context("when we fail to fetch the active repositories", func() {
-		BeforeEach(func() {
-			repositoryRepo.ActiveReturns(nil, errors.New("disaster"))
+	Describe("scheduling all active repositories", func() {
+		Context("when there are active repositories", func() {
+			var (
+				repo1 db.Repository
+				repo2 db.Repository
+			)
+
+			BeforeEach(func() {
+				repo1 = db.Repository{
+					Name:  "repo-name",
+					Owner: "repo-owner",
+				}
+
+				repo2 = db.Repository{
+					Name:  "other-repo-name",
+					Owner: "other-repo-owner",
+				}
+
+				repositoryRepo.ActiveReturns([]db.Repository{
+					repo1,
+					repo2,
+				}, nil)
+			})
+
+			It("schedules a fetch for each active repository", func() {
+				err := changeScheduler.ScheduleActiveRepos(logger)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(scheduler.ScheduleWorkCallCount()).Should(Equal(2))
+
+				_, firstJob := scheduler.ScheduleWorkArgsForCall(0)
+				_, secondJob := scheduler.ScheduleWorkArgsForCall(1)
+
+				Expect(fetcher.FetchCallCount()).To(BeZero())
+
+				firstJob()
+
+				Expect(fetcher.FetchCallCount()).To(Equal(1))
+				_, passedRepo := fetcher.FetchArgsForCall(0)
+				Expect(passedRepo).To(Equal(repo1))
+
+				secondJob()
+
+				Expect(fetcher.FetchCallCount()).To(Equal(2))
+				_, passedRepo = fetcher.FetchArgsForCall(1)
+				Expect(passedRepo).To(Equal(repo2))
+			})
+
+			It("distributes fetches across a time period", func() {
+				err := changeScheduler.ScheduleActiveRepos(logger)
+				Expect(err).NotTo(HaveOccurred())
+
+				firstCron, _ := scheduler.ScheduleWorkArgsForCall(0)
+				secondCron, _ := scheduler.ScheduleWorkArgsForCall(1)
+
+				_, err = cron.Parse(firstCron)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = cron.Parse(secondCron)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(firstCron).ToNot(Equal(secondCron))
+			})
 		})
 
-		It("returns an error", func() {
-			err := changeScheduler.ScheduleActiveRepos(logger)
-			Expect(err).To(HaveOccurred())
+		Context("when we fail to fetch the active repositories", func() {
+			BeforeEach(func() {
+				repositoryRepo.ActiveReturns(nil, errors.New("disaster"))
+			})
+
+			It("returns an error", func() {
+				err := changeScheduler.ScheduleActiveRepos(logger)
+				Expect(err).To(HaveOccurred())
+			})
 		})
 	})
 })

@@ -33,6 +33,7 @@ var _ = Describe("Cloner", func() {
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		emitter              *metricsfakes.FakeEmitter
 		scanner              *revokfakes.FakeScanner
+		scheduler            *revokfakes.FakeRepoChangeScheduler
 
 		scanSuccessMetric  *metricsfakes.FakeCounter
 		scanFailedMetric   *metricsfakes.FakeCounter
@@ -40,6 +41,7 @@ var _ = Describe("Cloner", func() {
 		cloneFailedMetric  *metricsfakes.FakeCounter
 		repoPath           string
 		repo               *git.Repository
+		dbRepo             db.Repository
 		potatoesHeadSHA    string
 		tomatoesHeadSHA    string
 
@@ -50,13 +52,14 @@ var _ = Describe("Cloner", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
 		workCh = make(chan revok.CloneMsg, 10)
-		gitClient = gitclient.New("private-key-path", "public-key-path")
-		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		repositoryRepository.FindReturns(db.Repository{
+		dbRepo = db.Repository{
 			Model: db.Model{
 				ID: 42,
 			},
-		}, nil)
+		}
+		gitClient = gitclient.New("private-key-path", "public-key-path")
+		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
+		repositoryRepository.FindReturns(dbRepo, nil)
 
 		emitter = &metricsfakes.FakeEmitter{}
 		scanSuccessMetric = &metricsfakes.FakeCounter{}
@@ -78,6 +81,7 @@ var _ = Describe("Cloner", func() {
 		}
 
 		scanner = &revokfakes.FakeScanner{}
+		scheduler = &revokfakes.FakeRepoChangeScheduler{}
 
 		var err error
 		repoPath, err = ioutil.TempDir("", "revok-test-base-repo")
@@ -108,6 +112,7 @@ var _ = Describe("Cloner", func() {
 			repositoryRepository,
 			scanner,
 			emitter,
+			scheduler,
 		)
 		process = ginkgomon.Invoke(runner)
 	})
@@ -150,6 +155,13 @@ var _ = Describe("Cloner", func() {
 
 			It("marks the repository in the database as cloned", func() {
 				Eventually(repositoryRepository.MarkAsClonedCallCount).Should(Equal(1))
+			})
+
+			It("tells the fetch scheduler to start schedling fetches of the new repository", func() {
+				Eventually(scheduler.ScheduleRepoCallCount).Should(Equal(1))
+
+				_, scheduledRepo := scheduler.ScheduleRepoArgsForCall(0)
+				Expect(scheduledRepo).To(Equal(dbRepo))
 			})
 
 			It("tries to scan all branches", func() {
