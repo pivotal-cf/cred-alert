@@ -1,10 +1,10 @@
 set -e
 
-tar xzf libgit2/libgit2-0.24.1.tar.gz
+tar xzf libgit2/libgit2.tar.gz
 
 export PKG_CONFIG_PATH=/var/vcap/packages/libssh2/lib/pkgconfig:$PKG_CONFIG_PATH
 
-pushd libgit2-0.24.1
+pushd libgit2-*
   mkdir -p build
   pushd build
     cmake -DTHREADSAFE=ON \

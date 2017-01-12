@@ -5,4 +5,4 @@ dependencies:
 - libssh2
 
 files:
-- libgit2/libgit2-0.24.1.tar.gz
+- libgit2/libgit2.tar.gz

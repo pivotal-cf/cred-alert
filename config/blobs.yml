@@ -6,10 +6,6 @@ golang/golang-linux-amd64.tar.gz:
   size: 84021919
   object_id: 72838a67-0ae4-49ae-46de-24c50937b946
   sha: 2e5baf03d1590e048c84d1d5b4b6f2540efaaea1
-libgit2/libgit2-0.24.1.tar.gz:
-  size: 4173317
-  object_id: 4c81ee3d-d170-48d3-b897-c7dd23851304
-  sha: 198ac53d713c521d940951ab5d6b90b75b941918
 libgit2/libgit2.tar.gz:
   size: 4255232
   object_id: 2e84728e-dba6-42c5-6466-a7a405f65530
