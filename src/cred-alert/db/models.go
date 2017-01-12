@@ -75,8 +75,6 @@ type Repository struct {
 	FailedFetches int `gorm:"column:failed_fetches"`
 	Disabled      bool
 
-	FetchIntervalSeconds int `gorm:"column:fetch_interval"`
-
 	CredentialCounts PropertyMap `gorm:"default:'{}'"`
 }
 

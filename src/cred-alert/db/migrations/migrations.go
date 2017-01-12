@@ -21,4 +21,5 @@ var Migrations = []migration.Migrator{
 	ChangeCredentialCountToText,
 	UpdateNullCredentialCounts,
 	UpdateNullCredentialCountsAgain,
+	RemoveFetchInterval,
 }

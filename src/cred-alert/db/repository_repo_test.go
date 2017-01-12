@@ -127,14 +127,13 @@ var _ = Describe("RepositoryRepo", func() {
 
 		BeforeEach(func() {
 			repository := &db.Repository{
-				Name:                 "some-repo",
-				Owner:                "some-owner",
-				SSHURL:               "some-url",
-				Private:              true,
-				DefaultBranch:        "some-branch",
-				RawJSON:              []byte("some-json"),
-				Cloned:               true,
-				FetchIntervalSeconds: 8 * 60 * 60,
+				Name:          "some-repo",
+				Owner:         "some-owner",
+				SSHURL:        "some-url",
+				Private:       true,
+				DefaultBranch: "some-branch",
+				RawJSON:       []byte("some-json"),
+				Cloned:        true,
 			}
 			err := repo.Create(repository)
 			Expect(err).NotTo(HaveOccurred())
