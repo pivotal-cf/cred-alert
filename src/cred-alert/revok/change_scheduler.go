@@ -53,7 +53,7 @@ func (s *ChangeScheduler) ScheduleRepo(logger lager.Logger, repo db.Repository) 
 		_ = s.fetcher.Fetch(s.logger, repo.Owner, repo.Name)
 	})
 
-	logger.Info("finished-scheduling")
+	logger.Debug("finished-scheduling")
 }
 
 func (s *ChangeScheduler) ScheduleActiveRepos(logger lager.Logger) error {
@@ -66,15 +66,10 @@ func (s *ChangeScheduler) ScheduleActiveRepos(logger lager.Logger) error {
 	}
 
 	for _, repo := range repos {
-		repo := repo
-		schedule := scheduleForRepo(repo)
-
-		s.scheduler.ScheduleWork(schedule, func() {
-			_ = s.fetcher.Fetch(s.logger, repo.Owner, repo.Name)
-		})
+		s.ScheduleRepo(logger, repo)
 	}
 
-	logger.Info("finished-scheduling", lager.Data{
+	logger.Info("finished-scheduling-all-repos", lager.Data{
 		"count": len(repos),
 	})
 
