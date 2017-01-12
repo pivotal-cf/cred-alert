@@ -2,8 +2,6 @@ package queue_test
 
 import (
 	"cred-alert/crypto/cryptofakes"
-	"cred-alert/db"
-	"cred-alert/db/dbfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
@@ -19,20 +17,18 @@ import (
 
 var _ = Describe("PushEventProcessor", func() {
 	var (
-		logger               *lagertest.TestLogger
-		pushEventProcessor   queue.PubSubProcessor
-		changeFetcher        *revokfakes.FakeChangeFetcher
-		repositoryRepository *dbfakes.FakeRepositoryRepository
-		verifier             *cryptofakes.FakeVerifier
-		message              *pubsub.Message
-		emitter              *metricsfakes.FakeEmitter
-		verifyFailedCounter  *metricsfakes.FakeCounter
+		logger              *lagertest.TestLogger
+		pushEventProcessor  queue.PubSubProcessor
+		changeFetcher       *revokfakes.FakeChangeFetcher
+		verifier            *cryptofakes.FakeVerifier
+		message             *pubsub.Message
+		emitter             *metricsfakes.FakeEmitter
+		verifyFailedCounter *metricsfakes.FakeCounter
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("ingestor")
 		changeFetcher = &revokfakes.FakeChangeFetcher{}
-		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 		verifier = &cryptofakes.FakeVerifier{}
 		verifyFailedCounter = &metricsfakes.FakeCounter{}
 		emitter = &metricsfakes.FakeEmitter{}
@@ -45,7 +41,7 @@ var _ = Describe("PushEventProcessor", func() {
 			}
 		}
 
-		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, repositoryRepository, verifier, emitter)
+		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, verifier, emitter)
 
 	})
 
@@ -135,73 +131,34 @@ var _ = Describe("PushEventProcessor", func() {
 			Expect(verifyFailedCounter.IncCallCount()).To(Equal(0))
 		})
 
-		It("looks up the repository in the database", func() {
+		It("tries to do a fetch", func() {
 			pushEventProcessor.Process(logger, message)
-			Expect(repositoryRepository.FindCallCount()).To(Equal(1))
-			owner, name := repositoryRepository.FindArgsForCall(0)
-			Expect(owner).To(Equal("some-owner"))
-			Expect(name).To(Equal("some-repo"))
+			Expect(changeFetcher.FetchCallCount()).To(Equal(1))
+			_, actualOwner, actualName := changeFetcher.FetchArgsForCall(0)
+			Expect(actualOwner).To(Equal("some-owner"))
+			Expect(actualName).To(Equal("some-repo"))
 		})
 
-		Context("when the repository can be found in the database", func() {
-			var (
-				expectedRepository *db.Repository
-			)
-
+		Context("when the fetch succeeds", func() {
 			BeforeEach(func() {
-				expectedRepository = &db.Repository{
-					Owner: "some-owner",
-					Name:  "some-name",
-				}
-
-				repositoryRepository.FindReturns(*expectedRepository, nil)
+				changeFetcher.FetchReturns(nil)
 			})
 
-			It("tries to do a fetch", func() {
-				pushEventProcessor.Process(logger, message)
-				Expect(changeFetcher.FetchCallCount()).To(Equal(1))
-				_, actualRepository := changeFetcher.FetchArgsForCall(0)
-				Expect(actualRepository).To(Equal(*expectedRepository))
-			})
-
-			Context("when the fetch succeeds", func() {
-				BeforeEach(func() {
-					changeFetcher.FetchReturns(nil)
-				})
-
-				It("does not retry or return an error", func() {
-					retry, err := pushEventProcessor.Process(logger, message)
-					Expect(retry).To(BeFalse())
-					Expect(err).NotTo(HaveOccurred())
-				})
-			})
-
-			Context("when the fetch fails", func() {
-				BeforeEach(func() {
-					changeFetcher.FetchReturns(errors.New("an-error"))
-				})
-
-				It("returns an error that can be retried", func() {
-					retry, err := pushEventProcessor.Process(logger, message)
-					Expect(retry).To(BeTrue())
-					Expect(err).To(HaveOccurred())
-				})
-			})
-		})
-
-		Context("when the repository can not be found in the database", func() {
-			BeforeEach(func() {
-				repositoryRepository.FindReturns(db.Repository{}, errors.New("an-error"))
-			})
-
-			It("does not try to do a fetch", func() {
-				pushEventProcessor.Process(logger, message)
-				Expect(changeFetcher.FetchCallCount()).To(BeZero())
-			})
-
-			It("returns an error that cannot be retried", func() {
+			It("does not retry or return an error", func() {
 				retry, err := pushEventProcessor.Process(logger, message)
 				Expect(retry).To(BeFalse())
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the fetch fails", func() {
+			BeforeEach(func() {
+				changeFetcher.FetchReturns(errors.New("an-error"))
+			})
+
+			It("returns an error that can be retried", func() {
+				retry, err := pushEventProcessor.Process(logger, message)
+				Expect(retry).To(BeTrue())
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -218,11 +175,6 @@ var _ = Describe("PushEventProcessor", func() {
 				},
 				Data: bs,
 			}
-		})
-
-		It("does not look up the repository in the database", func() {
-			pushEventProcessor.Process(logger, message)
-			Expect(repositoryRepository.FindCallCount()).To(BeZero())
 		})
 
 		It("does not try to do a fetch", func() {
@@ -252,11 +204,6 @@ var _ = Describe("PushEventProcessor", func() {
 			}
 		})
 
-		It("does not look up the repository in the database", func() {
-			pushEventProcessor.Process(logger, message)
-			Expect(repositoryRepository.FindCallCount()).To(BeZero())
-		})
-
 		It("does not try to do a fetch", func() {
 			pushEventProcessor.Process(logger, message)
 			Expect(changeFetcher.FetchCallCount()).To(BeZero())
@@ -282,11 +229,6 @@ var _ = Describe("PushEventProcessor", func() {
 				},
 				Data: bs,
 			}
-		})
-
-		It("does not look up the repository in the database", func() {
-			pushEventProcessor.Process(logger, message)
-			Expect(repositoryRepository.FindCallCount()).To(BeZero())
 		})
 
 		It("does not try to do a fetch", func() {

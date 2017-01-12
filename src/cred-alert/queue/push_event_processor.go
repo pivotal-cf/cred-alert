@@ -3,7 +3,6 @@ package queue
 import (
 	"bytes"
 	"cred-alert/crypto"
-	"cred-alert/db"
 	"cred-alert/metrics"
 	"cred-alert/revok"
 	"encoding/base64"
@@ -15,7 +14,6 @@ import (
 )
 
 type pushEventProcessor struct {
-	db                  db.RepositoryRepository
 	changeFetcher       revok.ChangeFetcher
 	verifier            crypto.Verifier
 	verifyFailedCounter metrics.Counter
@@ -23,12 +21,10 @@ type pushEventProcessor struct {
 
 func NewPushEventProcessor(
 	changeFetcher revok.ChangeFetcher,
-	db db.RepositoryRepository,
 	verifier crypto.Verifier,
 	emitter metrics.Emitter,
 ) *pushEventProcessor {
 	return &pushEventProcessor{
-		db:                  db,
 		changeFetcher:       changeFetcher,
 		verifier:            verifier,
 		verifyFailedCounter: emitter.Counter("queue.push_event_processor.verify.failed"),
@@ -75,13 +71,7 @@ func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Messag
 		"owner":      p.Owner,
 	})
 
-	repo, err := h.db.Find(p.Owner, p.Repository)
-	if err != nil {
-		logger.Error("repository-lookup-failed", err)
-		return false, err
-	}
-
-	err = h.changeFetcher.Fetch(logger, repo)
+	err = h.changeFetcher.Fetch(logger, p.Owner, p.Repository)
 	if err != nil {
 		return true, err
 	}

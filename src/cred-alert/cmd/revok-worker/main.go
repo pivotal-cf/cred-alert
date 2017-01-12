@@ -236,7 +236,6 @@ func main() {
 		}
 		pushEventProcessor := queue.NewPushEventProcessor(
 			changeFetcher,
-			repositoryRepository,
 			crypto.NewRSAVerifier(publicKey),
 			emitter,
 		)

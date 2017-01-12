@@ -55,8 +55,9 @@ var _ = Describe("Change Scheduler", func() {
 			submittedWork()
 
 			Expect(fetcher.FetchCallCount()).To(Equal(1))
-			_, passedRepo := fetcher.FetchArgsForCall(0)
-			Expect(passedRepo).To(Equal(repo))
+			_, passedOwner, passedName := fetcher.FetchArgsForCall(0)
+			Expect(passedOwner).To(Equal(repo.Owner))
+			Expect(passedName).To(Equal(repo.Name))
 		})
 	})
 
@@ -98,14 +99,16 @@ var _ = Describe("Change Scheduler", func() {
 				firstJob()
 
 				Expect(fetcher.FetchCallCount()).To(Equal(1))
-				_, passedRepo := fetcher.FetchArgsForCall(0)
-				Expect(passedRepo).To(Equal(repo1))
+				_, passedOwner, passedName := fetcher.FetchArgsForCall(0)
+				Expect(passedOwner).To(Equal(repo1.Owner))
+				Expect(passedName).To(Equal(repo1.Name))
 
 				secondJob()
 
 				Expect(fetcher.FetchCallCount()).To(Equal(2))
-				_, passedRepo = fetcher.FetchArgsForCall(1)
-				Expect(passedRepo).To(Equal(repo2))
+				_, passedOwner, passedName = fetcher.FetchArgsForCall(1)
+				Expect(passedOwner).To(Equal(repo2.Owner))
+				Expect(passedName).To(Equal(repo2.Name))
 			})
 
 			It("distributes fetches across a time period", func() {

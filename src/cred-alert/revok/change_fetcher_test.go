@@ -45,6 +45,9 @@ var _ = Describe("ChangeFetcher", func() {
 		repoToFetch     *git.Repository
 
 		fetcher revok.ChangeFetcher
+
+		repo     db.Repository
+		fetchErr error
 	)
 
 	BeforeEach(func() {
@@ -110,6 +113,16 @@ var _ = Describe("ChangeFetcher", func() {
 		repoToFetch, err = git.Clone(remoteRepoPath, repoToFetchPath, &git.CloneOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer repoToFetch.Free()
+
+		repo = db.Repository{
+			Model: db.Model{
+				ID: 42,
+			},
+			Owner: "some-owner",
+			Name:  "some-repo",
+			Path:  repoToFetchPath,
+		}
+		repositoryRepository.FindReturns(repo, nil)
 	})
 
 	JustBeforeEach(func() {
@@ -121,6 +134,8 @@ var _ = Describe("ChangeFetcher", func() {
 			fetchRepository,
 			emitter,
 		)
+
+		fetchErr = fetcher.Fetch(logger, repo.Owner, repo.Name)
 	})
 
 	AfterEach(func() {
@@ -128,157 +143,178 @@ var _ = Describe("ChangeFetcher", func() {
 		os.RemoveAll(remoteRepoPath)
 	})
 
-	Context("when there are repositories to fetch", func() {
-		var (
-			repo     db.Repository
-			fetchErr error
-		)
+	It("increments the fetch success metric", func() {
+		Expect(fetchSuccessCounter.IncCallCount()).To(Equal(1))
+	})
+
+	It("finds the repo in the database (to make sure it is up to date)", func() {
+		Expect(repositoryRepository.FindCallCount()).To(Equal(1))
+
+		foundOwner, foundName := repositoryRepository.FindArgsForCall(0)
+		Expect(foundOwner).To(Equal(repo.Owner))
+		Expect(foundName).To(Equal(repo.Name))
+	})
+
+	Context("when there is an error loading the repo from the database", func() {
+		var fakeGitClient *gitclientfakes.FakeClient
 
 		BeforeEach(func() {
-			repo = db.Repository{
-				Model: db.Model{
-					ID: 42,
-				},
-				Owner: "some-owner",
-				Name:  "some-repo",
-				Path:  repoToFetchPath,
-			}
+			repositoryRepository.FindReturns(db.Repository{}, errors.New("disaster"))
+
+			fakeGitClient = &gitclientfakes.FakeClient{}
+			gitClient = fakeGitClient
 		})
 
-		JustBeforeEach(func() {
-			fetchErr = fetcher.Fetch(logger, repo)
+		It("does not try and fetch it", func() {
+			Expect(fakeGitClient.FetchCallCount()).To(BeZero())
 		})
 
-		It("increments the fetch success metric", func() {
-			Expect(fetchSuccessCounter.IncCallCount()).To(Equal(1))
+		It("errors", func() {
+			Expect(fetchErr).To(HaveOccurred())
+		})
+	})
+
+	Context("when there is an error fetching", func() {
+		BeforeEach(func() {
+			fakeGitClient := &gitclientfakes.FakeClient{}
+			fakeGitClient.FetchReturns(nil, errors.New("an-error"))
+			gitClient = fakeGitClient
 		})
 
-		Context("when there is an error fetching", func() {
-			BeforeEach(func() {
-				fakeGitClient := &gitclientfakes.FakeClient{}
-				fakeGitClient.FetchReturns(nil, errors.New("an-error"))
-				gitClient = fakeGitClient
-			})
+		It("registers the failed fetch", func() {
+			Expect(repositoryRepository.RegisterFailedFetchCallCount()).To(Equal(1))
+		})
+	})
 
-			It("registers the failed fetch", func() {
-				Expect(repositoryRepository.RegisterFailedFetchCallCount()).To(Equal(1))
-			})
+	Context("when the repository is disabled", func() {
+		var fakeGitClient *gitclientfakes.FakeClient
+
+		BeforeEach(func() {
+			fakeGitClient = &gitclientfakes.FakeClient{}
+			gitClient = fakeGitClient
+
+			repo.Disabled = true
+			repositoryRepository.FindReturns(repo, nil)
 		})
 
-		Context("when the remote has changes", func() {
-			var results []createCommitResult
+		It("does not try an fetch it", func() {
+			Expect(fakeGitClient.FetchCallCount()).To(BeZero())
+		})
+	})
 
-			BeforeEach(func() {
-				results = []createCommitResult{}
+	Context("when the remote has changes", func() {
+		var results []createCommitResult
 
-				result := createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit", nil)
-				results = append(results, result)
+		BeforeEach(func() {
+			results = []createCommitResult{}
 
-				result = createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
-				results = append(results, result)
-			})
+			result := createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit", nil)
+			results = append(results, result)
 
-			It("is successful", func() {
-				Expect(fetchErr).NotTo(HaveOccurred())
-			})
+			result = createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
+			results = append(results, result)
+		})
 
-			It("increments the scan success metric", func() {
-				Expect(scanSuccessCounter.IncCallCount()).To(Equal(2))
-			})
+		It("is successful", func() {
+			Expect(fetchErr).NotTo(HaveOccurred())
+		})
 
-			It("scans only the changes", func() {
-				Expect(scanner.ScanCallCount()).To(Equal(2)) // 2 new commits
+		It("increments the scan success metric", func() {
+			Expect(scanSuccessCounter.IncCallCount()).To(Equal(2))
+		})
 
-				var branches []string
-				for i := 0; i < scanner.ScanCallCount(); i++ {
-					_, owner, name, _, branch, startSHA, stopSHA := scanner.ScanArgsForCall(i)
-					Expect(owner).To(Equal("some-owner"))
-					Expect(name).To(Equal("some-repo"))
+		It("scans only the changes", func() {
+			Expect(scanner.ScanCallCount()).To(Equal(2)) // 2 new commits
 
-					branches = append(branches, branch)
-					for _, result := range results {
-						if result.To.String() == startSHA {
-							Expect(stopSHA).To(Equal(result.From.String()))
-						}
+			var branches []string
+			for i := 0; i < scanner.ScanCallCount(); i++ {
+				_, owner, name, _, branch, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+				Expect(owner).To(Equal("some-owner"))
+				Expect(name).To(Equal("some-repo"))
+
+				branches = append(branches, branch)
+				for _, result := range results {
+					if result.To.String() == startSHA {
+						Expect(stopSHA).To(Equal(result.From.String()))
 					}
 				}
+			}
 
-				Expect(branches).To(ConsistOf("refs/remotes/origin/master", "refs/remotes/origin/topicA"))
-			})
+			Expect(branches).To(ConsistOf("refs/remotes/origin/master", "refs/remotes/origin/topicA"))
+		})
 
-			It("tries to store information in the database about the fetch", func() {
-				Expect(fetchRepository.RegisterFetchCallCount()).To(Equal(1))
-				_, fetch := fetchRepository.RegisterFetchArgsForCall(0)
-				Expect(fetch.Path).To(Equal(repoToFetchPath))
-				Expect(fetch.Repository.ID).To(BeNumerically(">", 0))
+		It("tries to store information in the database about the fetch", func() {
+			Expect(fetchRepository.RegisterFetchCallCount()).To(Equal(1))
+			_, fetch := fetchRepository.RegisterFetchArgsForCall(0)
+			Expect(fetch.Path).To(Equal(repoToFetchPath))
+			Expect(fetch.Repository.ID).To(BeNumerically(">", 0))
 
-				localRepo, err := git.OpenRepository(repoToFetchPath)
+			localRepo, err := git.OpenRepository(repoToFetchPath)
+			Expect(err).NotTo(HaveOccurred())
+			defer localRepo.Free()
+
+			referenceIterator, err := localRepo.NewReferenceIteratorGlob("refs/remotes/origin/*")
+			Expect(err).NotTo(HaveOccurred())
+			defer referenceIterator.Free()
+
+			expectedChanges := map[string][]*git.Oid{}
+
+			for {
+				ref, err := referenceIterator.Next()
+				if git.IsErrorCode(err, git.ErrIterOver) {
+					break
+				}
 				Expect(err).NotTo(HaveOccurred())
-				defer localRepo.Free()
 
-				referenceIterator, err := localRepo.NewReferenceIteratorGlob("refs/remotes/origin/*")
-				Expect(err).NotTo(HaveOccurred())
-				defer referenceIterator.Free()
-
-				expectedChanges := map[string][]*git.Oid{}
-
-				for {
-					ref, err := referenceIterator.Next()
-					if git.IsErrorCode(err, git.ErrIterOver) {
-						break
-					}
+				if ref.Name() == "refs/remotes/origin/topicA" {
+					zeroOid, err := git.NewOid("0000000000000000000000000000000000000000")
 					Expect(err).NotTo(HaveOccurred())
 
-					if ref.Name() == "refs/remotes/origin/topicA" {
-						zeroOid, err := git.NewOid("0000000000000000000000000000000000000000")
-						Expect(err).NotTo(HaveOccurred())
+					expectedChanges[ref.Name()] = []*git.Oid{zeroOid, ref.Target()}
+				} else {
+					target, err := localRepo.Lookup(ref.Target())
+					Expect(err).NotTo(HaveOccurred())
+					defer target.Free()
 
-						expectedChanges[ref.Name()] = []*git.Oid{zeroOid, ref.Target()}
-					} else {
-						target, err := localRepo.Lookup(ref.Target())
-						Expect(err).NotTo(HaveOccurred())
-						defer target.Free()
+					targetCommit, err := target.AsCommit()
+					Expect(err).NotTo(HaveOccurred())
+					defer targetCommit.Free()
 
-						targetCommit, err := target.AsCommit()
-						Expect(err).NotTo(HaveOccurred())
-						defer targetCommit.Free()
-
-						expectedChanges[ref.Name()] = []*git.Oid{targetCommit.ParentId(0), ref.Target()}
-					}
+					expectedChanges[ref.Name()] = []*git.Oid{targetCommit.ParentId(0), ref.Target()}
 				}
+			}
 
-				bs, err := json.Marshal(expectedChanges)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(fetch.Changes).To(Equal(bs))
-			})
-
-			Context("when there is an error scanning a change", func() {
-				BeforeEach(func() {
-					scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error {
-						if scanner.ScanCallCount() == 1 {
-							return nil
-						}
-
-						return errors.New("an-error")
-					}
-				})
-
-				It("increments the failed scan metric", func() {
-					Expect(scanFailedCounter.IncCallCount()).To(Equal(1))
-				})
-			})
+			bs, err := json.Marshal(expectedChanges)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fetch.Changes).To(Equal(bs))
 		})
 
-		Context("when there is an error fetching changes", func() {
+		Context("when there is an error scanning a change", func() {
 			BeforeEach(func() {
-				fakeGitClient := &gitclientfakes.FakeClient{}
-				fakeGitClient.FetchReturns(nil, errors.New("an-error"))
-				gitClient = fakeGitClient
+				scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error {
+					if scanner.ScanCallCount() == 1 {
+						return nil
+					}
+
+					return errors.New("an-error")
+				}
 			})
 
-			It("increments the failed fetch metric", func() {
-				Expect(fetchFailedCounter.IncCallCount()).To(Equal(1))
+			It("increments the failed scan metric", func() {
+				Expect(scanFailedCounter.IncCallCount()).To(Equal(1))
 			})
+		})
+	})
+
+	Context("when there is an error fetching changes", func() {
+		BeforeEach(func() {
+			fakeGitClient := &gitclientfakes.FakeClient{}
+			fakeGitClient.FetchReturns(nil, errors.New("an-error"))
+			gitClient = fakeGitClient
+		})
+
+		It("increments the failed fetch metric", func() {
+			Expect(fetchFailedCounter.IncCallCount()).To(Equal(1))
 		})
 	})
 })

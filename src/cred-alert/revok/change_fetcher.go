@@ -15,7 +15,7 @@ import (
 //go:generate counterfeiter . ChangeFetcher
 
 type ChangeFetcher interface {
-	Fetch(lager.Logger, db.Repository) error
+	Fetch(logger lager.Logger, owner string, name string) error
 }
 
 type changeFetcher struct {
@@ -57,12 +57,27 @@ func NewChangeFetcher(
 
 func (c *changeFetcher) Fetch(
 	logger lager.Logger,
-	repo db.Repository,
+	owner string,
+	name string,
 ) error {
 	repoLogger := logger.WithData(lager.Data{
-		"owner":      repo.Owner,
-		"repository": repo.Name,
-		"path":       repo.Path,
+		"owner":      owner,
+		"repository": name,
+	})
+
+	repo, err := c.repositoryRepository.Find(owner, name)
+	if err != nil {
+		repoLogger.Error("failed-to-find-repository", err)
+		return err
+	}
+
+	if repo.Disabled {
+		repoLogger.Info("skipping-fetch-of-disabled-repo")
+		return nil
+	}
+
+	repoLogger = repoLogger.WithData(lager.Data{
+		"path": repo.Path,
 	})
 
 	var changes map[string][]*git.Oid
@@ -72,11 +87,14 @@ func (c *changeFetcher) Fetch(
 	})
 
 	if fetchErr != nil {
+		repoLogger.Error("fetch-failed", fetchErr)
 		c.fetchFailedCounter.Inc(repoLogger)
+
 		registerErr := c.repositoryRepository.RegisterFailedFetch(repoLogger, &repo)
 		if registerErr != nil {
 			repoLogger.Error("failed-to-register-failed-fetch", registerErr)
 		}
+
 		return fetchErr
 	}
 

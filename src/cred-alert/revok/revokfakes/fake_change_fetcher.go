@@ -2,7 +2,6 @@
 package revokfakes
 
 import (
-	"cred-alert/db"
 	"cred-alert/revok"
 	"sync"
 
@@ -10,11 +9,12 @@ import (
 )
 
 type FakeChangeFetcher struct {
-	FetchStub        func(lager.Logger, db.Repository) error
+	FetchStub        func(logger lager.Logger, owner string, name string) error
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
-		arg1 lager.Logger
-		arg2 db.Repository
+		logger lager.Logger
+		owner  string
+		name   string
 	}
 	fetchReturns struct {
 		result1 error
@@ -23,16 +23,17 @@ type FakeChangeFetcher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeChangeFetcher) Fetch(arg1 lager.Logger, arg2 db.Repository) error {
+func (fake *FakeChangeFetcher) Fetch(logger lager.Logger, owner string, name string) error {
 	fake.fetchMutex.Lock()
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
-		arg1 lager.Logger
-		arg2 db.Repository
-	}{arg1, arg2})
-	fake.recordInvocation("Fetch", []interface{}{arg1, arg2})
+		logger lager.Logger
+		owner  string
+		name   string
+	}{logger, owner, name})
+	fake.recordInvocation("Fetch", []interface{}{logger, owner, name})
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
-		return fake.FetchStub(arg1, arg2)
+		return fake.FetchStub(logger, owner, name)
 	} else {
 		return fake.fetchReturns.result1
 	}
@@ -44,10 +45,10 @@ func (fake *FakeChangeFetcher) FetchCallCount() int {
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (lager.Logger, db.Repository) {
+func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (lager.Logger, string, string) {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
-	return fake.fetchArgsForCall[i].arg1, fake.fetchArgsForCall[i].arg2
+	return fake.fetchArgsForCall[i].logger, fake.fetchArgsForCall[i].owner, fake.fetchArgsForCall[i].name
 }
 
 func (fake *FakeChangeFetcher) FetchReturns(result1 error) {
