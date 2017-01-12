@@ -10,6 +10,10 @@ libgit2/libgit2-0.24.1.tar.gz:
   size: 4173317
   object_id: 4c81ee3d-d170-48d3-b897-c7dd23851304
   sha: 198ac53d713c521d940951ab5d6b90b75b941918
+libgit2/libgit2.tar.gz:
+  size: 4255232
+  object_id: 2e84728e-dba6-42c5-6466-a7a405f65530
+  sha: a9a51372025ed59287a64e1cbf916f7be5772021
 libssh2/libssh2-1.7.0.tar.gz:
   size: 811714
   object_id: 0ad299de-3a95-4c29-a9b1-3d8ee2578bb4
