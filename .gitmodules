@@ -49,10 +49,6 @@
 	path = src/github.com/satori/go.uuid
 	url = https://github.com/satori/go.uuid
 	branch = master
-[submodule "src/github.com/hashicorp/errwrap"]
-	path = src/github.com/hashicorp/errwrap
-	url = https://github.com/hashicorp/errwrap
-	branch = master
 [submodule "src/github.com/hashicorp/go-multierror"]
 	path = src/github.com/hashicorp/go-multierror
 	url = https://github.com/hashicorp/go-multierror
@@ -140,4 +136,8 @@
 [submodule "src/github.com/robfig/cron"]
 	path = src/github.com/robfig/cron
 	url = https://github.com/robfig/cron
+	branch = master
+[submodule "src/golang.org/x/text"]
+	path = src/golang.org/x/text
+	url = https://go.googlesource.com/text
 	branch = master

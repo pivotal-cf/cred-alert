@@ -59,6 +59,20 @@ func (m *OrganizationCredentialCount) String() string            { return proto.
 func (*OrganizationCredentialCount) ProtoMessage()               {}
 func (*OrganizationCredentialCount) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *OrganizationCredentialCount) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *OrganizationCredentialCount) GetCount() int64 {
+	if m != nil {
+		return m.Count
+	}
+	return 0
+}
+
 type CredentialCountResponse struct {
 	CredentialCounts []*OrganizationCredentialCount `protobuf:"bytes,1,rep,name=credentialCounts" json:"credentialCounts,omitempty"`
 }
@@ -86,6 +100,13 @@ func (*OrganizationCredentialCountRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor0, []int{3}
 }
 
+func (m *OrganizationCredentialCountRequest) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
 type RepositoryCredentialCount struct {
 	Owner string `protobuf:"bytes,1,opt,name=owner" json:"owner,omitempty"`
 	Name  string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
@@ -96,6 +117,27 @@ func (m *RepositoryCredentialCount) Reset()                    { *m = Repository
 func (m *RepositoryCredentialCount) String() string            { return proto.CompactTextString(m) }
 func (*RepositoryCredentialCount) ProtoMessage()               {}
 func (*RepositoryCredentialCount) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *RepositoryCredentialCount) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *RepositoryCredentialCount) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *RepositoryCredentialCount) GetCount() int64 {
+	if m != nil {
+		return m.Count
+	}
+	return 0
+}
 
 type OrganizationCredentialCountResponse struct {
 	CredentialCounts []*RepositoryCredentialCount `protobuf:"bytes,1,rep,name=credentialCounts" json:"credentialCounts,omitempty"`
@@ -127,6 +169,20 @@ func (*RepositoryCredentialCountRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor0, []int{6}
 }
 
+func (m *RepositoryCredentialCountRequest) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *RepositoryCredentialCountRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
 type BranchCredentialCount struct {
 	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	Count int64  `protobuf:"varint,2,opt,name=count" json:"count,omitempty"`
@@ -136,6 +192,20 @@ func (m *BranchCredentialCount) Reset()                    { *m = BranchCredenti
 func (m *BranchCredentialCount) String() string            { return proto.CompactTextString(m) }
 func (*BranchCredentialCount) ProtoMessage()               {}
 func (*BranchCredentialCount) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *BranchCredentialCount) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *BranchCredentialCount) GetCount() int64 {
+	if m != nil {
+		return m.Count
+	}
+	return 0
+}
 
 type RepositoryCredentialCountResponse struct {
 	CredentialCounts []*BranchCredentialCount `protobuf:"bytes,1,rep,name=credentialCounts" json:"credentialCounts,omitempty"`
@@ -173,7 +243,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for Revok service
 
@@ -302,7 +372,7 @@ var _Revok_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: fileDescriptor0,
+	Metadata: "revok.proto",
 }
 
 func init() { proto.RegisterFile("revok.proto", fileDescriptor0) }
