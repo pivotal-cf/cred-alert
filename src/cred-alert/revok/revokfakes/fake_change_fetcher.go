@@ -4,22 +4,12 @@ package revokfakes
 import (
 	"cred-alert/db"
 	"cred-alert/revok"
-	"os"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
 )
 
 type FakeChangeFetcher struct {
-	RunStub        func(signals <-chan os.Signal, ready chan<- struct{}) error
-	runMutex       sync.RWMutex
-	runArgsForCall []struct {
-		signals <-chan os.Signal
-		ready   chan<- struct{}
-	}
-	runReturns struct {
-		result1 error
-	}
 	FetchStub        func(lager.Logger, db.Repository) error
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
@@ -31,40 +21,6 @@ type FakeChangeFetcher struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeChangeFetcher) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
-	fake.runMutex.Lock()
-	fake.runArgsForCall = append(fake.runArgsForCall, struct {
-		signals <-chan os.Signal
-		ready   chan<- struct{}
-	}{signals, ready})
-	fake.recordInvocation("Run", []interface{}{signals, ready})
-	fake.runMutex.Unlock()
-	if fake.RunStub != nil {
-		return fake.RunStub(signals, ready)
-	} else {
-		return fake.runReturns.result1
-	}
-}
-
-func (fake *FakeChangeFetcher) RunCallCount() int {
-	fake.runMutex.RLock()
-	defer fake.runMutex.RUnlock()
-	return len(fake.runArgsForCall)
-}
-
-func (fake *FakeChangeFetcher) RunArgsForCall(i int) (<-chan os.Signal, chan<- struct{}) {
-	fake.runMutex.RLock()
-	defer fake.runMutex.RUnlock()
-	return fake.runArgsForCall[i].signals, fake.runArgsForCall[i].ready
-}
-
-func (fake *FakeChangeFetcher) RunReturns(result1 error) {
-	fake.RunStub = nil
-	fake.runReturns = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *FakeChangeFetcher) Fetch(arg1 lager.Logger, arg2 db.Repository) error {
@@ -104,8 +60,6 @@ func (fake *FakeChangeFetcher) FetchReturns(result1 error) {
 func (fake *FakeChangeFetcher) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.runMutex.RLock()
-	defer fake.runMutex.RUnlock()
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	return fake.invocations
