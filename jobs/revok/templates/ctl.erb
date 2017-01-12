@@ -31,8 +31,8 @@ case $1 in
     echo $$ > $PIDFILE
 
     exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/revok-worker \
-        --config-file /var/vcap/jobs/revok/config/config.yml                           \
-        1>>$LOG_DIR/revok.stdout.log                                                   \
+        --config-file /var/vcap/jobs/revok/config/config.yml \
+        1>>$LOG_DIR/revok.stdout.log \
         2>>$LOG_DIR/revok.stderr.log
 
     ;;
