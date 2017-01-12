@@ -79,6 +79,8 @@ func (r *Rescanner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 	logger.Info("rescanning", lager.Data{
+		"owner":   priorScan.Owner,
+		"repo":    priorScan.Repository,
 		"scan-id": priorScan.ID,
 	})
 
