@@ -55,7 +55,6 @@ func NewDefaultSniffer() Sniffer {
 			matchers.Filter(matchers.Format(cryptSHA256Pattern), "$5$"),
 			matchers.Filter(matchers.Format(cryptSHA512Pattern), "$6$"),
 			matchers.Substring(rsaPrivateKeyHeaderPattern),
-			matchers.Filter(matchers.Assignment(), "=", ":", "=>", "SECRET", "PRIVATE", "KEY", "PASSWORD", "SALT"),
 		),
 		exclusionMatcher: matchers.UpcasedMulti(
 			matchers.Substring(bashStringInterpolationPattern),

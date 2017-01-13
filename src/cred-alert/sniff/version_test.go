@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const expectedSHA = "8d25838fd1637645cd7f7f1e5c6a4e00e89a72b8961246d739ea003dc428e3f6"
+const expectedSHA = "009814bbf7d0e2ee2c86a3709fae6fa67bbf35026082e8669dcc96217187e810"
 
 func shouldNotScan(fi os.FileInfo) bool {
 	return fi.IsDir() || strings.HasSuffix(fi.Name(), "_test.go")

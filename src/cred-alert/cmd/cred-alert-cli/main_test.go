@@ -34,7 +34,7 @@ index 940393e..fa5a232 100644
 --- a/spec/integration/git-secrets-pattern-tests.txt
 +++ b/spec/integration/git-secrets-pattern-tests.txt
 @@ -28,7 +28,7 @@ header line goes here
-+private_key '$should_match'
++AKIAJDHEYSPVNSHFKSMS
 
  ## Suspicious Variable Names
 `
@@ -142,7 +142,7 @@ index 940393e..fa5a232 100644
 				Eventually(session.Out).Should(gbytes.Say("spec/integration/git-secrets-pattern-tests.txt:28"))
 			})
 
-			ItShowsTheCredentialInTheOutput(`private_key '\$should_match'`)
+			ItShowsTheCredentialInTheOutput("AKIAJDHEYSPVNSHFKSMS")
 			ItTellsPeopleHowToRemoveTheirCredentials()
 		})
 	})
