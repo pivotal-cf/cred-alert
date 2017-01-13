@@ -7,6 +7,7 @@ gosub list \
   -a cred-alert/cmd/revok-worker \
   -a cred-alert/cmd/revok-ingestor \
   -a cred-alert/cmd/credential-count-publisher \
+  -t rats \
   -a teamstr/cmd/teamstr \
   -a github.com/onsi/ginkgo \
   -a github.com/onsi/gomega \

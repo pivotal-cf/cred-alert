@@ -141,3 +141,7 @@
 	path = src/golang.org/x/text
 	url = https://go.googlesource.com/text
 	branch = master
+[submodule "src/github.com/nlopes/slack"]
+	path = src/github.com/nlopes/slack
+	url = https://github.com/nlopes/slack
+	branch = master
