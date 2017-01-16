@@ -6,6 +6,8 @@ service Revok {
   rpc GetCredentialCounts(CredentialCountRequest) returns (CredentialCountResponse) {}
   rpc GetOrganizationCredentialCounts(OrganizationCredentialCountRequest) returns (OrganizationCredentialCountResponse) {}
   rpc GetRepositoryCredentialCounts(RepositoryCredentialCountRequest) returns (RepositoryCredentialCountResponse) {}
+
+  rpc Search(SearchQuery) returns (stream SearchResult) {}
 }
 
 message CredentialCountRequest {}
@@ -45,4 +47,28 @@ message BranchCredentialCount {
 
 message RepositoryCredentialCountResponse {
   repeated BranchCredentialCount credentialCounts = 1;
+}
+
+message SearchQuery {
+  string regex = 1;
+}
+
+message SearchResult {
+  SourceLocation location = 1;
+  string content = 2;
+}
+
+message SourceLocation {
+  Repository repository = 1;
+  string revision = 2;
+  string path = 3;
+
+  uint32 line_number = 4;
+  uint32 location = 5;
+  uint32 length = 6;
+}
+
+message Repository {
+  string owner = 1;
+  string name = 2;
 }

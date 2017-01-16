@@ -17,9 +17,7 @@ import (
 //go:generate counterfeiter . Server
 
 type Server interface {
-	GetCredentialCounts(context.Context, *revokpb.CredentialCountRequest) (*revokpb.CredentialCountResponse, error)
-	GetOrganizationCredentialCounts(context.Context, *revokpb.OrganizationCredentialCountRequest) (*revokpb.OrganizationCredentialCountResponse, error)
-	GetRepositoryCredentialCounts(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error)
+	revokpb.RevokServer
 }
 
 type server struct {
@@ -139,4 +137,8 @@ func (s *server) GetRepositoryCredentialCounts(
 	}
 
 	return response, nil
+}
+
+func (s *server) Search(*revokpb.SearchQuery, revokpb.Revok_SearchServer) error {
+	panic("not implemented")
 }

@@ -30,15 +30,24 @@ type FakeServer struct {
 		result1 *revokpb.OrganizationCredentialCountResponse
 		result2 error
 	}
-	GetRepositoryCredentialCountsStub        func(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error)
+	GetRepositoryCredentialCountsStub        func(context.Context, *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error)
 	getRepositoryCredentialCountsMutex       sync.RWMutex
 	getRepositoryCredentialCountsArgsForCall []struct {
-		ctx context.Context
-		in  *revokpb.RepositoryCredentialCountRequest
+		arg1 context.Context
+		arg2 *revokpb.RepositoryCredentialCountRequest
 	}
 	getRepositoryCredentialCountsReturns struct {
 		result1 *revokpb.RepositoryCredentialCountResponse
 		result2 error
+	}
+	SearchStub        func(*revokpb.SearchQuery, revokpb.Revok_SearchServer) error
+	searchMutex       sync.RWMutex
+	searchArgsForCall []struct {
+		arg1 *revokpb.SearchQuery
+		arg2 revokpb.Revok_SearchServer
+	}
+	searchReturns struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -114,16 +123,16 @@ func (fake *FakeServer) GetOrganizationCredentialCountsReturns(result1 *revokpb.
 	}{result1, result2}
 }
 
-func (fake *FakeServer) GetRepositoryCredentialCounts(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error) {
+func (fake *FakeServer) GetRepositoryCredentialCounts(arg1 context.Context, arg2 *revokpb.RepositoryCredentialCountRequest) (*revokpb.RepositoryCredentialCountResponse, error) {
 	fake.getRepositoryCredentialCountsMutex.Lock()
 	fake.getRepositoryCredentialCountsArgsForCall = append(fake.getRepositoryCredentialCountsArgsForCall, struct {
-		ctx context.Context
-		in  *revokpb.RepositoryCredentialCountRequest
-	}{ctx, in})
-	fake.recordInvocation("GetRepositoryCredentialCounts", []interface{}{ctx, in})
+		arg1 context.Context
+		arg2 *revokpb.RepositoryCredentialCountRequest
+	}{arg1, arg2})
+	fake.recordInvocation("GetRepositoryCredentialCounts", []interface{}{arg1, arg2})
 	fake.getRepositoryCredentialCountsMutex.Unlock()
 	if fake.GetRepositoryCredentialCountsStub != nil {
-		return fake.GetRepositoryCredentialCountsStub(ctx, in)
+		return fake.GetRepositoryCredentialCountsStub(arg1, arg2)
 	} else {
 		return fake.getRepositoryCredentialCountsReturns.result1, fake.getRepositoryCredentialCountsReturns.result2
 	}
@@ -138,7 +147,7 @@ func (fake *FakeServer) GetRepositoryCredentialCountsCallCount() int {
 func (fake *FakeServer) GetRepositoryCredentialCountsArgsForCall(i int) (context.Context, *revokpb.RepositoryCredentialCountRequest) {
 	fake.getRepositoryCredentialCountsMutex.RLock()
 	defer fake.getRepositoryCredentialCountsMutex.RUnlock()
-	return fake.getRepositoryCredentialCountsArgsForCall[i].ctx, fake.getRepositoryCredentialCountsArgsForCall[i].in
+	return fake.getRepositoryCredentialCountsArgsForCall[i].arg1, fake.getRepositoryCredentialCountsArgsForCall[i].arg2
 }
 
 func (fake *FakeServer) GetRepositoryCredentialCountsReturns(result1 *revokpb.RepositoryCredentialCountResponse, result2 error) {
@@ -147,6 +156,40 @@ func (fake *FakeServer) GetRepositoryCredentialCountsReturns(result1 *revokpb.Re
 		result1 *revokpb.RepositoryCredentialCountResponse
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeServer) Search(arg1 *revokpb.SearchQuery, arg2 revokpb.Revok_SearchServer) error {
+	fake.searchMutex.Lock()
+	fake.searchArgsForCall = append(fake.searchArgsForCall, struct {
+		arg1 *revokpb.SearchQuery
+		arg2 revokpb.Revok_SearchServer
+	}{arg1, arg2})
+	fake.recordInvocation("Search", []interface{}{arg1, arg2})
+	fake.searchMutex.Unlock()
+	if fake.SearchStub != nil {
+		return fake.SearchStub(arg1, arg2)
+	} else {
+		return fake.searchReturns.result1
+	}
+}
+
+func (fake *FakeServer) SearchCallCount() int {
+	fake.searchMutex.RLock()
+	defer fake.searchMutex.RUnlock()
+	return len(fake.searchArgsForCall)
+}
+
+func (fake *FakeServer) SearchArgsForCall(i int) (*revokpb.SearchQuery, revokpb.Revok_SearchServer) {
+	fake.searchMutex.RLock()
+	defer fake.searchMutex.RUnlock()
+	return fake.searchArgsForCall[i].arg1, fake.searchArgsForCall[i].arg2
+}
+
+func (fake *FakeServer) SearchReturns(result1 error) {
+	fake.SearchStub = nil
+	fake.searchReturns = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeServer) Invocations() map[string][][]interface{} {
@@ -158,6 +201,8 @@ func (fake *FakeServer) Invocations() map[string][][]interface{} {
 	defer fake.getOrganizationCredentialCountsMutex.RUnlock()
 	fake.getRepositoryCredentialCountsMutex.RLock()
 	defer fake.getRepositoryCredentialCountsMutex.RUnlock()
+	fake.searchMutex.RLock()
+	defer fake.searchMutex.RUnlock()
 	return fake.invocations
 }
 
