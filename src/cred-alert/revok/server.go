@@ -3,7 +3,9 @@ package revok
 import (
 	"cred-alert/db"
 	"cred-alert/revokpb"
+	"fmt"
 	"sort"
+	"time"
 
 	"code.cloudfoundry.org/lager"
 
@@ -139,6 +141,29 @@ func (s *server) GetRepositoryCredentialCounts(
 	return response, nil
 }
 
-func (s *server) Search(*revokpb.SearchQuery, revokpb.Revok_SearchServer) error {
-	panic("not implemented")
+func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {
+	for i := 0; i < 42; i++ {
+		searchResult := &revokpb.SearchResult{
+			Location: &revokpb.SourceLocation{
+				Repository: &revokpb.Repository{
+					Owner: "pivotal-cf",
+					Name:  fmt.Sprintf("repository-%d", i),
+				},
+				Revision:   "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+				Path:       "my/special/file.go",
+				LineNumber: uint32(i),
+				Location:   uint32(i * 2),
+				Length:     uint32(i * 3),
+			},
+			Content: fmt.Sprintf("My Special Content %d", i),
+		}
+
+		if err := stream.Send(searchResult); err != nil {
+			return err
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	return nil
 }
