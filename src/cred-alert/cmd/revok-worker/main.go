@@ -119,7 +119,6 @@ func main() {
 		credentialRepository,
 		sniffer,
 		notifier,
-		emitter,
 	)
 
 	changeFetcher := revok.NewChangeFetcher(

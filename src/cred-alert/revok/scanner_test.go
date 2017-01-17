@@ -4,8 +4,6 @@ import (
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
-	"cred-alert/metrics"
-	"cred-alert/metrics/metricsfakes"
 	"cred-alert/notifications/notificationsfakes"
 	"cred-alert/revok"
 	"cred-alert/scanners"
@@ -31,13 +29,10 @@ var _ = Describe("Scanner", func() {
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		scanRepository       *dbfakes.FakeScanRepository
 		credentialRepository *dbfakes.FakeCredentialRepository
-		emitter              *metricsfakes.FakeEmitter
 		scanner              revok.Scanner
 		notifier             *notificationsfakes.FakeNotifier
 
 		firstScan      *dbfakes.FakeActiveScan
-		successMetric  *metricsfakes.FakeCounter
-		failedMetric   *metricsfakes.FakeCounter
 		baseRepoPath   string
 		repoToScanPath string
 		baseRepo       *git.Repository
@@ -76,19 +71,6 @@ var _ = Describe("Scanner", func() {
 
 		credentialRepository = &dbfakes.FakeCredentialRepository{}
 
-		emitter = &metricsfakes.FakeEmitter{}
-		successMetric = &metricsfakes.FakeCounter{}
-		failedMetric = &metricsfakes.FakeCounter{}
-		emitter.CounterStub = func(name string) metrics.Counter {
-			switch name {
-			case "revok.success_jobs":
-				return successMetric
-			case "revok.failed_jobs":
-				return failedMetric
-			}
-			return &metricsfakes.FakeCounter{}
-		}
-
 		scannedOids = map[git.Oid]struct{}{}
 		sniffer = &snifffakes.FakeSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
@@ -117,7 +99,6 @@ var _ = Describe("Scanner", func() {
 			credentialRepository,
 			sniffer,
 			notifier,
-			emitter,
 		)
 	})
 

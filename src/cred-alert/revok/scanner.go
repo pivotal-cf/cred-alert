@@ -4,7 +4,6 @@ import (
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
-	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
@@ -38,7 +37,6 @@ func NewScanner(
 	credentialRepository db.CredentialRepository,
 	sniffer sniff.Sniffer,
 	notifier notifications.Notifier,
-	emitter metrics.Emitter,
 ) Scanner {
 	return &scanner{
 		gitClient:            gitClient,
