@@ -34,9 +34,8 @@ func (fake *FakeSigner) Sign(arg1 []byte) ([]byte, error) {
 	fake.signMutex.Unlock()
 	if fake.SignStub != nil {
 		return fake.SignStub(arg1)
-	} else {
-		return fake.signReturns.result1, fake.signReturns.result2
 	}
+	return fake.signReturns.result1, fake.signReturns.result2
 }
 
 func (fake *FakeSigner) SignCallCount() int {

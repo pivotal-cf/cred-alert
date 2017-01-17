@@ -30,9 +30,8 @@ func (fake *FakeClient) Do(req *http.Request) (*http.Response, error) {
 	fake.doMutex.Unlock()
 	if fake.DoStub != nil {
 		return fake.DoStub(req)
-	} else {
-		return fake.doReturns.result1, fake.doReturns.result2
 	}
+	return fake.doReturns.result1, fake.doReturns.result2
 }
 
 func (fake *FakeClient) DoCallCount() int {

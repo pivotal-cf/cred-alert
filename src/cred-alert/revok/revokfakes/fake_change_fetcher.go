@@ -34,9 +34,8 @@ func (fake *FakeChangeFetcher) Fetch(logger lager.Logger, owner string, name str
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
 		return fake.FetchStub(logger, owner, name)
-	} else {
-		return fake.fetchReturns.result1
 	}
+	return fake.fetchReturns.result1
 }
 
 func (fake *FakeChangeFetcher) FetchCallCount() int {

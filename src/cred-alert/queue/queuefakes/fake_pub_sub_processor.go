@@ -34,9 +34,8 @@ func (fake *FakePubSubProcessor) Process(arg1 lager.Logger, arg2 *pubsub.Message
 	fake.processMutex.Unlock()
 	if fake.ProcessStub != nil {
 		return fake.ProcessStub(arg1, arg2)
-	} else {
-		return fake.processReturns.result1, fake.processReturns.result2
 	}
+	return fake.processReturns.result1, fake.processReturns.result2
 }
 
 func (fake *FakePubSubProcessor) ProcessCallCount() int {

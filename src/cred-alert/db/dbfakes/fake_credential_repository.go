@@ -39,9 +39,8 @@ func (fake *FakeCredentialRepository) ForScanWithID(arg1 int) ([]db.Credential, 
 	fake.forScanWithIDMutex.Unlock()
 	if fake.ForScanWithIDStub != nil {
 		return fake.ForScanWithIDStub(arg1)
-	} else {
-		return fake.forScanWithIDReturns.result1, fake.forScanWithIDReturns.result2
 	}
+	return fake.forScanWithIDReturns.result1, fake.forScanWithIDReturns.result2
 }
 
 func (fake *FakeCredentialRepository) ForScanWithIDCallCount() int {
@@ -74,9 +73,8 @@ func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersion(arg1 db.R
 	fake.uniqueSHAsForRepoAndRulesVersionMutex.Unlock()
 	if fake.UniqueSHAsForRepoAndRulesVersionStub != nil {
 		return fake.UniqueSHAsForRepoAndRulesVersionStub(arg1, arg2)
-	} else {
-		return fake.uniqueSHAsForRepoAndRulesVersionReturns.result1, fake.uniqueSHAsForRepoAndRulesVersionReturns.result2
 	}
+	return fake.uniqueSHAsForRepoAndRulesVersionReturns.result1, fake.uniqueSHAsForRepoAndRulesVersionReturns.result2
 }
 
 func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersionCallCount() int {

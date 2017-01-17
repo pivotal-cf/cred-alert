@@ -63,9 +63,8 @@ func (fake *FakeServer) GetCredentialCounts(arg1 context.Context, arg2 *revokpb.
 	fake.getCredentialCountsMutex.Unlock()
 	if fake.GetCredentialCountsStub != nil {
 		return fake.GetCredentialCountsStub(arg1, arg2)
-	} else {
-		return fake.getCredentialCountsReturns.result1, fake.getCredentialCountsReturns.result2
 	}
+	return fake.getCredentialCountsReturns.result1, fake.getCredentialCountsReturns.result2
 }
 
 func (fake *FakeServer) GetCredentialCountsCallCount() int {
@@ -98,9 +97,8 @@ func (fake *FakeServer) GetOrganizationCredentialCounts(arg1 context.Context, ar
 	fake.getOrganizationCredentialCountsMutex.Unlock()
 	if fake.GetOrganizationCredentialCountsStub != nil {
 		return fake.GetOrganizationCredentialCountsStub(arg1, arg2)
-	} else {
-		return fake.getOrganizationCredentialCountsReturns.result1, fake.getOrganizationCredentialCountsReturns.result2
 	}
+	return fake.getOrganizationCredentialCountsReturns.result1, fake.getOrganizationCredentialCountsReturns.result2
 }
 
 func (fake *FakeServer) GetOrganizationCredentialCountsCallCount() int {
@@ -133,9 +131,8 @@ func (fake *FakeServer) GetRepositoryCredentialCounts(arg1 context.Context, arg2
 	fake.getRepositoryCredentialCountsMutex.Unlock()
 	if fake.GetRepositoryCredentialCountsStub != nil {
 		return fake.GetRepositoryCredentialCountsStub(arg1, arg2)
-	} else {
-		return fake.getRepositoryCredentialCountsReturns.result1, fake.getRepositoryCredentialCountsReturns.result2
 	}
+	return fake.getRepositoryCredentialCountsReturns.result1, fake.getRepositoryCredentialCountsReturns.result2
 }
 
 func (fake *FakeServer) GetRepositoryCredentialCountsCallCount() int {
@@ -168,9 +165,8 @@ func (fake *FakeServer) Search(arg1 *revokpb.SearchQuery, arg2 revokpb.Revok_Sea
 	fake.searchMutex.Unlock()
 	if fake.SearchStub != nil {
 		return fake.SearchStub(arg1, arg2)
-	} else {
-		return fake.searchReturns.result1
 	}
+	return fake.searchReturns.result1
 }
 
 func (fake *FakeServer) SearchCallCount() int {

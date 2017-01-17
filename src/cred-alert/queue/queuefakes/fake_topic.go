@@ -34,9 +34,8 @@ func (fake *FakeTopic) Publish(arg1 context.Context, arg2 ...*pubsub.Message) ([
 	fake.publishMutex.Unlock()
 	if fake.PublishStub != nil {
 		return fake.PublishStub(arg1, arg2...)
-	} else {
-		return fake.publishReturns.result1, fake.publishReturns.result2
 	}
+	return fake.publishReturns.result1, fake.publishReturns.result2
 }
 
 func (fake *FakeTopic) PublishCallCount() int {

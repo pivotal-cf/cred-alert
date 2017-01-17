@@ -48,9 +48,8 @@ func (fake *FakeInflator) Inflate(arg1 lager.Logger, arg2 string, arg3 string, a
 	fake.inflateMutex.Unlock()
 	if fake.InflateStub != nil {
 		return fake.InflateStub(arg1, arg2, arg3, arg4)
-	} else {
-		return fake.inflateReturns.result1
 	}
+	return fake.inflateReturns.result1
 }
 
 func (fake *FakeInflator) InflateCallCount() int {
@@ -79,9 +78,8 @@ func (fake *FakeInflator) LogPath() string {
 	fake.logPathMutex.Unlock()
 	if fake.LogPathStub != nil {
 		return fake.LogPathStub()
-	} else {
-		return fake.logPathReturns.result1
 	}
+	return fake.logPathReturns.result1
 }
 
 func (fake *FakeInflator) LogPathCallCount() int {
@@ -104,9 +102,8 @@ func (fake *FakeInflator) Close() error {
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
 		return fake.CloseStub()
-	} else {
-		return fake.closeReturns.result1
 	}
+	return fake.closeReturns.result1
 }
 
 func (fake *FakeInflator) CloseCallCount() int {

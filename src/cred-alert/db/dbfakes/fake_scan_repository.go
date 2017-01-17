@@ -52,9 +52,8 @@ func (fake *FakeScanRepository) Start(arg1 lager.Logger, arg2 string, arg3 strin
 	fake.startMutex.Unlock()
 	if fake.StartStub != nil {
 		return fake.StartStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-	} else {
-		return fake.startReturns.result1
 	}
+	return fake.startReturns.result1
 }
 
 func (fake *FakeScanRepository) StartCallCount() int {
@@ -86,9 +85,8 @@ func (fake *FakeScanRepository) ScansNotYetRunWithVersion(arg1 lager.Logger, arg
 	fake.scansNotYetRunWithVersionMutex.Unlock()
 	if fake.ScansNotYetRunWithVersionStub != nil {
 		return fake.ScansNotYetRunWithVersionStub(arg1, arg2)
-	} else {
-		return fake.scansNotYetRunWithVersionReturns.result1, fake.scansNotYetRunWithVersionReturns.result2
 	}
+	return fake.scansNotYetRunWithVersionReturns.result1, fake.scansNotYetRunWithVersionReturns.result2
 }
 
 func (fake *FakeScanRepository) ScansNotYetRunWithVersionCallCount() int {

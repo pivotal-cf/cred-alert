@@ -94,9 +94,8 @@ func (fake *FakeClient) BranchTargets(arg1 string) (map[string]string, error) {
 	fake.branchTargetsMutex.Unlock()
 	if fake.BranchTargetsStub != nil {
 		return fake.BranchTargetsStub(arg1)
-	} else {
-		return fake.branchTargetsReturns.result1, fake.branchTargetsReturns.result2
 	}
+	return fake.branchTargetsReturns.result1, fake.branchTargetsReturns.result2
 }
 
 func (fake *FakeClient) BranchTargetsCallCount() int {
@@ -129,9 +128,8 @@ func (fake *FakeClient) Clone(arg1 string, arg2 string) (*git.Repository, error)
 	fake.cloneMutex.Unlock()
 	if fake.CloneStub != nil {
 		return fake.CloneStub(arg1, arg2)
-	} else {
-		return fake.cloneReturns.result1, fake.cloneReturns.result2
 	}
+	return fake.cloneReturns.result1, fake.cloneReturns.result2
 }
 
 func (fake *FakeClient) CloneCallCount() int {
@@ -164,9 +162,8 @@ func (fake *FakeClient) GetParents(arg1 *git.Repository, arg2 *git.Oid) ([]*git.
 	fake.getParentsMutex.Unlock()
 	if fake.GetParentsStub != nil {
 		return fake.GetParentsStub(arg1, arg2)
-	} else {
-		return fake.getParentsReturns.result1, fake.getParentsReturns.result2
 	}
+	return fake.getParentsReturns.result1, fake.getParentsReturns.result2
 }
 
 func (fake *FakeClient) GetParentsCallCount() int {
@@ -198,9 +195,8 @@ func (fake *FakeClient) Fetch(arg1 string) (map[string][]*git.Oid, error) {
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
 		return fake.FetchStub(arg1)
-	} else {
-		return fake.fetchReturns.result1, fake.fetchReturns.result2
 	}
+	return fake.fetchReturns.result1, fake.fetchReturns.result2
 }
 
 func (fake *FakeClient) FetchCallCount() int {
@@ -233,9 +229,8 @@ func (fake *FakeClient) HardReset(arg1 string, arg2 *git.Oid) error {
 	fake.hardResetMutex.Unlock()
 	if fake.HardResetStub != nil {
 		return fake.HardResetStub(arg1, arg2)
-	} else {
-		return fake.hardResetReturns.result1
 	}
+	return fake.hardResetReturns.result1
 }
 
 func (fake *FakeClient) HardResetCallCount() int {
@@ -268,9 +263,8 @@ func (fake *FakeClient) Diff(repositoryPath string, a *git.Oid, b *git.Oid) (str
 	fake.diffMutex.Unlock()
 	if fake.DiffStub != nil {
 		return fake.DiffStub(repositoryPath, a, b)
-	} else {
-		return fake.diffReturns.result1, fake.diffReturns.result2
 	}
+	return fake.diffReturns.result1, fake.diffReturns.result2
 }
 
 func (fake *FakeClient) DiffCallCount() int {
@@ -305,9 +299,8 @@ func (fake *FakeClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, a
 	fake.branchCredentialCountsMutex.Unlock()
 	if fake.BranchCredentialCountsStub != nil {
 		return fake.BranchCredentialCountsStub(arg1, arg2, arg3, arg4)
-	} else {
-		return fake.branchCredentialCountsReturns.result1, fake.branchCredentialCountsReturns.result2
 	}
+	return fake.branchCredentialCountsReturns.result1, fake.branchCredentialCountsReturns.result2
 }
 
 func (fake *FakeClient) BranchCredentialCountsCallCount() int {

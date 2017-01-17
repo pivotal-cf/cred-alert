@@ -32,9 +32,8 @@ func (fake *FakeFetchRepository) RegisterFetch(arg1 lager.Logger, arg2 *db.Fetch
 	fake.registerFetchMutex.Unlock()
 	if fake.RegisterFetchStub != nil {
 		return fake.RegisterFetchStub(arg1, arg2)
-	} else {
-		return fake.registerFetchReturns.result1
 	}
+	return fake.registerFetchReturns.result1
 }
 
 func (fake *FakeFetchRepository) RegisterFetchCallCount() int {

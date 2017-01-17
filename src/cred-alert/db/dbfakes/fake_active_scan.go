@@ -53,9 +53,8 @@ func (fake *FakeActiveScan) Finish() error {
 	fake.finishMutex.Unlock()
 	if fake.FinishStub != nil {
 		return fake.FinishStub()
-	} else {
-		return fake.finishReturns.result1
 	}
+	return fake.finishReturns.result1
 }
 
 func (fake *FakeActiveScan) FinishCallCount() int {

@@ -39,9 +39,8 @@ func (fake *FakeScanner) Scan(arg1 lager.Logger) bool {
 	fake.scanMutex.Unlock()
 	if fake.ScanStub != nil {
 		return fake.ScanStub(arg1)
-	} else {
-		return fake.scanReturns.result1
 	}
+	return fake.scanReturns.result1
 }
 
 func (fake *FakeScanner) ScanCallCount() int {
@@ -72,9 +71,8 @@ func (fake *FakeScanner) Line(arg1 lager.Logger) *scanners.Line {
 	fake.lineMutex.Unlock()
 	if fake.LineStub != nil {
 		return fake.LineStub(arg1)
-	} else {
-		return fake.lineReturns.result1
 	}
+	return fake.lineReturns.result1
 }
 
 func (fake *FakeScanner) LineCallCount() int {

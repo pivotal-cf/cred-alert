@@ -67,9 +67,8 @@ func (fake *FakeClient) BuildMetric(metricType string, metricName string, count 
 	fake.buildMetricMutex.Unlock()
 	if fake.BuildMetricStub != nil {
 		return fake.BuildMetricStub(metricType, metricName, count, tags...)
-	} else {
-		return fake.buildMetricReturns.result1
 	}
+	return fake.buildMetricReturns.result1
 }
 
 func (fake *FakeClient) BuildMetricCallCount() int {

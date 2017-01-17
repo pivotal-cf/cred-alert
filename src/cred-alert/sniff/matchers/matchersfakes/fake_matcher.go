@@ -31,9 +31,8 @@ func (fake *FakeMatcher) Match(arg1 *scanners.Line) (bool, int, int) {
 	fake.matchMutex.Unlock()
 	if fake.MatchStub != nil {
 		return fake.MatchStub(arg1)
-	} else {
-		return fake.matchReturns.result1, fake.matchReturns.result2, fake.matchReturns.result3
 	}
+	return fake.matchReturns.result1, fake.matchReturns.result2, fake.matchReturns.result3
 }
 
 func (fake *FakeMatcher) MatchCallCount() int {

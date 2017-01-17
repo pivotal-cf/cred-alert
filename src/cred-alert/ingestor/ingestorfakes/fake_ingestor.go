@@ -34,9 +34,8 @@ func (fake *FakeIngestor) IngestPushScan(arg1 lager.Logger, arg2 ingestor.PushSc
 	fake.ingestPushScanMutex.Unlock()
 	if fake.IngestPushScanStub != nil {
 		return fake.IngestPushScanStub(arg1, arg2, arg3)
-	} else {
-		return fake.ingestPushScanReturns.result1
 	}
+	return fake.ingestPushScanReturns.result1
 }
 
 func (fake *FakeIngestor) IngestPushScanCallCount() int {

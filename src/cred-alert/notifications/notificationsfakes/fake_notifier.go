@@ -41,9 +41,8 @@ func (fake *FakeNotifier) SendNotification(arg1 lager.Logger, arg2 notifications
 	fake.sendNotificationMutex.Unlock()
 	if fake.SendNotificationStub != nil {
 		return fake.SendNotificationStub(arg1, arg2)
-	} else {
-		return fake.sendNotificationReturns.result1
 	}
+	return fake.sendNotificationReturns.result1
 }
 
 func (fake *FakeNotifier) SendNotificationCallCount() int {
@@ -80,9 +79,8 @@ func (fake *FakeNotifier) SendBatchNotification(arg1 lager.Logger, arg2 []notifi
 	fake.sendBatchNotificationMutex.Unlock()
 	if fake.SendBatchNotificationStub != nil {
 		return fake.SendBatchNotificationStub(arg1, arg2)
-	} else {
-		return fake.sendBatchNotificationReturns.result1
 	}
+	return fake.sendBatchNotificationReturns.result1
 }
 
 func (fake *FakeNotifier) SendBatchNotificationCallCount() int {

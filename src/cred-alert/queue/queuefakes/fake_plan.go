@@ -28,9 +28,8 @@ func (fake *FakePlan) Task(arg1 string) queue.Task {
 	fake.taskMutex.Unlock()
 	if fake.TaskStub != nil {
 		return fake.TaskStub(arg1)
-	} else {
-		return fake.taskReturns.result1
 	}
+	return fake.taskReturns.result1
 }
 
 func (fake *FakePlan) TaskCallCount() int {

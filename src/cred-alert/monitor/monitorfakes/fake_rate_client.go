@@ -28,9 +28,8 @@ func (fake *FakeRateClient) RateLimits() (*github.RateLimits, *github.Response, 
 	fake.rateLimitsMutex.Unlock()
 	if fake.RateLimitsStub != nil {
 		return fake.RateLimitsStub()
-	} else {
-		return fake.rateLimitsReturns.result1, fake.rateLimitsReturns.result2, fake.rateLimitsReturns.result3
 	}
+	return fake.rateLimitsReturns.result1, fake.rateLimitsReturns.result2, fake.rateLimitsReturns.result3
 }
 
 func (fake *FakeRateClient) RateLimitsCallCount() int {

@@ -36,9 +36,8 @@ func (fake *FakeTask) ID() string {
 	fake.iDMutex.Unlock()
 	if fake.IDStub != nil {
 		return fake.IDStub()
-	} else {
-		return fake.iDReturns.result1
 	}
+	return fake.iDReturns.result1
 }
 
 func (fake *FakeTask) IDCallCount() int {
@@ -61,9 +60,8 @@ func (fake *FakeTask) Type() string {
 	fake.typeMutex.Unlock()
 	if fake.TypeStub != nil {
 		return fake.TypeStub()
-	} else {
-		return fake.typeReturns.result1
 	}
+	return fake.typeReturns.result1
 }
 
 func (fake *FakeTask) TypeCallCount() int {
@@ -86,9 +84,8 @@ func (fake *FakeTask) Payload() string {
 	fake.payloadMutex.Unlock()
 	if fake.PayloadStub != nil {
 		return fake.PayloadStub()
-	} else {
-		return fake.payloadReturns.result1
 	}
+	return fake.payloadReturns.result1
 }
 
 func (fake *FakeTask) PayloadCallCount() int {

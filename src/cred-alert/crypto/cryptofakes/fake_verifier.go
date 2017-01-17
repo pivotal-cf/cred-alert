@@ -40,9 +40,8 @@ func (fake *FakeVerifier) Verify(arg1 []byte, arg2 []byte) error {
 	fake.verifyMutex.Unlock()
 	if fake.VerifyStub != nil {
 		return fake.VerifyStub(arg1, arg2)
-	} else {
-		return fake.verifyReturns.result1
 	}
+	return fake.verifyReturns.result1
 }
 
 func (fake *FakeVerifier) VerifyCallCount() int {

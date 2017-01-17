@@ -46,9 +46,8 @@ func (fake *FakeStatsRepository) RepositoryCount() (int, error) {
 	fake.repositoryCountMutex.Unlock()
 	if fake.RepositoryCountStub != nil {
 		return fake.RepositoryCountStub()
-	} else {
-		return fake.repositoryCountReturns.result1, fake.repositoryCountReturns.result2
 	}
+	return fake.repositoryCountReturns.result1, fake.repositoryCountReturns.result2
 }
 
 func (fake *FakeStatsRepository) RepositoryCountCallCount() int {
@@ -72,9 +71,8 @@ func (fake *FakeStatsRepository) DisabledRepositoryCount() (int, error) {
 	fake.disabledRepositoryCountMutex.Unlock()
 	if fake.DisabledRepositoryCountStub != nil {
 		return fake.DisabledRepositoryCountStub()
-	} else {
-		return fake.disabledRepositoryCountReturns.result1, fake.disabledRepositoryCountReturns.result2
 	}
+	return fake.disabledRepositoryCountReturns.result1, fake.disabledRepositoryCountReturns.result2
 }
 
 func (fake *FakeStatsRepository) DisabledRepositoryCountCallCount() int {
@@ -98,9 +96,8 @@ func (fake *FakeStatsRepository) CredentialCount() (int, error) {
 	fake.credentialCountMutex.Unlock()
 	if fake.CredentialCountStub != nil {
 		return fake.CredentialCountStub()
-	} else {
-		return fake.credentialCountReturns.result1, fake.credentialCountReturns.result2
 	}
+	return fake.credentialCountReturns.result1, fake.credentialCountReturns.result2
 }
 
 func (fake *FakeStatsRepository) CredentialCountCallCount() int {
@@ -124,9 +121,8 @@ func (fake *FakeStatsRepository) FetchCount() (int, error) {
 	fake.fetchCountMutex.Unlock()
 	if fake.FetchCountStub != nil {
 		return fake.FetchCountStub()
-	} else {
-		return fake.fetchCountReturns.result1, fake.fetchCountReturns.result2
 	}
+	return fake.fetchCountReturns.result1, fake.fetchCountReturns.result2
 }
 
 func (fake *FakeStatsRepository) FetchCountCallCount() int {

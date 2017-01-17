@@ -34,9 +34,8 @@ func (fake *FakeSniffer) Sniff(arg1 lager.Logger, arg2 sniff.Scanner, arg3 sniff
 	fake.sniffMutex.Unlock()
 	if fake.SniffStub != nil {
 		return fake.SniffStub(arg1, arg2, arg3)
-	} else {
-		return fake.sniffReturns.result1
 	}
+	return fake.sniffReturns.result1
 }
 
 func (fake *FakeSniffer) SniffCallCount() int {

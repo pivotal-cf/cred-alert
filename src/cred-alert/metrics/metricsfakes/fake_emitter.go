@@ -44,9 +44,8 @@ func (fake *FakeEmitter) Counter(name string) metrics.Counter {
 	fake.counterMutex.Unlock()
 	if fake.CounterStub != nil {
 		return fake.CounterStub(name)
-	} else {
-		return fake.counterReturns.result1
 	}
+	return fake.counterReturns.result1
 }
 
 func (fake *FakeEmitter) CounterCallCount() int {
@@ -77,9 +76,8 @@ func (fake *FakeEmitter) Gauge(name string) metrics.Gauge {
 	fake.gaugeMutex.Unlock()
 	if fake.GaugeStub != nil {
 		return fake.GaugeStub(name)
-	} else {
-		return fake.gaugeReturns.result1
 	}
+	return fake.gaugeReturns.result1
 }
 
 func (fake *FakeEmitter) GaugeCallCount() int {
@@ -110,9 +108,8 @@ func (fake *FakeEmitter) Timer(name string) metrics.Timer {
 	fake.timerMutex.Unlock()
 	if fake.TimerStub != nil {
 		return fake.TimerStub(name)
-	} else {
-		return fake.timerReturns.result1
 	}
+	return fake.timerReturns.result1
 }
 
 func (fake *FakeEmitter) TimerCallCount() int {

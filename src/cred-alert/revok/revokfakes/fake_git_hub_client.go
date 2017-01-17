@@ -42,9 +42,8 @@ func (fake *FakeGitHubClient) ListRepositoriesByOrg(arg1 lager.Logger, arg2 stri
 	fake.listRepositoriesByOrgMutex.Unlock()
 	if fake.ListRepositoriesByOrgStub != nil {
 		return fake.ListRepositoriesByOrgStub(arg1, arg2)
-	} else {
-		return fake.listRepositoriesByOrgReturns.result1, fake.listRepositoriesByOrgReturns.result2
 	}
+	return fake.listRepositoriesByOrgReturns.result1, fake.listRepositoriesByOrgReturns.result2
 }
 
 func (fake *FakeGitHubClient) ListRepositoriesByOrgCallCount() int {
@@ -76,9 +75,8 @@ func (fake *FakeGitHubClient) ListOrganizations(arg1 lager.Logger) ([]revok.GitH
 	fake.listOrganizationsMutex.Unlock()
 	if fake.ListOrganizationsStub != nil {
 		return fake.ListOrganizationsStub(arg1)
-	} else {
-		return fake.listOrganizationsReturns.result1, fake.listOrganizationsReturns.result2
 	}
+	return fake.listOrganizationsReturns.result1, fake.listOrganizationsReturns.result2
 }
 
 func (fake *FakeGitHubClient) ListOrganizationsCallCount() int {

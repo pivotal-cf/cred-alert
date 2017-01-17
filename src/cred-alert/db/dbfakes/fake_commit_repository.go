@@ -53,9 +53,8 @@ func (fake *FakeCommitRepository) RegisterCommit(logger lager.Logger, commit *db
 	fake.registerCommitMutex.Unlock()
 	if fake.RegisterCommitStub != nil {
 		return fake.RegisterCommitStub(logger, commit)
-	} else {
-		return fake.registerCommitReturns.result1
 	}
+	return fake.registerCommitReturns.result1
 }
 
 func (fake *FakeCommitRepository) RegisterCommitCallCount() int {
@@ -87,9 +86,8 @@ func (fake *FakeCommitRepository) IsCommitRegistered(logger lager.Logger, sha st
 	fake.isCommitRegisteredMutex.Unlock()
 	if fake.IsCommitRegisteredStub != nil {
 		return fake.IsCommitRegisteredStub(logger, sha)
-	} else {
-		return fake.isCommitRegisteredReturns.result1, fake.isCommitRegisteredReturns.result2
 	}
+	return fake.isCommitRegisteredReturns.result1, fake.isCommitRegisteredReturns.result2
 }
 
 func (fake *FakeCommitRepository) IsCommitRegisteredCallCount() int {
@@ -123,9 +121,8 @@ func (fake *FakeCommitRepository) IsRepoRegistered(logger lager.Logger, owner st
 	fake.isRepoRegisteredMutex.Unlock()
 	if fake.IsRepoRegisteredStub != nil {
 		return fake.IsRepoRegisteredStub(logger, owner, repo)
-	} else {
-		return fake.isRepoRegisteredReturns.result1, fake.isRepoRegisteredReturns.result2
 	}
+	return fake.isRepoRegisteredReturns.result1, fake.isRepoRegisteredReturns.result2
 }
 
 func (fake *FakeCommitRepository) IsRepoRegisteredCallCount() int {

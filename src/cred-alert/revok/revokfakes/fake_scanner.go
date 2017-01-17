@@ -59,9 +59,8 @@ func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 
 	fake.scanMutex.Unlock()
 	if fake.ScanStub != nil {
 		return fake.ScanStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-	} else {
-		return fake.scanReturns.result1
 	}
+	return fake.scanReturns.result1
 }
 
 func (fake *FakeScanner) ScanCallCount() int {
@@ -98,9 +97,8 @@ func (fake *FakeScanner) ScanNoNotify(arg1 lager.Logger, arg2 string, arg3 strin
 	fake.scanNoNotifyMutex.Unlock()
 	if fake.ScanNoNotifyStub != nil {
 		return fake.ScanNoNotifyStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-	} else {
-		return fake.scanNoNotifyReturns.result1, fake.scanNoNotifyReturns.result2
 	}
+	return fake.scanNoNotifyReturns.result1, fake.scanNoNotifyReturns.result2
 }
 
 func (fake *FakeScanner) ScanNoNotifyCallCount() int {

@@ -29,9 +29,8 @@ func (fake *FakeGithubService) Status(arg1 string) (int, error) {
 	fake.statusMutex.Unlock()
 	if fake.StatusStub != nil {
 		return fake.StatusStub(arg1)
-	} else {
-		return fake.statusReturns.result1, fake.statusReturns.result2
 	}
+	return fake.statusReturns.result1, fake.statusReturns.result2
 }
 
 func (fake *FakeGithubService) StatusCallCount() int {

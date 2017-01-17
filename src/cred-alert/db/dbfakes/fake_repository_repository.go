@@ -100,9 +100,8 @@ func (fake *FakeRepositoryRepository) Create(arg1 *db.Repository) error {
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
 		return fake.CreateStub(arg1)
-	} else {
-		return fake.createReturns.result1
 	}
+	return fake.createReturns.result1
 }
 
 func (fake *FakeRepositoryRepository) CreateCallCount() int {
@@ -134,9 +133,8 @@ func (fake *FakeRepositoryRepository) Find(owner string, name string) (db.Reposi
 	fake.findMutex.Unlock()
 	if fake.FindStub != nil {
 		return fake.FindStub(owner, name)
-	} else {
-		return fake.findReturns.result1, fake.findReturns.result2
 	}
+	return fake.findReturns.result1, fake.findReturns.result2
 }
 
 func (fake *FakeRepositoryRepository) FindCallCount() int {
@@ -166,9 +164,8 @@ func (fake *FakeRepositoryRepository) All() ([]db.Repository, error) {
 	fake.allMutex.Unlock()
 	if fake.AllStub != nil {
 		return fake.AllStub()
-	} else {
-		return fake.allReturns.result1, fake.allReturns.result2
 	}
+	return fake.allReturns.result1, fake.allReturns.result2
 }
 
 func (fake *FakeRepositoryRepository) AllCallCount() int {
@@ -192,9 +189,8 @@ func (fake *FakeRepositoryRepository) Active() ([]db.Repository, error) {
 	fake.activeMutex.Unlock()
 	if fake.ActiveStub != nil {
 		return fake.ActiveStub()
-	} else {
-		return fake.activeReturns.result1, fake.activeReturns.result2
 	}
+	return fake.activeReturns.result1, fake.activeReturns.result2
 }
 
 func (fake *FakeRepositoryRepository) ActiveCallCount() int {
@@ -220,9 +216,8 @@ func (fake *FakeRepositoryRepository) AllForOrganization(arg1 string) ([]db.Repo
 	fake.allForOrganizationMutex.Unlock()
 	if fake.AllForOrganizationStub != nil {
 		return fake.AllForOrganizationStub(arg1)
-	} else {
-		return fake.allForOrganizationReturns.result1, fake.allForOrganizationReturns.result2
 	}
+	return fake.allForOrganizationReturns.result1, fake.allForOrganizationReturns.result2
 }
 
 func (fake *FakeRepositoryRepository) AllForOrganizationCallCount() int {
@@ -254,9 +249,8 @@ func (fake *FakeRepositoryRepository) NotScannedWithVersion(arg1 int) ([]db.Repo
 	fake.notScannedWithVersionMutex.Unlock()
 	if fake.NotScannedWithVersionStub != nil {
 		return fake.NotScannedWithVersionStub(arg1)
-	} else {
-		return fake.notScannedWithVersionReturns.result1, fake.notScannedWithVersionReturns.result2
 	}
+	return fake.notScannedWithVersionReturns.result1, fake.notScannedWithVersionReturns.result2
 }
 
 func (fake *FakeRepositoryRepository) NotScannedWithVersionCallCount() int {
@@ -290,9 +284,8 @@ func (fake *FakeRepositoryRepository) MarkAsCloned(arg1 string, arg2 string, arg
 	fake.markAsClonedMutex.Unlock()
 	if fake.MarkAsClonedStub != nil {
 		return fake.MarkAsClonedStub(arg1, arg2, arg3)
-	} else {
-		return fake.markAsClonedReturns.result1
 	}
+	return fake.markAsClonedReturns.result1
 }
 
 func (fake *FakeRepositoryRepository) MarkAsClonedCallCount() int {
@@ -324,9 +317,8 @@ func (fake *FakeRepositoryRepository) RegisterFailedFetch(arg1 lager.Logger, arg
 	fake.registerFailedFetchMutex.Unlock()
 	if fake.RegisterFailedFetchStub != nil {
 		return fake.RegisterFailedFetchStub(arg1, arg2)
-	} else {
-		return fake.registerFailedFetchReturns.result1
 	}
+	return fake.registerFailedFetchReturns.result1
 }
 
 func (fake *FakeRepositoryRepository) RegisterFailedFetchCallCount() int {
@@ -358,9 +350,8 @@ func (fake *FakeRepositoryRepository) UpdateCredentialCount(arg1 *db.Repository,
 	fake.updateCredentialCountMutex.Unlock()
 	if fake.UpdateCredentialCountStub != nil {
 		return fake.UpdateCredentialCountStub(arg1, arg2)
-	} else {
-		return fake.updateCredentialCountReturns.result1
 	}
+	return fake.updateCredentialCountReturns.result1
 }
 
 func (fake *FakeRepositoryRepository) UpdateCredentialCountCallCount() int {

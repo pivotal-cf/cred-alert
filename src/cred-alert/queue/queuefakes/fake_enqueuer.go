@@ -28,9 +28,8 @@ func (fake *FakeEnqueuer) Enqueue(arg1 queue.Task) error {
 	fake.enqueueMutex.Unlock()
 	if fake.EnqueueStub != nil {
 		return fake.EnqueueStub(arg1)
-	} else {
-		return fake.enqueueReturns.result1
 	}
+	return fake.enqueueReturns.result1
 }
 
 func (fake *FakeEnqueuer) EnqueueCallCount() int {
