@@ -1,45 +1,34 @@
 package gitclient
 
 import (
-	"cred-alert/db"
-
 	"path/filepath"
 
 	git "github.com/libgit2/git2go"
 )
 
 type looper struct {
-	repoRepository db.RepositoryRepository
 }
 
+//go:generate counterfeiter . Looper
+
 type Looper interface {
-	ScanCurrentState(owner string, repository string, callback ScanCallback) error
+	ScanCurrentState(repositoryPath string, callback ScanCallback) error
 }
 
 type ScanCallback func(sha string, path string, content []byte)
 
-func NewLooper(
-	repoRepository db.RepositoryRepository,
-) *looper {
-	return &looper{
-		repoRepository: repoRepository,
-	}
+func NewLooper() *looper {
+	return &looper{}
 }
 
-func (l *looper) ScanCurrentState(owner string, repository string, callback ScanCallback) error {
-	repo, _ := l.repoRepository.Find(owner, repository)
-
-	return walk(repo.Path, git.BranchRemote, callback)
-}
-
-func walk(repositoryPath string, branchType git.BranchType, callback ScanCallback) error {
+func (l *looper) ScanCurrentState(repositoryPath string, callback ScanCallback) error {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
 		return err
 	}
 	defer repo.Free()
 
-	it, err := repo.NewBranchIterator(branchType)
+	it, err := repo.NewBranchIterator(git.BranchRemote)
 	if err != nil {
 		return err
 	}

@@ -12,8 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"cred-alert/db"
-	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
 )
 
@@ -21,9 +19,8 @@ var _ = Describe("Looper", func() {
 	var (
 		looper gitclient.Looper
 
-		repoRepository *dbfakes.FakeRepositoryRepository
-		upstreamPath   string
-		localPath      string
+		upstreamPath string
+		localPath    string
 	)
 
 	var git = func(path string, args ...string) string {
@@ -60,9 +57,7 @@ var _ = Describe("Looper", func() {
 	}
 
 	BeforeEach(func() {
-		repoRepository = &dbfakes.FakeRepositoryRepository{}
-
-		looper = gitclient.NewLooper(repoRepository)
+		looper = gitclient.NewLooper()
 
 		var err error
 		upstreamPath, err = ioutil.TempDir("", "repo-upstream")
@@ -70,10 +65,6 @@ var _ = Describe("Looper", func() {
 
 		localPath, err = ioutil.TempDir("", "repo-local")
 		Expect(err).NotTo(HaveOccurred())
-
-		repoRepository.FindReturns(db.Repository{
-			Path: localPath,
-		}, nil)
 	})
 
 	AfterEach(func() {
@@ -97,7 +88,7 @@ var _ = Describe("Looper", func() {
 		paths := []string{}
 		contents := [][]byte{}
 
-		err := looper.ScanCurrentState("some-owner", "some-repo", func(sha string, path string, content []byte) {
+		err := looper.ScanCurrentState(localPath, func(sha string, path string, content []byte) {
 			shas = append(shas, sha)
 			paths = append(paths, path)
 			contents = append(contents, content)
@@ -107,11 +98,6 @@ var _ = Describe("Looper", func() {
 		Expect(shas).To(ConsistOf(expectedSha, expectedSha))
 		Expect(paths).To(ConsistOf("dir/my-special-file.txt", "my-boring-file.txt"))
 		Expect(contents).To(ConsistOf([]byte("My Special Data"), []byte("boring data")))
-
-		Expect(repoRepository.FindCallCount()).To(Equal(1))
-		passedOwner, passedRepo := repoRepository.FindArgsForCall(0)
-		Expect(passedOwner).To(Equal("some-owner"))
-		Expect(passedRepo).To(Equal("some-repo"))
 	})
 
 	It("only scans the most recent commit on a branch", func() {
@@ -132,7 +118,7 @@ var _ = Describe("Looper", func() {
 
 		callbackCallCount := 0
 
-		err := looper.ScanCurrentState("some-owner", "some-repo", func(sha string, path string, content []byte) {
+		err := looper.ScanCurrentState(localPath, func(sha string, path string, content []byte) {
 			callbackCallCount++
 
 			Expect(sha).To(Equal(expectedSha))
@@ -172,7 +158,7 @@ var _ = Describe("Looper", func() {
 		paths := []string{}
 		contents := [][]byte{}
 
-		err := looper.ScanCurrentState("some-owner", "some-repo", func(sha string, path string, content []byte) {
+		err := looper.ScanCurrentState(localPath, func(sha string, path string, content []byte) {
 			shas = append(shas, sha)
 			paths = append(paths, path)
 			contents = append(contents, content)
