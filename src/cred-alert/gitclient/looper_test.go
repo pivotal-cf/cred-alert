@@ -22,15 +22,16 @@ var _ = Describe("Looper", func() {
 		looper gitclient.Looper
 
 		repoRepository *dbfakes.FakeRepositoryRepository
-		repoPath       string
+		upstreamPath   string
+		localPath      string
 	)
 
-	var git = func(args ...string) string {
+	var git = func(path string, args ...string) string {
 		stdout := &bytes.Buffer{}
 
 		cmd := exec.Command("git", args...)
 		cmd.Env = append(os.Environ(), "TERM=dumb")
-		cmd.Dir = repoPath
+		cmd.Dir = path
 		cmd.Stdout = io.MultiWriter(GinkgoWriter, stdout)
 		cmd.Stderr = GinkgoWriter
 		err := cmd.Run()
@@ -39,8 +40,16 @@ var _ = Describe("Looper", func() {
 		return strings.TrimSpace(stdout.String())
 	}
 
+	var gitUpstream = func(args ...string) string {
+		return git(upstreamPath, args...)
+	}
+
+	var gitLocal = func(args ...string) string {
+		return git(localPath, args...)
+	}
+
 	var writeFile = func(path string, contents string) {
-		filePath := filepath.Join(repoPath, path)
+		filePath := filepath.Join(upstreamPath, path)
 		dir := filepath.Dir(filePath)
 
 		err := os.MkdirAll(dir, 0700)
@@ -56,28 +65,33 @@ var _ = Describe("Looper", func() {
 		looper = gitclient.NewLooper(repoRepository)
 
 		var err error
-		repoPath, err = ioutil.TempDir("", "repo")
+		upstreamPath, err = ioutil.TempDir("", "repo-upstream")
+		Expect(err).NotTo(HaveOccurred())
+
+		localPath, err = ioutil.TempDir("", "repo-local")
 		Expect(err).NotTo(HaveOccurred())
 
 		repoRepository.FindReturns(db.Repository{
-			Path: repoPath,
+			Path: localPath,
 		}, nil)
 	})
 
 	AfterEach(func() {
-		err := os.RemoveAll(repoPath)
+		err := os.RemoveAll(upstreamPath)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("scans multiple files", func() {
-		git("init")
+		gitUpstream("init")
 
 		writeFile(filepath.Join("dir", "my-special-file.txt"), "My Special Data")
 		writeFile("my-boring-file.txt", "boring data")
 
-		git("add", ".")
-		git("commit", "-m", "Initial commit")
-		expectedSha := git("rev-list", "HEAD", "--max-count=1")
+		gitUpstream("add", ".")
+		gitUpstream("commit", "-m", "Initial commit")
+		expectedSha := gitUpstream("rev-list", "HEAD", "--max-count=1")
+
+		gitLocal("clone", upstreamPath, ".")
 
 		shas := []string{}
 		paths := []string{}
@@ -101,18 +115,20 @@ var _ = Describe("Looper", func() {
 	})
 
 	It("only scans the most recent commit on a branch", func() {
-		git("init")
+		gitUpstream("init")
 
 		writeFile("my-special-file.txt", "first data")
 
-		git("add", ".")
-		git("commit", "-m", "Initial commit")
+		gitUpstream("add", ".")
+		gitUpstream("commit", "-m", "Initial commit")
 
 		writeFile("my-special-file.txt", "second data")
 
-		git("commit", "-am", "Second commit")
+		gitUpstream("commit", "-am", "Second commit")
 
-		expectedSha := git("rev-list", "HEAD", "--max-count=1")
+		expectedSha := gitUpstream("rev-list", "HEAD", "--max-count=1")
+
+		gitLocal("clone", upstreamPath, ".")
 
 		callbackCallCount := 0
 
@@ -130,24 +146,27 @@ var _ = Describe("Looper", func() {
 	})
 
 	It("scans multiple branches", func() {
-		git("init")
+		gitUpstream("init")
 
 		writeFile("my-special-file.txt", "first data")
 
-		git("add", ".")
-		git("commit", "-m", "Initial commit")
+		gitUpstream("add", ".")
+		gitUpstream("commit", "-m", "Initial commit")
 
-		expectedSha1 := git("rev-list", "HEAD", "--max-count=1")
+		expectedSha1 := gitUpstream("rev-list", "HEAD", "--max-count=1")
 
-		git("checkout", "-b", "my-special-branch")
+		gitUpstream("checkout", "-b", "my-special-branch")
 
 		writeFile("my-special-file.txt", "second data")
 		writeFile("other-file.txt", "other data")
 
-		git("add", ".")
-		git("commit", "-m", "Second commit")
+		gitUpstream("add", ".")
+		gitUpstream("commit", "-m", "Second commit")
 
-		expectedSha2 := git("rev-list", "HEAD", "--max-count=1")
+		expectedSha2 := gitUpstream("rev-list", "HEAD", "--max-count=1")
+
+		gitLocal("clone", upstreamPath, ".")
+		gitLocal("fetch")
 
 		shas := []string{}
 		paths := []string{}

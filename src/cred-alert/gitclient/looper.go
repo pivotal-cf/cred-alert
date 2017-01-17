@@ -29,7 +29,7 @@ func NewLooper(
 func (l *looper) ScanCurrentState(owner string, repository string, callback ScanCallback) error {
 	repo, _ := l.repoRepository.Find(owner, repository)
 
-	return walk(repo.Path, git.BranchLocal, callback)
+	return walk(repo.Path, git.BranchRemote, callback)
 }
 
 func walk(repositoryPath string, branchType git.BranchType, callback ScanCallback) error {
