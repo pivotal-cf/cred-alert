@@ -1,9 +1,6 @@
 package matchers
 
-import (
-	"cred-alert/scanners"
-	"regexp"
-)
+import "regexp"
 
 type formatMatcher struct {
 	r *regexp.Regexp
@@ -15,8 +12,8 @@ func Format(format string) Matcher {
 	}
 }
 
-func (m *formatMatcher) Match(line *scanners.Line) (bool, int, int) {
-	index := m.r.FindIndex(line.Content)
+func (m *formatMatcher) Match(line []byte) (bool, int, int) {
+	index := m.r.FindIndex(line)
 	if index == nil {
 		return false, 0, 0
 	}

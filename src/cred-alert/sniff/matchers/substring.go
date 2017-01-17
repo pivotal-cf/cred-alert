@@ -1,9 +1,6 @@
 package matchers
 
-import (
-	"bytes"
-	"cred-alert/scanners"
-)
+import "bytes"
 
 type substringMatcher struct {
 	s []byte
@@ -15,8 +12,8 @@ func Substring(s string) Matcher {
 	}
 }
 
-func (m *substringMatcher) Match(line *scanners.Line) (bool, int, int) {
-	start := bytes.Index(line.Content, m.s)
+func (m *substringMatcher) Match(line []byte) (bool, int, int) {
+	start := bytes.Index(line, m.s)
 	if start == -1 {
 		return false, 0, 0
 	}

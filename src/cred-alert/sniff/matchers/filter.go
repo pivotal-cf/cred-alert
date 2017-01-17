@@ -1,9 +1,6 @@
 package matchers
 
-import (
-	"bytes"
-	"cred-alert/scanners"
-)
+import "bytes"
 
 func Filter(submatcher Matcher, filters ...string) Matcher {
 	fs := make([][]byte, len(filters))
@@ -23,11 +20,11 @@ type filter struct {
 	filters [][]byte
 }
 
-func (f *filter) Match(line *scanners.Line) (bool, int, int) {
+func (f *filter) Match(line []byte) (bool, int, int) {
 	found := false
 
 	for i := range f.filters {
-		if bytes.Contains(line.Content, f.filters[i]) {
+		if bytes.Contains(line, f.filters[i]) {
 			found = true
 			break
 		}

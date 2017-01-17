@@ -3,7 +3,6 @@ package matchers
 import (
 	"bufio"
 	"bytes"
-	"cred-alert/scanners"
 	"io"
 	"strings"
 )
@@ -33,12 +32,8 @@ type multi struct {
 	matchers []Matcher
 }
 
-func (m *multi) Match(line *scanners.Line) (bool, int, int) {
-	upcasedLine := &scanners.Line{
-		Content:    bytes.ToUpper(line.Content),
-		Path:       line.Path,
-		LineNumber: line.LineNumber,
-	}
+func (m *multi) Match(line []byte) (bool, int, int) {
+	upcasedLine := bytes.ToUpper(line)
 
 	for _, matcher := range m.matchers {
 		if match, start, end := matcher.Match(upcasedLine); match {

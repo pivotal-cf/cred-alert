@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 )
 
@@ -16,7 +15,7 @@ var _ = Describe("Substring", func() {
 	})
 
 	It("returns true when the line matches case-sensitively", func() {
-		line := &scanners.Line{Content: []byte("this is an exact match")}
+		line := []byte("this is an exact match")
 		matched, start, end := matcher.Match(line)
 		Expect(matched).To(BeTrue())
 		Expect(start).To(Equal(11))
@@ -24,12 +23,12 @@ var _ = Describe("Substring", func() {
 	})
 
 	It("returns false when the line does not match case-sensitively", func() {
-		line := &scanners.Line{Content: []byte("THIS IS NOT QUITE AN EXACT MATCH")}
+		line := []byte("THIS IS NOT QUITE AN EXACT MATCH")
 		Expect(matcher.Match(line)).To(BeFalse())
 	})
 
 	It("returns false when the line does not match", func() {
-		line := &scanners.Line{Content: []byte("this is not exactly a match")}
+		line := []byte("this is not exactly a match")
 		Expect(matcher.Match(line)).To(BeFalse())
 	})
 })

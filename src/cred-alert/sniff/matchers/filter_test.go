@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 	"cred-alert/sniff/matchers/matchersfakes"
 )
@@ -15,14 +14,14 @@ var _ = Describe("Filter", func() {
 		submatcher *matchersfakes.FakeMatcher
 
 		filters []string
-		line    *scanners.Line
+		line    []byte
 	)
 
 	BeforeEach(func() {
 		filters = []string{}
 
 		submatcher = &matchersfakes.FakeMatcher{}
-		line = &scanners.Line{Content: []byte("this is a very expensive string to scan")}
+		line = []byte("this is a very expensive string to scan")
 	})
 
 	JustBeforeEach(func() {

@@ -1,7 +1,6 @@
 package matchers_test
 
 import (
-	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
 	"cred-alert/sniff/matchers/matchersfakes"
 
@@ -24,20 +23,14 @@ var _ = Describe("UpcasedMulti", func() {
 	})
 
 	JustBeforeEach(func() {
-		matches, start, end = multimatcher.Match(&scanners.Line{
-			Content:    []byte("this is a line"),
-			LineNumber: 42,
-			Path:       "the/path",
-		})
+		matches, start, end = multimatcher.Match([]byte("this is a line"))
 	})
 
 	It("calls each matcher with the upcased line", func() {
 		Expect(matcher.MatchCallCount()).To(Equal(1))
 
 		line := matcher.MatchArgsForCall(0)
-		Expect(line.Content).To(Equal([]byte("THIS IS A LINE")))
-		Expect(line.LineNumber).To(Equal(42))
-		Expect(line.Path).To(Equal("the/path"))
+		Expect(line).To(Equal([]byte("THIS IS A LINE")))
 	})
 
 	It("returns false", func() {
