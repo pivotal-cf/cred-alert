@@ -299,7 +299,7 @@ func (c *client) BranchCredentialCounts(
 			return nil, err
 		}
 
-		err = tree.Walk(func(s string, entry *git.TreeEntry) int {
+		err = tree.Walk(func(root string, entry *git.TreeEntry) int {
 			if entry.Type == git.ObjectBlob {
 				if count, ok := entryCounts[*entry.Id]; ok {
 					if count > 0 {
