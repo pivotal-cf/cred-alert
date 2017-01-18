@@ -37,6 +37,7 @@ files:
   - cred-alert/scanners/*.{go,c} # gosub
   - cred-alert/scanners/diffscanner/*.{go,c} # gosub
   - cred-alert/scanners/filescanner/*.{go,c} # gosub
+  - cred-alert/search/*.{go,c} # gosub
   - cred-alert/sniff/*.{go,c} # gosub
   - cred-alert/sniff/matchers/*.{go,c} # gosub
   - github.com/BurntSushi/migration/*.{go,c} # gosub
