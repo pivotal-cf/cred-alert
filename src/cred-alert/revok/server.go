@@ -145,7 +145,6 @@ func (s *server) GetRepositoryCredentialCounts(
 
 func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {
 	matcher := matchers.Format(query.GetRegex())
-
 	results := s.searcher.SearchCurrent(matcher)
 
 	for result := range results.C() {
