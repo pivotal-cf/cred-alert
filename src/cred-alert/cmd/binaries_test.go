@@ -37,4 +37,9 @@ var _ = Describe("Binaries", func() {
 		_, err := gexec.Build("cred-alert/cmd/credential-count-publisher")
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("builds srcint", func() {
+		_, err := gexec.Build("cred-alert/cmd/srcint")
+		Expect(err).NotTo(HaveOccurred())
+	})
 })

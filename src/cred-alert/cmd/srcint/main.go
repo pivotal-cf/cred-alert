@@ -1,0 +1,98 @@
+package main
+
+import (
+	"context"
+	"cred-alert/revokpb"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"os"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
+	flags "github.com/jessevdk/go-flags"
+)
+
+type Opts struct {
+	RPCServerAddress string `long:"rpc-server-address" description:"Address for RPC server." required:"true"`
+	RPCServerPort    uint16 `long:"rpc-server-port" description:"Port for RPC server." required:"true"`
+
+	CACertPath     string `long:"ca-cert-path" description:"Path to the CA certificate" required:"true"`
+	ClientCertPath string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
+	ClientKeyPath  string `long:"client-key-path" description:"Path to the client private key" required:"true"`
+
+	Query string `long:"query" short:"q" description:"Regular expression to search for" required:"true"`
+}
+
+func main() {
+	var opts Opts
+
+	_, err := flags.ParseArgs(&opts, os.Args)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	serverAddr := fmt.Sprintf("%s:%d", opts.RPCServerAddress, opts.RPCServerPort)
+
+	clientCert, err := tls.LoadX509KeyPair(
+		opts.ClientCertPath,
+		opts.ClientKeyPath,
+	)
+
+	rootCertPool := x509.NewCertPool()
+	bs, err := ioutil.ReadFile(opts.CACertPath)
+	if err != nil {
+		log.Fatalf("failed to read ca cert: %s", err.Error())
+	}
+
+	ok := rootCertPool.AppendCertsFromPEM(bs)
+	if !ok {
+		log.Fatalf("failed to append certs from pem: %s", err.Error())
+	}
+
+	transportCreds := credentials.NewTLS(&tls.Config{
+		ServerName:   opts.RPCServerAddress,
+		Certificates: []tls.Certificate{clientCert},
+		RootCAs:      rootCertPool,
+	})
+
+	dialOption := grpc.WithTransportCredentials(transportCreds)
+	conn, err := grpc.Dial(serverAddr, dialOption)
+	if err != nil {
+		log.Fatalf("failed to create handler: %s", err.Error())
+	}
+	defer conn.Close()
+
+	revokClient := revokpb.NewRevokClient(conn)
+
+	stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
+		Regex: opts.Query,
+	})
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	for {
+		result, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+
+		show(result)
+	}
+}
+
+func show(result *revokpb.SearchResult) {
+	location := result.GetLocation()
+	repo := location.GetRepository()
+
+	fmt.Printf("[%s/%s@%s] %s:%d: %s\n", repo.GetOwner(), repo.GetName(), location.GetRevision()[:7], location.GetPath(), location.GetLineNumber(), result.GetContent())
+}
