@@ -1,20 +1,20 @@
 package search_test
 
 import (
-	"cred-alert/search"
-
-	"cred-alert/db/dbfakes"
-	"cred-alert/gitclient/gitclientfakes"
+	"errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"cred-alert/sniff/matchers"
+
 	"cred-alert/db"
+	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
-	"errors"
+	"cred-alert/gitclient/gitclientfakes"
+	"cred-alert/search"
+	"cred-alert/sniff/matchers"
 )
 
-var _ = FDescribe("Searcher", func() {
+var _ = Describe("Searcher", func() {
 	var (
 		repoRepository *dbfakes.FakeRepositoryRepository
 		looper         *gitclientfakes.FakeLooper

@@ -36,6 +36,7 @@ import (
 	"cred-alert/queue"
 	"cred-alert/revok"
 	"cred-alert/revok/stats"
+	"cred-alert/search"
 	"cred-alert/sniff"
 )
 
@@ -202,10 +203,13 @@ func main() {
 			log.Fatalf("failed to append client certs from pem: %s", err.Error())
 		}
 
+		looper := gitclient.NewLooper()
+		searcher := search.NewSearcher(repositoryRepository, looper)
+
 		grpcServer := revok.NewGRPCServer(
 			logger,
 			fmt.Sprintf("%s:%d", cfg.RPC.BindIP, cfg.RPC.BindPort),
-			revok.NewServer(logger, repositoryRepository),
+			revok.NewServer(logger, repositoryRepository, searcher),
 			&tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
 				Certificates: []tls.Certificate{certificate},

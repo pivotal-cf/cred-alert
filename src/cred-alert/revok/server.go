@@ -1,15 +1,15 @@
 package revok
 
 import (
-	"cred-alert/db"
-	"cred-alert/revokpb"
-	"fmt"
 	"sort"
-	"time"
 
 	"code.cloudfoundry.org/lager"
-
 	"golang.org/x/net/context"
+
+	"cred-alert/db"
+	"cred-alert/revokpb"
+	"cred-alert/search"
+	"cred-alert/sniff/matchers"
 )
 
 //go:generate bash $GOPATH/scripts/generate_protos.sh
@@ -23,14 +23,16 @@ type Server interface {
 }
 
 type server struct {
-	logger lager.Logger
-	db     db.RepositoryRepository
+	logger         lager.Logger
+	repoRepository db.RepositoryRepository
+	searcher       search.Searcher
 }
 
-func NewServer(logger lager.Logger, db db.RepositoryRepository) Server {
+func NewServer(logger lager.Logger, repoRepository db.RepositoryRepository, searcher search.Searcher) Server {
 	return &server{
-		logger: logger,
-		db:     db,
+		logger:         logger,
+		repoRepository: repoRepository,
+		searcher:       searcher,
 	}
 }
 
@@ -40,7 +42,7 @@ func (s *server) GetCredentialCounts(
 ) (*revokpb.CredentialCountResponse, error) {
 	logger := s.logger.Session("get-organization-credential-counts")
 
-	repositories, err := s.db.All()
+	repositories, err := s.repoRepository.All()
 	if err != nil {
 		logger.Error("failed-getting-repositories-from-db", err)
 		return nil, err
@@ -79,7 +81,7 @@ func (s *server) GetOrganizationCredentialCounts(
 ) (*revokpb.OrganizationCredentialCountResponse, error) {
 	logger := s.logger.Session("get-repository-credential-counts")
 
-	repositories, err := s.db.AllForOrganization(in.Owner)
+	repositories, err := s.repoRepository.AllForOrganization(in.Owner)
 	if err != nil {
 		logger.Error("failed-getting-repositories-from-db", err)
 		return nil, err
@@ -116,7 +118,7 @@ func (s *server) GetRepositoryCredentialCounts(
 ) (*revokpb.RepositoryCredentialCountResponse, error) {
 	logger := s.logger.Session("get-repository-credential-counts")
 
-	repository, err := s.db.Find(in.Owner, in.Name)
+	repository, err := s.repoRepository.Find(in.Owner, in.Name)
 	if err != nil {
 		logger.Error("failed-getting-repository-from-db", err)
 		return nil, err
@@ -142,27 +144,33 @@ func (s *server) GetRepositoryCredentialCounts(
 }
 
 func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {
-	for i := 0; i < 42; i++ {
+	matcher := matchers.Format(query.GetRegex())
+
+	results := s.searcher.SearchCurrent(matcher)
+
+	for result := range results.C() {
 		searchResult := &revokpb.SearchResult{
 			Location: &revokpb.SourceLocation{
 				Repository: &revokpb.Repository{
-					Owner: "pivotal-cf",
-					Name:  fmt.Sprintf("repository-%d", i),
+					Owner: result.Owner,
+					Name:  result.Repository,
 				},
-				Revision:   "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
-				Path:       "my/special/file.go",
-				LineNumber: uint32(i),
-				Location:   uint32(i * 2),
-				Length:     uint32(i * 3),
+				Revision:   result.Revision,
+				Path:       result.Path,
+				LineNumber: uint32(result.LineNumber),
+				Location:   uint32(result.Location),
+				Length:     uint32(result.Length),
 			},
-			Content: fmt.Sprintf("My Special Content %d", i),
+			Content: string(result.Content),
 		}
 
 		if err := stream.Send(searchResult); err != nil {
 			return err
 		}
+	}
 
-		time.Sleep(200 * time.Millisecond)
+	if err := results.Err(); err != nil {
+		return err
 	}
 
 	return nil

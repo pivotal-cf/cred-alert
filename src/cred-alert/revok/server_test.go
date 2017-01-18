@@ -2,32 +2,43 @@ package revok_test
 
 import (
 	"context"
+
+	"code.cloudfoundry.org/lager/lagertest"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/revok"
 	"cred-alert/revokpb"
-
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"cred-alert/search/searchfakes"
 )
 
 var _ = Describe("Server", func() {
+	var (
+		repoDB   *dbfakes.FakeRepositoryRepository
+		searcher *searchfakes.FakeSearcher
+		server   revok.Server
+
+		ctx     context.Context
+		request *revokpb.CredentialCountRequest
+
+		response *revokpb.CredentialCountResponse
+		err      error
+	)
+
+	BeforeEach(func() {
+		logger := lagertest.NewTestLogger("revok-server")
+		repoDB = &dbfakes.FakeRepositoryRepository{}
+		searcher = &searchfakes.FakeSearcher{}
+		ctx = context.Background()
+
+		server = revok.NewServer(logger, repoDB, searcher)
+	})
+
 	Describe("GetCredentialCounts", func() {
-		var (
-			repoDB *dbfakes.FakeRepositoryRepository
-			server revok.Server
-
-			ctx     context.Context
-			request *revokpb.CredentialCountRequest
-
-			response *revokpb.CredentialCountResponse
-			err      error
-		)
-
 		BeforeEach(func() {
-			logger := lagertest.NewTestLogger("revok-server")
-			repoDB = &dbfakes.FakeRepositoryRepository{}
 			repoDB.AllReturns([]db.Repository{
 				{
 					Owner: "some-owner",
@@ -52,10 +63,7 @@ var _ = Describe("Server", func() {
 				},
 			}, nil)
 
-			ctx = context.Background()
 			request = &revokpb.CredentialCountRequest{}
-
-			server = revok.NewServer(logger, repoDB)
 		})
 
 		JustBeforeEach(func() {

@@ -21,6 +21,8 @@ type Result struct {
 	Content []byte
 }
 
+//go:generate counterfeiter . Searcher
+
 type Searcher interface {
 	SearchCurrent(matcher matchers.Matcher) Results
 }
@@ -86,6 +88,8 @@ func (s *searcher) SearchCurrent(matcher matchers.Matcher) Results {
 
 	return searchResults
 }
+
+//go:generate counterfeiter . Results
 
 type Results interface {
 	C() <-chan Result
