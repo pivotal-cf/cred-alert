@@ -12,6 +12,17 @@ func Format(format string) Matcher {
 	}
 }
 
+func TryFormat(format string) (Matcher, error) {
+	r, err := regexp.Compile(format)
+	if err != nil {
+		return nil, err
+	}
+
+	return &formatMatcher{
+		r: r,
+	}, nil
+}
+
 func (m *formatMatcher) Match(line []byte) (bool, int, int) {
 	index := m.r.FindIndex(line)
 	if index == nil {

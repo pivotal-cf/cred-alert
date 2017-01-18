@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -157,7 +158,9 @@ var _ = Describe("Server", func() {
 
 			searcher.SearchCurrentReturns(searchResults)
 
-			stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{})
+			stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
+				Regex: "hello, (.*)",
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(searcher.SearchCurrentCallCount).Should(Equal(1))
@@ -217,7 +220,9 @@ var _ = Describe("Server", func() {
 
 				searcher.SearchCurrentReturns(searchResults)
 
-				stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{})
+				stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
+					Regex: "hello, (.*)",
+				})
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(searcher.SearchCurrentCallCount).Should(Equal(1))
@@ -225,6 +230,46 @@ var _ = Describe("Server", func() {
 				result, err := stream.Recv()
 				Expect(err).To(MatchError(ContainSubstring("disaster")))
 				Expect(result).To(BeNil())
+			})
+		})
+
+		Context("with an empty regular expression", func() {
+			It("returns an error", func() {
+				resultsChan := make(chan search.Result, 10)
+				close(resultsChan)
+
+				searchResults := &searchfakes.FakeResults{}
+				searchResults.CReturns(resultsChan)
+
+				searcher.SearchCurrentReturns(searchResults)
+
+				stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
+					Regex: "",
+				})
+
+				_, err = stream.Recv()
+				Expect(err).To(MatchError(ContainSubstring("query regular expression may not be empty")))
+				Expect(grpc.Code(err)).To(Equal(codes.InvalidArgument))
+			})
+		})
+
+		Context("with an invalid regular expression", func() {
+			It("returns an error", func() {
+				resultsChan := make(chan search.Result, 10)
+				close(resultsChan)
+
+				searchResults := &searchfakes.FakeResults{}
+				searchResults.CReturns(resultsChan)
+
+				searcher.SearchCurrentReturns(searchResults)
+
+				stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
+					Regex: "((",
+				})
+
+				_, err = stream.Recv()
+				Expect(err).To(MatchError(ContainSubstring("query regular expression is invalid: '(('")))
+				Expect(grpc.Code(err)).To(Equal(codes.InvalidArgument))
 			})
 		})
 	})

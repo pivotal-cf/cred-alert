@@ -5,6 +5,8 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"cred-alert/db"
 	"cred-alert/revokpb"
@@ -144,7 +146,16 @@ func (s *server) GetRepositoryCredentialCounts(
 }
 
 func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {
-	matcher := matchers.Format(query.GetRegex())
+	regex := query.GetRegex()
+	if regex == "" {
+		return grpc.Errorf(codes.InvalidArgument, "query regular expression may not be empty")
+	}
+
+	matcher, err := matchers.TryFormat(regex)
+	if err != nil {
+		return grpc.Errorf(codes.InvalidArgument, "query regular expression is invalid: '%s'", regex)
+	}
+
 	results := s.searcher.SearchCurrent(matcher)
 
 	for result := range results.C() {
