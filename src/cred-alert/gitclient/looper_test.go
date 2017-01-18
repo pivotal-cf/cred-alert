@@ -27,7 +27,14 @@ var _ = Describe("Looper", func() {
 		stdout := &bytes.Buffer{}
 
 		cmd := exec.Command("git", args...)
-		cmd.Env = append(os.Environ(), "TERM=dumb")
+		cmd.Env = append(
+			os.Environ(),
+			"TERM=dumb",
+			"GIT_COMMITTER_NAME=Korben Dallas",
+			"GIT_COMMITTER_EMAIL=korben@git.example.com",
+			"GIT_AUTHOR_NAME=Korben Dallas",
+			"GIT_AUTHOR_EMAIL=korben@git.example.com",
+		)
 		cmd.Dir = path
 		cmd.Stdout = io.MultiWriter(GinkgoWriter, stdout)
 		cmd.Stderr = GinkgoWriter
