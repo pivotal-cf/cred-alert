@@ -146,6 +146,9 @@ func (s *server) GetRepositoryCredentialCounts(
 }
 
 func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {
+	logger := s.logger.Session("search-endpoint")
+	logger.Info("hit")
+
 	regex := query.GetRegex()
 	if regex == "" {
 		return grpc.Errorf(codes.InvalidArgument, "query regular expression may not be empty")
@@ -156,7 +159,7 @@ func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchS
 		return grpc.Errorf(codes.InvalidArgument, "query regular expression is invalid: '%s'", regex)
 	}
 
-	results := s.searcher.SearchCurrent(matcher)
+	results := s.searcher.SearchCurrent(stream.Context(), logger, matcher)
 
 	for result := range results.C() {
 		searchResult := &revokpb.SearchResult{

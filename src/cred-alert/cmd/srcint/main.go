@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -69,7 +70,18 @@ func main() {
 
 	revokClient := revokpb.NewRevokClient(conn)
 
-	stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			cancel()
+			os.Exit(127)
+		}
+	}()
+
+	stream, err := revokClient.Search(ctx, &revokpb.SearchQuery{
 		Regex: opts.Query,
 	})
 	if err != nil {

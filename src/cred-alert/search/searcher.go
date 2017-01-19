@@ -3,6 +3,10 @@ package search
 import (
 	"bufio"
 	"bytes"
+	"context"
+
+	"code.cloudfoundry.org/lager"
+
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/sniff/matchers"
@@ -24,7 +28,7 @@ type Result struct {
 //go:generate counterfeiter . Searcher
 
 type Searcher interface {
-	SearchCurrent(matcher matchers.Matcher) Results
+	SearchCurrent(ctx context.Context, logger lager.Logger, matcher matchers.Matcher) Results
 }
 
 type searcher struct {
@@ -39,7 +43,9 @@ func NewSearcher(repoRepository db.RepositoryRepository, looper gitclient.Looper
 	}
 }
 
-func (s *searcher) SearchCurrent(matcher matchers.Matcher) Results {
+func (s *searcher) SearchCurrent(ctx context.Context, logger lager.Logger, matcher matchers.Matcher) Results {
+	logger = logger.Session("search-current")
+
 	searchResults := &searchResults{
 		resultChan: make(chan Result, 1024),
 		err:        nil,
@@ -53,34 +59,49 @@ func (s *searcher) SearchCurrent(matcher matchers.Matcher) Results {
 
 	go func() {
 		for _, repo := range activeRepos {
-			s.looper.ScanCurrentState(repo.Path, func(sha string, path string, content []byte) {
-				scanner := bufio.NewScanner(bytes.NewReader(content))
+			logger = logger.WithData(lager.Data{
+				"owner": repo.Owner,
+				"repo": repo.Name,
+			})
 
-				lineNumber := 1
+			select {
+			case <-ctx.Done():
+				searchResults.fail(ctx.Err())
+				return
+			default:
+				s.looper.ScanCurrentState(repo.Path, func(sha string, path string, content []byte) {
+					scanner := bufio.NewScanner(bytes.NewReader(content))
 
-				for scanner.Scan() {
-					line := scanner.Bytes()
+					lineNumber := 1
 
-					if match, start, end := matcher.Match(line); match {
-						searchResults.resultChan <- Result{
-							Owner:      repo.Owner,
-							Repository: repo.Name,
-							Revision:   sha,
-							Path:       path,
-							LineNumber: lineNumber,
-							Location:   start,
-							Length:     end - start,
-							Content:    line,
+					for scanner.Scan() {
+						line := scanner.Bytes()
+
+						if match, start, end := matcher.Match(line); match {
+							searchResults.resultChan <- Result{
+								Owner:      repo.Owner,
+								Repository: repo.Name,
+								Revision:   sha,
+								Path:       path,
+								LineNumber: lineNumber,
+								Location:   start,
+								Length:     end - start,
+								Content:    line,
+							}
 						}
+
+						lineNumber++
 					}
 
-					lineNumber++
-				}
-
-				if err := scanner.Err(); err != nil {
-					searchResults.fail(err)
-				}
-			})
+					if err := scanner.Err(); err != nil {
+						logger.Error("failed-to-search-file", err, lager.Data{
+							"revision": sha,
+							"path": path,
+							"line-number": lineNumber,
+						})
+					}
+				})
+			}
 		}
 
 		searchResults.succeed()

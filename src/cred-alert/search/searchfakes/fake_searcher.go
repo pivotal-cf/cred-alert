@@ -2,15 +2,20 @@
 package searchfakes
 
 import (
+	"context"
 	"cred-alert/search"
 	"cred-alert/sniff/matchers"
 	"sync"
+
+	"code.cloudfoundry.org/lager"
 )
 
 type FakeSearcher struct {
-	SearchCurrentStub        func(matcher matchers.Matcher) search.Results
+	SearchCurrentStub        func(ctx context.Context, logger lager.Logger, matcher matchers.Matcher) search.Results
 	searchCurrentMutex       sync.RWMutex
 	searchCurrentArgsForCall []struct {
+		ctx     context.Context
+		logger  lager.Logger
 		matcher matchers.Matcher
 	}
 	searchCurrentReturns struct {
@@ -20,15 +25,17 @@ type FakeSearcher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSearcher) SearchCurrent(matcher matchers.Matcher) search.Results {
+func (fake *FakeSearcher) SearchCurrent(ctx context.Context, logger lager.Logger, matcher matchers.Matcher) search.Results {
 	fake.searchCurrentMutex.Lock()
 	fake.searchCurrentArgsForCall = append(fake.searchCurrentArgsForCall, struct {
+		ctx     context.Context
+		logger  lager.Logger
 		matcher matchers.Matcher
-	}{matcher})
-	fake.recordInvocation("SearchCurrent", []interface{}{matcher})
+	}{ctx, logger, matcher})
+	fake.recordInvocation("SearchCurrent", []interface{}{ctx, logger, matcher})
 	fake.searchCurrentMutex.Unlock()
 	if fake.SearchCurrentStub != nil {
-		return fake.SearchCurrentStub(matcher)
+		return fake.SearchCurrentStub(ctx, logger, matcher)
 	}
 	return fake.searchCurrentReturns.result1
 }
@@ -39,10 +46,10 @@ func (fake *FakeSearcher) SearchCurrentCallCount() int {
 	return len(fake.searchCurrentArgsForCall)
 }
 
-func (fake *FakeSearcher) SearchCurrentArgsForCall(i int) matchers.Matcher {
+func (fake *FakeSearcher) SearchCurrentArgsForCall(i int) (context.Context, lager.Logger, matchers.Matcher) {
 	fake.searchCurrentMutex.RLock()
 	defer fake.searchCurrentMutex.RUnlock()
-	return fake.searchCurrentArgsForCall[i].matcher
+	return fake.searchCurrentArgsForCall[i].ctx, fake.searchCurrentArgsForCall[i].logger, fake.searchCurrentArgsForCall[i].matcher
 }
 
 func (fake *FakeSearcher) SearchCurrentReturns(result1 search.Results) {
