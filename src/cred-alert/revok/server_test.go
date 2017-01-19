@@ -190,7 +190,7 @@ var _ = Describe("Server", func() {
 					Location:   93,
 					Length:     12,
 				},
-				Content: "totally a credential",
+				Content: []byte("totally a credential"),
 			},
 				revokpb.SearchResult{
 					Location: &revokpb.SourceLocation{
@@ -204,7 +204,7 @@ var _ = Describe("Server", func() {
 						Location:   3,
 						Length:     23,
 					},
-					Content: "awesome content",
+					Content: []byte("awesome content"),
 				},
 			))
 		})

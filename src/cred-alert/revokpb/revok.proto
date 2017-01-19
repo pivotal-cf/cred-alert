@@ -55,7 +55,7 @@ message SearchQuery {
 
 message SearchResult {
   SourceLocation location = 1;
-  string content = 2;
+  bytes content = 2;
 }
 
 message SourceLocation {

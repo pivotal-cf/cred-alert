@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -102,9 +103,14 @@ func main() {
 	}
 }
 
+var unsafeChars = regexp.MustCompile(`[[:^print:]]`)
+
 func show(result *revokpb.SearchResult) {
 	location := result.GetLocation()
 	repo := location.GetRepository()
 
-	fmt.Printf("[%s/%s@%s] %s:%d: %s\n", repo.GetOwner(), repo.GetName(), location.GetRevision()[:7], location.GetPath(), location.GetLineNumber(), result.GetContent())
+	content := result.GetContent()
+	safe := unsafeChars.ReplaceAllLiteral(content, []byte{})
+
+	fmt.Printf("[%s/%s@%s] %s:%d: %s\n", repo.GetOwner(), repo.GetName(), location.GetRevision()[:7], location.GetPath(), location.GetLineNumber(), safe)
 }

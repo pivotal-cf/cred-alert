@@ -174,7 +174,7 @@ func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchS
 				Location:   uint32(result.Location),
 				Length:     uint32(result.Length),
 			},
-			Content: string(result.Content),
+			Content: result.Content,
 		}
 
 		if err := stream.Send(searchResult); err != nil {
