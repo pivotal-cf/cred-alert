@@ -77,7 +77,9 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
+			fmt.Print("cancelling search... ")
 			cancel()
+			fmt.Println("done")
 			os.Exit(127)
 		}
 	}()
