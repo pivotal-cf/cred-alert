@@ -61,7 +61,7 @@ func (s *searcher) SearchCurrent(ctx context.Context, logger lager.Logger, match
 		for _, repo := range activeRepos {
 			logger = logger.WithData(lager.Data{
 				"owner": repo.Owner,
-				"repo": repo.Name,
+				"repo":  repo.Name,
 			})
 
 			select {
@@ -75,7 +75,8 @@ func (s *searcher) SearchCurrent(ctx context.Context, logger lager.Logger, match
 					lineNumber := 1
 
 					for scanner.Scan() {
-						line := scanner.Bytes()
+						line := make([]byte, len(scanner.Bytes()))
+						copy(line, scanner.Bytes())
 
 						if match, start, end := matcher.Match(line); match {
 							searchResults.resultChan <- Result{
@@ -99,8 +100,8 @@ func (s *searcher) SearchCurrent(ctx context.Context, logger lager.Logger, match
 						}
 
 						logger.Error("failed-to-search-file", err, lager.Data{
-							"revision": sha,
-							"path": path,
+							"revision":    sha,
+							"path":        path,
 							"line-number": lineNumber,
 						})
 					}
