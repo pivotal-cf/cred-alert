@@ -94,6 +94,10 @@ func (s *searcher) SearchCurrent(ctx context.Context, logger lager.Logger, match
 					}
 
 					if err := scanner.Err(); err != nil {
+						if err == bufio.ErrTooLong {
+							return
+						}
+
 						logger.Error("failed-to-search-file", err, lager.Data{
 							"revision": sha,
 							"path": path,

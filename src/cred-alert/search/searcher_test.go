@@ -3,8 +3,8 @@ package search_test
 import (
 	"context"
 	"errors"
+	"strings"
 
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -22,7 +22,7 @@ var _ = Describe("Searcher", func() {
 	var (
 		repoRepository *dbfakes.FakeRepositoryRepository
 		looper         *gitclientfakes.FakeLooper
-		logger         lager.Logger
+		logger         *lagertest.TestLogger
 
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -133,6 +133,32 @@ var _ = Describe("Searcher", func() {
 				Eventually(results.C()).Should(BeClosed())
 
 				Expect(results.Err()).NotTo(HaveOccurred())
+			})
+
+			Context("when the scanner encounters a really long line", func() {
+				BeforeEach(func() {
+					looper.ScanCurrentStateStub = func(path string, callback gitclient.ScanCallback) error {
+						switch path {
+						case "some-repo-path":
+							callback("abc123", "awesome-path/file.txt", []byte("goodbye\nyo hello, adele\nfrom the other side\n"))
+						case "some-other-repo-path":
+							callback("def456", "awesome-path/other-file.txt", []byte(strings.Repeat("hello?", 100000)))
+						default:
+							panic("called with an unexpected repository path!: " + path)
+						}
+
+						return nil
+					}
+				})
+
+				It("does not report an error", func() {
+					matcher := matchers.Format("hello, (.*)")
+					results := searcher.SearchCurrent(ctx, logger, matcher)
+					Eventually(results.C()).Should(BeClosed())
+					Expect(results.Err()).NotTo(HaveOccurred())
+
+					Expect(logger.LogMessages()).To(HaveLen(0))
+				})
 			})
 		})
 	})
