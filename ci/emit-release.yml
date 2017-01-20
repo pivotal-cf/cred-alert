@@ -1,0 +1,20 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: pcfsecurity/sentry-release-image
+
+inputs:
+- name: release-repo
+- name: version
+
+params:
+  SENTRY_RELEASE_VERSION_FILE:
+  SENTRY_AUTH_TOKEN:
+  SENTRY_ORG_SLUG:
+  SENTRY_PROJECT_SLUG:
+
+run:
+  path: bosh-release/ci/scripts/emit-release

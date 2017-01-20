@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -eu
+
+if [ -z "$SENTRY_RELEASE_VERSION_FILE" ]; then
+  echo "must specify \$SENTRY_RELEASE_VERSION_FILE" >&2
+  exit 1
+fi
+
+if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+  echo "must specify \$SENTRY_AUTH_TOKEN" >&2
+  exit 1
+fi
+
+if [ -z "$SENTRY_ORG_SLUG" ]; then
+  echo "must specify \$SENTRY_ORG_SLUG" >&2
+  exit 1
+fi
+
+if [ -z "$SENTRY_PROJECT_SLUG" ]; then
+  echo "must specify \$SENTRY_PROJECT_SLUG" >&2
+  exit 1
+fi
+
+pushd release-repo
+  release_ref=$(git rev-parse HEAD)
+popd
+
+release_version=$(cat "version/$SENTRY_RELEASE_VERSION_FILE")
+
+sentry-cli \
+  --auth-token "$SENTRY_AUTH_TOKEN"
+  releases \
+    --org "$SENTRY_ORG_SLUG" \
+    --project "$SENTRY_PROJECT_SLUG" \
+    new "$release_version" \
+      --ref "$release_ref"
