@@ -17,4 +17,4 @@ params:
   SENTRY_PROJECT_SLUG:
 
 run:
-  path: bosh-release/ci/scripts/emit-release
+  path: release-repo/ci/scripts/emit-release
