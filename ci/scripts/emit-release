@@ -29,7 +29,7 @@ popd
 release_version=$(cat "version/$SENTRY_RELEASE_VERSION_FILE")
 
 sentry-cli \
-  --auth-token "$SENTRY_AUTH_TOKEN"
+  --auth-token "$SENTRY_AUTH_TOKEN" \
   releases \
     --org "$SENTRY_ORG_SLUG" \
     --project "$SENTRY_PROJECT_SLUG" \
