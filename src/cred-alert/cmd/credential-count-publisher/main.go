@@ -1,9 +1,6 @@
 package main
 
 import (
-	"cred-alert/revok/api"
-	"cred-alert/revok/web"
-	"cred-alert/revokpb"
 	"crypto/tls"
 	"fmt"
 	"html/template"
@@ -19,6 +16,11 @@ import (
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 	"github.com/tedsuo/rata"
+
+	"cred-alert/config"
+	"cred-alert/revok/api"
+	"cred-alert/revok/web"
+	"cred-alert/revokpb"
 )
 
 type Opts struct {
@@ -85,7 +87,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	rootCertPool, err := config.LoadCertPool(opts.CACertPath)
+	rootCertPool, err := config.LoadCertificatePool(opts.CACertPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
