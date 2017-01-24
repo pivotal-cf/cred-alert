@@ -7,7 +7,7 @@ import (
 	"cred-alert/metrics"
 	"encoding/json"
 
-	git "github.com/libgit2/git2go"
+	git "gopkg.in/libgit2/git2go.v25"
 
 	"code.cloudfoundry.org/lager"
 )

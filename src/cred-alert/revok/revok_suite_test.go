@@ -10,9 +10,9 @@ import (
 
 	"google.golang.org/grpc/grpclog"
 
-	git "github.com/libgit2/git2go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	git "gopkg.in/libgit2/git2go.v25"
 
 	"testing"
 )

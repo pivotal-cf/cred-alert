@@ -59,7 +59,6 @@ files:
   - github.com/jessevdk/go-flags/*.{go,c} # gosub
   - github.com/jinzhu/gorm/*.{go,c} # gosub
   - github.com/jinzhu/inflection/*.{go,c} # gosub
-  - github.com/libgit2/git2go/*.{go,c} # gosub
   - github.com/robfig/cron/*.{go,c} # gosub
   - github.com/satori/go.uuid/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/*.{go,c} # gosub
@@ -104,4 +103,5 @@ files:
   - google.golang.org/grpc/stats/*.{go,c} # gosub
   - google.golang.org/grpc/tap/*.{go,c} # gosub
   - google.golang.org/grpc/transport/*.{go,c} # gosub
+  - gopkg.in/libgit2/git2go.v25/*.{go,c} # gosub
   - gopkg.in/yaml.v2/*.{go,c} # gosub

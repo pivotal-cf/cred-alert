@@ -89,10 +89,6 @@
 	path = src/github.com/inconshreveable/go-update
 	url = https://github.com/inconshreveable/go-update
 	branch = master
-[submodule "src/github.com/libgit2/git2go"]
-	path = src/github.com/libgit2/git2go
-	url = https://github.com/libgit2/git2go
-	branch = master
 [submodule "src/github.com/kardianos/osext"]
 	path = src/github.com/kardianos/osext
 	url = https://github.com/kardianos/osext
@@ -145,3 +141,7 @@
 	path = src/github.com/nlopes/slack
 	url = https://github.com/nlopes/slack
 	branch = master
+[submodule "src/gopkg.in/libgit2/git2go.v25"]
+	path = src/gopkg.in/libgit2/git2go.v25
+	url = https://gopkg.in/libgit2/git2go.v25
+	branch = v25

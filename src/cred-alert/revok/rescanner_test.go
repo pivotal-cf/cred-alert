@@ -15,9 +15,9 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
+	git "gopkg.in/libgit2/git2go.v25"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

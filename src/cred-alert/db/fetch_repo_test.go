@@ -6,8 +6,8 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/jinzhu/gorm"
-	git "github.com/libgit2/git2go"
 	uuid "github.com/satori/go.uuid"
+	git "gopkg.in/libgit2/git2go.v25"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

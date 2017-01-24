@@ -9,8 +9,8 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
-	git "github.com/libgit2/git2go"
 	"github.com/tedsuo/ifrit"
+	git "gopkg.in/libgit2/git2go.v25"
 )
 
 //go:generate counterfeiter . RepoChangeScheduler
