@@ -7,9 +7,9 @@ golang/golang-linux-amd64.tar.gz:
   object_id: 72838a67-0ae4-49ae-46de-24c50937b946
   sha: 2e5baf03d1590e048c84d1d5b4b6f2540efaaea1
 libgit2/libgit2.tar.gz:
-  size: 4180212
-  object_id: 0788ed3f-8b44-4b47-7c37-67e7ec484838
-  sha: c9c65ec6c7c82500f8e7cbfbdd6433454587b037
+  size: 4255232
+  object_id: 76fb2a5f-30a7-408a-4fff-8abff88e9b8e
+  sha: a9a51372025ed59287a64e1cbf916f7be5772021
 libssh2/libssh2-1.7.0.tar.gz:
   size: 811714
   object_id: 0ad299de-3a95-4c29-a9b1-3d8ee2578bb4
