@@ -68,6 +68,7 @@ type WorkerConfig struct {
 		ClientCACertificatePath cmdflag.FileFlag `long:"rpc-server-client-ca" description:"Path to client CA certificate" yaml:"client_ca_certificate_path"`
 		CertificatePath         cmdflag.FileFlag `long:"rpc-server-cert" description:"Path to RPC server certificate" yaml:"certificate_path"`
 		PrivateKeyPath          cmdflag.FileFlag `long:"rpc-server-private-key" description:"Path to RPC server private key" yaml:"private_key_path"`
+		PrivateKeyPassphrase    string           `long:"rpc-server-private-key-passphrase" description:"Passphrase for the RPC server private key, if encrypted" yaml:"private_key_passphrase"`
 		BindIP                  string           `long:"rpc-server-bind-ip" description:"IP address on which to listen for RPC traffic." yaml:"bind_ip"`
 		BindPort                uint16           `long:"rpc-server-bind-port" description:"Port on which to listen for RPC traffic." yaml:"bind_port"`
 	} `group:"RPC Options" yaml:"rpc_server"`

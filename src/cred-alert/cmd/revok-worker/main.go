@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -187,20 +186,18 @@ func main() {
 	}
 
 	if cfg.IsRPCConfigured() {
-		certificate, err := tls.LoadX509KeyPair(
+		certificate, err := config.LoadCertificate(
 			string(cfg.RPC.CertificatePath),
 			string(cfg.RPC.PrivateKeyPath),
+			cfg.RPC.PrivateKeyPassphrase,
 		)
-
-		clientCertPool := x509.NewCertPool()
-		bs, err := ioutil.ReadFile(string(cfg.RPC.ClientCACertificatePath))
 		if err != nil {
-			log.Fatalf("failed to read client ca certificate: %s", err.Error())
+			log.Fatalln(err)
 		}
 
-		ok := clientCertPool.AppendCertsFromPEM(bs)
-		if !ok {
-			log.Fatalf("failed to append client certs from pem: %s", err.Error())
+		clientCertPool, err := config.LoadCertificatePool(string(cfg.RPC.ClientCACertificatePath))
+		if err != nil {
+			log.Fatalln(err)
 		}
 
 		looper := gitclient.NewLooper()

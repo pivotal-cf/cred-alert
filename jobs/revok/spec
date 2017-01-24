@@ -116,6 +116,10 @@ properties:
     description: |
       RPC server private key
 
+  revok.rpc_server.private_key_passphrase:
+    description: |
+      RPC server private key passphrase
+
   revok.metrics.datadog_api_key:
     description: |
       Datadog API key

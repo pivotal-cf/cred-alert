@@ -47,11 +47,14 @@ mysql:
   db_name: <%= db %>
 <% end %>
 
-<% if_p("revok.rpc_server.bind_ip", "revok.rpc_server.bind_port", "revok.rpc_server.client_ca", "revok.rpc_server.cert", "revok.rpc_server.private_key") do |bind_ip, bind_port, _, _, _| %>
+<% if_p("revok.rpc_server.bind_ip", "revok.rpc_server.bind_port", "revok.rpc_server.client_ca", "revok.rpc_server.cert", "revok.rpc_server.private_key") do |bind_ip, bind_port, _, _, _, passphrase| %>
 rpc_server:
   bind_ip: <%= bind_ip %>
   bind_port: <%= bind_port %>
   client_ca_certificate_path: /var/vcap/jobs/revok/config/rpc_server_client_ca
   certificate_path: /var/vcap/jobs/revok/config/rpc_server_cert
   private_key_path: /var/vcap/jobs/revok/config/rpc_server_private_key
+  <% if_p("revok.rpc_server.private_key_passphrase") do |passphrase| %>
+  private_key_passphrase: <%= passphrase %>
+  <% end %>
 <% end %>

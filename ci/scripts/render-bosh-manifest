@@ -19,6 +19,8 @@ revok-ignore-repos: $IGNORE_REPOS
 
 revok-rpc-server-bind-ip: $RPC_SERVER_BIND_IP
 revok-rpc-server-bind-port: $RPC_SERVER_BIND_PORT
+revok-rpc-server-private-key-passphrase: $RPC_SERVER_PRIVATE_KEY_PASSPHRASE
+
 EOF
 
 IFS=$'\n'
