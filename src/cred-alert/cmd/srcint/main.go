@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
+	"cred-alert/config"
 	"cred-alert/revokpb"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -23,9 +22,10 @@ type Opts struct {
 	RPCServerAddress string `long:"rpc-server-address" description:"Address for RPC server." required:"true"`
 	RPCServerPort    uint16 `long:"rpc-server-port" description:"Port for RPC server." required:"true"`
 
-	CACertPath     string `long:"ca-cert-path" description:"Path to the CA certificate" required:"true"`
-	ClientCertPath string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
-	ClientKeyPath  string `long:"client-key-path" description:"Path to the client private key" required:"true"`
+	CACertPath          string `long:"ca-cert-path" description:"Path to the CA certificate" required:"true"`
+	ClientCertPath      string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
+	ClientKeyPath       string `long:"client-key-path" description:"Path to the client private key" required:"true"`
+	ClientKeyPassphrase string `long:"client-key-passphrase" description:"Passphrase for the client private key, if encrypted"`
 
 	Query string `long:"query" short:"q" description:"Regular expression to search for" required:"true"`
 }
@@ -40,20 +40,18 @@ func main() {
 
 	serverAddr := fmt.Sprintf("%s:%d", opts.RPCServerAddress, opts.RPCServerPort)
 
-	clientCert, err := tls.LoadX509KeyPair(
+	clientCert, err := config.LoadCertificate(
 		opts.ClientCertPath,
 		opts.ClientKeyPath,
+		opts.ClientKeyPassphrase,
 	)
-
-	rootCertPool := x509.NewCertPool()
-	bs, err := ioutil.ReadFile(opts.CACertPath)
 	if err != nil {
-		log.Fatalf("failed to read ca cert: %s", err.Error())
+		log.Fatalln(err)
 	}
 
-	ok := rootCertPool.AppendCertsFromPEM(bs)
-	if !ok {
-		log.Fatalf("failed to append certs from pem: %s", err.Error())
+	rootCertPool, err := config.LoadCertificatePool(opts.CACertPath)
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	transportCreds := credentials.NewTLS(&tls.Config{
