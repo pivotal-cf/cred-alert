@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"github.com/tedsuo/ifrit"
-	git "gopkg.in/libgit2/git2go.v25"
+	git "gopkg.in/libgit2/git2go.v24"
 )
 
 type headCredentialCounter struct {
