@@ -7,7 +7,8 @@ export PATH=$GOPATH/bin:$PATH
 
 service mysql start
 
-pushd ${GOPATH}/src/cred-alert
+pushd ${GOPATH}
   go install github.com/onsi/ginkgo/ginkgo
-  ginkgo -r -p -race "$@"
+
+  ./scripts/test -race $@
 popd
