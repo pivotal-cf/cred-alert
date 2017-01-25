@@ -13,6 +13,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"red/redpb"
+
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/revok"
@@ -180,7 +182,7 @@ var _ = Describe("Server", func() {
 
 			Expect(results).To(ConsistOf(revokpb.SearchResult{
 				Location: &revokpb.SourceLocation{
-					Repository: &revokpb.Repository{
+					Repository: &redpb.Repository{
 						Owner: "owner-name",
 						Name:  "other-repo-name",
 					},
@@ -194,7 +196,7 @@ var _ = Describe("Server", func() {
 			},
 				revokpb.SearchResult{
 					Location: &revokpb.SourceLocation{
-						Repository: &revokpb.Repository{
+						Repository: &redpb.Repository{
 							Owner: "owner-name",
 							Name:  "repo-name",
 						},

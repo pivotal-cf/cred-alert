@@ -10,6 +10,8 @@ service Revok {
   rpc Search(SearchQuery) returns (stream SearchResult) {}
 }
 
+import "repo.proto";
+
 message CredentialCountRequest {}
 
 message OrganizationCredentialCount {
@@ -59,7 +61,7 @@ message SearchResult {
 }
 
 message SourceLocation {
-  Repository repository = 1;
+  redpb.Repository repository = 1;
   string revision = 2;
   string path = 3;
 
@@ -68,7 +70,3 @@ message SourceLocation {
   uint32 length = 6;
 }
 
-message Repository {
-  string owner = 1;
-  string name = 2;
-}

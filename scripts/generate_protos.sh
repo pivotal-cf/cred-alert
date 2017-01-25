@@ -2,16 +2,26 @@
 
 set -e
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROTO_DIR=$DIR/../src/cred-alert/revokpb
-
 if ! hash protoc 2>/dev/null; then
   echo "protoc missing, cannot continue"
   echo "download protoc from https://github.com/google/protobuf/releases"
   exit 1
 fi
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SRC=$DIR/../src
+
+# red
+RED_PROTO_DIR=$SRC/red/redpb
 protoc \
-  --proto_path=$PROTO_DIR \
-  --go_out=plugins=grpc:$PROTO_DIR \
-  $PROTO_DIR/*.proto
+  --proto_path=$RED_PROTO_DIR \
+  --go_out=plugins=grpc:$SRC \
+  $RED_PROTO_DIR/*.proto
+
+# revok
+REVOK_PROTO_DIR=$SRC/cred-alert/revokpb
+protoc \
+  --proto_path=$RED_PROTO_DIR \
+  --proto_path=$REVOK_PROTO_DIR \
+  --go_out=plugins=grpc:$REVOK_PROTO_DIR \
+  $REVOK_PROTO_DIR/*.proto

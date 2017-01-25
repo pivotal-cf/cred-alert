@@ -8,6 +8,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	"red/redpb"
+
 	"cred-alert/db"
 	"cred-alert/revokpb"
 	"cred-alert/search"
@@ -164,7 +166,7 @@ func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchS
 	for result := range results.C() {
 		searchResult := &revokpb.SearchResult{
 			Location: &revokpb.SourceLocation{
-				Repository: &revokpb.Repository{
+				Repository: &redpb.Repository{
 					Owner: result.Owner,
 					Name:  result.Repository,
 				},
