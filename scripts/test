@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e -u
+
+pushd src/cred-alert
+  ginkgo -r -p
+popd
+
+pushd src/rolodex
+  ginkgo -r -p
+popd
+
+pushd src/red
+  ginkgo -r -p
+popd
+
+pushd src/teamstr
+  ginkgo -r -p
+popd

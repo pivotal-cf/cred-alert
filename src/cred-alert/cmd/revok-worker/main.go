@@ -12,10 +12,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-
-	"golang.org/x/net/trace"
-	"golang.org/x/oauth2"
-
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"github.com/google/go-github/github"
@@ -24,6 +20,9 @@ import (
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
+	"golang.org/x/net/trace"
+	"golang.org/x/oauth2"
+	"google.golang.org/grpc"
 
 	"cred-alert/config"
 	"cred-alert/crypto"
@@ -35,8 +34,10 @@ import (
 	"cred-alert/queue"
 	"cred-alert/revok"
 	"cred-alert/revok/stats"
+	"cred-alert/revokpb"
 	"cred-alert/search"
 	"cred-alert/sniff"
+	"red/redrunner"
 )
 
 func main() {
@@ -203,14 +204,16 @@ func main() {
 		looper := gitclient.NewLooper()
 		searcher := search.NewSearcher(repositoryRepository, looper)
 
-		grpcServer := revok.NewGRPCServer(
+		grpcServer := redrunner.NewGRPCServer(
 			logger,
 			fmt.Sprintf("%s:%d", cfg.RPC.BindIP, cfg.RPC.BindPort),
-			revok.NewServer(logger, repositoryRepository, searcher),
 			&tls.Config{
 				ClientAuth:   tls.RequireAndVerifyClientCert,
 				Certificates: []tls.Certificate{certificate},
 				ClientCAs:    clientCertPool,
+			},
+			func(server *grpc.Server) {
+				revokpb.RegisterRevokServer(server, revok.NewServer(logger, repositoryRepository, searcher))
 			},
 		)
 

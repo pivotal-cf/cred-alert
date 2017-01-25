@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package redpb;
+
+option go_package = "red/redpb";
+
+import "google/protobuf/empty.proto";
+
+service Dummy {
+    rpc DummyCall(google.protobuf.Empty) returns (google.protobuf.Empty);
+}

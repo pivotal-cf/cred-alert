@@ -4,7 +4,7 @@ package rolodexpb;
 
 import "repo.proto";
 
-service Revok {
+service Rolodex {
   rpc GetOwners(GetOwnersRequest) returns (GetOwnersResponse) {}
 }
 

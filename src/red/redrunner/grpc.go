@@ -1,37 +1,38 @@
-package revok
+package redrunner
 
 import (
-	"cred-alert/revokpb"
 	"crypto/tls"
 	"net"
 	"os"
 
+	"code.cloudfoundry.org/lager"
+	"github.com/tedsuo/ifrit"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"code.cloudfoundry.org/lager"
-
-	"github.com/tedsuo/ifrit"
 )
 
+type GRPCRegisterFunc func(server *grpc.Server)
+
 type grpcServer struct {
-	logger     lager.Logger
+	logger lager.Logger
+
 	listenAddr string
-	server     Server
 	tlsConfig  *tls.Config
+
+	registerFunc GRPCRegisterFunc
 }
 
 func NewGRPCServer(
 	logger lager.Logger,
 	listenAddr string,
-	server Server,
 	tlsConfig *tls.Config,
+	registerFunc GRPCRegisterFunc,
 ) ifrit.Runner {
 	return &grpcServer{
-		logger:     logger,
-		listenAddr: listenAddr,
-		server:     server,
-		tlsConfig:  tlsConfig,
+		logger:       logger,
+		listenAddr:   listenAddr,
+		tlsConfig:    tlsConfig,
+		registerFunc: registerFunc,
 	}
 }
 
@@ -45,7 +46,7 @@ func (s *grpcServer) Run(signals <-chan os.Signal, ready chan<- struct{}) error 
 
 	serverOption := grpc.Creds(credentials.NewTLS(s.tlsConfig))
 	grpcServer := grpc.NewServer(serverOption)
-	revokpb.RegisterRevokServer(grpcServer, s.server)
+	s.registerFunc(grpcServer)
 
 	errCh := make(chan error, 1)
 	go func() {

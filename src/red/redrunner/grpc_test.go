@@ -1,32 +1,47 @@
-package revok_test
+package redrunner_test
 
 import (
-	"context"
-	"cred-alert/revok"
-	"cred-alert/revok/revokfakes"
-	"cred-alert/revokpb"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"red/redpb"
+	"red/redrunner"
 )
 
-var _ = Describe("GrpcServer", func() {
+type DummyServer struct {
+	callCount int
+}
+
+func (d *DummyServer) CallCount() int {
+	return d.callCount
+}
+
+func (d *DummyServer) DummyCall(ctx context.Context, e *empty.Empty) (*empty.Empty, error) {
+	d.callCount++
+
+	return e, nil
+}
+
+var _ = Describe("GRPC Server", func() {
 	var (
-		logger lager.Logger
-		server *revokfakes.FakeServer
+		logger      lager.Logger
+		dummyServer *DummyServer
 
 		listenAddr   string
 		runner       ifrit.Runner
@@ -36,24 +51,14 @@ var _ = Describe("GrpcServer", func() {
 
 	BeforeEach(func() {
 		listenAddr = fmt.Sprintf(":%d", GinkgoParallelNode()+9000)
-		server = &revokfakes.FakeServer{}
-		server.GetCredentialCountsReturns(&revokpb.CredentialCountResponse{
-			CredentialCounts: []*revokpb.OrganizationCredentialCount{
-				{
-					Owner: "some-owner",
-					Count: 42,
-				},
-			},
-		}, nil)
+		dummyServer = &DummyServer{}
 
 		rootCertPool = x509.NewCertPool()
 		bs, err := ioutil.ReadFile(filepath.Join("fixtures", "rootCA.crt"))
 		Expect(err).NotTo(HaveOccurred())
 		success := rootCertPool.AppendCertsFromPEM(bs)
 		Expect(success).To(BeTrue())
-	})
 
-	JustBeforeEach(func() {
 		logger = lagertest.NewTestLogger("grpc-server")
 
 		certificate, err := tls.LoadX509KeyPair(
@@ -67,7 +72,9 @@ var _ = Describe("GrpcServer", func() {
 			Certificates: []tls.Certificate{certificate},
 			ClientCAs:    rootCertPool,
 		}
-		runner = revok.NewGRPCServer(logger, listenAddr, server, config)
+		runner = redrunner.NewGRPCServer(logger, listenAddr, config, func(server *grpc.Server) {
+			redpb.RegisterDummyServer(server, dummyServer)
+		})
 		process = ginkgomon.Invoke(runner)
 	})
 
@@ -82,9 +89,8 @@ var _ = Describe("GrpcServer", func() {
 
 	Context("when given a request", func() {
 		var (
-			conn    *grpc.ClientConn
-			client  revokpb.RevokClient
-			request *revokpb.CredentialCountRequest
+			conn   *grpc.ClientConn
+			client redpb.DummyClient
 		)
 
 		BeforeEach(func() {
@@ -99,13 +105,14 @@ var _ = Describe("GrpcServer", func() {
 				RootCAs:      rootCertPool,
 			})
 
-			dialOption := grpc.WithTransportCredentials(clientTransportCreds)
-			conn, err = grpc.Dial(listenAddr, dialOption)
+			conn, err = grpc.Dial(
+				listenAddr,
+				grpc.WithTransportCredentials(clientTransportCreds),
+				grpc.WithBlock(),
+			)
 			Expect(err).NotTo(HaveOccurred())
 
-			client = revokpb.NewRevokClient(conn)
-
-			request = &revokpb.CredentialCountRequest{}
+			client = redpb.NewDummyClient(conn)
 		})
 
 		AfterEach(func() {
@@ -113,14 +120,10 @@ var _ = Describe("GrpcServer", func() {
 		})
 
 		It("hits the revok server for credentials", func() {
-			// there is a race between the server listening and us marking it as
-			// being ready. this tries to hit it repeatedly to wait for it to
-			// actually be listening.
-			Eventually(func() error {
-				_, err := client.GetCredentialCounts(context.Background(), request)
-				return err
-			}, 2*time.Second).ShouldNot(HaveOccurred())
-			Eventually(server.GetCredentialCountsCallCount).Should(Equal(1))
+			_, err := client.DummyCall(context.Background(), &empty.Empty{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(dummyServer.CallCount()).To(Equal(1))
 		})
 	})
 })
