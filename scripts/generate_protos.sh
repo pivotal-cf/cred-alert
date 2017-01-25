@@ -25,3 +25,11 @@ protoc \
   --proto_path=$REVOK_PROTO_DIR \
   --go_out=plugins=grpc:$REVOK_PROTO_DIR \
   $REVOK_PROTO_DIR/*.proto
+
+# rolodex
+ROLODEX_PROTO_DIR=$SRC/rolodex/rolodexpb
+protoc \
+  --proto_path=$RED_PROTO_DIR \
+  --proto_path=$ROLODEX_PROTO_DIR \
+  --go_out=plugins=grpc:$ROLODEX_PROTO_DIR \
+  $ROLODEX_PROTO_DIR/*.proto
