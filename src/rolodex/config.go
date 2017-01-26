@@ -23,6 +23,8 @@ func LoadRolodexConfig(configPath string) (*RolodexConfig, error) {
 }
 
 type RolodexConfig struct {
+	RepositoryPath string `yaml:"repository_path"`
+
 	Metrics struct {
 		SentryDSN     string `yaml:"sentry_dsn"`
 		DatadogAPIKey string `yaml:"datadog_api_key"`
@@ -42,6 +44,10 @@ type RolodexConfig struct {
 
 func (c *RolodexConfig) Validate() []error {
 	var errs []error
+
+	if c.RepositoryPath == "" {
+		errs = append(errs, errors.New("no repository path specified"))
+	}
 
 	if c.RPC.BindIP == "" {
 		errs = append(errs, errors.New("no bind IP specified"))

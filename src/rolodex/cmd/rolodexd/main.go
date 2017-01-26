@@ -23,7 +23,6 @@ import (
 	"red/redrunner"
 	"rolodex"
 	"rolodex/rolodexpb"
-	"rolodex/rolodexfakes"
 )
 
 type RolodexOpts struct {
@@ -73,7 +72,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	repository := &rolodexfakes.FakeTeamRepository{}
+	repository := rolodex.NewTeamRepository(cfg.RepositoryPath)
 	handler := rolodex.NewHandler(repository)
 
 	grpcServer := redrunner.NewGRPCServer(

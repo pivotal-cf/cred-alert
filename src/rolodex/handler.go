@@ -12,27 +12,6 @@ type handler struct {
 	teamRepository TeamRepository
 }
 
-type Repository struct {
-	Owner string
-	Name  string
-}
-
-type SlackChannel struct {
-	Team string
-	Name string
-}
-
-type Team struct {
-	Name         string
-	SlackChannel SlackChannel
-}
-
-//go:generate counterfeiter . TeamRepository
-
-type TeamRepository interface {
-	GetOwners(Repository) ([]Team, error)
-}
-
 func NewHandler(repo TeamRepository) rolodexpb.RolodexServer {
 	return &handler{
 		teamRepository: repo,
