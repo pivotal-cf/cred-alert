@@ -24,6 +24,12 @@ func LoadRolodexConfig(configPath string) (*RolodexConfig, error) {
 
 type RolodexConfig struct {
 	RepositoryPath string `yaml:"repository_path"`
+	RepositoryURL  string `yaml:"repository_url"`
+
+	GitHub struct {
+		PrivateKeyPath string `yaml:"private_key_path"`
+		PublicKeyPath  string `yaml:"public_key_path"`
+	} `yaml:"github"`
 
 	Metrics struct {
 		SentryDSN     string `yaml:"sentry_dsn"`
@@ -47,6 +53,18 @@ func (c *RolodexConfig) Validate() []error {
 
 	if c.RepositoryPath == "" {
 		errs = append(errs, errors.New("no repository path specified"))
+	}
+
+	if c.RepositoryURL == "" {
+		errs = append(errs, errors.New("no repository URL specified"))
+	}
+
+	if c.GitHub.PrivateKeyPath == "" {
+		errs = append(errs, errors.New("no GitHub private key specified"))
+	}
+
+	if c.GitHub.PublicKeyPath == "" {
+		errs = append(errs, errors.New("no GitHub public key specified"))
 	}
 
 	if c.RPC.BindIP == "" {

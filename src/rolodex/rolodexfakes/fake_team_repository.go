@@ -16,8 +16,11 @@ type FakeTeamRepository struct {
 		result1 []rolodex.Team
 		result2 error
 	}
-	invocations      map[string][][]interface{}
-	invocationsMutex sync.RWMutex
+	ReloadStub        func()
+	reloadMutex       sync.RWMutex
+	reloadArgsForCall []struct{}
+	invocations       map[string][][]interface{}
+	invocationsMutex  sync.RWMutex
 }
 
 func (fake *FakeTeamRepository) GetOwners(arg1 rolodex.Repository) ([]rolodex.Team, error) {
@@ -53,11 +56,29 @@ func (fake *FakeTeamRepository) GetOwnersReturns(result1 []rolodex.Team, result2
 	}{result1, result2}
 }
 
+func (fake *FakeTeamRepository) Reload() {
+	fake.reloadMutex.Lock()
+	fake.reloadArgsForCall = append(fake.reloadArgsForCall, struct{}{})
+	fake.recordInvocation("Reload", []interface{}{})
+	fake.reloadMutex.Unlock()
+	if fake.ReloadStub != nil {
+		fake.ReloadStub()
+	}
+}
+
+func (fake *FakeTeamRepository) ReloadCallCount() int {
+	fake.reloadMutex.RLock()
+	defer fake.reloadMutex.RUnlock()
+	return len(fake.reloadArgsForCall)
+}
+
 func (fake *FakeTeamRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getOwnersMutex.RLock()
 	defer fake.getOwnersMutex.RUnlock()
+	fake.reloadMutex.RLock()
+	defer fake.reloadMutex.RUnlock()
 	return fake.invocations
 }
 

@@ -17,6 +17,13 @@ type ScheduleRunner struct {
 	jobWg *sync.WaitGroup
 }
 
+func Schedule(logger lager.Logger, cron string, work func()) *ScheduleRunner {
+	runner := NewScheduleRunner(logger)
+	runner.ScheduleWork(cron, work)
+
+	return runner
+}
+
 func NewScheduleRunner(logger lager.Logger) *ScheduleRunner {
 	return &ScheduleRunner{
 		logger:  logger,

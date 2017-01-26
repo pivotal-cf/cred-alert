@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"sync"
 
+	"code.cloudfoundry.org/lager"
 	"gopkg.in/yaml.v2"
 )
 
@@ -12,10 +14,16 @@ import (
 
 type TeamRepository interface {
 	GetOwners(Repository) ([]Team, error)
+
+	Reload()
 }
 
 type teamRepository struct {
-	teams []TeamRecord
+	logger lager.Logger
+
+	repoPath  string
+	teams     []TeamRecord
+	teamsLock *sync.RWMutex
 }
 
 type TeamRecord struct {
@@ -42,15 +50,22 @@ func (t TeamRecord) OwnsRepository(repo Repository) bool {
 	return false
 }
 
-func NewTeamRepository(teamsPath string) *teamRepository {
-	teams, _ := loadTeamRecords(teamsPath)
-
-	return &teamRepository{
-		teams: teams,
+func NewTeamRepository(logger lager.Logger, teamsPath string) *teamRepository {
+	repo := &teamRepository{
+		logger:    logger.Session("team-repository"),
+		repoPath:  teamsPath,
+		teamsLock: &sync.RWMutex{},
 	}
+
+	repo.Reload()
+
+	return repo
 }
 
 func (t *teamRepository) GetOwners(repo Repository) ([]Team, error) {
+	t.teamsLock.RLock()
+	defer t.teamsLock.RUnlock()
+
 	matchingTeams := []Team{}
 
 	for _, team := range t.teams {
@@ -68,26 +83,43 @@ func (t *teamRepository) GetOwners(repo Repository) ([]Team, error) {
 	return matchingTeams, nil
 }
 
-func loadTeamRecords(path string) ([]TeamRecord, error) {
+func (t *teamRepository) Reload() {
+	t.teamsLock.Lock()
+	defer t.teamsLock.Unlock()
+
+	t.loadTeamRecords()
+}
+
+func (t *teamRepository) loadTeamRecords() {
 	teamRecords := []TeamRecord{}
 
-	files, err := ioutil.ReadDir(path)
+	files, err := filepath.Glob(filepath.Join(t.repoPath, "*.yml"))
 	if err != nil {
-		return teamRecords, err
+		t.logger.Error("failed-to-glob", err)
+		return
 	}
 
-	for _, file := range files {
-		filePath := filepath.Join(path, file.Name())
+	for _, filePath := range files {
+		fileName := filepath.Base(filePath)
 		fileBytes, err := ioutil.ReadFile(filePath)
 		if err != nil {
-			return teamRecords, err
+			t.logger.Error("failed-to-read-file", err, lager.Data{
+				"name": fileName,
+			})
+			continue
 		}
 
 		teamRecord := TeamRecord{}
-		yaml.Unmarshal(fileBytes, &teamRecord)
+		err = yaml.Unmarshal(fileBytes, &teamRecord)
+		if err != nil {
+			t.logger.Error("failed-to-parse-team", err, lager.Data{
+				"name": fileName,
+			})
+			continue
+		}
 
 		teamRecords = append(teamRecords, teamRecord)
 	}
 
-	return teamRecords, nil
+	t.teams = teamRecords
 }

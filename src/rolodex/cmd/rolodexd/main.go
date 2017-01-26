@@ -19,6 +19,7 @@ import (
 
 	"cred-alert/cmdflag"
 	"cred-alert/config"
+	"cred-alert/gitclient"
 	"cred-alert/revok"
 	"red/redrunner"
 	"rolodex"
@@ -72,8 +73,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	repository := rolodex.NewTeamRepository(cfg.RepositoryPath)
+	repository := rolodex.NewTeamRepository(logger, cfg.RepositoryPath)
 	handler := rolodex.NewHandler(repository)
+	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
+	syncer := rolodex.NewSyncer(logger, cfg.RepositoryURL, cfg.RepositoryPath, gitClient, repository)
 
 	grpcServer := redrunner.NewGRPCServer(
 		logger,
@@ -91,6 +94,9 @@ func main() {
 	members := []grouper.Member{
 		{"api", grpcServer},
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
+		{"syncer", revok.Schedule(logger, "@every 5m", func() {
+			syncer.Sync()
+		})},
 	}
 
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))

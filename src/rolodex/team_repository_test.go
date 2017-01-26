@@ -1,25 +1,33 @@
 package rolodex_test
 
 import (
-	"rolodex"
-
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/onsi/gomega/gbytes"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"rolodex"
 )
 
 var _ = Describe("TeamRepository", func() {
 	var (
 		teamsPath string
+		logger    *lagertest.TestLogger
 	)
+
+	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("team-repository")
+	})
 
 	Describe("GetOwners", func() {
 		Context("when the directory does not exist", func() {
 			It("returns no teams", func() {
-				teamRepo := rolodex.NewTeamRepository("/some/garbage")
+				teamRepo := rolodex.NewTeamRepository(logger, "/some/garbage")
 
 				teams, err := teamRepo.GetOwners(rolodex.Repository{
 					Owner: "cloudfoundry",
@@ -32,12 +40,6 @@ var _ = Describe("TeamRepository", func() {
 		})
 
 		Context("when the directory exists", func() {
-			var writeFile = func(filename, data string) {
-				filePath := filepath.Join(teamsPath, filename)
-				err := ioutil.WriteFile(filePath, []byte(data), 0600)
-				Expect(err).NotTo(HaveOccurred())
-			}
-
 			BeforeEach(func() {
 				var err error
 				teamsPath, err = ioutil.TempDir("", "teams")
@@ -49,9 +51,38 @@ var _ = Describe("TeamRepository", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
+			var writeFile = func(filename, data string) {
+				filePath := filepath.Join(teamsPath, filename)
+				err := ioutil.WriteFile(filePath, []byte(data), 0600)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			It("ignores non-YAML files", func() {
+				writeFile("REDRUM.MD", "My Special Readme")
+				writeFile("bosh.yml", `---
+name: bosh
+
+repositories:
+- cloudfoundry/bosh
+`)
+
+				rolodex.NewTeamRepository(logger, teamsPath)
+
+				// does not care
+				Expect(logger).NotTo(gbytes.Say("REDRUM.MD"))
+			})
+
+			It("ignores malformed yaml files", func() {
+				writeFile("bosh.yml", `}}}`)
+
+				rolodex.NewTeamRepository(logger, teamsPath)
+
+				Expect(logger).To(gbytes.Say("bosh.yml"))
+			})
+
 			Context("when the directory is empty", func() {
 				It("returns no teams", func() {
-					teamRepo := rolodex.NewTeamRepository(teamsPath)
+					teamRepo := rolodex.NewTeamRepository(logger, teamsPath)
 
 					teams, err := teamRepo.GetOwners(rolodex.Repository{
 						Owner: "cloudfoundry",
@@ -86,7 +117,7 @@ contact:
     channel: capi
 `)
 
-					teamRepo := rolodex.NewTeamRepository(teamsPath)
+					teamRepo := rolodex.NewTeamRepository(logger, teamsPath)
 
 					teams, err := teamRepo.GetOwners(rolodex.Repository{
 						Owner: "cloudfoundry",
@@ -120,7 +151,7 @@ repositories:
 - cloudfoundry/bosh
 `)
 
-					teamRepo := rolodex.NewTeamRepository(teamsPath)
+					teamRepo := rolodex.NewTeamRepository(logger, teamsPath)
 
 					teams, err := teamRepo.GetOwners(rolodex.Repository{
 						Owner: "cloudfoundry",
@@ -143,7 +174,7 @@ repositories:
 - cloudfoundry/bosh
 `)
 
-					teamRepo := rolodex.NewTeamRepository(teamsPath)
+					teamRepo := rolodex.NewTeamRepository(logger, teamsPath)
 
 					teams, err := teamRepo.GetOwners(rolodex.Repository{
 						Owner: "cloudfoundry",
