@@ -2,10 +2,6 @@
 
 set -e
 
-if [ -f /var/vcap/jobs/revok/config/private_key ]; then
-  chmod 0400 /var/vcap/jobs/revok/config/private_key
-fi
-
-if [ -f /var/vcap/jobs/revok/config/public_key ]; then
-  chmod 0400 /var/vcap/jobs/revok/config/public_key
+if [ -f /var/vcap/jobs/revok/config/github_private_key ]; then
+  chmod 0400 /var/vcap/jobs/revok/config/github_private_key
 fi
