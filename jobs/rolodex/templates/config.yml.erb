@@ -1,0 +1,23 @@
+---
+repository_path: <%= p("rolodex.repository_path") %>
+repository_url: <%= p("rolodex.repository_url") %>
+
+github:
+  private_key_path: /var/vcap/jobs/rolodex/config/github_private_key
+  public_key_path: /var/vcap/jobs/rolodex/config/github_public_key
+
+rpc_server:
+  bind_ip: <%= p("rolodex.rpc_server.bind_ip") %>
+  bind_port: <%= p("rolodex.rpc_server.bind_port") %>
+
+  ca_certificate_path: /var/vcap/jobs/rolodex/config/rpc_server_ca_certificate
+  certificate_path: /var/vcap/jobs/rolodex/config/rpc_server_certificate
+  private_key_path: /var/vcap/jobs/rolodex/config/rpc_server_private_key
+<% if_p("rolodex.rpc_server.private_key_passphrase") do |passphrase| %>
+  private_key_passphrase: <%= passphrase %>
+<% end %>
+
+metrics:
+  environment: <%= p("rolodex.metrics.environment") %>
+  datadog_api_key: <%= p("rolodex.metrics.datadog_api_key") %>
+  sentry_dsn: <%= p("rolodex.metrics.sentry_dsn") %>

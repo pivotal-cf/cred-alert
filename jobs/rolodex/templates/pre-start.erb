@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+chmod 0400 /var/vcap/jobs/rolodex/config/github_private_key
+chmod 0400 /var/vcap/jobs/rolodex/config/rpc_server_private_key
+
+chown vcap:vcap /var/vcap/jobs/rolodex/config/github_private_key
+chown vcap:vcap /var/vcap/jobs/rolodex/config/rpc_server_private_key

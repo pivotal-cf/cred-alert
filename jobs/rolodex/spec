@@ -1,0 +1,79 @@
+---
+name: rolodex
+
+description: |
+  Rolodex provides a team directory for Pivotal Cloud Foundry.
+
+templates:
+  ctl.erb: bin/ctl
+  pre-start.erb: bin/pre-start
+  config.yml.erb: config/config.yml
+  github_private_key.erb: config/github_private_key
+  github_public_key.erb: config/github_public_key
+  rpc_server_ca_certificate.erb: config/rpc_server_ca_certificate
+  rpc_server_private_key.erb: config/rpc_server_private_key
+  rpc_server_certificate.erb: config/rpc_server_certificate
+
+packages:
+- rolodex
+- golang
+- git
+- libgit2
+- libssh2
+- pid_utils_revok
+
+properties:
+  rolodex.repository_path:
+    description: |
+      Directory where rolodex repository will be cloned to.
+    default: /var/vcap/data/rolodex/directory
+
+  rolodex.repository_url:
+    description: |
+      Git URL for rolodex repository.
+
+  rolodex.github.private_key:
+    description: |
+      GitHub private key.
+
+  rolodex.github.public_key:
+    description: |
+      GitHub public key.
+
+  rolodex.rpc_server.bind_ip:
+    description: |
+      IP address on which to listen for RPC traffic.
+    default: 0.0.0.0
+
+  rolodex.rpc_server.bind_port:
+    description: |
+      Port on which to listen for RPC traffic.
+    default: 50051
+
+  rolodex.rpc_server.ca_certificate:
+    description: |
+      RPC client CA certificate
+
+  rolodex.rpc_server.certificate:
+    description: |
+      RPC server certificate
+
+  rolodex.rpc_server.private_key:
+    description: |
+      RPC server private key
+
+  rolodex.rpc_server.private_key_passphrase:
+    description: |
+      RPC server private key passphrase
+
+  rolodex.metrics.datadog_api_key:
+    description: |
+      Datadog API key
+
+  rolodex.metrics.sentry_dsn:
+    description: |
+      Sentry DSN
+
+  rolodex.metrics.environment:
+    description: |
+      Environment tag for metrics

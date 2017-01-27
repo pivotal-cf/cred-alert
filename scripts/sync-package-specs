@@ -16,3 +16,15 @@ pushd packages/cred-alert
 
   mv spec.new spec
 popd
+
+pushd packages/rolodex
+  {
+    cat spec | grep -v '# gosub'
+    gosub list \
+      -a rolodex/cmd/rolodexd \
+      | \
+      sed -e 's%\(.*\)%  - \1/*.{go,c} # gosub%g'
+  } > spec.new
+
+  mv spec.new spec
+popd
