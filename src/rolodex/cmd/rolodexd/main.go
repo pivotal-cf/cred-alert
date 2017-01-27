@@ -27,7 +27,7 @@ import (
 )
 
 type RolodexOpts struct {
-	ConfigFile cmdflag.FileFlag `long:"config-file" description:"path to config file" value-name:"PATH"`
+	ConfigFile cmdflag.FileFlag `long:"config-file" description:"path to config file" required:"true" value-name:"PATH"`
 }
 
 func main() {
