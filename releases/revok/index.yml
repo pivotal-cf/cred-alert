@@ -1,10 +1,16 @@
 builds:
+  09877e55-7255-45ab-4ca8-06fe1ce148d6:
+    version: 21.0.0
   0b3230ef-9bda-4bdd-73c0-38a8913f7fe9:
     version: 14.0.0
   0e05bb41-3798-426f-6dcb-1cf048ee890d:
     version: 1.0.0
   1bb959c0-be06-4b2b-5d67-1a6731663a14:
     version: 12.0.0
+  219383d1-f740-495d-780f-2780cdcd199e:
+    version: 5.0.0
+  22844530-4c25-4381-4010-73434b48e1f9:
+    version: 27.0.0
   2e0845ed-e7c4-4458-4957-e94f9caaf04d:
     version: 19.0.0
   34d48a60-8fe8-4e7b-462d-a602e1297df1:
@@ -15,12 +21,8 @@ builds:
     version: 23.0.0
   3e076a42-7e91-4546-6eb5-d553a6ae6943:
     version: 7.0.0
-  6eec490d-6d23-4c5f-6d1b-dff49a2398ba:
-    version: 29.0.0
-  8f2e5dab-8e9f-46fb-47b6-3344cfd43dc5:
-    version: 30.0.0
-  9bec7023-b13b-41eb-513c-13154c3d4f7f:
-    version: 16.0.0
+  4134ba82-5271-413e-4cda-73e2408ed9ba:
+    version: 13.0.0
   41e82614-5792-455d-582c-33a5dfdbf5f2:
     version: 9.0.0
   49104d3c-70e2-4850-746f-bdc62123df3d:
@@ -29,22 +31,20 @@ builds:
     version: 2.0.0
   659b6465-491f-4f1c-6b1d-be5f9351d957:
     version: 3.0.0
+  6eec490d-6d23-4c5f-6d1b-dff49a2398ba:
+    version: 29.0.0
+  8f2e5dab-8e9f-46fb-47b6-3344cfd43dc5:
+    version: 30.0.0
   924ff30d-2122-4c56-7b54-14ac52febb3e:
     version: 18.0.0
-  4134ba82-5271-413e-4cda-73e2408ed9ba:
-    version: 13.0.0
-  09877e55-7255-45ab-4ca8-06fe1ce148d6:
-    version: 21.0.0
-  219383d1-f740-495d-780f-2780cdcd199e:
-    version: 5.0.0
-  22844530-4c25-4381-4010-73434b48e1f9:
-    version: 27.0.0
-  a54af1bd-98b0-40b2-4572-1a7eab3dae86:
-    version: 15.0.0
+  9bec7023-b13b-41eb-513c-13154c3d4f7f:
+    version: 16.0.0
   a134bc35-258b-4c78-7546-5f1d20a10ae5:
     version: 28.0.0
   a2471703-f27a-439b-453e-20d8f06fc116:
     version: 17.0.0
+  a54af1bd-98b0-40b2-4572-1a7eab3dae86:
+    version: 15.0.0
   af47e0b8-0429-4164-6614-65b477eda5cc:
     version: 24.0.0
   af99b9a2-09d4-475a-5e87-01d7f57fcade:
@@ -65,6 +65,8 @@ builds:
     version: 6.0.0
   f3ead921-854b-4847-7271-a64b85e7dee4:
     version: 11.0.0
+  f708af04-03eb-48cb-4f11-e9562636082a:
+    version: 36.0.0
   f9d248c9-0cf2-4b08-4e99-ffc68aad4d62:
     version: 0.1.1
   fdb7de52-a2e8-4714-727f-6ca659cd39d1:
