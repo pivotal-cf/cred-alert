@@ -8,21 +8,33 @@ import (
 	"github.com/tedsuo/ifrit"
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
+
+	"cred-alert/metrics"
 )
 
 type pubSubSubscriber struct {
 	logger       lager.Logger
 	subscription *pubsub.Subscription
 	processor    PubSubProcessor
+
+	processTimer          metrics.Timer
+	processSuccessCounter metrics.Counter
 }
 
-func NewPubSubSubscriber(logger lager.Logger, subscription *pubsub.Subscription, processor PubSubProcessor) ifrit.Runner {
+func NewPubSubSubscriber(
+	logger lager.Logger,
+	subscription *pubsub.Subscription,
+	processor PubSubProcessor,
+	emitter metrics.Emitter,
+) ifrit.Runner {
 	return &pubSubSubscriber{
 		logger: logger.Session("message-processor", lager.Data{
 			"subscription": subscription.ID(),
 		}),
-		subscription: subscription,
-		processor:    processor,
+		subscription:          subscription,
+		processor:             processor,
+		processTimer:          emitter.Timer("revok.pub_sub_subscriber.process.time"),
+		processSuccessCounter: emitter.Counter("revok.pub_sub_subscriber.process.success"),
 	}
 }
 
@@ -53,7 +65,12 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 				"pubsub-message": message.ID,
 			})
 
-			retryable, err := p.processor.Process(logger, message)
+			var retryable bool
+
+			p.processTimer.Time(logger, func() {
+				retryable, err = p.processor.Process(logger, message)
+			})
+
 			if err != nil {
 				logger.Error("failed-to-process-message", err)
 
@@ -63,11 +80,10 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 				} else {
 					message.Done(true)
 				}
-
-				continue
+			} else {
+				message.Done(true)
+				p.processSuccessCounter.Inc(logger)
 			}
-
-			message.Done(true)
 		}
 
 		close(finished)

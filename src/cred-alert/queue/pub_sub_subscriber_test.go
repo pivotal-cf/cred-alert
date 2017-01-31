@@ -2,6 +2,7 @@ package queue_test
 
 import (
 	"context"
+	"cred-alert/metrics/metricsfakes"
 	"cred-alert/pubsubrunner"
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
@@ -9,6 +10,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -26,6 +28,7 @@ var _ = Describe("PubSubSubscriber", func() {
 		subscription  *pubsub.Subscription
 		topic         *pubsub.Topic
 		client        *pubsub.Client
+		emitter       *metricsfakes.FakeEmitter
 
 		psRunner *pubsubrunner.Runner
 		runner   ifrit.Runner
@@ -65,6 +68,15 @@ var _ = Describe("PubSubSubscriber", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		processor = &queuefakes.FakePubSubProcessor{}
+
+		emitter = &metricsfakes.FakeEmitter{}
+		emitter.CounterReturns(&metricsfakes.FakeCounter{})
+
+		fakeTimer := &metricsfakes.FakeTimer{}
+		fakeTimer.TimeStub = func(logger lager.Logger, f func(), tags ...string) {
+			f()
+		}
+		emitter.TimerReturns(fakeTimer)
 	})
 
 	AfterEach(func() {
@@ -74,7 +86,7 @@ var _ = Describe("PubSubSubscriber", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = queue.NewPubSubSubscriber(logger, subscription, processor)
+		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter)
 		process = ginkgomon.Invoke(runner)
 	})
 
