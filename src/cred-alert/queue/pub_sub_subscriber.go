@@ -58,6 +58,7 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 			}
 
 			if err != nil {
+				p.logger.Error("failed-to-pull-message", err)
 				continue
 			}
 
