@@ -47,7 +47,7 @@ func main() {
 	logger := lager.NewLogger("revok-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
-	logger.Debug("starting")
+	logger.Info("starting")
 
 	_, err := flags.Parse(&flagOpts)
 	if err != nil {
