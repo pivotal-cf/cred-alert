@@ -19,6 +19,8 @@ type pubSubSubscriber struct {
 
 	processTimer          metrics.Timer
 	processSuccessCounter metrics.Counter
+	processFailureCounter metrics.Counter
+	processRetryCounter   metrics.Counter
 }
 
 func NewPubSubSubscriber(
@@ -35,6 +37,8 @@ func NewPubSubSubscriber(
 		processor:             processor,
 		processTimer:          emitter.Timer("revok.pub_sub_subscriber.process.time"),
 		processSuccessCounter: emitter.Counter("revok.pub_sub_subscriber.process.success"),
+		processFailureCounter: emitter.Counter("revok.pub_sub_subscriber.process.failure"),
+		processRetryCounter:   emitter.Counter("revok.pub_sub_subscriber.process.retries"),
 	}
 }
 
@@ -78,9 +82,12 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 				if retryable {
 					logger.Info("queuing-message-for-retry")
 					message.Done(false)
+					p.processRetryCounter.Inc(logger)
 				} else {
 					message.Done(true)
 				}
+
+				p.processFailureCounter.Inc(logger)
 			} else {
 				message.Done(true)
 				p.processSuccessCounter.Inc(logger)
