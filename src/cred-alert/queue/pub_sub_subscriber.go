@@ -68,6 +68,7 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 
 			logger := p.logger.Session("processing-message", lager.Data{
 				"pubsub-message": message.ID,
+				"pubsub-publish-time": message.PublishTime.String(),
 			})
 
 			var retryable bool
