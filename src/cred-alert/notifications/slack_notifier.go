@@ -82,6 +82,7 @@ func (n *slackNotifier) SendBatchNotification(logger lager.Logger, batch []Notif
 		}
 	}
 
+	logger.Debug("done")
 	return nil
 }
 
