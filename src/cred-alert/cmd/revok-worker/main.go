@@ -107,7 +107,8 @@ func main() {
 
 	var notifier notifications.Notifier
 	if cfg.Slack.WebhookURL != "" {
-		notifier = notifications.NewSlackNotifier(cfg.Slack.WebhookURL, clock, repoWhitelist)
+		formatter := notifications.NewSlackNotificationFormatter()
+		notifier = notifications.NewSlackNotifier(cfg.Slack.WebhookURL, clock, repoWhitelist, formatter)
 	} else {
 		notifier = notifications.NewNullNotifier()
 	}

@@ -6,21 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
 
-type slackMessage struct {
-	Attachments []slackAttachment `json:"attachments"`
+type SlackMessage struct {
+	Attachments []SlackAttachment `json:"attachments"`
 }
 
-type slackAttachment struct {
+type SlackAttachment struct {
 	Fallback string `json:"fallback"`
 	Color    string `json:"color"`
 	Title    string `json:"title"`
@@ -29,16 +26,19 @@ type slackAttachment struct {
 
 type slackNotifier struct {
 	webhookURL string
-	client     *http.Client
-	clock      clock.Clock
-	whitelist  Whitelist
+
+	client    *http.Client
+	clock     clock.Clock
+	whitelist Whitelist
+	formatter SlackNotificationFormatter
 }
 
-func NewSlackNotifier(webhookURL string, clock clock.Clock, whitelist Whitelist) Notifier {
+func NewSlackNotifier(webhookURL string, clock clock.Clock, whitelist Whitelist, formatter SlackNotificationFormatter) Notifier {
 	return &slackNotifier{
 		webhookURL: webhookURL,
 		clock:      clock,
 		whitelist:  whitelist,
+		formatter:  formatter,
 		client: &http.Client{
 			Timeout: 3 * time.Second,
 			Transport: &http.Transport{
@@ -66,7 +66,8 @@ func (n *slackNotifier) SendBatchNotification(logger lager.Logger, batch []Notif
 		return nil
 	}
 
-	messages := n.formatBatchSlackMessages(batch)
+	filteredBatch := n.filterMessages(batch)
+	messages := n.formatter.FormatNotifications(filteredBatch)
 
 	for _, message := range messages {
 		body, err := json.Marshal(message)
@@ -135,151 +136,14 @@ func (n *slackNotifier) send(logger lager.Logger, body []byte) error {
 	return err
 }
 
-type slackLink struct {
-	Text string
-	Href string
-}
+func (n *slackNotifier) filterMessages(batch []Notification) []Notification {
+	filtered := []Notification{}
 
-func (l slackLink) String() string {
-	return fmt.Sprintf("<%s|%s>", l.Href, l.Text)
-}
-
-type slackBatchRepo struct {
-	Owner      string
-	Repository string
-	SHA        string
-	Private    bool
-}
-
-func (r slackBatchRepo) FullName() string {
-	return fmt.Sprintf("%s/%s", r.Owner, r.Repository)
-}
-
-func (r slackBatchRepo) ShortSHA() string {
-	return r.SHA[:7]
-}
-
-func (n *slackNotifier) formatBatchSlackMessages(batch []Notification) []slackMessage {
-	messages := []slackMessage{}
-
-	messageMap := make(map[slackBatchRepo]map[string][]Notification)
-	repos := []slackBatchRepo{}
-
-	for _, note := range batch {
-		if n.whitelist.ShouldSkipNotification(note.Private, note.Repository) {
-			continue
+	for _, notification := range batch {
+		if !n.whitelist.ShouldSkipNotification(notification.Private, notification.Repository) {
+			filtered = append(filtered, notification)
 		}
-
-		repo := slackBatchRepo{
-			Owner:      note.Owner,
-			Repository: note.Repository,
-			SHA:        note.SHA,
-			Private:    note.Private,
-		}
-
-		_, found := messageMap[repo]
-		if !found {
-			repos = append(repos, repo)
-			messageMap[repo] = make(map[string][]Notification)
-		}
-
-		messageMap[repo][note.Path] = append(messageMap[repo][note.Path], note)
 	}
 
-	for _, repo := range repos {
-		files := messageMap[repo]
-		commitLink := githubURL(repo.Owner, repo.Repository, "commit", repo.SHA)
-
-		title := fmt.Sprintf("Possible credentials found in %s!", slackLink{
-			Text: fmt.Sprintf("%s / %s", repo.FullName(), repo.ShortSHA()),
-			Href: commitLink,
-		})
-		fallback := fmt.Sprintf("Possible credentials found in %s!", commitLink)
-
-		color := "danger"
-		if repo.Private {
-			color = "warning"
-		}
-
-		// Make sure we get a consistent map iteration order.
-		fileNames := []string{}
-		for path := range files {
-			fileNames = append(fileNames, path)
-		}
-		sort.Strings(fileNames)
-
-		fileLines := []string{}
-
-		for _, path := range fileNames {
-			nots := files[path]
-			fileLink := githubURL(repo.Owner, repo.Repository, "blob", repo.SHA, path)
-			lineLinks := []string{}
-
-			for _, not := range nots {
-				lineLink := fmt.Sprintf("%s#L%d", fileLink, not.LineNumber)
-
-				lineLinks = append(lineLinks, slackLink{
-					Text: strconv.Itoa(not.LineNumber),
-					Href: lineLink,
-				}.String())
-			}
-
-			plurality := "line"
-			if len(lineLinks) > 1 {
-				plurality = "lines"
-			}
-
-			text := fmt.Sprintf("• %s on %s %s", slackLink{
-				Text: path,
-				Href: fileLink,
-			}, plurality, humanizeList(lineLinks))
-
-			fileLines = append(fileLines, text)
-		}
-
-		messages = append(messages, slackMessage{
-			Attachments: []slackAttachment{
-				{
-					Title:    title,
-					Text:     strings.Join(fileLines, "\n"),
-					Color:    color,
-					Fallback: fallback,
-				},
-			},
-		})
-	}
-
-	return messages
-}
-
-func humanizeList(list []string) string {
-	joinedLines := &bytes.Buffer{}
-
-	if len(list) <= 1 {
-		joinedLines.WriteString(list[0])
-	} else if len(list) == 2 {
-		joinedLines.WriteString(list[0])
-		joinedLines.WriteString(" and ")
-		joinedLines.WriteString(list[1])
-	} else {
-		for _, line := range list[:len(list)-1] {
-			joinedLines.WriteString(line)
-			joinedLines.WriteString(", ")
-		}
-
-		joinedLines.WriteString("and ")
-		joinedLines.WriteString(list[len(list)-1])
-	}
-
-	return joinedLines.String()
-}
-
-func githubURL(components ...string) string {
-	url := &url.URL{
-		Scheme: "https",
-		Host:   "github.com",
-		Path:   strings.Join(components, "/"),
-	}
-
-	return url.String()
+	return filtered
 }
