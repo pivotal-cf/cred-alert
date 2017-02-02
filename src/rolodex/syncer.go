@@ -1,8 +1,8 @@
 package rolodex
 
 import (
-	"os"
 	"errors"
+	"os"
 
 	"code.cloudfoundry.org/lager"
 

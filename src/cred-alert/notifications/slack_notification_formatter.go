@@ -1,19 +1,19 @@
 package notifications
 
 import (
-	"strconv"
-	"strings"
-	"fmt"
 	"bytes"
+	"fmt"
 	"net/url"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 type slackNotificationFormatter struct{}
 
 //go:generate counterfeiter . SlackNotificationFormatter
 
-type SlackNotificationFormatter interface{
+type SlackNotificationFormatter interface {
 	FormatNotifications(batch []Notification) []SlackMessage
 }
 
@@ -164,7 +164,6 @@ func (s *slackNotificationFormatter) groupByFile(batch []Notification) fileGroup
 
 	return group
 }
-
 
 type slackLink struct {
 	Text string
