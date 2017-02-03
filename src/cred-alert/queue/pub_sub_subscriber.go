@@ -49,10 +49,10 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 		return err
 	}
 
-	finished := make(chan error)
-
-	close(ready)
 	p.logger.Info("started")
+
+	finished := make(chan error)
+	close(ready)
 
 	go func() {
 		for {
