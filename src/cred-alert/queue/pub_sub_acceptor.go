@@ -41,7 +41,7 @@ func NewPubSubAcceptor(
 func (p *pubSubAcceptor) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	p.logger.Info("starting")
 
-	it, err := p.subscription.Pull(context.Background())
+	it, err := p.subscription.Pull(context.Background(), pubsub.MaxPrefetch(1))
 	if err != nil {
 		return err
 	}
