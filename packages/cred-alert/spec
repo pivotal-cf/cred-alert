@@ -86,6 +86,7 @@ files:
   - google.golang.org/api/internal/*.{go,c} # gosub
   - google.golang.org/api/iterator/*.{go,c} # gosub
   - google.golang.org/api/option/*.{go,c} # gosub
+  - google.golang.org/api/support/bundler/*.{go,c} # gosub
   - google.golang.org/api/transport/*.{go,c} # gosub
   - google.golang.org/genproto/googleapis/api/annotations/*.{go,c} # gosub
   - google.golang.org/genproto/googleapis/iam/v1/*.{go,c} # gosub
