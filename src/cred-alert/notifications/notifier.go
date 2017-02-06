@@ -9,8 +9,16 @@ import (
 //go:generate counterfeiter . Notifier
 
 type Notifier interface {
-	SendNotification(lager.Logger, Notification) error
-	SendBatchNotification(lager.Logger, []Notification) error
+	Send(lager.Logger, Envelope) error
+}
+
+type Envelope struct {
+	Address  Address
+	Contents []Notification
+}
+
+func (e Envelope) Size() int {
+	return len(e.Contents)
 }
 
 type Notification struct {

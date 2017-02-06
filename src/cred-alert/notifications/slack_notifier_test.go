@@ -15,19 +15,6 @@ import (
 	"cred-alert/notifications/notificationsfakes"
 )
 
-const expectedJSON = `
-{
-  "attachments": [
-    {
-      "fallback": "",
-      "color": "",
-      "title": "",
-      "text": "cool credential you have there, be a shame if something happened to it"
-    }
-  ]
-}
-`
-
 var _ = Describe("SlackNotifier", func() {
 	var (
 		notifier notifications.Notifier
@@ -36,19 +23,11 @@ var _ = Describe("SlackNotifier", func() {
 		server *ghttp.Server
 		logger *lagertest.TestLogger
 
-		whitelist      notifications.Whitelist
-		whitelistRules []string
-
-		batch   []notifications.Notification
-		sendErr error
-
 		formatter *notificationsfakes.FakeSlackNotificationFormatter
 	)
 
 	BeforeEach(func() {
 		server = ghttp.NewServer()
-
-		whitelistRules = []string{}
 
 		clock = fakeclock.NewFakeClock(time.Now())
 
@@ -75,19 +54,33 @@ var _ = Describe("SlackNotifier", func() {
 	})
 
 	JustBeforeEach(func() {
-		whitelist = notifications.BuildWhitelist(whitelistRules...)
-		notifier = notifications.NewSlackNotifier(server.URL(), clock, whitelist, formatter)
+		notifier = notifications.NewSlackNotifier(clock, formatter)
 		logger = lagertest.NewTestLogger("slack-notifier")
 	})
 
-	Describe("SendBatchNotification", func() {
+	envelop := func(ns ...notifications.Notification) notifications.Envelope {
+		return notifications.Envelope{
+			Address: notifications.Address{
+				URL: server.URL(),
+				Channel: "awesome-channel",
+			},
+			Contents: ns,
+		}
+	}
+
+	Describe("Send", func() {
+		var (
+			envelope notifications.Envelope
+			sendErr  error
+		)
+
 		JustBeforeEach(func() {
-			sendErr = notifier.SendBatchNotification(logger, batch)
+			sendErr = notifier.Send(logger, envelope)
 		})
 
 		Context("when no notifications are given", func() {
 			BeforeEach(func() {
-				batch = []notifications.Notification{}
+				envelope = envelop()
 			})
 
 			It("does not return an error", func() {
@@ -99,21 +92,22 @@ var _ = Describe("SlackNotifier", func() {
 			})
 		})
 
-		Context("when there is one private notification in the batch", func() {
+		Context("when is at least one notification in the batch", func() {
 			BeforeEach(func() {
-				batch = []notifications.Notification{
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						Private:    true,
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
+				notification := notifications.Notification{
+					Owner:      "owner",
+					Repository: "repo",
+					Private:    true,
+					SHA:        "abc1234567890",
+					Path:       "path/to/file.txt",
+					LineNumber: 123,
 				}
+
+				envelope = envelop(notification)
 
 				server.AppendHandlers(
 					ghttp.VerifyRequest("POST", "/"),
+					ghttp.VerifyJSON(expectedJSON),
 				)
 			})
 
@@ -122,129 +116,6 @@ var _ = Describe("SlackNotifier", func() {
 			})
 
 			It("sends a message to slack", func() {
-				Expect(server.ReceivedRequests()).Should(HaveLen(1))
-			})
-
-			Context("when the notification matches a white listed repository", func() {
-				BeforeEach(func() {
-					whitelistRules = []string{".*repo.*"}
-				})
-
-				It("doesn't send anything to slack", func() {
-					Expect(server.ReceivedRequests()).Should(BeEmpty())
-				})
-			})
-		})
-
-		Context("when the notification matches a public white listed repository", func() {
-			BeforeEach(func() {
-				whitelistRules = []string{".*repo.*"}
-
-				batch = []notifications.Notification{
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
-				}
-
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/"),
-						ghttp.VerifyJSON(expectedJSON),
-					),
-				)
-			})
-
-			It("sends a message to slack", func() {
-				Expect(server.ReceivedRequests()).Should(HaveLen(1))
-			})
-		})
-
-		Context("when there are multiple notifications in the batch in the same file", func() {
-			BeforeEach(func() {
-				batch = []notifications.Notification{
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 346,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 3932,
-					},
-				}
-
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/"),
-						ghttp.VerifyJSON(expectedJSON),
-					),
-				)
-			})
-
-			It("does not return an error", func() {
-				Expect(sendErr).NotTo(HaveOccurred())
-			})
-
-			It("sends a message with all of them in to slack", func() {
-				Expect(server.ReceivedRequests()).Should(HaveLen(1))
-			})
-		})
-
-		Context("when there are multiple notifications in the batch in different files", func() {
-			BeforeEach(func() {
-				batch = []notifications.Notification{
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 123,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						SHA:        "abc1234567890",
-						Path:       "path/to/file2.txt",
-						LineNumber: 346,
-					},
-					{
-						Owner:      "owner",
-						Repository: "repo",
-						SHA:        "abc1234567890",
-						Path:       "path/to/file.txt",
-						LineNumber: 3932,
-					},
-				}
-
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/"),
-						ghttp.VerifyJSON(expectedJSON),
-					),
-				)
-			})
-
-			It("does not return an error", func() {
-				Expect(sendErr).NotTo(HaveOccurred())
-			})
-
-			It("sends a message with all of them in to slack", func() {
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 		})
@@ -270,7 +141,8 @@ var _ = Describe("SlackNotifier", func() {
 					Path:       "path/to/file.txt",
 					LineNumber: 123,
 				}
-				err := notifier.SendNotification(logger, notification)
+
+				err := notifier.Send(logger, envelop(notification))
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
@@ -302,17 +174,16 @@ var _ = Describe("SlackNotifier", func() {
 				go func() {
 					defer GinkgoRecover()
 
-					err := notifier.SendNotification(
-						logger,
-						notifications.Notification{
-							Owner:      "owner",
-							Repository: "repo",
-							Private:    true,
-							SHA:        "abc1234567890",
-							Path:       "path/to/file.txt",
-							LineNumber: 123,
-						},
-					)
+					notification := notifications.Notification{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    true,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 123,
+					}
+
+					err := notifier.Send(logger, envelop(notification))
 					Expect(err).NotTo(HaveOccurred())
 
 					close(done)
@@ -363,17 +234,16 @@ var _ = Describe("SlackNotifier", func() {
 				go func() {
 					defer GinkgoRecover()
 
-					err := notifier.SendNotification(
-						logger,
-						notifications.Notification{
-							Owner:      "owner",
-							Repository: "repo",
-							Private:    true,
-							SHA:        "abc1234567890",
-							Path:       "path/to/file.txt",
-							LineNumber: 123,
-						},
-					)
+					notification := notifications.Notification{
+						Owner:      "owner",
+						Repository: "repo",
+						Private:    true,
+						SHA:        "abc1234567890",
+						Path:       "path/to/file.txt",
+						LineNumber: 123,
+					}
+
+					err := notifier.Send(logger, envelop(notification))
 					Expect(err).To(HaveOccurred())
 
 					close(done)
@@ -395,3 +265,17 @@ var _ = Describe("SlackNotifier", func() {
 		})
 	})
 })
+
+const expectedJSON = `
+{
+  "channel": "#awesome-channel",
+  "attachments": [
+    {
+      "fallback": "",
+      "color": "",
+      "title": "",
+      "text": "cool credential you have there, be a shame if something happened to it"
+    }
+  ]
+}
+`

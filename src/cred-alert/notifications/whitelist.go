@@ -2,6 +2,8 @@ package notifications
 
 import "regexp"
 
+//go:generate counterfeiter . Whitelist
+
 type Whitelist interface {
 	ShouldSkipNotification(bool, string) bool
 }

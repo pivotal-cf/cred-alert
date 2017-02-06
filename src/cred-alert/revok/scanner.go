@@ -1,6 +1,11 @@
 package revok
 
 import (
+	"strings"
+
+	"code.cloudfoundry.org/lager"
+	git "gopkg.in/libgit2/git2go.v24"
+
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
@@ -8,10 +13,6 @@ import (
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
-	"strings"
-
-	"code.cloudfoundry.org/lager"
-	git "gopkg.in/libgit2/git2go.v24"
 )
 
 //go:generate counterfeiter . Scanner
@@ -27,7 +28,7 @@ type scanner struct {
 	scanRepository       db.ScanRepository
 	credentialRepository db.CredentialRepository
 	sniffer              sniff.Sniffer
-	notifier             notifications.Notifier
+	router               notifications.Router
 }
 
 func NewScanner(
@@ -36,7 +37,7 @@ func NewScanner(
 	scanRepository db.ScanRepository,
 	credentialRepository db.CredentialRepository,
 	sniffer sniff.Sniffer,
-	notifier notifications.Notifier,
+	router notifications.Router,
 ) Scanner {
 	return &scanner{
 		gitClient:            gitClient,
@@ -44,7 +45,7 @@ func NewScanner(
 		scanRepository:       scanRepository,
 		credentialRepository: credentialRepository,
 		sniffer:              sniffer,
-		notifier:             notifier,
+		router:               router,
 	}
 }
 
@@ -83,7 +84,7 @@ func (s *scanner) Scan(
 	}
 
 	if batch != nil {
-		err = s.notifier.SendBatchNotification(logger, batch)
+		err = s.router.Deliver(logger, batch)
 		if err != nil {
 			logger.Error("failed", err)
 			return err

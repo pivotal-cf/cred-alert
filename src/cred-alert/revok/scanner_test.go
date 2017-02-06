@@ -30,7 +30,7 @@ var _ = Describe("Scanner", func() {
 		scanRepository       *dbfakes.FakeScanRepository
 		credentialRepository *dbfakes.FakeCredentialRepository
 		scanner              revok.Scanner
-		notifier             *notificationsfakes.FakeNotifier
+		router             *notificationsfakes.FakeRouter
 
 		firstScan      *dbfakes.FakeActiveScan
 		baseRepoPath   string
@@ -91,14 +91,14 @@ var _ = Describe("Scanner", func() {
 			return nil
 		}
 
-		notifier = &notificationsfakes.FakeNotifier{}
+		router = &notificationsfakes.FakeRouter{}
 		scanner = revok.NewScanner(
 			gitClient,
 			repositoryRepository,
 			scanRepository,
 			credentialRepository,
 			sniffer,
-			notifier,
+			router,
 		)
 	})
 
@@ -148,9 +148,9 @@ var _ = Describe("Scanner", func() {
 	It("sends notifications about found credentials", func() {
 		err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(notifier.SendBatchNotificationCallCount()).To(Equal(1))
+		Expect(router.DeliverCallCount()).To(Equal(1))
 
-		_, notifications := notifier.SendBatchNotificationArgsForCall(0)
+		_, notifications := router.DeliverArgsForCall(0)
 		Expect(notifications).To(HaveLen(1))
 		Expect(notifications[0].Owner).To(Equal("some-owner"))
 		Expect(notifications[0].Repository).To(Equal("some-repository"))
@@ -169,7 +169,7 @@ var _ = Describe("Scanner", func() {
 		It("does not send notifications about credentials", func() {
 			err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "refs/heads/topicA", result.To.String(), "")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(notifier.SendBatchNotificationCallCount()).To(BeZero())
+			Expect(router.DeliverCallCount()).To(BeZero())
 		})
 	})
 

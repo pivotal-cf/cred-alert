@@ -93,25 +93,26 @@ func main() {
 
 	database.LogMode(false)
 
-	clock := clock.NewClock()
+	clk := clock.NewClock()
 
 	cloneMsgCh := make(chan revok.CloneMsg)
 
-	scanRepository := db.NewScanRepository(database, clock)
+	scanRepository := db.NewScanRepository(database, clk)
 	repositoryRepository := db.NewRepositoryRepository(database)
 	fetchRepository := db.NewFetchRepository(database)
 	credentialRepository := db.NewCredentialRepository(database)
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
 	gitClient := gitclient.New(string(cfg.GitHub.PrivateKeyPath), string(cfg.GitHub.PublicKeyPath))
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
+	formatter := notifications.NewSlackNotificationFormatter()
+	notifier := notifications.NewSlackNotifier(clk, formatter)
+	addressBook := notifications.NewSimpleAddressBook(cfg.Slack.WebhookURL, "")
 
-	var notifier notifications.Notifier
-	if cfg.Slack.WebhookURL != "" {
-		formatter := notifications.NewSlackNotificationFormatter()
-		notifier = notifications.NewSlackNotifier(cfg.Slack.WebhookURL, clock, repoWhitelist, formatter)
-	} else {
-		notifier = notifications.NewNullNotifier()
-	}
+	router := notifications.NewRouter(
+		notifier,
+		addressBook,
+		repoWhitelist,
+	)
 
 	sniffer := sniff.NewDefaultSniffer()
 	ancestryScanner := revok.NewScanner(
@@ -120,7 +121,7 @@ func main() {
 		scanRepository,
 		credentialRepository,
 		sniffer,
-		notifier,
+		router,
 	)
 
 	changeFetcher := revok.NewChangeFetcher(
@@ -157,13 +158,13 @@ func main() {
 		scanRepository,
 		credentialRepository,
 		ancestryScanner,
-		notifier,
+		router,
 		emitter,
 	)
 
 	statsReporter := stats.NewReporter(
 		logger,
-		clock,
+		clk,
 		60*time.Second,
 		db.NewStatsRepository(database),
 		emitter,
@@ -172,7 +173,7 @@ func main() {
 	headCredentialCounter := revok.NewHeadCredentialCounter(
 		logger,
 		repositoryRepository,
-		clock,
+		clk,
 		cfg.CredentialCounterInterval,
 		gitClient,
 		sniffer,
@@ -270,7 +271,7 @@ func main() {
 			workdir,
 			cloneMsgCh,
 			ghClient,
-			clock,
+			clk,
 			cfg.RepositoryDiscoveryInterval,
 			repositoryRepository,
 		)

@@ -14,6 +14,7 @@ import (
 )
 
 type SlackMessage struct {
+	Channel     string            `json:"channel,omitempty"`
 	Attachments []SlackAttachment `json:"attachments"`
 }
 
@@ -25,20 +26,15 @@ type SlackAttachment struct {
 }
 
 type slackNotifier struct {
-	webhookURL string
-
 	client    *http.Client
 	clock     clock.Clock
-	whitelist Whitelist
 	formatter SlackNotificationFormatter
 }
 
-func NewSlackNotifier(webhookURL string, clock clock.Clock, whitelist Whitelist, formatter SlackNotificationFormatter) Notifier {
+func NewSlackNotifier(clock clock.Clock, formatter SlackNotificationFormatter) Notifier {
 	return &slackNotifier{
-		webhookURL: webhookURL,
-		clock:      clock,
-		whitelist:  whitelist,
-		formatter:  formatter,
+		clock:     clock,
+		formatter: formatter,
 		client: &http.Client{
 			Timeout: 3 * time.Second,
 			Transport: &http.Transport{
@@ -50,45 +46,35 @@ func NewSlackNotifier(webhookURL string, clock clock.Clock, whitelist Whitelist,
 
 const maxRetries = 3
 
-func (n *slackNotifier) SendNotification(logger lager.Logger, notification Notification) error {
-	logger = logger.Session("send-notification")
+func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
+	logger = logger.Session("send-batch-notification", lager.Data{"envelope-size": envelope.Size()})
 	logger.Debug("starting")
 
-	return n.SendBatchNotification(logger, []Notification{notification})
-}
-
-func (n *slackNotifier) SendBatchNotification(logger lager.Logger, batch []Notification) error {
-	logger = logger.Session("send-batch-notification", lager.Data{"batch-size": len(batch)})
-	logger.Debug("starting")
-
-	if len(batch) == 0 {
-		logger.Debug("done")
-		return nil
-	}
-
-	filteredBatch := n.filterMessages(batch)
-	messages := n.formatter.FormatNotifications(filteredBatch)
+	messages := n.formatter.FormatNotifications(envelope.Contents)
 
 	for _, message := range messages {
+		message.Channel = fmt.Sprintf("#%s", envelope.Address.Channel)
+
 		body, err := json.Marshal(message)
 		if err != nil {
-			logger.Error("unmarshal-faiiled", err)
+			logger.Error("unmarshal-failed", err)
 			return err
 		}
 
-		err = n.send(logger, body)
+		err = n.send(logger, envelope.Address.URL, body)
 		if err != nil {
 			return err
 		}
 	}
 
 	logger.Debug("done")
+
 	return nil
 }
 
-func (n *slackNotifier) send(logger lager.Logger, body []byte) error {
+func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error {
 	for numReq := 0; numReq < maxRetries; numReq++ {
-		req, err := http.NewRequest("POST", n.webhookURL, bytes.NewBuffer(body))
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 		if err != nil {
 			logger.Error("request-failed", err)
 			return err
@@ -104,10 +90,9 @@ func (n *slackNotifier) send(logger lager.Logger, body []byte) error {
 
 		switch resp.StatusCode {
 		case http.StatusOK:
-			logger.Debug("done")
 			return nil
 		case http.StatusTooManyRequests:
-			lastLoop := (numReq == maxRetries-1)
+			lastLoop := numReq == maxRetries-1
 			if lastLoop {
 				break
 			}
@@ -135,16 +120,4 @@ func (n *slackNotifier) send(logger lager.Logger, body []byte) error {
 	logger.Error("failed", err)
 
 	return err
-}
-
-func (n *slackNotifier) filterMessages(batch []Notification) []Notification {
-	filtered := []Notification{}
-
-	for _, notification := range batch {
-		if !n.whitelist.ShouldSkipNotification(notification.Private, notification.Repository) {
-			filtered = append(filtered, notification)
-		}
-	}
-
-	return filtered
 }

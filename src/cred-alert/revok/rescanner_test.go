@@ -29,7 +29,7 @@ var _ = Describe("Rescanner", func() {
 		scanRepository       *dbfakes.FakeScanRepository
 		credentialRepository *dbfakes.FakeCredentialRepository
 		scanner              *revokfakes.FakeScanner
-		notifier             *notificationsfakes.FakeNotifier
+		router               *notificationsfakes.FakeRouter
 		emitter              *metricsfakes.FakeEmitter
 
 		successMetric *metricsfakes.FakeCounter
@@ -94,7 +94,7 @@ var _ = Describe("Rescanner", func() {
 		}
 
 		scanner = &revokfakes.FakeScanner{}
-		notifier = &notificationsfakes.FakeNotifier{}
+		router = &notificationsfakes.FakeRouter{}
 
 		emitter = &metricsfakes.FakeEmitter{}
 		successMetric = &metricsfakes.FakeCounter{}
@@ -121,7 +121,7 @@ var _ = Describe("Rescanner", func() {
 			scanRepository,
 			credentialRepository,
 			scanner,
-			notifier,
+			router,
 			emitter,
 		)
 		process = ginkgomon.Invoke(runner)
@@ -169,7 +169,7 @@ var _ = Describe("Rescanner", func() {
 		It("does nothing", func() {
 			Consistently(credentialRepository.ForScanWithIDCallCount).Should(BeZero())
 			Consistently(scanner.ScanNoNotifyCallCount).Should(BeZero())
-			Consistently(notifier.SendBatchNotificationCallCount).Should(BeZero())
+			Consistently(router.DeliverCallCount).Should(BeZero())
 		})
 	})
 
@@ -280,8 +280,8 @@ var _ = Describe("Rescanner", func() {
 		})
 
 		It("sends a notification for the new credentials", func() {
-			Eventually(notifier.SendBatchNotificationCallCount).Should(Equal(1))
-			_, batch := notifier.SendBatchNotificationArgsForCall(0)
+			Eventually(router.DeliverCallCount).Should(Equal(1))
+			_, batch := router.DeliverArgsForCall(0)
 			Expect(batch).To(Equal([]notifications.Notification{
 				{
 					Owner:      "some-owner",
@@ -329,7 +329,7 @@ var _ = Describe("Rescanner", func() {
 		})
 
 		It("doesn't send any notifications", func() {
-			Consistently(notifier.SendBatchNotificationCallCount).Should(BeZero())
+			Consistently(router.DeliverCallCount).Should(BeZero())
 		})
 	})
 

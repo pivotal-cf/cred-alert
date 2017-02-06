@@ -3,14 +3,14 @@ package revok
 import (
 	"os"
 
+	"code.cloudfoundry.org/lager"
+	"github.com/tedsuo/ifrit"
+	git "gopkg.in/libgit2/git2go.v24"
+
 	"cred-alert/db"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
 	"cred-alert/sniff"
-
-	"code.cloudfoundry.org/lager"
-	"github.com/tedsuo/ifrit"
-	git "gopkg.in/libgit2/git2go.v24"
 )
 
 type Rescanner struct {
@@ -18,7 +18,7 @@ type Rescanner struct {
 	scanRepo       db.ScanRepository
 	credRepo       db.CredentialRepository
 	scanner        Scanner
-	notifier       notifications.Notifier
+	router         notifications.Router
 	successCounter metrics.Counter
 	failedCounter  metrics.Counter
 }
@@ -28,7 +28,7 @@ func NewRescanner(
 	scanRepo db.ScanRepository,
 	credRepo db.CredentialRepository,
 	scanner Scanner,
-	notifier notifications.Notifier,
+	router notifications.Router,
 	emitter metrics.Emitter,
 ) ifrit.Runner {
 	return &Rescanner{
@@ -36,7 +36,7 @@ func NewRescanner(
 		scanRepo:       scanRepo,
 		credRepo:       credRepo,
 		scanner:        scanner,
-		notifier:       notifier,
+		router:         router,
 		successCounter: emitter.Counter("revok.rescanner.success"),
 		failedCounter:  emitter.Counter("revok.rescanner.failed"),
 	}
@@ -125,7 +125,7 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 	}
 
 	if len(batch) > 0 {
-		err = r.notifier.SendBatchNotification(logger, batch)
+		err = r.router.Deliver(logger, batch)
 		if err != nil {
 			logger.Error("failed-to-notify", err)
 		}
