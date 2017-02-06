@@ -107,3 +107,4 @@ files:
   - gopkg.in/yaml.v2/*.{go,c} # gosub
   - red/redpb/*.{go,c} # gosub
   - red/redrunner/*.{go,c} # gosub
+  - rolodex/rolodexpb/*.{go,c} # gosub
