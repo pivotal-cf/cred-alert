@@ -27,9 +27,19 @@ func (r *router) Deliver(logger lager.Logger, batch []Notification) error {
 
 	envelopes := r.filterAndGroupByDestination(logger, batch)
 
+	logger.Debug("sending", lager.Data{
+		"envelope-count":     len(envelopes),
+		"notification-count": len(batch),
+	})
+
 	for _, envelope := range envelopes {
-		_ = r.notifier.Send(logger, *envelope)
+		err := r.notifier.Send(logger, *envelope)
+		if err != nil {
+			return err
+		}
 	}
+
+	logger.Debug("sent")
 
 	return nil
 }
