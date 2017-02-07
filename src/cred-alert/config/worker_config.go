@@ -3,7 +3,6 @@ package config
 import (
 	"cred-alert/cmdflag"
 	"errors"
-	"reflect"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -20,58 +19,66 @@ func LoadWorkerConfig(bs []byte) (*WorkerConfig, error) {
 }
 
 type WorkerOpts struct {
-	ConfigFile cmdflag.FileFlag `long:"config-file" description:"path to config file" value-name:"PATH"`
-
-	*WorkerConfig
+	ConfigFile cmdflag.FileFlag `long:"config-file" description:"path to config file" value-name:"PATH" required:"true"`
 }
 
 type WorkerConfig struct {
-	WorkDir                     string        `long:"work-dir" description:"directory to work in" value-name:"PATH" yaml:"work_dir"`
-	RepositoryDiscoveryInterval time.Duration `long:"repository-discovery-interval" description:"how frequently to ask GitHub for all repos to check which ones we need to clone and dirscan" value-name:"SCAN_INTERVAL" yaml:"repository_discovery_interval"`
-	CredentialCounterInterval   time.Duration `long:"credential-counter-interval" description:"how frequently to update the current count of credentials in each branch of a repository" value-name:"SCAN_INTERVAL" yaml:"credential_counter_interval"`
+	WorkDir                     string        `yaml:"work_dir"`
+	RepositoryDiscoveryInterval time.Duration `yaml:"repository_discovery_interval"`
+	CredentialCounterInterval   time.Duration `yaml:"credential_counter_interval"`
 
-	Whitelist []string `short:"i" long:"ignore-pattern" description:"List of regex patterns to ignore." env:"IGNORED_PATTERNS" env-delim:"," value-name:"REGEX" yaml:"whitelist"`
+	Whitelist []string `yaml:"whitelist"`
 
 	GitHub struct {
-		AccessToken    string           `short:"a" long:"access-token" description:"github api access token" env:"GITHUB_ACCESS_TOKEN" value-name:"TOKEN" yaml:"access_token"`
-		PrivateKeyPath cmdflag.FileFlag `long:"github-private-key-path" description:"private key to use for GitHub auth" value-name:"SSH_KEY" yaml:"private_key_path"`
-		PublicKeyPath  cmdflag.FileFlag `long:"github-public-key-path" description:"public key to use for GitHub auth" value-name:"SSH_KEY" yaml:"public_key_path"`
-	} `group:"GitHub Options" yaml:"github"`
+		AccessToken    string `yaml:"access_token"`
+		PrivateKeyPath string `yaml:"private_key_path"`
+		PublicKeyPath  string `yaml:"public_key_path"`
+	} `yaml:"github"`
 
 	PubSub struct {
-		ProjectName   string           `long:"pubsub-project-name" description:"GCP Project Name" value-name:"NAME" yaml:"project_name"`
-		PublicKeyPath cmdflag.FileFlag `long:"pubsub-public-key" description:"path to file containing PEM-encoded, unencrypted RSA public key" yaml:"public_key_path"`
+		ProjectName   string `yaml:"project_name"`
+		PublicKeyPath string `yaml:"public_key_path"`
 		FetchHint     struct {
-			Subscription string `long:"fetch-hint-pubsub-subscription" description:"PubSub Topic receive messages from" value-name:"NAME" yaml:"subscription"`
-		} `group:"PubSub Fetch Hint Options" yaml:"fetch_hint"`
-	} `group:"PubSub Options" yaml:"pubsub"`
+			Subscription string `yaml:"subscription"`
+		} `yaml:"fetch_hint"`
+	} `yaml:"pubsub"`
 
 	Metrics struct {
-		SentryDSN     string `long:"sentry-dsn" description:"DSN to emit to Sentry with" env:"SENTRY_DSN" value-name:"DSN" yaml:"sentry_dsn"`
-		DatadogAPIKey string `long:"datadog-api-key" description:"key to emit to datadog" env:"DATADOG_API_KEY" value-name:"KEY" yaml:"datadog_api_key"`
-		Environment   string `long:"environment" description:"environment tag for metrics" env:"ENVIRONMENT" value-name:"NAME" yaml:"environment"`
-	} `group:"Metrics Options" yaml:"metrics"`
+		SentryDSN     string `yaml:"sentry_dsn"`
+		DatadogAPIKey string `yaml:"datadog_api_key"`
+		Environment   string `yaml:"environment"`
+	} `yaml:"metrics"`
 
 	Slack struct {
-		WebhookURL string `long:"slack-webhook-url" description:"Slack webhook URL" env:"SLACK_WEBHOOK_URL" value-name:"WEBHOOK" yaml:"webhook_url"`
-	} `group:"Slack Options" yaml:"slack"`
+		DefaultURL     string            `yaml:"default_webhook_url"`
+		DefaultChannel string            `yaml:"default_channel"`
+		TeamURLs       map[string]string `yaml:"team_webhook_urls"`
+	} `yaml:"slack"`
 
 	MySQL struct {
-		Username string `long:"mysql-username" description:"MySQL username" value-name:"USERNAME" yaml:"username"`
-		Password string `long:"mysql-password" description:"MySQL password" value-name:"PASSWORD" yaml:"password"`
-		Hostname string `long:"mysql-hostname" description:"MySQL hostname" value-name:"HOSTNAME" yaml:"hostname"`
-		Port     uint16 `long:"mysql-port" description:"MySQL port" value-name:"PORT" yaml:"port"`
-		DBName   string `long:"mysql-dbname" description:"MySQL database name" value-name:"DBNAME" yaml:"db_name"`
-	} `group:"MySQL Options" yaml:"mysql"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+		Hostname string `yaml:"hostname"`
+		Port     uint16 `yaml:"port"`
+		DBName   string `yaml:"db_name"`
+	} `yaml:"mysql"`
 
-	RPC struct {
-		ClientCACertificatePath cmdflag.FileFlag `long:"rpc-server-client-ca" description:"Path to client CA certificate" yaml:"client_ca_certificate_path"`
-		CertificatePath         cmdflag.FileFlag `long:"rpc-server-cert" description:"Path to RPC server certificate" yaml:"certificate_path"`
-		PrivateKeyPath          cmdflag.FileFlag `long:"rpc-server-private-key" description:"Path to RPC server private key" yaml:"private_key_path"`
-		PrivateKeyPassphrase    string           `long:"rpc-server-private-key-passphrase" description:"Passphrase for the RPC server private key, if encrypted" yaml:"private_key_passphrase"`
-		BindIP                  string           `long:"rpc-server-bind-ip" description:"IP address on which to listen for RPC traffic." yaml:"bind_ip"`
-		BindPort                uint16           `long:"rpc-server-bind-port" description:"Port on which to listen for RPC traffic." yaml:"bind_port"`
-	} `group:"RPC Options" yaml:"rpc_server"`
+	Identity struct {
+		CACertificatePath    string `yaml:"ca_certificate_path"`
+		CertificatePath      string `yaml:"certificate_path"`
+		PrivateKeyPath       string `yaml:"private_key_path"`
+		PrivateKeyPassphrase string `yaml:"private_key_passphrase"`
+	} `yaml:"identity"`
+
+	API struct {
+		BindIP   string `yaml:"bind_ip"`
+		BindPort uint16 `yaml:"bind_port"`
+	} `yaml:"rpc_server"`
+
+	Rolodex struct {
+		ServerAddress string `yaml:"server_address"`
+		ServerPort    uint16 `yaml:"server_port"`
+	} `yaml:"rolodex"`
 }
 
 func (c *WorkerConfig) Validate() []error {
@@ -94,43 +101,20 @@ func (c *WorkerConfig) Validate() []error {
 	}
 
 	if !allBlankOrAllSet(
-		string(c.RPC.ClientCACertificatePath),
-		string(c.RPC.CertificatePath),
-		string(c.RPC.PrivateKeyPath),
+		c.Identity.CACertificatePath,
+		c.Identity.CertificatePath,
+		c.Identity.PrivateKeyPath,
 	) {
-		errs = append(errs, errors.New("all rpc options required if any are set"))
+		errs = append(errs, errors.New("all identity options required if any are set"))
 	}
 
 	if !allBlankOrAllSet(
-		string(c.PubSub.ProjectName),
-		string(c.PubSub.FetchHint.Subscription),
-		string(c.PubSub.PublicKeyPath),
+		c.PubSub.ProjectName,
+		c.PubSub.FetchHint.Subscription,
+		c.PubSub.PublicKeyPath,
 	) {
 		errs = append(errs, errors.New("all pubsub options required if any are set"))
 	}
 
 	return errs
-}
-
-func (c *WorkerConfig) IsRPCConfigured() bool {
-	return allSet(
-		string(c.RPC.ClientCACertificatePath),
-		string(c.RPC.CertificatePath),
-		string(c.RPC.PrivateKeyPath),
-	)
-}
-
-func (c *WorkerConfig) IsPubSubConfigured() bool {
-	return allSet(
-		c.PubSub.ProjectName,
-		c.PubSub.FetchHint.Subscription,
-		string(c.PubSub.PublicKeyPath),
-	)
-}
-
-func (c *WorkerConfig) Merge(other *WorkerConfig) error {
-	src := reflect.ValueOf(other).Elem()
-	dst := reflect.ValueOf(c).Elem()
-
-	return merge(dst, src)
 }

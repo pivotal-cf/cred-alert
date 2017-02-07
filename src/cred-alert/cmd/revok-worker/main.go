@@ -23,6 +23,7 @@ import (
 	"golang.org/x/net/trace"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"cred-alert/config"
 	"cred-alert/crypto"
@@ -38,6 +39,7 @@ import (
 	"cred-alert/search"
 	"cred-alert/sniff"
 	"red/redrunner"
+	"rolodex/rolodexpb"
 )
 
 func main() {
@@ -54,18 +56,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if flagOpts.ConfigFile != "" {
-		bs, err := ioutil.ReadFile(string(flagOpts.ConfigFile))
-		if err != nil {
-			logger.Error("failed-opening-config-file", err)
-			os.Exit(1)
-		}
-
-		cfg, err = config.LoadWorkerConfig(bs)
-		cfg.Merge(flagOpts.WorkerConfig)
-	} else {
-		cfg = flagOpts.WorkerConfig
+	bs, err := ioutil.ReadFile(string(flagOpts.ConfigFile))
+	if err != nil {
+		logger.Error("failed-opening-config-file", err)
+		os.Exit(1)
 	}
+
+	cfg, err = config.LoadWorkerConfig(bs)
 
 	errs := cfg.Validate()
 	if errs != nil {
@@ -102,11 +99,48 @@ func main() {
 	fetchRepository := db.NewFetchRepository(database)
 	credentialRepository := db.NewCredentialRepository(database)
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
-	gitClient := gitclient.New(string(cfg.GitHub.PrivateKeyPath), string(cfg.GitHub.PublicKeyPath))
+	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
 	formatter := notifications.NewSlackNotificationFormatter()
 	notifier := notifications.NewSlackNotifier(clk, formatter)
-	addressBook := notifications.NewSimpleAddressBook(cfg.Slack.WebhookURL, "")
+
+	certificate, err := config.LoadCertificate(
+		cfg.Identity.CertificatePath,
+		cfg.Identity.PrivateKeyPath,
+		cfg.Identity.PrivateKeyPassphrase,
+	)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	caCertPool, err := config.LoadCertificatePool(cfg.Identity.CACertificatePath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	rolodexServerAddr := fmt.Sprintf("%s:%d", cfg.Rolodex.ServerAddress, cfg.Rolodex.ServerPort)
+
+	transportCreds := credentials.NewTLS(&tls.Config{
+		ServerName:   rolodexServerAddr,
+		Certificates: []tls.Certificate{certificate},
+		RootCAs:      caCertPool,
+	})
+
+	dialOption := grpc.WithTransportCredentials(transportCreds)
+	conn, err := grpc.Dial(rolodexServerAddr, dialOption)
+
+	rolodexClient := rolodexpb.NewRolodexClient(conn)
+
+	teamURLs := notifications.NewTeamURLs(
+		cfg.Slack.DefaultURL,
+		cfg.Slack.DefaultChannel,
+		cfg.Slack.TeamURLs,
+	)
+
+	addressBook := notifications.NewRolodex(
+		rolodexClient,
+		teamURLs,
+	)
 
 	router := notifications.NewRouter(
 		notifier,
@@ -188,68 +222,50 @@ func main() {
 		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
 	}
 
-	if cfg.IsRPCConfigured() {
-		certificate, err := config.LoadCertificate(
-			string(cfg.RPC.CertificatePath),
-			string(cfg.RPC.PrivateKeyPath),
-			cfg.RPC.PrivateKeyPassphrase,
-		)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	looper := gitclient.NewLooper()
+	searcher := search.NewSearcher(repositoryRepository, looper)
 
-		clientCertPool, err := config.LoadCertificatePool(string(cfg.RPC.ClientCACertificatePath))
-		if err != nil {
-			log.Fatalln(err)
-		}
+	grpcServer := redrunner.NewGRPCServer(
+		logger,
+		fmt.Sprintf("%s:%d", cfg.API.BindIP, cfg.API.BindPort),
+		&tls.Config{
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			Certificates: []tls.Certificate{certificate},
+			ClientCAs:    caCertPool,
+		},
+		func(server *grpc.Server) {
+			revokpb.RegisterRevokServer(server, revok.NewServer(logger, repositoryRepository, searcher))
+		},
+	)
 
-		looper := gitclient.NewLooper()
-		searcher := search.NewSearcher(repositoryRepository, looper)
+	members = append(members, grouper.Member{
+		Name:   "grpc-server",
+		Runner: grpcServer,
+	})
 
-		grpcServer := redrunner.NewGRPCServer(
-			logger,
-			fmt.Sprintf("%s:%d", cfg.RPC.BindIP, cfg.RPC.BindPort),
-			&tls.Config{
-				ClientAuth:   tls.RequireAndVerifyClientCert,
-				Certificates: []tls.Certificate{certificate},
-				ClientCAs:    clientCertPool,
-			},
-			func(server *grpc.Server) {
-				revokpb.RegisterRevokServer(server, revok.NewServer(logger, repositoryRepository, searcher))
-			},
-		)
-
-		members = append(members, grouper.Member{
-			Name:   "grpc-server",
-			Runner: grpcServer,
-		})
+	pubSubClient, err := pubsub.NewClient(context.Background(), cfg.PubSub.ProjectName)
+	if err != nil {
+		logger.Fatal("failed", err)
+		os.Exit(1)
 	}
 
-	if cfg.IsPubSubConfigured() {
-		pubSubClient, err := pubsub.NewClient(context.Background(), cfg.PubSub.ProjectName)
-		if err != nil {
-			logger.Fatal("failed", err)
-			os.Exit(1)
-		}
+	subscription := pubSubClient.Subscription(cfg.PubSub.FetchHint.Subscription)
 
-		subscription := pubSubClient.Subscription(cfg.PubSub.FetchHint.Subscription)
-
-		publicKey, err := crypto.ReadRSAPublicKey(string(cfg.PubSub.PublicKeyPath))
-		if err != nil {
-			logger.Fatal("failed", err)
-			os.Exit(1)
-		}
-		pushEventProcessor := queue.NewPushEventProcessor(
-			changeFetcher,
-			crypto.NewRSAVerifier(publicKey),
-			emitter,
-		)
-
-		members = append(members, grouper.Member{
-			Name:   "github-hint-handler",
-			Runner: queue.NewPubSubAcceptor(logger, subscription, pushEventProcessor, emitter),
-		})
+	publicKey, err := crypto.ReadRSAPublicKey(cfg.PubSub.PublicKeyPath)
+	if err != nil {
+		logger.Fatal("failed", err)
+		os.Exit(1)
 	}
+	pushEventProcessor := queue.NewPushEventProcessor(
+		changeFetcher,
+		crypto.NewRSAVerifier(publicKey),
+		emitter,
+	)
+
+	members = append(members, grouper.Member{
+		Name:   "github-hint-handler",
+		Runner: queue.NewPubSubAcceptor(logger, subscription, pushEventProcessor, emitter),
+	})
 
 	if cfg.GitHub.AccessToken != "" {
 		githubHTTPClient := &http.Client{

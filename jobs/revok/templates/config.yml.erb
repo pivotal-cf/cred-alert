@@ -33,28 +33,32 @@ metrics:
   environment: <%= environment %>
 <% end %>
 
-<% if_p("revok.slack_webhook_url") do |webhook_url| %>
+<% require 'json' %>
+
 slack:
-  webhook_url: <%= webhook_url %>
-<% end %>
+  default_webhook_url: <%= p("revok.slack.default_webhook_url") %>
+  default_channel: <%= p("revok.slack.default_channel") %>
+  team_webhook_urls: <%= p("revok.slack.team_webhook_urls").to_json %>
 
-<% if_p("revok.mysql.username", "revok.mysql.password", "revok.mysql.hostname", "revok.mysql.port", "revok.mysql.db") do |username, password, hostname, port, db| %>
 mysql:
-  username: <%= username %>
-  password: <%= password %>
-  hostname: <%= hostname %>
-  port: <%= port %>
-  db_name: <%= db %>
+  username: <%= p("revok.mysql.username") %>
+  password: <%= p("revok.mysql.password") %>
+  hostname: <%= p("revok.mysql.hostname") %>
+  port: <%= p("revok.mysql.port") %>
+  db_name: <%= p("revok.mysql.db") %>
+
+identity:
+  ca_certificate_path: /var/vcap/jobs/revok/config/ca_certificate
+  certificate_path: /var/vcap/jobs/revok/config/certificate
+  private_key_path: /var/vcap/jobs/revok/config/private_key
+<% if_p("revok.identity.private_key_passphrase") do |passphrase| %>
+  private_key_passphrase: <%= passphrase %>
 <% end %>
 
-<% if_p("revok.rpc_server.bind_ip", "revok.rpc_server.bind_port", "revok.rpc_server.client_ca", "revok.rpc_server.cert", "revok.rpc_server.private_key") do |bind_ip, bind_port, _, _, _, passphrase| %>
 rpc_server:
-  bind_ip: <%= bind_ip %>
-  bind_port: <%= bind_port %>
-  client_ca_certificate_path: /var/vcap/jobs/revok/config/rpc_server_client_ca
-  certificate_path: /var/vcap/jobs/revok/config/rpc_server_cert
-  private_key_path: /var/vcap/jobs/revok/config/rpc_server_private_key
-  <% if_p("revok.rpc_server.private_key_passphrase") do |passphrase| %>
-  private_key_passphrase: <%= passphrase %>
-  <% end %>
-<% end %>
+  bind_ip: <%= p("revok.rpc_server.bind_ip") %>
+  bind_port: <%= p("revok.rpc_server.bind_port") %>
+
+rolodex:
+  server_address: <%= p("revok.rolodex.server_address") %>
+  server_port: <%= p("revok.rolodex.server_port") %>

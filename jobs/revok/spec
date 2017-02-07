@@ -9,12 +9,15 @@ templates:
   ctl.erb: bin/ctl
   pre-start.erb: bin/pre-start
   config.yml.erb: config/config.yml
+
   github_private_key.erb: config/github_private_key
   github_public_key.erb: config/github_public_key
+
   pubsub_public_key.erb: config/pubsub_public_key
-  rpc_server_client_ca.erb: config/rpc_server_client_ca
-  rpc_server_private_key.erb: config/rpc_server_private_key
-  rpc_server_cert.erb: config/rpc_server_cert
+
+  ca_certificate.erb: config/ca_certificate
+  private_key.erb: config/private_key
+  certificate.erb: config/certificate
 
 packages:
 - cred-alert
@@ -31,7 +34,7 @@ properties:
 
   revok.pubsub.fetch_hint.subscription:
     description: |
-      The subscription to recieve messages from about fetch hints.
+      The subscription to receive messages from about fetch hints.
 
   revok.pubsub.public_key:
     description: |
@@ -104,21 +107,21 @@ properties:
       Port on which to listen for RPC traffic.
     default: 50051
 
-  revok.rpc_server.client_ca:
+  revok.identity.ca_certificate:
     description: |
-      RPC client CA certificate
+      RPC CA certificate
 
-  revok.rpc_server.cert:
+  revok.identity.certificate:
     description: |
-      RPC server certificate
+      RPC certificate
 
-  revok.rpc_server.private_key:
+  revok.identity.private_key:
     description: |
-      RPC server private key
+      RPC private key
 
-  revok.rpc_server.private_key_passphrase:
+  revok.identity.private_key_passphrase:
     description: |
-      RPC server private key passphrase
+      RPC private key passphrase
 
   revok.metrics.datadog_api_key:
     description: |
@@ -132,6 +135,25 @@ properties:
     description: |
       Environment tag for metrics
 
-  revok.slack_webhook_url:
+  revok.slack.default_webhook_url:
     description: |
-      Slack webhook URL
+      Default webhook URL for Slack notifications
+
+  revok.slack.default_channel:
+    description: |
+      Default channel for Slack notifications
+    default: ""
+
+  revok.slack.team_webhook_urls:
+    description: |
+      Map of Slack team names to webhook URLs
+    default: {}
+
+  revok.rolodex.server_address:
+    description: |
+      Address where Rolodex server can be reached
+
+  revok.rolodex.server_port:
+    description: |
+      Port where Rolodex server can be reached
+    default: 50051
