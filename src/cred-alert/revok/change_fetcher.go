@@ -3,7 +3,6 @@ package revok
 import (
 	"cred-alert/db"
 	"cred-alert/gitclient"
-	"cred-alert/kolsch"
 	"cred-alert/metrics"
 	"encoding/json"
 
@@ -122,7 +121,7 @@ func (c *changeFetcher) Fetch(
 
 	for branch, oids := range changes {
 		err := c.scanner.Scan(
-			kolsch.NewLogger(),
+			logger,
 			repo.Owner,
 			repo.Name,
 			scannedOids,
