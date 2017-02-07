@@ -106,8 +106,10 @@ var _ = Describe("SlackNotifier", func() {
 				envelope = envelop(notification)
 
 				server.AppendHandlers(
-					ghttp.VerifyRequest("POST", "/"),
-					ghttp.VerifyJSON(expectedJSON),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSON),
+					),
 				)
 			})
 
@@ -119,9 +121,42 @@ var _ = Describe("SlackNotifier", func() {
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 		})
-	})
 
-	Describe("sending slack notifications", func() {
+		Context("when no channel is specified", func() {
+			BeforeEach(func() {
+				notification := notifications.Notification{
+					Owner:      "owner",
+					Repository: "repo",
+					Private:    true,
+					SHA:        "abc1234567890",
+					Path:       "path/to/file.txt",
+					LineNumber: 123,
+				}
+
+				envelope = notifications.Envelope{
+					Address: notifications.Address{
+						URL: server.URL(),
+					},
+					Contents: []notifications.Notification{notification},
+				}
+
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSON(expectedJSONWithoutChannel),
+					),
+				)
+			})
+
+			It("does not return an error", func() {
+				Expect(sendErr).NotTo(HaveOccurred())
+			})
+
+			It("sends a message to slack", func() {
+				Expect(server.ReceivedRequests()).Should(HaveLen(1))
+			})
+		})
+
 		Context("when the server responds successfully on the first try", func() {
 			BeforeEach(func() {
 				server.AppendHandlers(
@@ -269,6 +304,18 @@ var _ = Describe("SlackNotifier", func() {
 const expectedJSON = `
 {
   "channel": "#awesome-channel",
+  "attachments": [
+    {
+      "fallback": "",
+      "color": "",
+      "title": "",
+      "text": "cool credential you have there, be a shame if something happened to it"
+    }
+  ]
+}
+`
+const expectedJSONWithoutChannel = `
+{
   "attachments": [
     {
       "fallback": "",

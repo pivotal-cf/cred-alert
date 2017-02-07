@@ -54,7 +54,9 @@ func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
 	messages := n.formatter.FormatNotifications(envelope.Contents)
 
 	for _, message := range messages {
-		message.Channel = fmt.Sprintf("#%s", envelope.Address.Channel)
+		if envelope.Address.Channel != "" {
+			message.Channel = fmt.Sprintf("#%s", envelope.Address.Channel)
+		}
 
 		body, err := json.Marshal(message)
 		if err != nil {
