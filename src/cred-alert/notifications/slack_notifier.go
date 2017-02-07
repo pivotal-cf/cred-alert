@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -111,7 +112,10 @@ func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error
 			continue
 		default:
 			err = fmt.Errorf("bad response (!200): %d", resp.StatusCode)
-			logger.Error("bad-response", err)
+			message, _ := ioutil.ReadAll(resp.Body)
+			logger.Error("bad-response", err, lager.Data{
+				"body": string(message),
+			})
 			return err
 		}
 	}
