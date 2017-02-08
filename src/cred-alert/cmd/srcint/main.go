@@ -55,7 +55,6 @@ func main() {
 	}
 
 	transportCreds := credentials.NewTLS(&tls.Config{
-		ServerName:   opts.RPCServerAddress,
 		Certificates: []tls.Certificate{clientCert},
 		RootCAs:      rootCertPool,
 	})

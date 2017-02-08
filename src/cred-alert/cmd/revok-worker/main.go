@@ -121,7 +121,6 @@ func main() {
 	rolodexServerAddr := fmt.Sprintf("%s:%d", cfg.Rolodex.ServerAddress, cfg.Rolodex.ServerPort)
 
 	transportCreds := credentials.NewTLS(&tls.Config{
-		ServerName:   cfg.Rolodex.ServerAddress,
 		Certificates: []tls.Certificate{certificate},
 		RootCAs:      caCertPool,
 	})
