@@ -39,9 +39,12 @@ func (t TeamURLs) Default() Address {
 	return t.defaultAddress
 }
 
-func (t TeamURLs) Lookup(teamName string, channelName string) Address {
+func (t TeamURLs) Lookup(logger lager.Logger, teamName string, channelName string) Address {
 	url, found := t.slackTeamURLs[teamName]
 	if !found {
+		logger.Info("unknown-slack-team", lager.Data{
+			"team-name": teamName,
+		})
 		return t.defaultAddress
 	}
 
@@ -88,11 +91,12 @@ func (r *rolodex) AddressForRepo(logger lager.Logger, owner, name string) []Addr
 		return []Address{r.teamURLs.Default()}
 	}
 
-	return r.addressesFor(response.GetTeams())
+	return r.addressesFor(logger, response.GetTeams())
 }
 
-func (r *rolodex) addressesFor(teams []*rolodexpb.Team) []Address {
+func (r *rolodex) addressesFor(logger lager.Logger, teams []*rolodexpb.Team) []Address {
 	if len(teams) == 0 {
+		logger.Info("no-owners-found")
 		return []Address{r.teamURLs.Default()}
 	}
 
@@ -100,7 +104,7 @@ func (r *rolodex) addressesFor(teams []*rolodexpb.Team) []Address {
 
 	for _, team := range teams {
 		channel := team.GetSlackChannel()
-		address := r.teamURLs.Lookup(channel.GetTeam(), channel.GetName())
+		address := r.teamURLs.Lookup(logger, channel.GetTeam(), channel.GetName())
 		addresses = append(addresses, address)
 	}
 
