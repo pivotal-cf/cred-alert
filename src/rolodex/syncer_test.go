@@ -2,28 +2,28 @@ package rolodex_test
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"errors"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/onsi/gomega/gbytes"
 	git "gopkg.in/libgit2/git2go.v24"
-
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"cred-alert/gitclient"
+	"cred-alert/gitclient/gitclientfakes"
+	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"rolodex"
 	"rolodex/rolodexfakes"
-	"cred-alert/metrics"
-	"cred-alert/gitclient/gitclientfakes"
 )
 
 var _ = Describe("Syncer", func() {
@@ -40,6 +40,7 @@ var _ = Describe("Syncer", func() {
 
 		successCounter *metricsfakes.FakeCounter
 		failureCounter *metricsfakes.FakeCounter
+		fetchTimer     *metricsfakes.FakeTimer
 	)
 
 	var runGit = func(path string, args ...string) string {
@@ -83,18 +84,25 @@ var _ = Describe("Syncer", func() {
 		emitter = &metricsfakes.FakeEmitter{}
 		successCounter = &metricsfakes.FakeCounter{}
 		failureCounter = &metricsfakes.FakeCounter{}
+		fetchTimer = &metricsfakes.FakeTimer{}
 
 		emitter.CounterStub = func(name string) metrics.Counter {
 			if name == "rolodex.syncer.fetch.success" {
 				return successCounter
 			}
 
-			if name ==  "rolodex.syncer.fetch.failure" {
+			if name == "rolodex.syncer.fetch.failure" {
 				return failureCounter
 			}
 
 			panic("did not expect counter called: " + name)
 		}
+
+		fetchTimer.TimeStub = func(logger lager.Logger, fn func(), tags ...string) {
+			fn()
+		}
+
+		emitter.TimerReturns(fetchTimer)
 
 		gitClient := gitclient.New("", "")
 
@@ -171,6 +179,10 @@ var _ = Describe("Syncer", func() {
 					It("increments the success counter", func() {
 						Expect(successCounter.IncCallCount()).To(Equal(1))
 					})
+
+					It("times the fetch", func() {
+						Expect(fetchTimer.TimeCallCount()).To(Equal(1))
+					})
 				})
 
 				Context("when there are no changes", func() {
@@ -178,8 +190,8 @@ var _ = Describe("Syncer", func() {
 						syncer.Sync()
 					})
 
-					It("does not tell the team repository to update", func() {
-						Expect(teamRepository.ReloadCallCount()).To(Equal(1)) // clone
+					It("increments the success counter", func() {
+						Expect(successCounter.IncCallCount()).To(Equal(1))
 					})
 				})
 

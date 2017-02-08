@@ -19,6 +19,8 @@ type syncer struct {
 	logger         lager.Logger
 	successCounter metrics.Counter
 	failureCounter metrics.Counter
+
+	fetchTimer metrics.Timer
 }
 
 type Syncer interface {
@@ -40,6 +42,8 @@ func NewSyncer(logger lager.Logger, emitter metrics.Emitter, repoUrl, repoPath s
 		logger:         syncLogger,
 		successCounter: emitter.Counter("rolodex.syncer.fetch.success"),
 		failureCounter: emitter.Counter("rolodex.syncer.fetch.failure"),
+
+		fetchTimer: emitter.Timer("rolodex.syncer.fetch.time"),
 	}
 }
 
@@ -58,32 +62,41 @@ func (s *syncer) Sync() {
 		return
 	}
 
-	heads, err := s.gitClient.Fetch(s.repoPath)
-	if err != nil {
-		s.failureCounter.Inc(s.logger)
-		s.logger.Error("fetching", err)
-		return
-	}
+	var fetchErr error
 
-	if len(heads) == 0 {
-		return
-	}
+	s.fetchTimer.Time(s.logger, func() {
+		heads, err := s.gitClient.Fetch(s.repoPath)
+		if err != nil {
+			s.logger.Error("fetching", err)
+			fetchErr = err
+			return
+		}
 
-	upstream, found := heads[remoteMaster]
-	if !found {
-		s.failureCounter.Inc(s.logger)
-		s.logger.Error("failed-to-find-updated-master", errors.New("no remote master branch found"))
-		return
-	}
+		if len(heads) == 0 {
+			return
+		}
 
-	err = s.gitClient.HardReset(s.repoPath, upstream[1])
-	if err != nil {
+		upstream, found := heads[remoteMaster]
+		if !found {
+			err := errors.New("no remote master branch found")
+			s.logger.Error("failed-to-find-updated-master", err)
+			fetchErr = err
+			return
+		}
+
+		err = s.gitClient.HardReset(s.repoPath, upstream[1])
+		if err != nil {
+			s.logger.Error("reseting", err)
+			fetchErr = err
+			return
+		}
+	})
+
+	if fetchErr != nil {
 		s.failureCounter.Inc(s.logger)
-		s.logger.Error("reseting", err)
 		return
 	}
 
 	s.successCounter.Inc(s.logger)
-
 	s.teamRepo.Reload()
 }
