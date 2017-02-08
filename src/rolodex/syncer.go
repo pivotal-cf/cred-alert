@@ -7,32 +7,39 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/gitclient"
+	"cred-alert/metrics"
 )
 
 type syncer struct {
-	logger    lager.Logger
 	repoUrl   string
 	repoPath  string
 	gitClient gitclient.Client
 	teamRepo  TeamRepository
+
+	logger         lager.Logger
+	successCounter metrics.Counter
+	failureCounter metrics.Counter
 }
 
 type Syncer interface {
 	Sync()
 }
 
-func NewSyncer(logger lager.Logger, repoUrl, repoPath string, gitClient gitclient.Client, teamRepo TeamRepository) Syncer {
+func NewSyncer(logger lager.Logger, emitter metrics.Emitter, repoUrl, repoPath string, gitClient gitclient.Client, teamRepo TeamRepository) Syncer {
 	syncLogger := logger.Session("syncer", lager.Data{
 		"upstream": repoUrl,
 		"local":    repoPath,
 	})
 
 	return &syncer{
-		logger:    syncLogger,
 		repoUrl:   repoUrl,
 		repoPath:  repoPath,
 		gitClient: gitClient,
 		teamRepo:  teamRepo,
+
+		logger:         syncLogger,
+		successCounter: emitter.Counter("rolodex.syncer.fetch.success"),
+		failureCounter: emitter.Counter("rolodex.syncer.fetch.failure"),
 	}
 }
 
@@ -53,6 +60,7 @@ func (s *syncer) Sync() {
 
 	heads, err := s.gitClient.Fetch(s.repoPath)
 	if err != nil {
+		s.failureCounter.Inc(s.logger)
 		s.logger.Error("fetching", err)
 		return
 	}
@@ -63,15 +71,19 @@ func (s *syncer) Sync() {
 
 	upstream, found := heads[remoteMaster]
 	if !found {
+		s.failureCounter.Inc(s.logger)
 		s.logger.Error("failed-to-find-updated-master", errors.New("no remote master branch found"))
 		return
 	}
 
 	err = s.gitClient.HardReset(s.repoPath, upstream[1])
 	if err != nil {
+		s.failureCounter.Inc(s.logger)
 		s.logger.Error("reseting", err)
 		return
 	}
+
+	s.successCounter.Inc(s.logger)
 
 	s.teamRepo.Reload()
 }

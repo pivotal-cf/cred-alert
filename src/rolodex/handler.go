@@ -1,20 +1,31 @@
 package rolodex
 
 import (
-	"rolodex/rolodexpb"
-
+	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+
+	"cred-alert/metrics"
+	"rolodex/rolodexpb"
 )
 
 type handler struct {
 	teamRepository TeamRepository
+
+	logger         lager.Logger
+	successCounter metrics.Counter
+	failureCounter metrics.Counter
 }
 
-func NewHandler(repo TeamRepository) rolodexpb.RolodexServer {
+func NewHandler(logger lager.Logger, repo TeamRepository, emitter metrics.Emitter) rolodexpb.RolodexServer {
+	handlerLogger := logger.Session("handler")
+
 	return &handler{
 		teamRepository: repo,
+		logger:         handlerLogger,
+		successCounter: emitter.Counter("rolodex.handler.success"),
+		failureCounter: emitter.Counter("rolodex.handler.failure"),
 	}
 }
 
@@ -23,6 +34,7 @@ func (h *handler) GetOwners(ctx context.Context, request *rolodexpb.GetOwnersReq
 	name := request.GetRepository().GetName()
 
 	if owner == "" || name == "" {
+		h.failureCounter.Inc(h.logger)
 		return nil, grpc.Errorf(codes.InvalidArgument, "repository owner and/or name may not be empty")
 	}
 
@@ -31,6 +43,7 @@ func (h *handler) GetOwners(ctx context.Context, request *rolodexpb.GetOwnersReq
 		Name:  name,
 	})
 	if err != nil {
+		h.failureCounter.Inc(h.logger)
 		return nil, err
 	}
 
@@ -50,6 +63,8 @@ func (h *handler) GetOwners(ctx context.Context, request *rolodexpb.GetOwnersReq
 
 		pbteams = append(pbteams, pbteam)
 	}
+
+	h.successCounter.Inc(h.logger)
 
 	return &rolodexpb.GetOwnersResponse{
 		Teams: pbteams,

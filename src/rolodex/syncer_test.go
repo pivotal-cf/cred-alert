@@ -8,31 +8,41 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"errors"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/onsi/gomega/gbytes"
+	git "gopkg.in/libgit2/git2go.v24"
+
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"cred-alert/gitclient"
+	"cred-alert/metrics/metricsfakes"
 	"rolodex"
 	"rolodex/rolodexfakes"
+	"cred-alert/metrics"
+	"cred-alert/gitclient/gitclientfakes"
 )
 
 var _ = Describe("Syncer", func() {
 	var (
 		teamRepository *rolodexfakes.FakeTeamRepository
 		logger         *lagertest.TestLogger
+		emitter        *metricsfakes.FakeEmitter
 
 		syncer rolodex.Syncer
 
 		workDir      string
 		upstreamPath string
 		localPath    string
+
+		successCounter *metricsfakes.FakeCounter
+		failureCounter *metricsfakes.FakeCounter
 	)
 
-	var git = func(path string, args ...string) string {
+	var runGit = func(path string, args ...string) string {
 		stdout := &bytes.Buffer{}
 
 		cmd := exec.Command("git", args...)
@@ -54,7 +64,7 @@ var _ = Describe("Syncer", func() {
 	}
 
 	var gitUpstream = func(args ...string) string {
-		return git(upstreamPath, args...)
+		return runGit(upstreamPath, args...)
 	}
 
 	var writeFile = func(path string, contents string) {
@@ -70,6 +80,21 @@ var _ = Describe("Syncer", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("syncer")
+		emitter = &metricsfakes.FakeEmitter{}
+		successCounter = &metricsfakes.FakeCounter{}
+		failureCounter = &metricsfakes.FakeCounter{}
+
+		emitter.CounterStub = func(name string) metrics.Counter {
+			if name == "rolodex.syncer.fetch.success" {
+				return successCounter
+			}
+
+			if name ==  "rolodex.syncer.fetch.failure" {
+				return failureCounter
+			}
+
+			panic("did not expect counter called: " + name)
+		}
 
 		gitClient := gitclient.New("", "")
 
@@ -86,7 +111,7 @@ var _ = Describe("Syncer", func() {
 
 		localPath = filepath.Join(workDir, "local")
 
-		syncer = rolodex.NewSyncer(logger, upstreamPath, localPath, gitClient, teamRepository)
+		syncer = rolodex.NewSyncer(logger, emitter, upstreamPath, localPath, gitClient, teamRepository)
 	})
 
 	AfterEach(func() {
@@ -120,10 +145,12 @@ var _ = Describe("Syncer", func() {
 			})
 
 			Context("when the repository has already been cloned", func() {
+				BeforeEach(func() {
+					syncer.Sync()
+				})
+
 				Context("when there are changes", func() {
 					BeforeEach(func() {
-						syncer.Sync()
-
 						writeFile("LICENSE", "You can't have it")
 
 						gitUpstream("add", "LICENSE")
@@ -140,16 +167,57 @@ var _ = Describe("Syncer", func() {
 					It("tells the team repository to update", func() {
 						Expect(teamRepository.ReloadCallCount()).To(Equal(2)) // clone and fetch
 					})
+
+					It("increments the success counter", func() {
+						Expect(successCounter.IncCallCount()).To(Equal(1))
+					})
 				})
 
 				Context("when there are no changes", func() {
 					BeforeEach(func() {
 						syncer.Sync()
-						syncer.Sync()
 					})
 
 					It("does not tell the team repository to update", func() {
 						Expect(teamRepository.ReloadCallCount()).To(Equal(1)) // clone
+					})
+				})
+
+				Context("when the subsequent fetch fails", func() {
+					BeforeEach(func() {
+						err := os.RemoveAll(upstreamPath)
+						Expect(err).NotTo(HaveOccurred())
+
+						syncer.Sync()
+					})
+
+					It("increments the failure counter", func() {
+						Expect(failureCounter.IncCallCount()).To(Equal(1))
+					})
+				})
+
+				Context("when resetting the state fails", func() {
+					var (
+						gitClient *gitclientfakes.FakeClient
+					)
+
+					BeforeEach(func() {
+						gitClient = &gitclientfakes.FakeClient{}
+						syncer = rolodex.NewSyncer(logger, emitter, upstreamPath, localPath, gitClient, teamRepository)
+
+						oid, err := git.NewOid("4d70bfc4198320f1aa04cd474eb71af2d24cfa48")
+						Expect(err).NotTo(HaveOccurred())
+
+						gitClient.FetchReturns(map[string][]*git.Oid{
+							"refs/remotes/origin/master": []*git.Oid{oid, oid},
+						}, nil)
+						gitClient.HardResetReturns(errors.New("disaster"))
+
+						syncer.Sync()
+					})
+
+					It("increments the failure counter", func() {
+						Expect(failureCounter.IncCallCount()).To(Equal(1))
 					})
 				})
 			})
@@ -180,6 +248,10 @@ var _ = Describe("Syncer", func() {
 
 			It("does not tell the team repository to update", func() {
 				Expect(teamRepository.ReloadCallCount()).To(Equal(1)) // clone
+			})
+
+			It("increments the failure counter", func() {
+				Expect(failureCounter.IncCallCount()).To(Equal(1))
 			})
 		})
 	})

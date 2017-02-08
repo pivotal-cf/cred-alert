@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -11,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"cred-alert/metrics/metricsfakes"
 	"red/redpb"
 	"rolodex"
 	"rolodex/rolodexfakes"
@@ -23,6 +25,8 @@ var _ = Describe("Handler", func() {
 		listener   net.Listener
 		client     rolodexpb.RolodexClient
 		connection *grpc.ClientConn
+		logger     *lagertest.TestLogger
+		emitter    *metricsfakes.FakeEmitter
 
 		teamRepo *rolodexfakes.FakeTeamRepository
 	)
@@ -30,8 +34,13 @@ var _ = Describe("Handler", func() {
 	BeforeEach(func() {
 		var err error
 
+		logger = lagertest.NewTestLogger("handler")
+		emitter = &metricsfakes.FakeEmitter{}
+		fakeCounter := &metricsfakes.FakeCounter{}
+		emitter.CounterReturns(fakeCounter)
+
 		teamRepo = &rolodexfakes.FakeTeamRepository{}
-		handler := rolodex.NewHandler(teamRepo)
+		handler := rolodex.NewHandler(logger, teamRepo, emitter)
 
 		listener, err = net.Listen("tcp", "127.0.0.1:0")
 		Expect(err).NotTo(HaveOccurred())

@@ -24,6 +24,7 @@ import (
 	"red/redrunner"
 	"rolodex"
 	"rolodex/rolodexpb"
+	"cred-alert/metrics"
 )
 
 type RolodexOpts struct {
@@ -74,9 +75,10 @@ func main() {
 	}
 
 	repository := rolodex.NewTeamRepository(logger, cfg.RepositoryPath)
-	handler := rolodex.NewHandler(repository)
+	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
+	handler := rolodex.NewHandler(logger, repository, emitter)
 	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
-	syncer := rolodex.NewSyncer(logger, cfg.RepositoryURL, cfg.RepositoryPath, gitClient, repository)
+	syncer := rolodex.NewSyncer(logger, emitter, cfg.RepositoryURL, cfg.RepositoryPath, gitClient, repository)
 
 	grpcServer := redrunner.NewGRPCServer(
 		logger,
