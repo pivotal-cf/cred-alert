@@ -94,7 +94,7 @@ func (t *teamRepository) Reload() {
 func (t *teamRepository) loadTeamRecords() {
 	teamRecords := []TeamRecord{}
 
-	files, err := filepath.Glob(filepath.Join(t.repoPath, "*.yml"))
+	files, err := filepath.Glob(filepath.Join(t.repoPath, "teams", "*.yml"))
 	if err != nil {
 		t.logger.Error("failed-to-glob", err)
 		return

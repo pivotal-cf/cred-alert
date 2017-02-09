@@ -42,7 +42,10 @@ var _ = Describe("TeamRepository", func() {
 		Context("when the directory exists", func() {
 			BeforeEach(func() {
 				var err error
-				teamsPath, err = ioutil.TempDir("", "teams")
+				teamsPath, err = ioutil.TempDir("", "rolodex_teams")
+				Expect(err).NotTo(HaveOccurred())
+
+				err = os.MkdirAll(filepath.Join(teamsPath, "teams"), 0700)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -58,8 +61,8 @@ var _ = Describe("TeamRepository", func() {
 			}
 
 			It("ignores non-YAML files", func() {
-				writeFile("REDRUM.MD", "My Special Readme")
-				writeFile("bosh.yml", `---
+				writeFile("teams/REDRUM.MD", "My Special Readme")
+				writeFile("teams/bosh.yml", `---
 name: bosh
 
 repositories:
@@ -73,7 +76,7 @@ repositories:
 			})
 
 			It("ignores malformed yaml files", func() {
-				writeFile("bosh.yml", `}}}`)
+				writeFile("teams/bosh.yml", `}}}`)
 
 				rolodex.NewTeamRepository(logger, teamsPath)
 
@@ -81,7 +84,7 @@ repositories:
 			})
 
 			It("ignores YAML files that start with a period", func() {
-				writeFile(".travis.yml", `}}}`)
+				writeFile("teams/.travis.yml", `}}}`)
 
 				rolodex.NewTeamRepository(logger, teamsPath)
 
@@ -104,7 +107,7 @@ repositories:
 
 			Context("when there are files in the directory", func() {
 				It("returns matching teams", func() {
-					writeFile("bosh.yml", `---
+					writeFile("teams/bosh.yml", `---
 name: bosh
 
 repositories:
@@ -112,7 +115,7 @@ repositories:
 - cloudfoundry/bosh-agent
 `)
 
-					writeFile("capi.yml", `---
+					writeFile("teams/capi.yml", `---
 name: capi
 
 repositories:
@@ -145,14 +148,14 @@ contact:
 				})
 
 				It("returns multiple matching teams", func() {
-					writeFile("bosh-1.yml", `---
+					writeFile("teams/bosh-1.yml", `---
 name: bosh-1
 
 repositories:
 - cloudfoundry/bosh
 `)
 
-					writeFile("bosh-2.yml", `---
+					writeFile("teams/bosh-2.yml", `---
 name: bosh-2
 
 repositories:
@@ -174,7 +177,7 @@ repositories:
 				})
 
 				It("only returns teams once if repositories are repeated", func() {
-					writeFile("bosh.yml", `---
+					writeFile("teams/bosh.yml", `---
 name: bosh
 
 repositories:
