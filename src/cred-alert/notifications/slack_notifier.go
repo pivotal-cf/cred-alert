@@ -48,9 +48,11 @@ func NewSlackNotifier(clock clock.Clock, formatter SlackNotificationFormatter) N
 const maxRetries = 3
 
 func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
-	logger = logger.Session("send-batch-notification", lager.Data{"envelope-size": envelope.Size()})
-	logger.Debug("starting")
+	logger = logger.Session("send-notification", lager.Data{
+		"channel": envelope.Address.Channel,
+	})
 
+	logger.Debug("starting")
 	messages := n.formatter.FormatNotifications(envelope.Contents)
 
 	for _, message := range messages {
