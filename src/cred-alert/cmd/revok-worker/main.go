@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -125,8 +126,11 @@ func main() {
 		RootCAs:      caCertPool,
 	})
 
-	dialOption := grpc.WithTransportCredentials(transportCreds)
-	conn, err := grpc.Dial(rolodexServerAddr, dialOption)
+	conn, err := grpc.Dial(
+		rolodexServerAddr,
+		grpc.WithDialer(keepAliveDial),
+		grpc.WithTransportCredentials(transportCreds),
+	)
 
 	rolodexClient := rolodexpb.NewRolodexClient(conn)
 
@@ -321,6 +325,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed-to-start: %s", err)
 	}
+}
+
+func keepAliveDial(addr string, timeout time.Duration) (net.Conn, error) {
+	d := net.Dialer{
+		Timeout:   timeout,
+		KeepAlive: 60 * time.Second,
+	}
+	return d.Dial("tcp", addr)
 }
 
 func debugHandler() http.Handler {
