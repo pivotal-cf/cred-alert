@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
@@ -101,6 +102,10 @@ func (t *teamRepository) loadTeamRecords() {
 
 	for _, filePath := range files {
 		fileName := filepath.Base(filePath)
+		if strings.HasPrefix(fileName, ".") {
+			continue
+		}
+
 		fileBytes, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			t.logger.Error("failed-to-read-file", err, lager.Data{

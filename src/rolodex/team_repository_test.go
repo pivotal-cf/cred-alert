@@ -80,6 +80,14 @@ repositories:
 				Expect(logger).To(gbytes.Say("bosh.yml"))
 			})
 
+			It("ignores YAML files that start with a period", func() {
+				writeFile(".travis.yml", `}}}`)
+
+				rolodex.NewTeamRepository(logger, teamsPath)
+
+				Expect(logger).NotTo(gbytes.Say(".travis.yml"))
+			})
+
 			Context("when the directory is empty", func() {
 				It("returns no teams", func() {
 					teamRepo := rolodex.NewTeamRepository(logger, teamsPath)
