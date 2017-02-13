@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
-	git "gopkg.in/libgit2/git2go.v24"
+	git "gopkg.in/libgit2/git2go.v25"
 )
 
 var _ = Describe("HeadCredentialCounter", func() {

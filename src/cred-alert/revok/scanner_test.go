@@ -18,7 +18,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	git "gopkg.in/libgit2/git2go.v24"
+	git "gopkg.in/libgit2/git2go.v25"
 )
 
 var _ = Describe("Scanner", func() {

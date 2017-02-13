@@ -67,7 +67,7 @@ files:
   - google.golang.org/grpc/stats/*.{go,c} # gosub
   - google.golang.org/grpc/tap/*.{go,c} # gosub
   - google.golang.org/grpc/transport/*.{go,c} # gosub
-  - gopkg.in/libgit2/git2go.v24/*.{go,c} # gosub
+  - gopkg.in/libgit2/git2go.v25/*.{go,c} # gosub
   - gopkg.in/yaml.v2/*.{go,c} # gosub
   - red/redpb/*.{go,c} # gosub
   - red/redrunner/*.{go,c} # gosub

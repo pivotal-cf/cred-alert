@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	git "gopkg.in/libgit2/git2go.v24"
+	git "gopkg.in/libgit2/git2go.v25"
 )
 
 type FakeClient struct {
