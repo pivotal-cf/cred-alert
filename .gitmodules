@@ -141,7 +141,7 @@
 	path = src/github.com/nlopes/slack
 	url = https://github.com/nlopes/slack
 	branch = master
-[submodule "src/gopkg.in/libgit2/git2go.v25"]
-	path = src/gopkg.in/libgit2/git2go.v25
-	url = https://gopkg.in/libgit2/git2go.v25
-	branch = v25
+[submodule "src/gopkg.in/libgit2/git2go.v24"]
+	path = src/gopkg.in/libgit2/git2go.v24
+	url = https://gopkg.in/libgit2/git2go.v24
+	branch = v24
