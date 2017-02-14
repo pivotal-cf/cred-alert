@@ -118,10 +118,12 @@ var _ = Describe("ChangeFetcher", func() {
 			Model: db.Model{
 				ID: 42,
 			},
-			Owner: "some-owner",
-			Name:  "some-repo",
-			Path:  repoToFetchPath,
+			Owner:  "some-owner",
+			Name:   "some-repo",
+			Path:   repoToFetchPath,
+			Cloned: true,
 		}
+
 		repositoryRepository.FindReturns(repo, nil)
 	})
 
@@ -197,8 +199,32 @@ var _ = Describe("ChangeFetcher", func() {
 			repositoryRepository.FindReturns(repo, nil)
 		})
 
-		It("does not try an fetch it", func() {
+		It("does not try and fetch it", func() {
 			Expect(fakeGitClient.FetchCallCount()).To(BeZero())
+		})
+
+		It("does not return an error", func() {
+			Expect(fetchErr).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("when the repository is not cloned yet", func() {
+		var fakeGitClient *gitclientfakes.FakeClient
+
+		BeforeEach(func() {
+			fakeGitClient = &gitclientfakes.FakeClient{}
+			gitClient = fakeGitClient
+
+			repo.Cloned = false
+			repositoryRepository.FindReturns(repo, nil)
+		})
+
+		It("does not try and fetch it", func() {
+			Expect(fakeGitClient.FetchCallCount()).To(BeZero())
+		})
+
+		It("does not return an error", func() {
+			Expect(fetchErr).NotTo(HaveOccurred())
 		})
 	})
 

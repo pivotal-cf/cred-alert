@@ -75,6 +75,11 @@ func (c *changeFetcher) Fetch(
 		return nil
 	}
 
+	if !repo.Cloned {
+		repoLogger.Info("skipping-fetch-of-uncloned-repo")
+		return nil
+	}
+
 	repoLogger = repoLogger.WithData(lager.Data{
 		"path": repo.Path,
 	})
