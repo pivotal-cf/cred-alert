@@ -21,6 +21,7 @@ type reporter struct {
 
 	reposGauge         metrics.Gauge
 	disabledReposGauge metrics.Gauge
+	unclonedReposGauge metrics.Gauge
 	fetchGauge         metrics.Gauge
 	credentialGauge    metrics.Gauge
 }
@@ -41,6 +42,7 @@ func NewReporter(
 
 		reposGauge:         emitter.Gauge("revok.reporter.repo_count"),
 		disabledReposGauge: emitter.Gauge("revok.reporter.disabled_repo_count"),
+		unclonedReposGauge: emitter.Gauge("revok.reporter.uncloned_repo_count"),
 		fetchGauge:         emitter.Gauge("revok.reporter.fetch_count"),
 		credentialGauge:    emitter.Gauge("revok.reporter.credential_count"),
 	}
@@ -95,5 +97,12 @@ func (r *reporter) reportStats(logger lager.Logger) {
 		logger.Error("failed-to-get-disabled-repository-count", err)
 	} else {
 		r.disabledReposGauge.Update(r.logger, float32(disabledRepoCount))
+	}
+
+	unclonedRepoCount, err := r.db.UnclonedRepositoryCount()
+	if err != nil {
+		logger.Error("failed-to-get-uncloned-repository-count", err)
+	} else {
+		r.unclonedReposGauge.Update(r.logger, float32(unclonedRepoCount))
 	}
 }

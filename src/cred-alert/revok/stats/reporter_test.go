@@ -27,6 +27,7 @@ var _ = Describe("Reporter", func() {
 
 		repoGauge         *metricsfakes.FakeGauge
 		disabledRepoGauge *metricsfakes.FakeGauge
+		unclonedRepoGauge *metricsfakes.FakeGauge
 		fetchGauge        *metricsfakes.FakeGauge
 		credentialGauge   *metricsfakes.FakeGauge
 
@@ -40,6 +41,7 @@ var _ = Describe("Reporter", func() {
 		emitter = &metricsfakes.FakeEmitter{}
 		repoGauge = &metricsfakes.FakeGauge{}
 		disabledRepoGauge = &metricsfakes.FakeGauge{}
+		unclonedRepoGauge = &metricsfakes.FakeGauge{}
 		fetchGauge = &metricsfakes.FakeGauge{}
 		credentialGauge = &metricsfakes.FakeGauge{}
 		emitter.GaugeStub = func(name string) metrics.Gauge {
@@ -48,6 +50,8 @@ var _ = Describe("Reporter", func() {
 				return repoGauge
 			case "revok.reporter.disabled_repo_count":
 				return disabledRepoGauge
+			case "revok.reporter.uncloned_repo_count":
+				return unclonedRepoGauge
 			case "revok.reporter.fetch_count":
 				return fetchGauge
 			case "revok.reporter.credential_count":
@@ -64,6 +68,7 @@ var _ = Describe("Reporter", func() {
 		statsRepository.FetchCountReturns(2, nil)
 		statsRepository.CredentialCountReturns(3, nil)
 		statsRepository.DisabledRepositoryCountReturns(4, nil)
+		statsRepository.UnclonedRepositoryCountReturns(5, nil)
 
 		runner = stats.NewReporter(
 			logger,
@@ -117,6 +122,13 @@ var _ = Describe("Reporter", func() {
 
 			_, updateValue, _ := disabledRepoGauge.UpdateArgsForCall(0)
 			Expect(updateValue).To(BeNumerically("==", 4))
+		})
+
+		It("emits the uncloned repositories count", func() {
+			Eventually(unclonedRepoGauge.UpdateCallCount).Should(Equal(1))
+
+			_, updateValue, _ := unclonedRepoGauge.UpdateArgsForCall(0)
+			Expect(updateValue).To(BeNumerically("==", 5))
 		})
 	})
 
