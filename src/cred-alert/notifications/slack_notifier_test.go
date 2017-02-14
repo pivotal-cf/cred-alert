@@ -61,7 +61,7 @@ var _ = Describe("SlackNotifier", func() {
 	envelop := func(ns ...notifications.Notification) notifications.Envelope {
 		return notifications.Envelope{
 			Address: notifications.Address{
-				URL: server.URL(),
+				URL:     server.URL(),
 				Channel: "awesome-channel",
 			},
 			Contents: ns,

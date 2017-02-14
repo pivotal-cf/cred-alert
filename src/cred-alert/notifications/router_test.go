@@ -42,23 +42,23 @@ var _ = Describe("Router", func() {
 				case "pivotal-cf/cred-alert":
 					return []notifications.Address{
 						{
-							URL:"https://a.example.com",
-							Channel:"channel-a",
+							URL:     "https://a.example.com",
+							Channel: "channel-a",
 						},
 						{
-							URL:"https://a.example.com",
-							Channel:"channel-b",
+							URL:     "https://a.example.com",
+							Channel: "channel-b",
 						},
 					}
 				case "pivotal-cf/scantron":
 					return []notifications.Address{{
-						URL:"https://a.example.com",
-						Channel:"channel-b",
+						URL:     "https://a.example.com",
+						Channel: "channel-b",
 					}}
 				case "pivotal-cf/credhub":
 					return []notifications.Address{{
-						URL:"https://b.example.com",
-						Channel:"channel-a",
+						URL:     "https://b.example.com",
+						Channel: "channel-a",
 					}}
 				default:
 					panic("I don't know about a repository called " + repo + "!")
@@ -105,8 +105,8 @@ var _ = Describe("Router", func() {
 
 		It("skips whitelisted repositories", func() {
 			addressBook.AddressForRepoReturns([]notifications.Address{{
-				URL:"https://example.com",
-				Channel:"some-channel",
+				URL:     "https://example.com",
+				Channel: "some-channel",
 			}})
 
 			whitelist.ShouldSkipNotificationStub = func(_ bool, name string) bool {
