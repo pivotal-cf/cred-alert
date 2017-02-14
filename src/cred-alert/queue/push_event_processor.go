@@ -60,7 +60,7 @@ func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Messag
 		return false, err
 	}
 
-	if len(p.Owner) == 0 || len(p.Repository) == 0 {
+	if p.Owner == "" || p.Repository == "" {
 		err := errors.New("invalid payload: missing owner or repository")
 		logger.Error("payload-incomplete", err)
 		return false, err
