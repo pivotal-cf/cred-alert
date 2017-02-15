@@ -132,7 +132,7 @@ func (c *client) Fetch(repositoryPath string) (map[string][]*git.Oid, error) {
 
 	changes := map[string][]*git.Oid{}
 	updateTipsCallback := func(refname string, a *git.Oid, b *git.Oid) git.ErrorCode {
-		changes[refname] = []*git.Oid{a, b}
+		changes[refname] = []*git.Oid{a.Copy(), b.Copy()}
 		return 0
 	}
 
