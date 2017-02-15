@@ -197,6 +197,7 @@ func (s *scanner) scan(
 			"start":      startOid.String(),
 			"stop":       stopOid.String(),
 			"repository": dbRepository.Name,
+			"owner":      dbRepository.Owner,
 		})
 	}
 
