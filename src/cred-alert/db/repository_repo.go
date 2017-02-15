@@ -1,19 +1,14 @@
 package db
 
 import (
-	"cred-alert/sniff"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	"code.cloudfoundry.org/lager"
-
 	"github.com/jinzhu/gorm"
-)
 
-var (
-	NeverBeenFetchedError = errors.New("Repository has never been fetched")
-	NoChangesError        = errors.New("Repository has never been changed")
+	"cred-alert/sniff"
 )
 
 //go:generate counterfeiter . RepositoryRepository
