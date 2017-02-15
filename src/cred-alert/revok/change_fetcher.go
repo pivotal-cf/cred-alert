@@ -64,10 +64,15 @@ func (c *changeFetcher) Fetch(
 		"repository": name,
 	})
 
-	repo, err := c.repositoryRepository.Find(owner, name)
+	repo, found, err := c.repositoryRepository.Find(owner, name)
 	if err != nil {
 		repoLogger.Error("failed-to-find-repository", err)
 		return err
+	}
+
+	if !found {
+		repoLogger.Info("skipping-fetch-of-unknown-repo")
+		return nil
 	}
 
 	if repo.Disabled {

@@ -1,6 +1,18 @@
 package revok_test
 
 import (
+	"errors"
+	"io/ioutil"
+	"os"
+	"strings"
+
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
+	git "gopkg.in/libgit2/git2go.v24"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
@@ -9,16 +21,6 @@ import (
 	"cred-alert/scanners"
 	"cred-alert/sniff"
 	"cred-alert/sniff/snifffakes"
-	"errors"
-	"io/ioutil"
-	"os"
-	"strings"
-
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	git "gopkg.in/libgit2/git2go.v24"
 )
 
 var _ = Describe("Scanner", func() {
@@ -53,7 +55,7 @@ var _ = Describe("Scanner", func() {
 		logger = lagertest.NewTestLogger("revok-scanner")
 		gitClient = gitclient.New("private-key-path", "public-key-path")
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		repositoryRepository.FindReturns(db.Repository{
+		repositoryRepository.MustFindReturns(db.Repository{
 			Model: db.Model{
 				ID: 42,
 			},
@@ -298,7 +300,7 @@ var _ = Describe("Scanner", func() {
 
 	Context("when finding the repository fails", func() {
 		BeforeEach(func() {
-			repositoryRepository.FindReturns(db.Repository{}, errors.New("an-error"))
+			repositoryRepository.MustFindReturns(db.Repository{}, errors.New("an-error"))
 		})
 
 		It("does not try to scan", func() {

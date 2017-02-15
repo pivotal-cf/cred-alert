@@ -122,7 +122,7 @@ func (s *server) GetRepositoryCredentialCounts(
 ) (*revokpb.RepositoryCredentialCountResponse, error) {
 	logger := s.logger.Session("get-repository-credential-counts")
 
-	repository, err := s.repoRepository.Find(in.Owner, in.Name)
+	repository, err := s.repoRepository.MustFind(in.Owner, in.Name)
 	if err != nil {
 		logger.Error("failed-getting-repository-from-db", err)
 		return nil, err

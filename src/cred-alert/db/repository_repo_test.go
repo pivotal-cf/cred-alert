@@ -28,6 +28,71 @@ var _ = Describe("RepositoryRepo", func() {
 		repo = db.NewRepositoryRepository(database)
 	})
 
+	Describe("Find", func() {
+		It("returns a matching repository", func() {
+			err := repo.Create(&db.Repository{
+				Name:    "my-special-repo",
+				Owner:   "my-special-owner",
+				RawJSON: []byte("my-special-json"),
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			repository, found, err := repo.Find("my-special-owner", "my-special-repo")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(found).To(BeTrue())
+
+			Expect(repository.Owner).To(Equal("my-special-owner"))
+			Expect(repository.Name).To(Equal("my-special-repo"))
+		})
+
+		It("does not return an error when a repository is not found", func() {
+			_, found, err := repo.Find("my-special-owner", "my-special-repo")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(found).To(BeFalse())
+		})
+
+		It("returns an error when the database blows up", func() {
+			database.Close()
+
+			_, found, err := repo.Find("my-special-owner", "my-special-repo")
+			Expect(err).To(HaveOccurred())
+			Expect(found).To(BeFalse())
+		})
+	})
+
+	Describe("MustFind", func() {
+		It("returns a matching repository", func() {
+			err := repo.Create(&db.Repository{
+				Name:    "my-special-repo",
+				Owner:   "my-special-owner",
+				RawJSON: []byte("my-special-json"),
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			repository, err := repo.MustFind("my-special-owner", "my-special-repo")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(repository.Owner).To(Equal("my-special-owner"))
+			Expect(repository.Name).To(Equal("my-special-repo"))
+		})
+
+		It("returns an error when a repository is not found", func() {
+			_, err := repo.MustFind("my-special-owner", "my-special-repo")
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("record not found"))
+		})
+
+		It("returns an error when the database blows up", func() {
+			database.Close()
+
+			_, err := repo.MustFind("my-special-owner", "my-special-repo")
+			Expect(err).To(HaveOccurred())
+			Expect(err).NotTo(MatchError("record not found"))
+		})
+	})
+
 	Describe("Create", func() {
 		var (
 			rawJSON      map[string]interface{}

@@ -58,7 +58,7 @@ func (s *scanner) Scan(
 	startSHA string,
 	stopSHA string,
 ) error {
-	dbRepository, err := s.repositoryRepository.Find(owner, repository)
+	dbRepository, err := s.repositoryRepository.MustFind(owner, repository)
 	if err != nil {
 		logger.Error("failed-to-find-db-repo", err)
 		return err
@@ -103,7 +103,7 @@ func (s *scanner) ScanNoNotify(
 	startSHA string,
 	stopSHA string,
 ) ([]db.Credential, error) {
-	dbRepository, err := s.repositoryRepository.Find(owner, repository)
+	dbRepository, err := s.repositoryRepository.MustFind(owner, repository)
 	if err != nil {
 		logger.Error("failed-to-find-db-repo", err)
 		return nil, err

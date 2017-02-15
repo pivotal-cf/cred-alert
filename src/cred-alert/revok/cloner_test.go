@@ -59,7 +59,7 @@ var _ = Describe("Cloner", func() {
 		}
 		gitClient = gitclient.New("private-key-path", "public-key-path")
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		repositoryRepository.FindReturns(dbRepo, nil)
+		repositoryRepository.MustFindReturns(dbRepo, nil)
 
 		emitter = &metricsfakes.FakeEmitter{}
 		scanSuccessMetric = &metricsfakes.FakeCounter{}
@@ -147,8 +147,8 @@ var _ = Describe("Cloner", func() {
 			})
 
 			It("finds the repository in the database that matches the owner and repo", func() {
-				Eventually(repositoryRepository.FindCallCount).Should(Equal(1))
-				owner, name := repositoryRepository.FindArgsForCall(0)
+				Eventually(repositoryRepository.MustFindCallCount).Should(Equal(1))
+				owner, name := repositoryRepository.MustFindArgsForCall(0)
 				Expect(owner).To(Equal("some-owner"))
 				Expect(name).To(Equal("some-repo"))
 			})
@@ -249,7 +249,7 @@ var _ = Describe("Cloner", func() {
 
 			Context("when finding the repository fails", func() {
 				BeforeEach(func() {
-					repositoryRepository.FindReturns(db.Repository{}, errors.New("an-error"))
+					repositoryRepository.MustFindReturns(db.Repository{}, errors.New("an-error"))
 				})
 
 				It("does not try to scan", func() {

@@ -108,7 +108,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 		return
 	}
 
-	repo, err := c.repositoryRepository.Find(msg.Owner, msg.Repository)
+	repo, err := c.repositoryRepository.MustFind(msg.Owner, msg.Repository)
 	if err != nil {
 		workLogger.Error("failed-to-find-db-repo", err)
 		return

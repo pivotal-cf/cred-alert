@@ -16,7 +16,8 @@ import (
 type RepositoryRepository interface {
 	Create(*Repository) error
 
-	Find(owner string, name string) (Repository, error)
+	Find(owner string, name string) (Repository, bool, error)
+	MustFind(owner string, name string) (Repository, error)
 
 	All() ([]Repository, error)
 	Active() ([]Repository, error)
@@ -38,13 +39,27 @@ func NewRepositoryRepository(db *gorm.DB) *repositoryRepository {
 	}
 }
 
-func (r *repositoryRepository) Find(owner, name string) (Repository, error) {
-	var repository Repository
-	err := r.db.Where("owner = ? AND name = ?", owner, name).First(&repository).Error
+func (r *repositoryRepository) Find(owner, name string) (Repository, bool, error) {
+	repo, err := r.MustFind(owner, name)
+
+	if err == gorm.ErrRecordNotFound {
+		return Repository{}, false, nil
+	} else if err != nil {
+		return Repository{}, false, err
+	}
+
+	return repo, true, nil
+}
+
+func (r *repositoryRepository) MustFind(owner string, name string) (Repository, error) {
+	var repo Repository
+	err := r.db.Where("owner = ? AND name = ?", owner, name).First(&repo).Error
+
 	if err != nil {
 		return Repository{}, err
 	}
-	return repository, nil
+
+	return repo, nil
 }
 
 func (r *repositoryRepository) Create(repository *Repository) error {

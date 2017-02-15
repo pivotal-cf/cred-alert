@@ -17,13 +17,24 @@ type FakeRepositoryRepository struct {
 	createReturns struct {
 		result1 error
 	}
-	FindStub        func(owner string, name string) (db.Repository, error)
+	FindStub        func(owner string, name string) (db.Repository, bool, error)
 	findMutex       sync.RWMutex
 	findArgsForCall []struct {
 		owner string
 		name  string
 	}
 	findReturns struct {
+		result1 db.Repository
+		result2 bool
+		result3 error
+	}
+	MustFindStub        func(owner string, name string) (db.Repository, error)
+	mustFindMutex       sync.RWMutex
+	mustFindArgsForCall []struct {
+		owner string
+		name  string
+	}
+	mustFindReturns struct {
 		result1 db.Repository
 		result2 error
 	}
@@ -123,7 +134,7 @@ func (fake *FakeRepositoryRepository) CreateReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRepositoryRepository) Find(owner string, name string) (db.Repository, error) {
+func (fake *FakeRepositoryRepository) Find(owner string, name string) (db.Repository, bool, error) {
 	fake.findMutex.Lock()
 	fake.findArgsForCall = append(fake.findArgsForCall, struct {
 		owner string
@@ -134,7 +145,7 @@ func (fake *FakeRepositoryRepository) Find(owner string, name string) (db.Reposi
 	if fake.FindStub != nil {
 		return fake.FindStub(owner, name)
 	}
-	return fake.findReturns.result1, fake.findReturns.result2
+	return fake.findReturns.result1, fake.findReturns.result2, fake.findReturns.result3
 }
 
 func (fake *FakeRepositoryRepository) FindCallCount() int {
@@ -149,9 +160,44 @@ func (fake *FakeRepositoryRepository) FindArgsForCall(i int) (string, string) {
 	return fake.findArgsForCall[i].owner, fake.findArgsForCall[i].name
 }
 
-func (fake *FakeRepositoryRepository) FindReturns(result1 db.Repository, result2 error) {
+func (fake *FakeRepositoryRepository) FindReturns(result1 db.Repository, result2 bool, result3 error) {
 	fake.FindStub = nil
 	fake.findReturns = struct {
+		result1 db.Repository
+		result2 bool
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeRepositoryRepository) MustFind(owner string, name string) (db.Repository, error) {
+	fake.mustFindMutex.Lock()
+	fake.mustFindArgsForCall = append(fake.mustFindArgsForCall, struct {
+		owner string
+		name  string
+	}{owner, name})
+	fake.recordInvocation("MustFind", []interface{}{owner, name})
+	fake.mustFindMutex.Unlock()
+	if fake.MustFindStub != nil {
+		return fake.MustFindStub(owner, name)
+	}
+	return fake.mustFindReturns.result1, fake.mustFindReturns.result2
+}
+
+func (fake *FakeRepositoryRepository) MustFindCallCount() int {
+	fake.mustFindMutex.RLock()
+	defer fake.mustFindMutex.RUnlock()
+	return len(fake.mustFindArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) MustFindArgsForCall(i int) (string, string) {
+	fake.mustFindMutex.RLock()
+	defer fake.mustFindMutex.RUnlock()
+	return fake.mustFindArgsForCall[i].owner, fake.mustFindArgsForCall[i].name
+}
+
+func (fake *FakeRepositoryRepository) MustFindReturns(result1 db.Repository, result2 error) {
+	fake.MustFindStub = nil
+	fake.mustFindReturns = struct {
 		result1 db.Repository
 		result2 error
 	}{result1, result2}
@@ -380,6 +426,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.createMutex.RUnlock()
 	fake.findMutex.RLock()
 	defer fake.findMutex.RUnlock()
+	fake.mustFindMutex.RLock()
+	defer fake.mustFindMutex.RUnlock()
 	fake.allMutex.RLock()
 	defer fake.allMutex.RUnlock()
 	fake.activeMutex.RLock()

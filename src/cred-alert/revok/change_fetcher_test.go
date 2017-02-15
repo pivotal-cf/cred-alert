@@ -20,6 +20,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("ChangeFetcher", func() {
@@ -124,7 +125,7 @@ var _ = Describe("ChangeFetcher", func() {
 			Cloned: true,
 		}
 
-		repositoryRepository.FindReturns(repo, nil)
+		repositoryRepository.FindReturns(repo, true, nil)
 	})
 
 	JustBeforeEach(func() {
@@ -161,7 +162,7 @@ var _ = Describe("ChangeFetcher", func() {
 		var fakeGitClient *gitclientfakes.FakeClient
 
 		BeforeEach(func() {
-			repositoryRepository.FindReturns(db.Repository{}, errors.New("disaster"))
+			repositoryRepository.FindReturns(db.Repository{}, false, errors.New("disaster"))
 
 			fakeGitClient = &gitclientfakes.FakeClient{}
 			gitClient = fakeGitClient
@@ -173,6 +174,29 @@ var _ = Describe("ChangeFetcher", func() {
 
 		It("errors", func() {
 			Expect(fetchErr).To(HaveOccurred())
+		})
+	})
+
+	Context("when the repository can't be found", func() {
+		var fakeGitClient *gitclientfakes.FakeClient
+
+		BeforeEach(func() {
+			repositoryRepository.FindReturns(db.Repository{}, false, nil)
+
+			fakeGitClient = &gitclientfakes.FakeClient{}
+			gitClient = fakeGitClient
+		})
+
+		It("does not try and fetch it", func() {
+			Expect(fakeGitClient.FetchCallCount()).To(BeZero())
+		})
+
+		It("does not return an error", func() {
+			Expect(fetchErr).NotTo(HaveOccurred())
+		})
+
+		It("logs", func() {
+			Expect(logger).To(Say("skipping-fetch-of-unknown-repo"))
 		})
 	})
 
@@ -196,7 +220,7 @@ var _ = Describe("ChangeFetcher", func() {
 			gitClient = fakeGitClient
 
 			repo.Disabled = true
-			repositoryRepository.FindReturns(repo, nil)
+			repositoryRepository.FindReturns(repo, true, nil)
 		})
 
 		It("does not try and fetch it", func() {
@@ -216,7 +240,7 @@ var _ = Describe("ChangeFetcher", func() {
 			gitClient = fakeGitClient
 
 			repo.Cloned = false
-			repositoryRepository.FindReturns(repo, nil)
+			repositoryRepository.FindReturns(repo, true, nil)
 		})
 
 		It("does not try and fetch it", func() {
