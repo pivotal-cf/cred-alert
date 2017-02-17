@@ -9,7 +9,6 @@ import (
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/kolsch"
-	"cred-alert/notifications"
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
@@ -18,8 +17,7 @@ import (
 //go:generate counterfeiter . Scanner
 
 type Scanner interface {
-	Scan(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error
-	ScanNoNotify(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error)
+	Scan(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error)
 }
 
 type scanner struct {
@@ -28,7 +26,6 @@ type scanner struct {
 	scanRepository       db.ScanRepository
 	credentialRepository db.CredentialRepository
 	sniffer              sniff.Sniffer
-	router               notifications.Router
 }
 
 func NewScanner(
@@ -37,7 +34,6 @@ func NewScanner(
 	scanRepository db.ScanRepository,
 	credentialRepository db.CredentialRepository,
 	sniffer sniff.Sniffer,
-	router notifications.Router,
 ) Scanner {
 	return &scanner{
 		gitClient:            gitClient,
@@ -45,56 +41,10 @@ func NewScanner(
 		scanRepository:       scanRepository,
 		credentialRepository: credentialRepository,
 		sniffer:              sniffer,
-		router:               router,
 	}
 }
 
 func (s *scanner) Scan(
-	logger lager.Logger,
-	owner string,
-	repository string,
-	scannedOids map[git.Oid]struct{},
-	branch string,
-	startSHA string,
-	stopSHA string,
-) error {
-	dbRepository, err := s.repositoryRepository.MustFind(owner, repository)
-	if err != nil {
-		logger.Error("failed-to-find-db-repo", err)
-		return err
-	}
-
-	credentials, err := s.ScanNoNotify(logger, owner, repository, scannedOids, branch, startSHA, stopSHA)
-	if err != nil {
-		return err
-	}
-
-	var batch []notifications.Notification
-
-	for _, credential := range credentials {
-		batch = append(batch, notifications.Notification{
-			Owner:      credential.Owner,
-			Repository: credential.Repository,
-			Branch:     branch,
-			SHA:        credential.SHA,
-			Path:       credential.Path,
-			LineNumber: credential.LineNumber,
-			Private:    dbRepository.Private,
-		})
-	}
-
-	if batch != nil {
-		err = s.router.Deliver(logger, batch)
-		if err != nil {
-			logger.Error("failed", err)
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *scanner) ScanNoNotify(
 	logger lager.Logger,
 	owner string,
 	repository string,

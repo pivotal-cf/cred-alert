@@ -11,7 +11,7 @@ import (
 )
 
 type FakeScanner struct {
-	ScanStub        func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error
+	ScanStub        func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error)
 	scanMutex       sync.RWMutex
 	scanArgsForCall []struct {
 		arg1 lager.Logger
@@ -23,20 +23,6 @@ type FakeScanner struct {
 		arg7 string
 	}
 	scanReturns struct {
-		result1 error
-	}
-	ScanNoNotifyStub        func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error)
-	scanNoNotifyMutex       sync.RWMutex
-	scanNoNotifyArgsForCall []struct {
-		arg1 lager.Logger
-		arg2 string
-		arg3 string
-		arg4 map[git.Oid]struct{}
-		arg5 string
-		arg6 string
-		arg7 string
-	}
-	scanNoNotifyReturns struct {
 		result1 []db.Credential
 		result2 error
 	}
@@ -44,7 +30,7 @@ type FakeScanner struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[git.Oid]struct{}, arg5 string, arg6 string, arg7 string) error {
+func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[git.Oid]struct{}, arg5 string, arg6 string, arg7 string) ([]db.Credential, error) {
 	fake.scanMutex.Lock()
 	fake.scanArgsForCall = append(fake.scanArgsForCall, struct {
 		arg1 lager.Logger
@@ -60,7 +46,7 @@ func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 
 	if fake.ScanStub != nil {
 		return fake.ScanStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 	}
-	return fake.scanReturns.result1
+	return fake.scanReturns.result1, fake.scanReturns.result2
 }
 
 func (fake *FakeScanner) ScanCallCount() int {
@@ -75,47 +61,9 @@ func (fake *FakeScanner) ScanArgsForCall(i int) (lager.Logger, string, string, m
 	return fake.scanArgsForCall[i].arg1, fake.scanArgsForCall[i].arg2, fake.scanArgsForCall[i].arg3, fake.scanArgsForCall[i].arg4, fake.scanArgsForCall[i].arg5, fake.scanArgsForCall[i].arg6, fake.scanArgsForCall[i].arg7
 }
 
-func (fake *FakeScanner) ScanReturns(result1 error) {
+func (fake *FakeScanner) ScanReturns(result1 []db.Credential, result2 error) {
 	fake.ScanStub = nil
 	fake.scanReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeScanner) ScanNoNotify(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[git.Oid]struct{}, arg5 string, arg6 string, arg7 string) ([]db.Credential, error) {
-	fake.scanNoNotifyMutex.Lock()
-	fake.scanNoNotifyArgsForCall = append(fake.scanNoNotifyArgsForCall, struct {
-		arg1 lager.Logger
-		arg2 string
-		arg3 string
-		arg4 map[git.Oid]struct{}
-		arg5 string
-		arg6 string
-		arg7 string
-	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
-	fake.recordInvocation("ScanNoNotify", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
-	fake.scanNoNotifyMutex.Unlock()
-	if fake.ScanNoNotifyStub != nil {
-		return fake.ScanNoNotifyStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-	}
-	return fake.scanNoNotifyReturns.result1, fake.scanNoNotifyReturns.result2
-}
-
-func (fake *FakeScanner) ScanNoNotifyCallCount() int {
-	fake.scanNoNotifyMutex.RLock()
-	defer fake.scanNoNotifyMutex.RUnlock()
-	return len(fake.scanNoNotifyArgsForCall)
-}
-
-func (fake *FakeScanner) ScanNoNotifyArgsForCall(i int) (lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) {
-	fake.scanNoNotifyMutex.RLock()
-	defer fake.scanNoNotifyMutex.RUnlock()
-	return fake.scanNoNotifyArgsForCall[i].arg1, fake.scanNoNotifyArgsForCall[i].arg2, fake.scanNoNotifyArgsForCall[i].arg3, fake.scanNoNotifyArgsForCall[i].arg4, fake.scanNoNotifyArgsForCall[i].arg5, fake.scanNoNotifyArgsForCall[i].arg6, fake.scanNoNotifyArgsForCall[i].arg7
-}
-
-func (fake *FakeScanner) ScanNoNotifyReturns(result1 []db.Credential, result2 error) {
-	fake.ScanNoNotifyStub = nil
-	fake.scanNoNotifyReturns = struct {
 		result1 []db.Credential
 		result2 error
 	}{result1, result2}
@@ -126,8 +74,6 @@ func (fake *FakeScanner) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.scanMutex.RLock()
 	defer fake.scanMutex.RUnlock()
-	fake.scanNoNotifyMutex.RLock()
-	defer fake.scanNoNotifyMutex.RUnlock()
 	return fake.invocations
 }
 

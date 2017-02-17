@@ -152,19 +152,24 @@ func main() {
 	)
 
 	sniffer := sniff.NewDefaultSniffer()
-	ancestryScanner := revok.NewScanner(
+	scanner := revok.NewScanner(
 		gitClient,
 		repositoryRepository,
 		scanRepository,
 		credentialRepository,
 		sniffer,
+	)
+
+	notificationComposer := revok.NewNotificationComposer(
+		repositoryRepository,
 		router,
+		scanner,
 	)
 
 	changeFetcher := revok.NewChangeFetcher(
 		logger,
 		gitClient,
-		ancestryScanner,
+		notificationComposer,
 		repositoryRepository,
 		fetchRepository,
 		emitter,
@@ -185,7 +190,7 @@ func main() {
 		cloneMsgCh,
 		gitClient,
 		repositoryRepository,
-		ancestryScanner,
+		notificationComposer,
 		emitter,
 		changeScheduler,
 	)
@@ -194,7 +199,7 @@ func main() {
 		logger,
 		scanRepository,
 		credentialRepository,
-		ancestryScanner,
+		scanner,
 		router,
 		emitter,
 	)

@@ -27,7 +27,7 @@ var _ = Describe("ChangeFetcher", func() {
 	var (
 		logger               *lagertest.TestLogger
 		gitClient            gitclient.Client
-		scanner              *revokfakes.FakeScanner
+		notificationComposer *revokfakes.FakeNotificationComposer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		fetchRepository      *dbfakes.FakeFetchRepository
 		emitter              *metricsfakes.FakeEmitter
@@ -55,7 +55,7 @@ var _ = Describe("ChangeFetcher", func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
 		gitClient = gitclient.New("private-key-path", "public-key-path")
 
-		scanner = &revokfakes.FakeScanner{}
+		notificationComposer = &revokfakes.FakeNotificationComposer{}
 
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 
@@ -132,7 +132,7 @@ var _ = Describe("ChangeFetcher", func() {
 		fetcher = revok.NewChangeFetcher(
 			logger,
 			gitClient,
-			scanner,
+			notificationComposer,
 			repositoryRepository,
 			fetchRepository,
 			emitter,
@@ -274,11 +274,11 @@ var _ = Describe("ChangeFetcher", func() {
 		})
 
 		It("scans only the changes", func() {
-			Expect(scanner.ScanCallCount()).To(Equal(2)) // 2 new commits
+			Expect(notificationComposer.ScanAndNotifyCallCount()).To(Equal(2)) // 2 new commits
 
 			var branches []string
-			for i := 0; i < scanner.ScanCallCount(); i++ {
-				_, owner, name, _, branch, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+			for i := 0; i < notificationComposer.ScanAndNotifyCallCount(); i++ {
+				_, owner, name, _, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
 				Expect(owner).To(Equal("some-owner"))
 				Expect(name).To(Equal("some-repo"))
 
@@ -341,8 +341,8 @@ var _ = Describe("ChangeFetcher", func() {
 
 		Context("when there is an error scanning a change", func() {
 			BeforeEach(func() {
-				scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error {
-					if scanner.ScanCallCount() == 1 {
+				notificationComposer.ScanAndNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error {
+					if notificationComposer.ScanAndNotifyCallCount() == 1 {
 						return nil
 					}
 

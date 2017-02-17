@@ -32,7 +32,7 @@ var _ = Describe("Cloner", func() {
 		gitClient            gitclient.Client
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		emitter              *metricsfakes.FakeEmitter
-		scanner              *revokfakes.FakeScanner
+		notificationComposer *revokfakes.FakeNotificationComposer
 		scheduler            *revokfakes.FakeRepoChangeScheduler
 
 		scanSuccessMetric  *metricsfakes.FakeCounter
@@ -80,7 +80,7 @@ var _ = Describe("Cloner", func() {
 			return &metricsfakes.FakeCounter{}
 		}
 
-		scanner = &revokfakes.FakeScanner{}
+		notificationComposer = &revokfakes.FakeNotificationComposer{}
 		scheduler = &revokfakes.FakeRepoChangeScheduler{}
 
 		var err error
@@ -110,7 +110,7 @@ var _ = Describe("Cloner", func() {
 			workCh,
 			gitClient,
 			repositoryRepository,
-			scanner,
+			notificationComposer,
 			emitter,
 			scheduler,
 		)
@@ -118,7 +118,7 @@ var _ = Describe("Cloner", func() {
 	})
 
 	It("does not try to scan when there are no branches", func() {
-		Consistently(scanner.ScanCallCount).Should(BeZero())
+		Consistently(notificationComposer.ScanAndNotifyCallCount).Should(BeZero())
 	})
 
 	Context("when there are multiple branches", func() {
@@ -165,13 +165,13 @@ var _ = Describe("Cloner", func() {
 			})
 
 			It("tries to scan all branches", func() {
-				Eventually(scanner.ScanCallCount).Should(Equal(2))
+				Eventually(notificationComposer.ScanAndNotifyCallCount).Should(Equal(2))
 
 				var startSHAs []string
 				var branches []string
 				var actualScannedOids []map[git.Oid]struct{}
-				for i := 0; i < scanner.ScanCallCount(); i++ {
-					_, owner, repository, scannedOids, branch, startSHA, stopSHA := scanner.ScanArgsForCall(i)
+				for i := 0; i < notificationComposer.ScanAndNotifyCallCount(); i++ {
+					_, owner, repository, scannedOids, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
 					Expect(owner).To(Equal("some-owner"))
 					Expect(repository).To(Equal("some-repo"))
 					Expect(stopSHA).To(Equal(""))
@@ -196,7 +196,7 @@ var _ = Describe("Cloner", func() {
 
 			Context("when scanning fails", func() {
 				BeforeEach(func() {
-					scanner.ScanReturns(errors.New("an-error"))
+					notificationComposer.ScanAndNotifyReturns(errors.New("an-error"))
 				})
 
 				It("increments the failed scan metric", func() {
@@ -229,7 +229,7 @@ var _ = Describe("Cloner", func() {
 				})
 
 				It("does not try to scan", func() {
-					Consistently(scanner.ScanCallCount).Should(BeZero())
+					Consistently(notificationComposer.ScanAndNotifyCallCount).Should(BeZero())
 				})
 
 				It("increments the failed clone metric", func() {
@@ -243,7 +243,7 @@ var _ = Describe("Cloner", func() {
 				})
 
 				It("does not try to scan", func() {
-					Consistently(scanner.ScanCallCount).Should(BeZero())
+					Consistently(notificationComposer.ScanAndNotifyCallCount()).Should(BeZero())
 				})
 			})
 
@@ -253,7 +253,7 @@ var _ = Describe("Cloner", func() {
 				})
 
 				It("does not try to scan", func() {
-					Consistently(scanner.ScanCallCount).Should(BeZero())
+					Consistently(notificationComposer.ScanAndNotifyCallCount()).Should(BeZero())
 				})
 			})
 		})

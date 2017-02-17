@@ -26,7 +26,7 @@ type Cloner struct {
 	workCh               chan CloneMsg
 	gitClient            gitclient.Client
 	repositoryRepository db.RepositoryRepository
-	scanner              Scanner
+	notificationComposer NotificationComposer
 	scheduler            RepoChangeScheduler
 
 	cloneSuccessCounter metrics.Counter
@@ -41,7 +41,7 @@ func NewCloner(
 	workCh chan CloneMsg,
 	gitClient gitclient.Client,
 	repositoryRepository db.RepositoryRepository,
-	scanner Scanner,
+	notificationComposer NotificationComposer,
 	emitter metrics.Emitter,
 	scheduler RepoChangeScheduler,
 ) ifrit.Runner {
@@ -51,7 +51,7 @@ func NewCloner(
 		workCh:               workCh,
 		gitClient:            gitClient,
 		repositoryRepository: repositoryRepository,
-		scanner:              scanner,
+		notificationComposer: notificationComposer,
 		scheduler:            scheduler,
 		scanSuccessCounter:   emitter.Counter("revok.cloner.scan.success"),
 		scanFailedCounter:    emitter.Counter("revok.cloner.scan.failed"),
@@ -125,7 +125,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 	}
 
 	for branchName, target := range branches {
-		err = c.scanner.Scan(
+		err = c.notificationComposer.ScanAndNotify(
 			workLogger,
 			msg.Owner,
 			msg.Repository,

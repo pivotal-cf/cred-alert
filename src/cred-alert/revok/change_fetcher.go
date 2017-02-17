@@ -20,7 +20,7 @@ type ChangeFetcher interface {
 type changeFetcher struct {
 	logger               lager.Logger
 	gitClient            gitclient.Client
-	scanner              Scanner
+	notificationComposer NotificationComposer
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
 
@@ -34,7 +34,7 @@ type changeFetcher struct {
 func NewChangeFetcher(
 	logger lager.Logger,
 	gitClient gitclient.Client,
-	scanner Scanner,
+	notificationComposer NotificationComposer,
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
 	emitter metrics.Emitter,
@@ -42,7 +42,7 @@ func NewChangeFetcher(
 	return &changeFetcher{
 		logger:               logger,
 		gitClient:            gitClient,
-		scanner:              scanner,
+		notificationComposer: notificationComposer,
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
 
@@ -130,7 +130,7 @@ func (c *changeFetcher) Fetch(
 	scannedOids := map[git.Oid]struct{}{}
 
 	for branch, oids := range changes {
-		err := c.scanner.Scan(
+		err := c.notificationComposer.ScanAndNotify(
 			logger,
 			repo.Owner,
 			repo.Name,

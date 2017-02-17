@@ -134,16 +134,16 @@ var _ = Describe("Rescanner", func() {
 	})
 
 	It("repeats each prior scan for the previous rules version", func() {
-		Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
+		Eventually(scanner.ScanCallCount).Should(Equal(2))
 
-		_, owner, repository, _, branch, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(0)
+		_, owner, repository, _, branch, startSHA, stopSHA := scanner.ScanArgsForCall(0)
 		Expect(owner).To(Equal("some-owner"))
 		Expect(repository).To(Equal("some-repository"))
 		Expect(branch).To(Equal("some-branch"))
 		Expect(startSHA).To(Equal("some-start-sha"))
 		Expect(stopSHA).To(Equal(""))
 
-		_, owner, repository, _, branch, startSHA, stopSHA = scanner.ScanNoNotifyArgsForCall(1)
+		_, owner, repository, _, branch, startSHA, stopSHA = scanner.ScanArgsForCall(1)
 		Expect(owner).To(Equal("some-other-owner"))
 		Expect(repository).To(Equal("some-other-repository"))
 		Expect(branch).To(Equal("some-other-branch"))
@@ -168,7 +168,7 @@ var _ = Describe("Rescanner", func() {
 
 		It("does nothing", func() {
 			Consistently(credentialRepository.ForScanWithIDCallCount).Should(BeZero())
-			Consistently(scanner.ScanNoNotifyCallCount).Should(BeZero())
+			Consistently(scanner.ScanCallCount).Should(BeZero())
 			Consistently(router.DeliverCallCount).Should(BeZero())
 		})
 	})
@@ -201,8 +201,8 @@ var _ = Describe("Rescanner", func() {
 
 		It("continues to the next prior scan for the previous rules version", func() {
 			Eventually(credentialRepository.ForScanWithIDCallCount).Should(Equal(2))
-			Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(1))
-			Consistently(scanner.ScanNoNotifyCallCount).Should(Equal(1))
+			Eventually(scanner.ScanCallCount).Should(Equal(1))
+			Consistently(scanner.ScanCallCount).Should(Equal(1))
 		})
 	})
 
@@ -238,8 +238,8 @@ var _ = Describe("Rescanner", func() {
 				}, nil
 			}
 
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
-				if scanner.ScanNoNotifyCallCount() == 1 {
+			scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
+				if scanner.ScanCallCount() == 1 {
 					return []db.Credential{
 						{
 							Owner:      "some-owner",
@@ -297,8 +297,8 @@ var _ = Describe("Rescanner", func() {
 
 	Context("when no new credentials are found", func() {
 		BeforeEach(func() {
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
-				if scanner.ScanNoNotifyCallCount() == 1 {
+			scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
+				if scanner.ScanCallCount() == 1 {
 					return []db.Credential{
 						{
 							Owner:      "some-owner",
@@ -339,14 +339,14 @@ var _ = Describe("Rescanner", func() {
 		})
 
 		It("does not try to scan anything", func() {
-			Eventually(scanner.ScanNoNotifyCallCount).Should(BeZero())
+			Eventually(scanner.ScanCallCount).Should(BeZero())
 		})
 	})
 
 	Context("when doing a scan fails", func() {
 		BeforeEach(func() {
-			scanner.ScanNoNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
-				if scanner.ScanNoNotifyCallCount() == 1 {
+			scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
+				if scanner.ScanCallCount() == 1 {
 					return nil, errors.New("an-error")
 				}
 
@@ -355,8 +355,8 @@ var _ = Describe("Rescanner", func() {
 		})
 
 		It("should continue on to the next repository", func() {
-			Eventually(scanner.ScanNoNotifyCallCount).Should(Equal(2))
-			_, owner, repository, _, branch, startSHA, stopSHA := scanner.ScanNoNotifyArgsForCall(1)
+			Eventually(scanner.ScanCallCount).Should(Equal(2))
+			_, owner, repository, _, branch, startSHA, stopSHA := scanner.ScanArgsForCall(1)
 			Expect(owner).To(Equal("some-other-owner"))
 			Expect(repository).To(Equal("some-other-repository"))
 			Expect(branch).To(Equal("some-other-branch"))
