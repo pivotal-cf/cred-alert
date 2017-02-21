@@ -21,7 +21,8 @@ const defaultRemoteName = "origin"
 var ErrInterrupted = errors.New("interrupted")
 
 type client struct {
-	cloneOptions *git.CloneOptions
+	privateKeyPath string
+	publicKeyPath string
 }
 
 //go:generate counterfeiter . Client
@@ -37,17 +38,9 @@ type Client interface {
 }
 
 func New(privateKeyPath, publicKeyPath string) *client {
-	credentialsCallback := newCredentialsCallback(privateKeyPath, publicKeyPath)
 	return &client{
-		cloneOptions: &git.CloneOptions{
-			FetchOptions: &git.FetchOptions{
-				UpdateFetchhead: true,
-				RemoteCallbacks: git.RemoteCallbacks{
-					CredentialsCallback:      credentialsCallback,
-					CertificateCheckCallback: certificateCheckCallback,
-				},
-			},
-		},
+		privateKeyPath: privateKeyPath,
+		publicKeyPath: publicKeyPath,
 	}
 }
 
@@ -92,7 +85,11 @@ func (c *client) BranchTargets(repositoryPath string) (map[string]string, error)
 }
 
 func (c *client) Clone(sshURL, dest string) (*git.Repository, error) {
-	return git.Clone(sshURL, dest, c.cloneOptions)
+	cloneOptions := &git.CloneOptions{
+		FetchOptions: newFetchOptions(c.privateKeyPath, c.publicKeyPath),
+	}
+
+	return git.Clone(sshURL, dest, cloneOptions)
 }
 
 func (c *client) GetParents(repo *git.Repository, child *git.Oid) ([]*git.Oid, error) {
@@ -136,11 +133,11 @@ func (c *client) Fetch(repositoryPath string) (map[string][]*git.Oid, error) {
 		return 0
 	}
 
-	// bleh
-	c.cloneOptions.FetchOptions.RemoteCallbacks.UpdateTipsCallback = updateTipsCallback
+	fetchOptions := newFetchOptions(c.privateKeyPath, c.publicKeyPath)
+    fetchOptions.RemoteCallbacks.UpdateTipsCallback = updateTipsCallback
 
 	var msg string
-	err = remote.Fetch([]string{}, c.cloneOptions.FetchOptions, msg)
+	err = remote.Fetch([]string{}, fetchOptions, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -170,22 +167,6 @@ func (c *client) HardReset(repositoryPath string, oid *git.Oid) error {
 	return repo.ResetToCommit(commit, git.ResetHard, &git.CheckoutOpts{
 		Strategy: git.CheckoutForce,
 	})
-}
-
-func newCredentialsCallback(privateKeyPath, publicKeyPath string) git.CredentialsCallback {
-	return func(url string, username string, allowedTypes git.CredType) (git.ErrorCode, *git.Cred) {
-		passphrase := ""
-		ret, cred := git.NewCredSshKey(username, publicKeyPath, privateKeyPath, passphrase)
-		if ret != 0 {
-			fmt.Printf("ret: %d\n", ret)
-		}
-		return git.ErrorCode(ret), &cred
-	}
-}
-
-func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string) git.ErrorCode {
-	// should return an error code if the cert isn't valid
-	return git.ErrorCode(0)
 }
 
 func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, error) {
@@ -377,4 +358,32 @@ func objectToTree(repo *git.Repository, oid *git.Oid) (*git.Tree, error) {
 	}
 
 	return tree, nil
+}
+
+func newCredentialsCallback(privateKeyPath, publicKeyPath string) git.CredentialsCallback {
+	return func(url string, username string, allowedTypes git.CredType) (git.ErrorCode, *git.Cred) {
+		passphrase := ""
+		ret, cred := git.NewCredSshKey(username, publicKeyPath, privateKeyPath, passphrase)
+		if ret != 0 {
+			fmt.Printf("ret: %d\n", ret)
+		}
+		return git.ErrorCode(ret), &cred
+	}
+}
+
+func certificateCheckCallback(cert *git.Certificate, valid bool, hostname string) git.ErrorCode {
+	// should return an error code if the cert isn't valid
+	return git.ErrorCode(0)
+}
+
+func newFetchOptions(privateKeyPath, publicKeyPath string) *git.FetchOptions {
+	credentialsCallback := newCredentialsCallback(privateKeyPath, publicKeyPath)
+
+	return &git.FetchOptions{
+		UpdateFetchhead: true,
+		RemoteCallbacks: git.RemoteCallbacks{
+			CredentialsCallback:      credentialsCallback,
+			CertificateCheckCallback: certificateCheckCallback,
+		},
+	}
 }
