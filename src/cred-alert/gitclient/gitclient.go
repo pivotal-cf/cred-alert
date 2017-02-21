@@ -22,7 +22,7 @@ var ErrInterrupted = errors.New("interrupted")
 
 type client struct {
 	privateKeyPath string
-	publicKeyPath string
+	publicKeyPath  string
 }
 
 //go:generate counterfeiter . Client
@@ -40,7 +40,7 @@ type Client interface {
 func New(privateKeyPath, publicKeyPath string) *client {
 	return &client{
 		privateKeyPath: privateKeyPath,
-		publicKeyPath: publicKeyPath,
+		publicKeyPath:  publicKeyPath,
 	}
 }
 
@@ -134,7 +134,7 @@ func (c *client) Fetch(repositoryPath string) (map[string][]*git.Oid, error) {
 	}
 
 	fetchOptions := newFetchOptions(c.privateKeyPath, c.publicKeyPath)
-    fetchOptions.RemoteCallbacks.UpdateTipsCallback = updateTipsCallback
+	fetchOptions.RemoteCallbacks.UpdateTipsCallback = updateTipsCallback
 
 	var msg string
 	err = remote.Fetch([]string{}, fetchOptions, msg)
