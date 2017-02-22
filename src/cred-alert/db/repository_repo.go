@@ -3,7 +3,6 @@ package db
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/jinzhu/gorm"
@@ -195,8 +194,9 @@ func (r *repositoryRepository) RegisterFailedFetch(
 	}
 
 	if rows > 0 {
-		e := errors.New(fmt.Sprintf("failed to fetch %d times", FailedFetchThreshold))
-		logger.Error("repository-disabled", e)
+		logger.Info("repository-disabled", lager.Data{
+			"fetch-attempts": FailedFetchThreshold,
+		})
 	}
 
 	return tx.Commit()
