@@ -84,7 +84,7 @@ func (s *syncer) Sync() {
 			return
 		}
 
-		err = s.gitClient.HardReset(s.repoPath, upstream[1].String())
+		err = s.gitClient.HardReset(s.repoPath, upstream[1])
 		if err != nil {
 			s.logger.Error("reseting", err)
 			fetchErr = err

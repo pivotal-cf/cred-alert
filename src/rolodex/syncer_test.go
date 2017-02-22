@@ -13,7 +13,6 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/onsi/gomega/gbytes"
-	git "gopkg.in/libgit2/git2go.v24"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -217,11 +216,10 @@ var _ = Describe("Syncer", func() {
 						gitClient = &gitclientfakes.FakeClient{}
 						syncer = rolodex.NewSyncer(logger, emitter, upstreamPath, localPath, gitClient, teamRepository)
 
-						oid, err := git.NewOid("4d70bfc4198320f1aa04cd474eb71af2d24cfa48")
-						Expect(err).NotTo(HaveOccurred())
+						sha := "4d70bfc4198320f1aa04cd474eb71af2d24cfa48"
 
-						gitClient.FetchReturns(map[string][]*git.Oid{
-							"refs/remotes/origin/master": {oid, oid},
+						gitClient.FetchReturns(map[string][]string{
+							"refs/remotes/origin/master": {sha, sha},
 						}, nil)
 
 						gitClient.HardResetReturns(errors.New("disaster"))
