@@ -51,7 +51,7 @@ const remoteMaster = "refs/remotes/origin/master"
 
 func (s *syncer) Sync() {
 	if _, err := os.Stat(s.repoPath); os.IsNotExist(err) {
-		_, err := s.gitClient.Clone(s.repoUrl, s.repoPath)
+		err := s.gitClient.Clone(s.repoUrl, s.repoPath)
 		if err != nil {
 			s.logger.Error("cloning", err)
 			return
@@ -84,7 +84,7 @@ func (s *syncer) Sync() {
 			return
 		}
 
-		err = s.gitClient.HardReset(s.repoPath, upstream[1])
+		err = s.gitClient.HardReset(s.repoPath, upstream[1].String())
 		if err != nil {
 			s.logger.Error("reseting", err)
 			fetchErr = err

@@ -2,17 +2,17 @@ package revok
 
 import (
 	"context"
-	"cred-alert/db"
-	"cred-alert/gitclient"
-	"cred-alert/kolsch"
-	"cred-alert/sniff"
 	"os"
 	"time"
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"github.com/tedsuo/ifrit"
-	git "gopkg.in/libgit2/git2go.v24"
+
+	"cred-alert/db"
+	"cred-alert/gitclient"
+	"cred-alert/kolsch"
+	"cred-alert/sniff"
 )
 
 type headCredentialCounter struct {
@@ -92,7 +92,7 @@ func (c *headCredentialCounter) work(
 				"path": repository.Path,
 			})
 
-			credentialCounts, err := c.gitClient.BranchCredentialCounts(quietLogger, repository.Path, c.sniffer, git.BranchRemote)
+			credentialCounts, err := c.gitClient.BranchCredentialCounts(quietLogger, repository.Path, c.sniffer)
 			if err != nil {
 				repoLogger.Error("failed-to-get-credential-counts", err)
 				continue

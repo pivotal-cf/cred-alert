@@ -1,14 +1,13 @@
 package revok
 
 import (
+	"encoding/json"
+
+	"code.cloudfoundry.org/lager"
+
 	"cred-alert/db"
 	"cred-alert/gitclient"
 	"cred-alert/metrics"
-	"encoding/json"
-
-	git "gopkg.in/libgit2/git2go.v24"
-
-	"code.cloudfoundry.org/lager"
 )
 
 //go:generate counterfeiter . ChangeFetcher
@@ -89,7 +88,7 @@ func (c *changeFetcher) Fetch(
 		"path": repo.Path,
 	})
 
-	var changes map[string][]*git.Oid
+	var changes map[string][]string
 	var fetchErr error
 	c.fetchTimer.Time(repoLogger, func() {
 		changes, fetchErr = c.gitClient.Fetch(repo.Path)
@@ -127,7 +126,7 @@ func (c *changeFetcher) Fetch(
 		return err
 	}
 
-	scannedOids := map[git.Oid]struct{}{}
+	scannedOids := map[string]struct{}{}
 
 	for branch, oids := range changes {
 		err := c.notificationComposer.ScanAndNotify(
@@ -136,8 +135,8 @@ func (c *changeFetcher) Fetch(
 			repo.Name,
 			scannedOids,
 			branch,
-			oids[1].String(),
-			oids[0].String(),
+			oids[1],
+			oids[0],
 		)
 		if err != nil {
 			c.scanFailedCounter.Inc(repoLogger)

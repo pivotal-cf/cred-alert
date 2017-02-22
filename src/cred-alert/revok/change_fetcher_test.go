@@ -1,14 +1,6 @@
 package revok_test
 
 import (
-	"cred-alert/db"
-	"cred-alert/db/dbfakes"
-	"cred-alert/gitclient"
-	"cred-alert/gitclient/gitclientfakes"
-	"cred-alert/metrics"
-	"cred-alert/metrics/metricsfakes"
-	"cred-alert/revok"
-	"cred-alert/revok/revokfakes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -21,6 +13,15 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
+
+	"cred-alert/db"
+	"cred-alert/db/dbfakes"
+	"cred-alert/gitclient"
+	"cred-alert/gitclient/gitclientfakes"
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
+	"cred-alert/revok"
+	"cred-alert/revok/revokfakes"
 )
 
 var _ = Describe("ChangeFetcher", func() {
@@ -307,7 +308,7 @@ var _ = Describe("ChangeFetcher", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer referenceIterator.Free()
 
-			expectedChanges := map[string][]*git.Oid{}
+			expectedChanges := map[string][]string{}
 
 			for {
 				ref, err := referenceIterator.Next()
@@ -317,10 +318,13 @@ var _ = Describe("ChangeFetcher", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				if ref.Name() == "refs/remotes/origin/topicA" {
-					zeroOid, err := git.NewOid("0000000000000000000000000000000000000000")
+					zeroSha := "0000000000000000000000000000000000000000"
 					Expect(err).NotTo(HaveOccurred())
 
-					expectedChanges[ref.Name()] = []*git.Oid{zeroOid, ref.Target()}
+					expectedChanges[ref.Name()] = []string{
+						zeroSha,
+						ref.Target().String(),
+					}
 				} else {
 					target, err := localRepo.Lookup(ref.Target())
 					Expect(err).NotTo(HaveOccurred())
@@ -330,7 +334,10 @@ var _ = Describe("ChangeFetcher", func() {
 					Expect(err).NotTo(HaveOccurred())
 					defer targetCommit.Free()
 
-					expectedChanges[ref.Name()] = []*git.Oid{targetCommit.ParentId(0), ref.Target()}
+					expectedChanges[ref.Name()] = []string{
+						targetCommit.ParentId(0).String(),
+						ref.Target().String(),
+					}
 				}
 			}
 
@@ -341,7 +348,7 @@ var _ = Describe("ChangeFetcher", func() {
 
 		Context("when there is an error scanning a change", func() {
 			BeforeEach(func() {
-				notificationComposer.ScanAndNotifyStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error {
+				notificationComposer.ScanAndNotifyStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) error {
 					if notificationComposer.ScanAndNotifyCallCount() == 1 {
 						return nil
 					}

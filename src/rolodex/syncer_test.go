@@ -221,8 +221,9 @@ var _ = Describe("Syncer", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						gitClient.FetchReturns(map[string][]*git.Oid{
-							"refs/remotes/origin/master": []*git.Oid{oid, oid},
+							"refs/remotes/origin/master": {oid, oid},
 						}, nil)
+
 						gitClient.HardResetReturns(errors.New("disaster"))
 
 						syncer.Sync()

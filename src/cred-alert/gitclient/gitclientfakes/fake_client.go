@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	git "gopkg.in/libgit2/git2go.v24"
 )
 
 type FakeClient struct {
@@ -20,62 +19,60 @@ type FakeClient struct {
 		result1 map[string]string
 		result2 error
 	}
-	CloneStub        func(string, string) (*git.Repository, error)
+	CloneStub        func(string, string) error
 	cloneMutex       sync.RWMutex
 	cloneArgsForCall []struct {
 		arg1 string
 		arg2 string
 	}
 	cloneReturns struct {
-		result1 *git.Repository
-		result2 error
+		result1 error
 	}
-	GetParentsStub        func(*git.Repository, *git.Oid) ([]*git.Oid, error)
+	GetParentsStub        func(string, string) ([]string, error)
 	getParentsMutex       sync.RWMutex
 	getParentsArgsForCall []struct {
-		arg1 *git.Repository
-		arg2 *git.Oid
+		arg1 string
+		arg2 string
 	}
 	getParentsReturns struct {
-		result1 []*git.Oid
+		result1 []string
 		result2 error
 	}
-	FetchStub        func(string) (map[string][]*git.Oid, error)
+	FetchStub        func(string) (map[string][]string, error)
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
 		arg1 string
 	}
 	fetchReturns struct {
-		result1 map[string][]*git.Oid
+		result1 map[string][]string
 		result2 error
 	}
-	HardResetStub        func(string, *git.Oid) error
+	HardResetStub        func(string, string) error
 	hardResetMutex       sync.RWMutex
 	hardResetArgsForCall []struct {
 		arg1 string
-		arg2 *git.Oid
+		arg2 string
 	}
 	hardResetReturns struct {
 		result1 error
 	}
-	DiffStub        func(repositoryPath string, a, b *git.Oid) (string, error)
+	DiffStub        func(repositoryPath, parent, child string) (string, error)
 	diffMutex       sync.RWMutex
 	diffArgsForCall []struct {
 		repositoryPath string
-		a              *git.Oid
-		b              *git.Oid
+		parent         string
+		child          string
 	}
 	diffReturns struct {
 		result1 string
 		result2 error
 	}
-	BranchCredentialCountsStub        func(lager.Logger, string, sniff.Sniffer, git.BranchType) (map[string]uint, error)
+	BranchCredentialCountsStub        func(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
 	branchCredentialCountsMutex       sync.RWMutex
 	branchCredentialCountsArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 sniff.Sniffer
-		arg4 git.BranchType
 	}
 	branchCredentialCountsReturns struct {
 		result1 map[string]uint
@@ -118,7 +115,7 @@ func (fake *FakeClient) BranchTargetsReturns(result1 map[string]string, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Clone(arg1 string, arg2 string) (*git.Repository, error) {
+func (fake *FakeClient) Clone(arg1 string, arg2 string) error {
 	fake.cloneMutex.Lock()
 	fake.cloneArgsForCall = append(fake.cloneArgsForCall, struct {
 		arg1 string
@@ -129,7 +126,7 @@ func (fake *FakeClient) Clone(arg1 string, arg2 string) (*git.Repository, error)
 	if fake.CloneStub != nil {
 		return fake.CloneStub(arg1, arg2)
 	}
-	return fake.cloneReturns.result1, fake.cloneReturns.result2
+	return fake.cloneReturns.result1
 }
 
 func (fake *FakeClient) CloneCallCount() int {
@@ -144,19 +141,18 @@ func (fake *FakeClient) CloneArgsForCall(i int) (string, string) {
 	return fake.cloneArgsForCall[i].arg1, fake.cloneArgsForCall[i].arg2
 }
 
-func (fake *FakeClient) CloneReturns(result1 *git.Repository, result2 error) {
+func (fake *FakeClient) CloneReturns(result1 error) {
 	fake.CloneStub = nil
 	fake.cloneReturns = struct {
-		result1 *git.Repository
-		result2 error
-	}{result1, result2}
+		result1 error
+	}{result1}
 }
 
-func (fake *FakeClient) GetParents(arg1 *git.Repository, arg2 *git.Oid) ([]*git.Oid, error) {
+func (fake *FakeClient) GetParents(arg1 string, arg2 string) ([]string, error) {
 	fake.getParentsMutex.Lock()
 	fake.getParentsArgsForCall = append(fake.getParentsArgsForCall, struct {
-		arg1 *git.Repository
-		arg2 *git.Oid
+		arg1 string
+		arg2 string
 	}{arg1, arg2})
 	fake.recordInvocation("GetParents", []interface{}{arg1, arg2})
 	fake.getParentsMutex.Unlock()
@@ -172,21 +168,21 @@ func (fake *FakeClient) GetParentsCallCount() int {
 	return len(fake.getParentsArgsForCall)
 }
 
-func (fake *FakeClient) GetParentsArgsForCall(i int) (*git.Repository, *git.Oid) {
+func (fake *FakeClient) GetParentsArgsForCall(i int) (string, string) {
 	fake.getParentsMutex.RLock()
 	defer fake.getParentsMutex.RUnlock()
 	return fake.getParentsArgsForCall[i].arg1, fake.getParentsArgsForCall[i].arg2
 }
 
-func (fake *FakeClient) GetParentsReturns(result1 []*git.Oid, result2 error) {
+func (fake *FakeClient) GetParentsReturns(result1 []string, result2 error) {
 	fake.GetParentsStub = nil
 	fake.getParentsReturns = struct {
-		result1 []*git.Oid
+		result1 []string
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Fetch(arg1 string) (map[string][]*git.Oid, error) {
+func (fake *FakeClient) Fetch(arg1 string) (map[string][]string, error) {
 	fake.fetchMutex.Lock()
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
 		arg1 string
@@ -211,19 +207,19 @@ func (fake *FakeClient) FetchArgsForCall(i int) string {
 	return fake.fetchArgsForCall[i].arg1
 }
 
-func (fake *FakeClient) FetchReturns(result1 map[string][]*git.Oid, result2 error) {
+func (fake *FakeClient) FetchReturns(result1 map[string][]string, result2 error) {
 	fake.FetchStub = nil
 	fake.fetchReturns = struct {
-		result1 map[string][]*git.Oid
+		result1 map[string][]string
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeClient) HardReset(arg1 string, arg2 *git.Oid) error {
+func (fake *FakeClient) HardReset(arg1 string, arg2 string) error {
 	fake.hardResetMutex.Lock()
 	fake.hardResetArgsForCall = append(fake.hardResetArgsForCall, struct {
 		arg1 string
-		arg2 *git.Oid
+		arg2 string
 	}{arg1, arg2})
 	fake.recordInvocation("HardReset", []interface{}{arg1, arg2})
 	fake.hardResetMutex.Unlock()
@@ -239,7 +235,7 @@ func (fake *FakeClient) HardResetCallCount() int {
 	return len(fake.hardResetArgsForCall)
 }
 
-func (fake *FakeClient) HardResetArgsForCall(i int) (string, *git.Oid) {
+func (fake *FakeClient) HardResetArgsForCall(i int) (string, string) {
 	fake.hardResetMutex.RLock()
 	defer fake.hardResetMutex.RUnlock()
 	return fake.hardResetArgsForCall[i].arg1, fake.hardResetArgsForCall[i].arg2
@@ -252,17 +248,17 @@ func (fake *FakeClient) HardResetReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) Diff(repositoryPath string, a *git.Oid, b *git.Oid) (string, error) {
+func (fake *FakeClient) Diff(repositoryPath string, parent string, child string) (string, error) {
 	fake.diffMutex.Lock()
 	fake.diffArgsForCall = append(fake.diffArgsForCall, struct {
 		repositoryPath string
-		a              *git.Oid
-		b              *git.Oid
-	}{repositoryPath, a, b})
-	fake.recordInvocation("Diff", []interface{}{repositoryPath, a, b})
+		parent         string
+		child          string
+	}{repositoryPath, parent, child})
+	fake.recordInvocation("Diff", []interface{}{repositoryPath, parent, child})
 	fake.diffMutex.Unlock()
 	if fake.DiffStub != nil {
-		return fake.DiffStub(repositoryPath, a, b)
+		return fake.DiffStub(repositoryPath, parent, child)
 	}
 	return fake.diffReturns.result1, fake.diffReturns.result2
 }
@@ -273,10 +269,10 @@ func (fake *FakeClient) DiffCallCount() int {
 	return len(fake.diffArgsForCall)
 }
 
-func (fake *FakeClient) DiffArgsForCall(i int) (string, *git.Oid, *git.Oid) {
+func (fake *FakeClient) DiffArgsForCall(i int) (string, string, string) {
 	fake.diffMutex.RLock()
 	defer fake.diffMutex.RUnlock()
-	return fake.diffArgsForCall[i].repositoryPath, fake.diffArgsForCall[i].a, fake.diffArgsForCall[i].b
+	return fake.diffArgsForCall[i].repositoryPath, fake.diffArgsForCall[i].parent, fake.diffArgsForCall[i].child
 }
 
 func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
@@ -287,18 +283,17 @@ func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, arg3 sniff.Sniffer, arg4 git.BranchType) (map[string]uint, error) {
+func (fake *FakeClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, arg3 sniff.Sniffer) (map[string]uint, error) {
 	fake.branchCredentialCountsMutex.Lock()
 	fake.branchCredentialCountsArgsForCall = append(fake.branchCredentialCountsArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 sniff.Sniffer
-		arg4 git.BranchType
-	}{arg1, arg2, arg3, arg4})
-	fake.recordInvocation("BranchCredentialCounts", []interface{}{arg1, arg2, arg3, arg4})
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("BranchCredentialCounts", []interface{}{arg1, arg2, arg3})
 	fake.branchCredentialCountsMutex.Unlock()
 	if fake.BranchCredentialCountsStub != nil {
-		return fake.BranchCredentialCountsStub(arg1, arg2, arg3, arg4)
+		return fake.BranchCredentialCountsStub(arg1, arg2, arg3)
 	}
 	return fake.branchCredentialCountsReturns.result1, fake.branchCredentialCountsReturns.result2
 }
@@ -309,10 +304,10 @@ func (fake *FakeClient) BranchCredentialCountsCallCount() int {
 	return len(fake.branchCredentialCountsArgsForCall)
 }
 
-func (fake *FakeClient) BranchCredentialCountsArgsForCall(i int) (lager.Logger, string, sniff.Sniffer, git.BranchType) {
+func (fake *FakeClient) BranchCredentialCountsArgsForCall(i int) (lager.Logger, string, sniff.Sniffer) {
 	fake.branchCredentialCountsMutex.RLock()
 	defer fake.branchCredentialCountsMutex.RUnlock()
-	return fake.branchCredentialCountsArgsForCall[i].arg1, fake.branchCredentialCountsArgsForCall[i].arg2, fake.branchCredentialCountsArgsForCall[i].arg3, fake.branchCredentialCountsArgsForCall[i].arg4
+	return fake.branchCredentialCountsArgsForCall[i].arg1, fake.branchCredentialCountsArgsForCall[i].arg2, fake.branchCredentialCountsArgsForCall[i].arg3
 }
 
 func (fake *FakeClient) BranchCredentialCountsReturns(result1 map[string]uint, result2 error) {

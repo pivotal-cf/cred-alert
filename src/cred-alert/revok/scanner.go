@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/lager"
-	git "gopkg.in/libgit2/git2go.v24"
 
 	"cred-alert/db"
 	"cred-alert/gitclient"
@@ -17,7 +16,7 @@ import (
 //go:generate counterfeiter . Scanner
 
 type Scanner interface {
-	Scan(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error)
+	Scan(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error)
 }
 
 type scanner struct {
@@ -48,7 +47,7 @@ func (s *scanner) Scan(
 	logger lager.Logger,
 	owner string,
 	repository string,
-	scannedOids map[git.Oid]struct{},
+	scannedOids map[string]struct{},
 	branch string,
 	startSHA string,
 	stopSHA string,
@@ -70,39 +69,17 @@ func (s *scanner) Scan(
 func (s *scanner) scan(
 	logger lager.Logger,
 	dbRepository db.Repository,
-	scannedOids map[git.Oid]struct{},
+	scannedOids map[string]struct{},
 	branch string,
 	startSHA string,
 	stopSHA string,
 ) ([]db.Credential, error) {
-	repo, err := git.OpenRepository(dbRepository.Path)
-	if err != nil {
-		logger.Error("failed-to-open-repo", err)
-		return nil, err
-	}
-
-	startOid, err := git.NewOid(startSHA)
-	if err != nil {
-		logger.Error("failed-to-create-start-oid", err)
-		return nil, err
-	}
-
-	var stopOid *git.Oid
-	if stopSHA != "" {
-		var err error
-		stopOid, err = git.NewOid(stopSHA)
-		if err != nil {
-			logger.Error("failed-to-create-stop-oid", err)
-			return nil, err
-		}
-	}
-
 	quietLogger := kolsch.NewLogger()
 	scan := s.scanRepository.Start(quietLogger, "repo-scan", branch, startSHA, stopSHA, &dbRepository, nil)
 
 	var credentials []db.Credential
 
-	scanFunc := func(child, parent *git.Oid) error {
+	scanFunc := func(child, parent string) error {
 		diff, err := s.gitClient.Diff(dbRepository.Path, parent, child)
 		if err != nil {
 			return err
@@ -115,7 +92,7 @@ func (s *scanner) scan(
 				credential := db.NewCredential(
 					dbRepository.Owner,
 					dbRepository.Name,
-					child.String(),
+					child,
 					violation.Line.Path,
 					violation.Line.LineNumber,
 					violation.Start,
@@ -130,7 +107,7 @@ func (s *scanner) scan(
 			},
 		)
 
-		scannedOids[*child] = struct{}{}
+		scannedOids[child] = struct{}{}
 
 		return nil
 	}
@@ -141,11 +118,11 @@ func (s *scanner) scan(
 		knownSHAs[shas[i]] = struct{}{}
 	}
 
-	err = s.scanAncestors(repo, scanFunc, scannedOids, knownSHAs, startOid, stopOid)
+	err = s.scanAncestors(dbRepository.Path, scanFunc, scannedOids, knownSHAs, startSHA, stopSHA)
 	if err != nil {
 		logger.Error("failed-to-scan-ancestors", err, lager.Data{
-			"start":      startOid.String(),
-			"stop":       stopOid.String(),
+			"start":      startSHA,
+			"stop":       stopSHA,
 			"repository": dbRepository.Name,
 			"owner":      dbRepository.Owner,
 		})
@@ -161,28 +138,28 @@ func (s *scanner) scan(
 }
 
 func (s *scanner) scanAncestors(
-	repo *git.Repository,
-	scanFunc func(*git.Oid, *git.Oid) error,
-	scannedOids map[git.Oid]struct{},
+	repoPath string,
+	scanFunc func(string, string) error,
+	scannedOids map[string]struct{},
 	knownSHAs map[string]struct{},
-	child *git.Oid,
-	stopPoint *git.Oid,
+	child string,
+	stopPoint string,
 ) error {
-	if _, found := scannedOids[*child]; found {
+	if _, found := scannedOids[child]; found {
 		return nil
 	}
 
-	if _, found := knownSHAs[child.String()]; found {
+	if _, found := knownSHAs[child]; found {
 		return nil
 	}
 
-	parents, err := s.gitClient.GetParents(repo, child)
+	parents, err := s.gitClient.GetParents(repoPath, child)
 	if err != nil {
 		return err
 	}
 
 	if len(parents) == 0 {
-		return scanFunc(child, nil)
+		return scanFunc(child, "")
 	}
 
 	if len(parents) == 1 {
@@ -193,11 +170,11 @@ func (s *scanner) scanAncestors(
 	}
 
 	for _, parent := range parents {
-		if stopPoint != nil && parent.Equal(stopPoint) {
+		if stopPoint == parent {
 			continue
 		}
 
-		err = s.scanAncestors(repo, scanFunc, scannedOids, knownSHAs, parent, stopPoint)
+		err = s.scanAncestors(repoPath, scanFunc, scannedOids, knownSHAs, parent, stopPoint)
 		if err != nil {
 			return err
 		}

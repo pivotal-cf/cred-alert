@@ -2,7 +2,6 @@ package revok
 
 import (
 	"code.cloudfoundry.org/lager"
-	git "gopkg.in/libgit2/git2go.v24"
 
 	"cred-alert/db"
 	"cred-alert/notifications"
@@ -11,7 +10,7 @@ import (
 //go:generate counterfeiter . NotificationComposer
 
 type NotificationComposer interface {
-	ScanAndNotify(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error
+	ScanAndNotify(lager.Logger, string, string, map[string]struct{}, string, string, string) error
 }
 
 type notificationComposer struct {
@@ -36,7 +35,7 @@ func (n *notificationComposer) ScanAndNotify(
 	logger lager.Logger,
 	owner string,
 	repository string,
-	scannedOids map[git.Oid]struct{},
+	scannedOids map[string]struct{},
 	branch string,
 	startSHA string,
 	stopSHA string,

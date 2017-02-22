@@ -37,7 +37,7 @@ var _ = Describe("Scanner", func() {
 		repoToScanPath string
 		baseRepo       *git.Repository
 		result         createCommitResult
-		scannedOids    map[git.Oid]struct{}
+		scannedOids    map[string]struct{}
 	)
 
 	BeforeEach(func() {
@@ -71,7 +71,7 @@ var _ = Describe("Scanner", func() {
 
 		credentialRepository = &dbfakes.FakeCredentialRepository{}
 
-		scannedOids = map[git.Oid]struct{}{}
+		scannedOids = map[string]struct{}{}
 		sniffer = &snifffakes.FakeSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
 			var start, end int
@@ -283,8 +283,8 @@ var _ = Describe("Scanner", func() {
 	})
 
 	It("does nothing when provided with a branch that's already been scanned", func() {
-		m := map[git.Oid]struct{}{
-			*result.To: struct{}{},
+		m := map[string]struct{}{
+			result.To.String(): struct{}{},
 		}
 		_, err := scanner.Scan(logger, "some-owner", "some-repository", m, "some-branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())

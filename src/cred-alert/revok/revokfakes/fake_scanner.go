@@ -7,17 +7,16 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	git "gopkg.in/libgit2/git2go.v24"
 )
 
 type FakeScanner struct {
-	ScanStub        func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error)
+	ScanStub        func(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error)
 	scanMutex       sync.RWMutex
 	scanArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
-		arg4 map[git.Oid]struct{}
+		arg4 map[string]struct{}
 		arg5 string
 		arg6 string
 		arg7 string
@@ -30,13 +29,13 @@ type FakeScanner struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[git.Oid]struct{}, arg5 string, arg6 string, arg7 string) ([]db.Credential, error) {
+func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[string]struct{}, arg5 string, arg6 string, arg7 string) ([]db.Credential, error) {
 	fake.scanMutex.Lock()
 	fake.scanArgsForCall = append(fake.scanArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
-		arg4 map[git.Oid]struct{}
+		arg4 map[string]struct{}
 		arg5 string
 		arg6 string
 		arg7 string
@@ -55,7 +54,7 @@ func (fake *FakeScanner) ScanCallCount() int {
 	return len(fake.scanArgsForCall)
 }
 
-func (fake *FakeScanner) ScanArgsForCall(i int) (lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) {
+func (fake *FakeScanner) ScanArgsForCall(i int) (lager.Logger, string, string, map[string]struct{}, string, string, string) {
 	fake.scanMutex.RLock()
 	defer fake.scanMutex.RUnlock()
 	return fake.scanArgsForCall[i].arg1, fake.scanArgsForCall[i].arg2, fake.scanArgsForCall[i].arg3, fake.scanArgsForCall[i].arg4, fake.scanArgsForCall[i].arg5, fake.scanArgsForCall[i].arg6, fake.scanArgsForCall[i].arg7

@@ -17,7 +17,6 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
-	git "gopkg.in/libgit2/git2go.v24"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -238,7 +237,7 @@ var _ = Describe("Rescanner", func() {
 				}, nil
 			}
 
-			scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
+			scanner.ScanStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error) {
 				if scanner.ScanCallCount() == 1 {
 					return []db.Credential{
 						{
@@ -297,7 +296,7 @@ var _ = Describe("Rescanner", func() {
 
 	Context("when no new credentials are found", func() {
 		BeforeEach(func() {
-			scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
+			scanner.ScanStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error) {
 				if scanner.ScanCallCount() == 1 {
 					return []db.Credential{
 						{
@@ -345,7 +344,7 @@ var _ = Describe("Rescanner", func() {
 
 	Context("when doing a scan fails", func() {
 		BeforeEach(func() {
-			scanner.ScanStub = func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) ([]db.Credential, error) {
+			scanner.ScanStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error) {
 				if scanner.ScanCallCount() == 1 {
 					return nil, errors.New("an-error")
 				}

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	git "gopkg.in/libgit2/git2go.v24"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,7 +25,7 @@ var _ = Describe("NotificationComposer", func() {
 		scanner              *revokfakes.FakeScanner
 		router               *notificationsfakes.FakeRouter
 
-		scannedOids map[git.Oid]struct{}
+		scannedShas map[string]struct{}
 	)
 
 	BeforeEach(func() {
@@ -42,11 +41,10 @@ var _ = Describe("NotificationComposer", func() {
 			Private: true,
 		}, nil)
 
-		oid, err := git.NewOid("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
-		Expect(err).NotTo(HaveOccurred())
+		sha := "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 
-		scannedOids = map[git.Oid]struct{}{
-			*oid: {},
+		scannedShas = map[string]struct{}{
+			sha: {},
 		}
 
 		router = &notificationsfakes.FakeRouter{}
@@ -63,7 +61,7 @@ var _ = Describe("NotificationComposer", func() {
 			logger,
 			"some-owner",
 			"some-repo",
-			scannedOids,
+			scannedShas,
 			"some-branch",
 			"start-sha",
 			"stop-sha",
@@ -86,11 +84,11 @@ var _ = Describe("NotificationComposer", func() {
 
 			Expect(scanner.ScanCallCount()).To(Equal(1))
 
-			passedLogger, owner, repository, passedOids, branch, startSHA, stopSHA := scanner.ScanArgsForCall(0)
+			passedLogger, owner, repository, passedShas, branch, startSHA, stopSHA := scanner.ScanArgsForCall(0)
 			Expect(passedLogger).To(Equal(logger))
 			Expect(owner).To(Equal("some-owner"))
 			Expect(repository).To(Equal("some-repo"))
-			Expect(passedOids).To(Equal(scannedOids))
+			Expect(passedShas).To(Equal(scannedShas))
 			Expect(branch).To(Equal("some-branch"))
 			Expect(startSHA).To(Equal("start-sha"))
 			Expect(stopSHA).To(Equal("stop-sha"))

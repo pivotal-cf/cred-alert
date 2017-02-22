@@ -1,16 +1,15 @@
 package revok
 
 import (
-	"cred-alert/db"
-	"cred-alert/gitclient"
-	"cred-alert/metrics"
 	"os"
 	"path/filepath"
 
 	"code.cloudfoundry.org/lager"
-
 	"github.com/tedsuo/ifrit"
-	git "gopkg.in/libgit2/git2go.v24"
+
+	"cred-alert/db"
+	"cred-alert/gitclient"
+	"cred-alert/metrics"
 )
 
 //go:generate counterfeiter . RepoChangeScheduler
@@ -89,7 +88,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 	})
 	defer workLogger.Info("done")
 
-	_, err := c.gitClient.Clone(msg.URL, dest)
+	err := c.gitClient.Clone(msg.URL, dest)
 	if err != nil {
 		workLogger.Error("failed-to-clone", err)
 		c.cloneFailedCounter.Inc(workLogger)
@@ -116,7 +115,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 
 	c.scheduler.ScheduleRepo(logger, repo)
 
-	scannedOids := map[git.Oid]struct{}{}
+	scannedOids := map[string]struct{}{}
 
 	branches, err := c.gitClient.BranchTargets(dest)
 	if err != nil {

@@ -169,7 +169,7 @@ var _ = Describe("Cloner", func() {
 
 				var startSHAs []string
 				var branches []string
-				var actualScannedOids []map[git.Oid]struct{}
+				var actualScannedOids []map[string]struct{}
 				for i := 0; i < notificationComposer.ScanAndNotifyCallCount(); i++ {
 					_, owner, repository, scannedOids, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
 					Expect(owner).To(Equal("some-owner"))
@@ -207,10 +207,10 @@ var _ = Describe("Cloner", func() {
 			Context("when cloning fails", func() {
 				BeforeEach(func() {
 					fakeGitClient := &gitclientfakes.FakeClient{}
-					fakeGitClient.CloneStub = func(url, dest string) (*git.Repository, error) {
+					fakeGitClient.CloneStub = func(url, dest string) error {
 						err := os.MkdirAll(dest, os.ModePerm)
 						Expect(err).NotTo(HaveOccurred())
-						return nil, errors.New("an-error")
+						return errors.New("an-error")
 					}
 					gitClient = fakeGitClient
 				})

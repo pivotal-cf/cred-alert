@@ -29,12 +29,12 @@ type client struct {
 
 type Client interface {
 	BranchTargets(string) (map[string]string, error)
-	Clone(string, string) (*git.Repository, error)
-	GetParents(*git.Repository, *git.Oid) ([]*git.Oid, error)
-	Fetch(string) (map[string][]*git.Oid, error)
-	HardReset(string, *git.Oid) error
-	Diff(repositoryPath string, a, b *git.Oid) (string, error)
-	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer, git.BranchType) (map[string]uint, error)
+	Clone(string, string) error
+	GetParents(string, string) ([]string, error)
+	Fetch(string) (map[string][]string, error)
+	HardReset(string, string) error
+	Diff(repositoryPath, parent, child string) (string, error)
+	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
 }
 
 func New(privateKeyPath, publicKeyPath string) *client {
@@ -84,15 +84,27 @@ func (c *client) BranchTargets(repositoryPath string) (map[string]string, error)
 	return branches, nil
 }
 
-func (c *client) Clone(sshURL, dest string) (*git.Repository, error) {
+func (c *client) Clone(sshURL, dest string) error {
 	cloneOptions := &git.CloneOptions{
 		FetchOptions: newFetchOptions(c.privateKeyPath, c.publicKeyPath),
 	}
 
-	return git.Clone(sshURL, dest, cloneOptions)
+	_, err := git.Clone(sshURL, dest, cloneOptions)
+
+	return err
 }
 
-func (c *client) GetParents(repo *git.Repository, child *git.Oid) ([]*git.Oid, error) {
+func (c *client) GetParents(repoPath, childSha string) ([]string, error) {
+	repo, err := git.OpenRepository(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	child, err := git.NewOid(childSha)
+	if err != nil {
+		return nil, err
+	}
+
 	object, err := repo.Lookup(child)
 	if err != nil {
 		return nil, err
@@ -105,16 +117,16 @@ func (c *client) GetParents(repo *git.Repository, child *git.Oid) ([]*git.Oid, e
 	}
 	defer commit.Free()
 
-	var parents []*git.Oid
-	var i uint
-	for i = 0; i < commit.ParentCount(); i++ {
-		parents = append(parents, commit.ParentId(i))
+	parents := []string{}
+
+	for i := uint(0); i < commit.ParentCount(); i++ {
+		parents = append(parents, commit.ParentId(i).String())
 	}
 
 	return parents, nil
 }
 
-func (c *client) Fetch(repositoryPath string) (map[string][]*git.Oid, error) {
+func (c *client) Fetch(repositoryPath string) (map[string][]string, error) {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
 		return nil, err
@@ -127,9 +139,9 @@ func (c *client) Fetch(repositoryPath string) (map[string][]*git.Oid, error) {
 	}
 	defer remote.Free()
 
-	changes := map[string][]*git.Oid{}
+	changes := map[string][]string{}
 	updateTipsCallback := func(refname string, a *git.Oid, b *git.Oid) git.ErrorCode {
-		changes[refname] = []*git.Oid{a.Copy(), b.Copy()}
+		changes[refname] = []string{a.String(), b.String()}
 		return 0
 	}
 
@@ -145,12 +157,17 @@ func (c *client) Fetch(repositoryPath string) (map[string][]*git.Oid, error) {
 	return changes, nil
 }
 
-func (c *client) HardReset(repositoryPath string, oid *git.Oid) error {
+func (c *client) HardReset(repositoryPath, sha string) error {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
 		return err
 	}
 	defer repo.Free()
+
+	oid, err := git.NewOid(sha)
+	if err != nil {
+		return err
+	}
 
 	object, err := repo.Lookup(oid)
 	if err != nil {
@@ -169,7 +186,7 @@ func (c *client) HardReset(repositoryPath string, oid *git.Oid) error {
 	})
 }
 
-func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, error) {
+func (c *client) Diff(repositoryPath, parent, child string) (string, error) {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
 		return "", err
@@ -177,7 +194,7 @@ func (c *client) Diff(repositoryPath string, parent, child *git.Oid) (string, er
 	defer repo.Free()
 
 	var aTree *git.Tree
-	if parent != nil {
+	if parent != "" {
 		var err error
 		aTree, err = objectToTree(repo, parent)
 		if err != nil {
@@ -230,7 +247,6 @@ func (c *client) BranchCredentialCounts(
 	logger lager.Logger,
 	repositoryPath string,
 	sniffer sniff.Sniffer,
-	branchType git.BranchType,
 ) (map[string]uint, error) {
 	repo, err := git.OpenRepository(repositoryPath)
 	if err != nil {
@@ -238,7 +254,7 @@ func (c *client) BranchCredentialCounts(
 	}
 	defer repo.Free()
 
-	it, err := repo.NewBranchIterator(branchType)
+	it, err := repo.NewBranchIterator(git.BranchRemote)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +355,12 @@ func (c *client) BranchCredentialCounts(
 	return branchCounts, nil
 }
 
-func objectToTree(repo *git.Repository, oid *git.Oid) (*git.Tree, error) {
+func objectToTree(repo *git.Repository, sha string) (*git.Tree, error) {
+	oid, err := git.NewOid(sha)
+	if err != nil {
+		return nil, err
+	}
+
 	object, err := repo.Lookup(oid)
 	if err != nil {
 		return nil, err

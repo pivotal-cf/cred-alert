@@ -5,7 +5,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"github.com/tedsuo/ifrit"
-	git "gopkg.in/libgit2/git2go.v24"
 
 	"cred-alert/db"
 	"cred-alert/metrics"
@@ -99,7 +98,7 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		logger,
 		priorScan.Owner,
 		priorScan.Repository,
-		map[git.Oid]struct{}{},
+		map[string]struct{}{},
 		priorScan.Branch,
 		priorScan.StartSHA,
 		priorScan.StopSHA,

@@ -6,17 +6,16 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	git "gopkg.in/libgit2/git2go.v24"
 )
 
 type FakeNotificationComposer struct {
-	ScanAndNotifyStub        func(lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) error
+	ScanAndNotifyStub        func(lager.Logger, string, string, map[string]struct{}, string, string, string) error
 	scanAndNotifyMutex       sync.RWMutex
 	scanAndNotifyArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
-		arg4 map[git.Oid]struct{}
+		arg4 map[string]struct{}
 		arg5 string
 		arg6 string
 		arg7 string
@@ -28,13 +27,13 @@ type FakeNotificationComposer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotify(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[git.Oid]struct{}, arg5 string, arg6 string, arg7 string) error {
+func (fake *FakeNotificationComposer) ScanAndNotify(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[string]struct{}, arg5 string, arg6 string, arg7 string) error {
 	fake.scanAndNotifyMutex.Lock()
 	fake.scanAndNotifyArgsForCall = append(fake.scanAndNotifyArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
 		arg3 string
-		arg4 map[git.Oid]struct{}
+		arg4 map[string]struct{}
 		arg5 string
 		arg6 string
 		arg7 string
@@ -53,7 +52,7 @@ func (fake *FakeNotificationComposer) ScanAndNotifyCallCount() int {
 	return len(fake.scanAndNotifyArgsForCall)
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotifyArgsForCall(i int) (lager.Logger, string, string, map[git.Oid]struct{}, string, string, string) {
+func (fake *FakeNotificationComposer) ScanAndNotifyArgsForCall(i int) (lager.Logger, string, string, map[string]struct{}, string, string, string) {
 	fake.scanAndNotifyMutex.RLock()
 	defer fake.scanAndNotifyMutex.RUnlock()
 	return fake.scanAndNotifyArgsForCall[i].arg1, fake.scanAndNotifyArgsForCall[i].arg2, fake.scanAndNotifyArgsForCall[i].arg3, fake.scanAndNotifyArgsForCall[i].arg4, fake.scanAndNotifyArgsForCall[i].arg5, fake.scanAndNotifyArgsForCall[i].arg6, fake.scanAndNotifyArgsForCall[i].arg7
