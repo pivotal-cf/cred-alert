@@ -41,6 +41,7 @@ files:
   - cred-alert/sniff/*.{go,c} # gosub
   - cred-alert/sniff/matchers/*.{go,c} # gosub
   - github.com/BurntSushi/migration/*.{go,c} # gosub
+  - github.com/cenkalti/backoff/*.{go,c} # gosub
   - github.com/certifi/gocertifi/*.{go,c} # gosub
   - github.com/getsentry/raven-go/*.{go,c} # gosub
   - github.com/go-sql-driver/mysql/*.{go,c} # gosub

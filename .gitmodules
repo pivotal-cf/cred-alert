@@ -145,3 +145,7 @@
 	path = src/gopkg.in/libgit2/git2go.v24
 	url = https://gopkg.in/libgit2/git2go.v24
 	branch = v24
+[submodule "src/github.com/cenkalti/backoff"]
+	path = src/github.com/cenkalti/backoff
+	url = https://github.com/cenkalti/backoff
+	branch = master

@@ -2,21 +2,20 @@ package net
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
+
 	"time"
 
 	"code.cloudfoundry.org/clock"
+	"github.com/cenkalti/backoff"
 )
 
 type retryingClient struct {
 	client Client
 	clock  clock.Clock
 }
-
-const maxRetries = 3
 
 func NewRetryingClient(c Client, clock clock.Clock) Client {
 	return &retryingClient{
@@ -31,32 +30,57 @@ func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	for i := 0; i < maxRetries+1; i++ {
-		req, reqErr := http.NewRequest(orgReq.Method, orgReq.URL.String(), bytes.NewBuffer(body))
-		if reqErr != nil {
-			return nil, reqErr
+	var resp *http.Response
+
+	makeRequest := func() error {
+		req, err := http.NewRequest(orgReq.Method, orgReq.URL.String(), bytes.NewBuffer(body))
+		if err != nil {
+			return err
 		}
 
 		req.Header = orgReq.Header
 
-		if i != 0 {
-			random := rand.Intn(delays[i-1][1]-delays[i-1][0]) + delays[i-1][0]
-			c.clock.Sleep(time.Duration(random) * time.Millisecond)
-		}
-
-		resp, err := c.client.Do(req)
+		resp, err = c.client.Do(req)
 		if err != nil {
-			continue
+			return err
 		}
 
-		return resp, nil
+		return nil
 	}
 
-	return nil, errors.New("request failed after retry")
+	bo := &backoff.ExponentialBackOff{
+		InitialInterval:     backoff.DefaultInitialInterval,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+		MaxInterval:         backoff.DefaultMaxInterval,
+		MaxElapsedTime:      time.Minute,
+		Clock:               c.clock,
+	}
+
+	if err := c.retry(makeRequest, bo); err != nil {
+		return nil, fmt.Errorf("request failed after retry: %s", err.Error())
+	}
+
+	return resp, nil
 }
 
-var delays = [3][2]int{
-	{250, 750},
-	{375, 1125},
-	{562, 1687},
+// This function is mainly a copy of the retry function from the `backoff` package
+// but modified to use our clock interface.
+func (c *retryingClient) retry(operation backoff.Operation, b backoff.BackOff) error {
+	var err error
+	var next time.Duration
+
+	b.Reset()
+
+	for {
+		if err = operation(); err == nil {
+			return nil
+		}
+
+		if next = b.NextBackOff(); next == backoff.Stop {
+			return err
+		}
+
+		c.clock.Sleep(next)
+	}
 }
