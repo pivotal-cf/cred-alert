@@ -53,6 +53,7 @@ func (p *pubSubAcceptor) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 		for {
 			message, err := it.Next()
 			if err == iterator.Done {
+				p.logger.Info("iterator-is-done")
 				break
 			}
 
