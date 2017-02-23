@@ -97,6 +97,8 @@ builds:
     version: 0.1.1
   f9e0e308-af01-4ae4-5268-b770a4a221ca:
     version: 46.0.0
+  fa53de7b-f81d-4667-5dc4-eb0a0c10d422:
+    version: 52.0.0
   fdb7de52-a2e8-4714-727f-6ca659cd39d1:
     version: 22.0.0
 format-version: "2"
