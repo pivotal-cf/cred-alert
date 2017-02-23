@@ -1,6 +1,8 @@
 package notifications
 
 import (
+	"time"
+
 	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -78,7 +80,10 @@ func (r *rolodex) AddressForRepo(logger lager.Logger, owner, name string) []Addr
 		"repository": name,
 	})
 
-	response, err := r.client.GetOwners(context.TODO(), &rolodexpb.GetOwnersRequest{
+	ctx, cancel := context.WithTimeout(context.TODO(), 100 * time.Millisecond)
+	defer cancel()
+
+	response, err := r.client.GetOwners(ctx, &rolodexpb.GetOwnersRequest{
 		Repository: &redpb.Repository{
 			Owner: owner,
 			Name:  name,

@@ -69,9 +69,12 @@ var _ = Describe("Rolodex", func() {
 					_ = rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
 					Expect(client.GetOwnersCallCount()).To(Equal(1))
 
-					_, clientRequest, _ := client.GetOwnersArgsForCall(0)
+					ctx, clientRequest, _ := client.GetOwnersArgsForCall(0)
 					Expect(clientRequest.Repository.Owner).To(Equal("pivotal-cf"))
 					Expect(clientRequest.Repository.Name).To(Equal("cred-alert"))
+
+					_, set := ctx.Deadline()
+					Expect(set).To(BeTrue())
 				})
 
 				It("returns the addresses of the notification channel", func() {
@@ -100,9 +103,12 @@ var _ = Describe("Rolodex", func() {
 					_ = rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
 					Expect(client.GetOwnersCallCount()).To(Equal(1))
 
-					_, clientRequest, _ := client.GetOwnersArgsForCall(0)
+					ctx, clientRequest, _ := client.GetOwnersArgsForCall(0)
 					Expect(clientRequest.Repository.Owner).To(Equal("pivotal-cf"))
 					Expect(clientRequest.Repository.Name).To(Equal("cred-alert"))
+
+					_, set := ctx.Deadline()
+					Expect(set).To(BeTrue())
 				})
 
 				It("returns the default address", func() {
