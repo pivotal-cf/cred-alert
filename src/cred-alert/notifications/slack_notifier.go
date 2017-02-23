@@ -38,9 +38,6 @@ func NewSlackNotifier(clock clock.Clock, formatter SlackNotificationFormatter) N
 		formatter: formatter,
 		client: &http.Client{
 			Timeout: 3 * time.Second,
-			Transport: &http.Transport{
-				DisableKeepAlives: true,
-			},
 		},
 	}
 }
