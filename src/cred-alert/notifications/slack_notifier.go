@@ -42,7 +42,7 @@ func NewSlackNotifier(clock clock.Clock, formatter SlackNotificationFormatter) N
 	}
 }
 
-const maxRetries = 3
+const maxAttempts = 3
 
 func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
 	logger = logger.Session("send-notification", lager.Data{
@@ -75,10 +75,10 @@ func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
 }
 
 func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error {
-	for numReq := 0; numReq < maxRetries; numReq++ {
+	for attempts := 0; attempts < maxAttempts; attempts++ {
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 		if err != nil {
-			logger.Error("request-failed", err)
+			logger.Error("request-creation-failed", err)
 			return err
 		}
 
@@ -94,22 +94,15 @@ func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error
 		case http.StatusOK:
 			return nil
 		case http.StatusTooManyRequests:
-			lastLoop := numReq == maxRetries-1
+			lastLoop := attempts == maxAttempts-1
 			if lastLoop {
 				break
 			}
 
-			afterStr := resp.Header.Get("Retry-After")
-			logger.Info("told-to-wait", lager.Data{"after": afterStr})
-			after, err := strconv.Atoi(afterStr)
-			if err != nil {
-				logger.Error("failed", err)
+			if err := n.handleSlackBackPressure(logger, resp); err != nil {
 				return err
 			}
 
-			wait := after + 1 // +1 for luck
-
-			n.clock.Sleep(time.Duration(wait) * time.Second)
 			continue
 		default:
 			err = fmt.Errorf("bad response (!200): %d", resp.StatusCode)
@@ -125,4 +118,19 @@ func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error
 	logger.Error("failed", err)
 
 	return err
+}
+
+func (n *slackNotifier) handleSlackBackPressure(logger lager.Logger, resp *http.Response) error {
+	afterStr := resp.Header.Get("Retry-After")
+	logger.Info("told-to-wait", lager.Data{"after": afterStr})
+	after, err := strconv.Atoi(afterStr)
+	if err != nil {
+		logger.Error("failed", err)
+		return err
+	}
+
+	wait := after + 1 // +1 for luck
+	n.clock.Sleep(time.Duration(wait) * time.Second)
+
+	return nil
 }
