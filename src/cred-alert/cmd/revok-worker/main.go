@@ -103,7 +103,11 @@ func main() {
 	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
 	formatter := notifications.NewSlackNotificationFormatter()
-	notifier := notifications.NewSlackNotifier(clk, formatter)
+
+	slackHTTPClient := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+	notifier := notifications.NewSlackNotifier(clk, slackHTTPClient, formatter)
 
 	certificate, err := config.LoadCertificate(
 		cfg.Identity.CertificatePath,

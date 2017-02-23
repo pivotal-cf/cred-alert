@@ -27,18 +27,22 @@ type SlackAttachment struct {
 }
 
 type slackNotifier struct {
-	client    *http.Client
+	client    HTTPClient
 	clock     clock.Clock
 	formatter SlackNotificationFormatter
 }
 
-func NewSlackNotifier(clock clock.Clock, formatter SlackNotificationFormatter) Notifier {
+//go:generate counterfeiter . HTTPClient
+
+type HTTPClient interface {
+	Do(r *http.Request) (*http.Response, error)
+}
+
+func NewSlackNotifier(clock clock.Clock, client HTTPClient, formatter SlackNotificationFormatter) Notifier {
 	return &slackNotifier{
 		clock:     clock,
 		formatter: formatter,
-		client: &http.Client{
-			Timeout: 3 * time.Second,
-		},
+		client:    client,
 	}
 }
 
@@ -75,49 +79,69 @@ func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
 }
 
 func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error {
+	var sendErr error
+
 	for attempts := 0; attempts < maxAttempts; attempts++ {
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-		if err != nil {
-			logger.Error("request-creation-failed", err)
-			return err
-		}
-
-		req.Header.Set("Content-type", "application/json")
-
-		resp, err := n.client.Do(req)
-		if err != nil {
-			logger.Error("response-error", err)
-			return err
-		}
-
-		switch resp.StatusCode {
-		case http.StatusOK:
+		retry, err := n.makeSingleAttempt(logger, attempts, url, body)
+		if err == nil {
 			return nil
-		case http.StatusTooManyRequests:
-			lastLoop := attempts == maxAttempts-1
-			if lastLoop {
-				break
-			}
+		}
 
-			if err := n.handleSlackBackPressure(logger, resp); err != nil {
-				return err
-			}
-
-			continue
-		default:
-			err = fmt.Errorf("bad response (!200): %d", resp.StatusCode)
-			message, _ := ioutil.ReadAll(resp.Body)
-			logger.Error("bad-response", err, lager.Data{
-				"body": string(message),
-			})
+		if !retry {
 			return err
 		}
+
+		sendErr = err
 	}
 
-	err := errors.New("retried too many times")
+	err := fmt.Errorf("retried too many times: %s", sendErr)
 	logger.Error("failed", err)
 
 	return err
+}
+
+func (n *slackNotifier) makeSingleAttempt(logger lager.Logger, currentAttempt int, url string, body []byte) (bool, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		logger.Error("request-creation-failed", err)
+		return false, err
+	}
+	req.Header.Set("Content-type", "application/json")
+
+	resp, err := n.client.Do(req)
+	if err != nil {
+		if isTemporary(err) {
+			return true, err
+		}
+
+		logger.Error("fatal-transport-error", err)
+		return false, err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return false, nil
+	case http.StatusTooManyRequests:
+		err := errors.New("slack applied back pressure")
+
+		lastLoop := currentAttempt == maxAttempts-1
+		if lastLoop {
+			return true, err
+		}
+
+		if err := n.handleSlackBackPressure(logger, resp); err != nil {
+			return false, err
+		}
+
+		return true, err
+	default:
+		err = fmt.Errorf("bad response (!200): %d", resp.StatusCode)
+		message, _ := ioutil.ReadAll(resp.Body)
+		logger.Error("response-error", err, lager.Data{
+			"body": string(message),
+		})
+		return false, err
+	}
 }
 
 func (n *slackNotifier) handleSlackBackPressure(logger lager.Logger, resp *http.Response) error {
@@ -133,4 +157,13 @@ func (n *slackNotifier) handleSlackBackPressure(logger lager.Logger, resp *http.
 	n.clock.Sleep(time.Duration(wait) * time.Second)
 
 	return nil
+}
+
+type temporary interface {
+	Temporary() bool
+}
+
+func isTemporary(err error) bool {
+	t, ok := err.(temporary)
+	return ok && t.Temporary()
 }

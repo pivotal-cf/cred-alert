@@ -1,6 +1,7 @@
 package notifications_test
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -15,10 +16,11 @@ import (
 	"cred-alert/notifications/notificationsfakes"
 )
 
-var _ = Describe("SlackNotifier", func() {
+var _ = Describe("Slack Notifier", func() {
 	var (
 		notifier notifications.Notifier
 
+		client notifications.HTTPClient
 		clock  *fakeclock.FakeClock
 		server *ghttp.Server
 		logger *lagertest.TestLogger
@@ -29,6 +31,7 @@ var _ = Describe("SlackNotifier", func() {
 	BeforeEach(func() {
 		server = ghttp.NewServer()
 
+		client = &http.Client{}
 		clock = fakeclock.NewFakeClock(time.Now())
 
 		formatter = &notificationsfakes.FakeSlackNotificationFormatter{}
@@ -54,7 +57,7 @@ var _ = Describe("SlackNotifier", func() {
 	})
 
 	JustBeforeEach(func() {
-		notifier = notifications.NewSlackNotifier(clock, formatter)
+		notifier = notifications.NewSlackNotifier(clock, client, formatter)
 		logger = lagertest.NewTestLogger("slack-notifier")
 	})
 
@@ -68,15 +71,10 @@ var _ = Describe("SlackNotifier", func() {
 		}
 	}
 
-	Describe("Send", func() {
+	Describe("sending a notification", func() {
 		var (
 			envelope notifications.Envelope
-			sendErr  error
 		)
-
-		JustBeforeEach(func() {
-			sendErr = notifier.Send(logger, envelope)
-		})
 
 		Context("when no notifications are given", func() {
 			BeforeEach(func() {
@@ -84,10 +82,12 @@ var _ = Describe("SlackNotifier", func() {
 			})
 
 			It("does not return an error", func() {
+				sendErr := notifier.Send(logger, envelope)
 				Expect(sendErr).NotTo(HaveOccurred())
 			})
 
 			It("doesn't send anything to the server", func() {
+				notifier.Send(logger, envelope)
 				Expect(server.ReceivedRequests()).Should(HaveLen(0))
 			})
 		})
@@ -102,7 +102,6 @@ var _ = Describe("SlackNotifier", func() {
 					Path:       "path/to/file.txt",
 					LineNumber: 123,
 				}
-
 				envelope = envelop(notification)
 
 				server.AppendHandlers(
@@ -114,10 +113,12 @@ var _ = Describe("SlackNotifier", func() {
 			})
 
 			It("does not return an error", func() {
+				sendErr := notifier.Send(logger, envelope)
 				Expect(sendErr).NotTo(HaveOccurred())
 			})
 
 			It("sends a message to slack", func() {
+				notifier.Send(logger, envelope)
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 		})
@@ -149,10 +150,12 @@ var _ = Describe("SlackNotifier", func() {
 			})
 
 			It("does not return an error", func() {
+				sendErr := notifier.Send(logger, envelope)
 				Expect(sendErr).NotTo(HaveOccurred())
 			})
 
 			It("sends a message to slack", func() {
+				notifier.Send(logger, envelope)
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 		})
@@ -279,7 +282,7 @@ var _ = Describe("SlackNotifier", func() {
 					}
 
 					err := notifier.Send(logger, envelop(notification))
-					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(ContainSubstring("slack applied back pressure")))
 
 					close(done)
 				}()
@@ -298,8 +301,119 @@ var _ = Describe("SlackNotifier", func() {
 				Eventually(done).Should(BeClosed())
 			})
 		})
+
+		Context("when sending the request returns a temporary error forever", func() {
+			var fakeHTTPClient *notificationsfakes.FakeHTTPClient
+
+			BeforeEach(func() {
+				client = &notificationsfakes.FakeHTTPClient{}
+				fakeHTTPClient = client.(*notificationsfakes.FakeHTTPClient)
+
+				fakeHTTPClient.DoReturns(nil, &temporaryError{})
+
+				notification := notifications.Notification{
+					Owner:      "owner",
+					Repository: "repo",
+					Private:    true,
+					SHA:        "abc1234567890",
+					Path:       "path/to/file.txt",
+					LineNumber: 123,
+				}
+				envelope = envelop(notification)
+			})
+
+			It("returns an error", func() {
+				sendErr := notifier.Send(logger, envelope)
+				Expect(sendErr).To(MatchError(ContainSubstring("temporary disaster")))
+			})
+
+			It("retries up to 3 times", func() {
+				notifier.Send(logger, envelope)
+				Expect(fakeHTTPClient.DoCallCount()).To(Equal(3))
+			})
+		})
+
+		Context("when sending the request returns a temporary error less than 3 times", func() {
+			var fakeHTTPClient *notificationsfakes.FakeHTTPClient
+
+			BeforeEach(func() {
+				client = &notificationsfakes.FakeHTTPClient{}
+				fakeHTTPClient = client.(*notificationsfakes.FakeHTTPClient)
+
+				fakeHTTPClient.DoStub = func(r *http.Request) (*http.Response, error) {
+					if fakeHTTPClient.DoCallCount() > 2 {
+						return &http.Response{
+							StatusCode: http.StatusOK,
+						}, nil
+					}
+
+					return nil, &temporaryError{}
+				}
+
+				notification := notifications.Notification{
+					Owner:      "owner",
+					Repository: "repo",
+					Private:    true,
+					SHA:        "abc1234567890",
+					Path:       "path/to/file.txt",
+					LineNumber: 123,
+				}
+				envelope = envelop(notification)
+			})
+
+			It("returns no error", func() {
+				sendErr := notifier.Send(logger, envelope)
+				Expect(sendErr).ToNot(HaveOccurred())
+			})
+
+			It("retries up to 3 times", func() {
+				notifier.Send(logger, envelope)
+				Expect(fakeHTTPClient.DoCallCount()).To(Equal(3))
+			})
+		})
+
+		Context("when sending the request returns a fatal error", func() {
+			var fakeHTTPClient *notificationsfakes.FakeHTTPClient
+
+			BeforeEach(func() {
+				client = &notificationsfakes.FakeHTTPClient{}
+				fakeHTTPClient = client.(*notificationsfakes.FakeHTTPClient)
+
+				fakeHTTPClient.DoReturns(nil, errors.New("fatal disaster"))
+
+				notification := notifications.Notification{
+					Owner:      "owner",
+					Repository: "repo",
+					Private:    true,
+					SHA:        "abc1234567890",
+					Path:       "path/to/file.txt",
+					LineNumber: 123,
+				}
+				envelope = envelop(notification)
+			})
+
+			It("returns an error", func() {
+				sendErr := notifier.Send(logger, envelope)
+				Expect(sendErr).To(MatchError(ContainSubstring("fatal disaster")))
+			})
+
+			It("does not retry", func() {
+				notifier.Send(logger, envelope)
+				Expect(fakeHTTPClient.DoCallCount()).To(Equal(1))
+			})
+		})
 	})
 })
+
+type temporaryError struct{}
+
+func (t *temporaryError) Error() string {
+	return "temporary disaster"
+}
+
+func (t *temporaryError) Temporary() bool {
+	return true
+}
 
 const expectedJSON = `
 {
