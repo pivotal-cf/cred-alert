@@ -276,7 +276,7 @@ func main() {
 
 	members = append(members, grouper.Member{
 		Name:   "github-hint-handler",
-		Runner: queue.NewPubSubAcceptor(logger, subscription, pushEventProcessor, emitter),
+		Runner: queue.NewPubSubSubscriber(logger, subscription, pushEventProcessor, emitter),
 	})
 
 	if cfg.GitHub.AccessToken != "" {
