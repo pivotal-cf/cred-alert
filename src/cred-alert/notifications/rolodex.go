@@ -80,7 +80,7 @@ func (r *rolodex) AddressForRepo(logger lager.Logger, owner, name string) []Addr
 		"repository": name,
 	})
 
-	ctx, cancel := context.WithTimeout(context.TODO(), 100 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.TODO(), 100*time.Millisecond)
 	defer cancel()
 
 	response, err := r.client.GetOwners(ctx, &rolodexpb.GetOwnersRequest{
