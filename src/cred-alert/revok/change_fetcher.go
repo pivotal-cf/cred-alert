@@ -89,58 +89,11 @@ func (c *changeFetcher) Fetch(
 		changes, fetchErr = c.gitClient.Fetch(repo.Path)
 	})
 
-	if fetchErr != nil {
-		repoLogger.Error("fetch-failed", fetchErr)
-		c.fetchFailedCounter.Inc(repoLogger)
-
-		registerErr := c.repositoryRepository.RegisterFailedFetch(repoLogger, &repo)
-		if registerErr != nil {
-			repoLogger.Error("failed-to-register-failed-fetch", registerErr)
-		}
-
-		return fetchErr
-	}
-
-	c.fetchSuccessCounter.Inc(repoLogger)
-
-	bs, err := json.Marshal(changes)
-	if err != nil {
-		repoLogger.Error("failed-to-marshal-json", err)
+	if err := c.registerFetchResult(repoLogger, repo, fetchErr, changes); err != nil {
 		return err
 	}
 
-	fetch := db.Fetch{
-		Repository: &repo,
-		Path:       repo.Path,
-		Changes:    bs,
-	}
-
-	err = c.fetchRepository.RegisterFetch(repoLogger, &fetch)
-	if err != nil {
-		repoLogger.Error("failed-to-save-fetch", err)
-		return err
-	}
-
-	scannedOids := map[string]struct{}{}
-
-	for branch, oids := range changes {
-		err := c.notificationComposer.ScanAndNotify(
-			logger,
-			repo.Owner,
-			repo.Name,
-			scannedOids,
-			branch,
-			oids[1],
-			oids[0],
-		)
-		if err != nil {
-			c.scanFailedCounter.Inc(repoLogger)
-		} else {
-			c.scanSuccessCounter.Inc(repoLogger)
-		}
-	}
-
-	return nil
+	return c.scanFetch(repoLogger, repo, changes)
 }
 
 func (c *changeFetcher) shouldFetch(repoLogger lager.Logger, repo db.Repository, found bool, reenable bool) (bool, error) {
@@ -166,4 +119,72 @@ func (c *changeFetcher) shouldFetch(repoLogger lager.Logger, repo db.Repository,
 	}
 
 	return true, nil
+}
+
+func (c *changeFetcher) registerFetchResult(
+	logger lager.Logger,
+	repo db.Repository,
+	fetchErr error,
+	changes map[string][]string,
+) (error) {
+	if fetchErr != nil {
+		logger.Error("fetch-failed", fetchErr)
+		c.fetchFailedCounter.Inc(logger)
+
+		registerErr := c.repositoryRepository.RegisterFailedFetch(logger, &repo)
+		if registerErr != nil {
+			logger.Error("failed-to-register-failed-fetch", registerErr)
+		}
+
+		return fetchErr
+	}
+
+	c.fetchSuccessCounter.Inc(logger)
+
+	bs, err := json.Marshal(changes)
+	if err != nil {
+		logger.Error("failed-to-marshal-json", err)
+		return err
+	}
+
+	fetch := db.Fetch{
+		Repository: &repo,
+		Path:       repo.Path,
+		Changes:    bs,
+	}
+
+	err = c.fetchRepository.RegisterFetch(logger, &fetch)
+	if err != nil {
+		logger.Error("failed-to-save-fetch", err)
+		return err
+	}
+
+	return nil
+}
+
+func (c *changeFetcher) scanFetch(
+	logger lager.Logger,
+	repo db.Repository,
+	changes map[string][]string,
+) error {
+	scannedOids := map[string]struct{}{}
+
+	for branch, oids := range changes {
+		err := c.notificationComposer.ScanAndNotify(
+			logger,
+			repo.Owner,
+			repo.Name,
+			scannedOids,
+			branch,
+			oids[1],
+			oids[0],
+		)
+		if err != nil {
+			c.scanFailedCounter.Inc(logger)
+		} else {
+			c.scanSuccessCounter.Inc(logger)
+		}
+	}
+
+	return nil
 }
