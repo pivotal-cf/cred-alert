@@ -49,6 +49,7 @@ var _ = Describe("ChangeFetcher", func() {
 		fetcher revok.ChangeFetcher
 
 		repo     db.Repository
+		reenable bool
 		fetchErr error
 	)
 
@@ -125,11 +126,12 @@ var _ = Describe("ChangeFetcher", func() {
 			Path:   repoToFetchPath,
 			Cloned: true,
 		}
+		reenable = false
 
 		repositoryRepository.FindReturns(repo, true, nil)
 	})
 
-	JustBeforeEach(func() {
+	fetch := func() {
 		fetcher = revok.NewChangeFetcher(
 			logger,
 			gitClient,
@@ -139,8 +141,8 @@ var _ = Describe("ChangeFetcher", func() {
 			emitter,
 		)
 
-		fetchErr = fetcher.Fetch(logger, repo.Owner, repo.Name)
-	})
+		fetchErr = fetcher.Fetch(logger, repo.Owner, repo.Name, reenable)
+	}
 
 	AfterEach(func() {
 		os.RemoveAll(repoToFetchPath)
@@ -148,10 +150,12 @@ var _ = Describe("ChangeFetcher", func() {
 	})
 
 	It("increments the fetch success metric", func() {
+		fetch()
 		Expect(fetchSuccessCounter.IncCallCount()).To(Equal(1))
 	})
 
 	It("finds the repo in the database (to make sure it is up to date)", func() {
+		fetch()
 		Expect(repositoryRepository.FindCallCount()).To(Equal(1))
 
 		foundOwner, foundName := repositoryRepository.FindArgsForCall(0)
@@ -167,6 +171,8 @@ var _ = Describe("ChangeFetcher", func() {
 
 			fakeGitClient = &gitclientfakes.FakeClient{}
 			gitClient = fakeGitClient
+
+			fetch()
 		})
 
 		It("does not try and fetch it", func() {
@@ -186,6 +192,8 @@ var _ = Describe("ChangeFetcher", func() {
 
 			fakeGitClient = &gitclientfakes.FakeClient{}
 			gitClient = fakeGitClient
+
+			fetch()
 		})
 
 		It("does not try and fetch it", func() {
@@ -206,6 +214,8 @@ var _ = Describe("ChangeFetcher", func() {
 			fakeGitClient := &gitclientfakes.FakeClient{}
 			fakeGitClient.FetchReturns(nil, errors.New("an-error"))
 			gitClient = fakeGitClient
+
+			fetch()
 		})
 
 		It("registers the failed fetch", func() {
@@ -224,12 +234,64 @@ var _ = Describe("ChangeFetcher", func() {
 			repositoryRepository.FindReturns(repo, true, nil)
 		})
 
-		It("does not try and fetch it", func() {
-			Expect(fakeGitClient.FetchCallCount()).To(BeZero())
+		Context("when reenable is true", func() {
+			BeforeEach(func() {
+				reenable = true
+			})
+
+			It("fetches the repository", func() {
+				fetch()
+
+				Expect(fakeGitClient.FetchCallCount()).To(Equal(1))
+			})
+
+			It("reenables the repository", func() {
+				fetch()
+
+				Expect(repositoryRepository.ReenableCallCount()).To(Equal(1))
+
+				owner, repoName := repositoryRepository.ReenableArgsForCall(0)
+				Expect(owner).To(Equal(repo.Owner))
+				Expect(repoName).To(Equal(repo.Name))
+			})
+
+			It("does not return an error", func() {
+				fetch()
+
+				Expect(fetchErr).NotTo(HaveOccurred())
+			})
+
+			Context("when re-enabling fails", func() {
+				BeforeEach(func() {
+					repositoryRepository.ReenableReturns(errors.New("disaster"))
+				})
+
+				It("does not fetch", func() {
+					fetch()
+
+					Expect(fakeGitClient.FetchCallCount()).To(BeZero())
+				})
+
+				It("returns an error", func() {
+					fetch()
+
+					Expect(fetchErr).To(HaveOccurred())
+				})
+			})
 		})
 
-		It("does not return an error", func() {
-			Expect(fetchErr).NotTo(HaveOccurred())
+		Context("when reenable is false", func() {
+			It("does not try and fetch it", func() {
+				fetch()
+
+				Expect(fakeGitClient.FetchCallCount()).To(BeZero())
+			})
+
+			It("does not return an error", func() {
+				fetch()
+
+				Expect(fetchErr).NotTo(HaveOccurred())
+			})
 		})
 	})
 
@@ -242,6 +304,8 @@ var _ = Describe("ChangeFetcher", func() {
 
 			repo.Cloned = false
 			repositoryRepository.FindReturns(repo, true, nil)
+
+			fetch()
 		})
 
 		It("does not try and fetch it", func() {
@@ -267,14 +331,18 @@ var _ = Describe("ChangeFetcher", func() {
 		})
 
 		It("is successful", func() {
+			fetch()
 			Expect(fetchErr).NotTo(HaveOccurred())
 		})
 
 		It("increments the scan success metric", func() {
+			fetch()
 			Expect(scanSuccessCounter.IncCallCount()).To(Equal(2))
 		})
 
 		It("scans only the changes", func() {
+			fetch()
+
 			Expect(notificationComposer.ScanAndNotifyCallCount()).To(Equal(2)) // 2 new commits
 
 			var branches []string
@@ -295,6 +363,8 @@ var _ = Describe("ChangeFetcher", func() {
 		})
 
 		It("tries to store information in the database about the fetch", func() {
+			fetch()
+
 			Expect(fetchRepository.RegisterFetchCallCount()).To(Equal(1))
 			_, fetch := fetchRepository.RegisterFetchArgsForCall(0)
 			Expect(fetch.Path).To(Equal(repoToFetchPath))
@@ -358,6 +428,8 @@ var _ = Describe("ChangeFetcher", func() {
 			})
 
 			It("increments the failed scan metric", func() {
+				fetch()
+
 				Expect(scanFailedCounter.IncCallCount()).To(Equal(1))
 			})
 		})
@@ -371,6 +443,8 @@ var _ = Describe("ChangeFetcher", func() {
 		})
 
 		It("increments the failed fetch metric", func() {
+			fetch()
+
 			Expect(fetchFailedCounter.IncCallCount()).To(Equal(1))
 		})
 	})

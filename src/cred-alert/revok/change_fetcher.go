@@ -13,7 +13,7 @@ import (
 //go:generate counterfeiter . ChangeFetcher
 
 type ChangeFetcher interface {
-	Fetch(logger lager.Logger, owner string, name string) error
+	Fetch(logger lager.Logger, owner, name string, reenable bool) error
 }
 
 type changeFetcher struct {
@@ -57,6 +57,7 @@ func (c *changeFetcher) Fetch(
 	logger lager.Logger,
 	owner string,
 	name string,
+	reenable bool,
 ) error {
 	repoLogger := logger.WithData(lager.Data{
 		"owner":      owner,
@@ -69,18 +70,12 @@ func (c *changeFetcher) Fetch(
 		return err
 	}
 
-	if !found {
-		repoLogger.Info("skipping-fetch-of-unknown-repo")
-		return nil
+	shouldFetch, err := c.shouldFetch(repoLogger, repo, found, reenable)
+	if err != nil {
+		return err
 	}
 
-	if repo.Disabled {
-		repoLogger.Info("skipping-fetch-of-disabled-repo")
-		return nil
-	}
-
-	if !repo.Cloned {
-		repoLogger.Info("skipping-fetch-of-uncloned-repo")
+	if !shouldFetch {
 		return nil
 	}
 
@@ -146,4 +141,29 @@ func (c *changeFetcher) Fetch(
 	}
 
 	return nil
+}
+
+func (c *changeFetcher) shouldFetch(repoLogger lager.Logger, repo db.Repository, found bool, reenable bool) (bool, error) {
+	if !found {
+		repoLogger.Info("skipping-fetch-of-unknown-repo")
+		return false, nil
+	}
+
+	if repo.Disabled {
+		if reenable {
+			if err := c.repositoryRepository.Reenable(repo.Owner, repo.Name); err != nil {
+				return false, err
+			}
+		} else {
+			repoLogger.Info("skipping-fetch-of-disabled-repo")
+			return false, nil
+		}
+	}
+
+	if !repo.Cloned {
+		repoLogger.Info("skipping-fetch-of-uncloned-repo")
+		return false, nil
+	}
+
+	return true, nil
 }

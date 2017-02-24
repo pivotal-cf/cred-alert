@@ -9,12 +9,13 @@ import (
 )
 
 type FakeChangeFetcher struct {
-	FetchStub        func(logger lager.Logger, owner string, name string) error
+	FetchStub        func(logger lager.Logger, owner, name string, reenable bool) error
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
-		logger lager.Logger
-		owner  string
-		name   string
+		logger   lager.Logger
+		owner    string
+		name     string
+		reenable bool
 	}
 	fetchReturns struct {
 		result1 error
@@ -23,17 +24,18 @@ type FakeChangeFetcher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeChangeFetcher) Fetch(logger lager.Logger, owner string, name string) error {
+func (fake *FakeChangeFetcher) Fetch(logger lager.Logger, owner string, name string, reenable bool) error {
 	fake.fetchMutex.Lock()
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
-		logger lager.Logger
-		owner  string
-		name   string
-	}{logger, owner, name})
-	fake.recordInvocation("Fetch", []interface{}{logger, owner, name})
+		logger   lager.Logger
+		owner    string
+		name     string
+		reenable bool
+	}{logger, owner, name, reenable})
+	fake.recordInvocation("Fetch", []interface{}{logger, owner, name, reenable})
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
-		return fake.FetchStub(logger, owner, name)
+		return fake.FetchStub(logger, owner, name, reenable)
 	}
 	return fake.fetchReturns.result1
 }
@@ -44,10 +46,10 @@ func (fake *FakeChangeFetcher) FetchCallCount() int {
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (lager.Logger, string, string) {
+func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (lager.Logger, string, string, bool) {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
-	return fake.fetchArgsForCall[i].logger, fake.fetchArgsForCall[i].owner, fake.fetchArgsForCall[i].name
+	return fake.fetchArgsForCall[i].logger, fake.fetchArgsForCall[i].owner, fake.fetchArgsForCall[i].name, fake.fetchArgsForCall[i].reenable
 }
 
 func (fake *FakeChangeFetcher) FetchReturns(result1 error) {

@@ -185,6 +185,34 @@ var _ = Describe("RepositoryRepo", func() {
 		})
 	})
 
+	Describe("Reenable", func() {
+		var repository *db.Repository
+
+		BeforeEach(func() {
+			repository = &db.Repository{
+				Name:          "some-repo",
+				Owner:         "some-owner",
+				SSHURL:        "some-url",
+				Private:       true,
+				DefaultBranch: "some-branch",
+				RawJSON:       []byte("some-json"),
+				Disabled:      true,
+			}
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("marks the repo as enabled", func() {
+			err := repo.Reenable("some-owner", "some-repo")
+			Expect(err).NotTo(HaveOccurred())
+
+			savedRepository := &db.Repository{}
+			database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&savedRepository)
+
+			Expect(savedRepository.Disabled).To(BeFalse())
+		})
+	})
+
 	Describe("Active", func() {
 		var (
 			savedRepository db.Repository

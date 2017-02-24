@@ -71,7 +71,7 @@ func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Messag
 		"owner":      p.Owner,
 	})
 
-	err = h.changeFetcher.Fetch(logger, p.Owner, p.Repository)
+	err = h.changeFetcher.Fetch(logger, p.Owner, p.Repository, true)
 	if err != nil {
 		return true, err
 	}

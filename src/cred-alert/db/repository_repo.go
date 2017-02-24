@@ -24,6 +24,7 @@ type RepositoryRepository interface {
 	NotScannedWithVersion(int) ([]Repository, error)
 
 	MarkAsCloned(string, string, string) error
+	Reenable(string, string) error
 	RegisterFailedFetch(lager.Logger, *Repository) error
 	UpdateCredentialCount(*Repository, map[string]uint) error
 }
@@ -101,6 +102,12 @@ func (r *repositoryRepository) MarkAsCloned(owner, name, path string) error {
 	).Updates(
 		map[string]interface{}{"cloned": true, "path": path},
 	).Error
+}
+
+func (r *repositoryRepository) Reenable(owner, name string) error {
+	return r.db.Model(&Repository{}).Where(
+		Repository{Name: name, Owner: owner},
+	).Update("disabled", false).Error
 }
 
 func (r *repositoryRepository) NotScannedWithVersion(version int) ([]Repository, error) {

@@ -80,6 +80,15 @@ type FakeRepositoryRepository struct {
 	markAsClonedReturns struct {
 		result1 error
 	}
+	ReenableStub        func(string, string) error
+	reenableMutex       sync.RWMutex
+	reenableArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	reenableReturns struct {
+		result1 error
+	}
 	RegisterFailedFetchStub        func(lager.Logger, *db.Repository) error
 	registerFailedFetchMutex       sync.RWMutex
 	registerFailedFetchArgsForCall []struct {
@@ -353,6 +362,39 @@ func (fake *FakeRepositoryRepository) MarkAsClonedReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeRepositoryRepository) Reenable(arg1 string, arg2 string) error {
+	fake.reenableMutex.Lock()
+	fake.reenableArgsForCall = append(fake.reenableArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("Reenable", []interface{}{arg1, arg2})
+	fake.reenableMutex.Unlock()
+	if fake.ReenableStub != nil {
+		return fake.ReenableStub(arg1, arg2)
+	}
+	return fake.reenableReturns.result1
+}
+
+func (fake *FakeRepositoryRepository) ReenableCallCount() int {
+	fake.reenableMutex.RLock()
+	defer fake.reenableMutex.RUnlock()
+	return len(fake.reenableArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) ReenableArgsForCall(i int) (string, string) {
+	fake.reenableMutex.RLock()
+	defer fake.reenableMutex.RUnlock()
+	return fake.reenableArgsForCall[i].arg1, fake.reenableArgsForCall[i].arg2
+}
+
+func (fake *FakeRepositoryRepository) ReenableReturns(result1 error) {
+	fake.ReenableStub = nil
+	fake.reenableReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeRepositoryRepository) RegisterFailedFetch(arg1 lager.Logger, arg2 *db.Repository) error {
 	fake.registerFailedFetchMutex.Lock()
 	fake.registerFailedFetchArgsForCall = append(fake.registerFailedFetchArgsForCall, struct {
@@ -438,6 +480,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.notScannedWithVersionMutex.RUnlock()
 	fake.markAsClonedMutex.RLock()
 	defer fake.markAsClonedMutex.RUnlock()
+	fake.reenableMutex.RLock()
+	defer fake.reenableMutex.RUnlock()
 	fake.registerFailedFetchMutex.RLock()
 	defer fake.registerFailedFetchMutex.RUnlock()
 	fake.updateCredentialCountMutex.RLock()

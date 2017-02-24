@@ -134,9 +134,10 @@ var _ = Describe("PushEventProcessor", func() {
 		It("tries to do a fetch", func() {
 			pushEventProcessor.Process(logger, message)
 			Expect(changeFetcher.FetchCallCount()).To(Equal(1))
-			_, actualOwner, actualName := changeFetcher.FetchArgsForCall(0)
+			_, actualOwner, actualName, actualReenable := changeFetcher.FetchArgsForCall(0)
 			Expect(actualOwner).To(Equal("some-owner"))
 			Expect(actualName).To(Equal("some-repo"))
+			Expect(actualReenable).To(BeTrue())
 		})
 
 		Context("when the fetch succeeds", func() {
