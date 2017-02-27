@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -33,6 +34,7 @@ var _ = Describe("Webhook", func() {
 		configuredTokens []string
 		signingToken     string
 		pushEvent        github.PushEvent
+		pushTime         time.Time
 	)
 
 	BeforeEach(func() {
@@ -41,6 +43,7 @@ var _ = Describe("Webhook", func() {
 		in = &ingestorfakes.FakeIngestor{}
 		configuredTokens = []string{"example-key"}
 		signingToken = configuredTokens[0]
+		pushTime = time.Now()
 		pushEvent = github.PushEvent{
 			Before: github.String("commit-sha-0"),
 			After:  github.String("commit-sha-5"),
@@ -51,6 +54,9 @@ var _ = Describe("Webhook", func() {
 				Owner: &github.PushEventRepoOwner{
 					Name: github.String("repository-owner"),
 				},
+				PushedAt: &github.Timestamp{
+					Time: pushTime,
+				},
 			},
 			Commits: []github.PushEventCommit{
 				{ID: github.String("commit-sha-1")},
@@ -60,8 +66,6 @@ var _ = Describe("Webhook", func() {
 				{ID: github.String("commit-sha-5")},
 			},
 		}
-
-		handler = ingestor.NewHandler(logger, in, configuredTokens)
 	})
 
 	Context("when the request is properly formed", func() {
@@ -97,6 +101,7 @@ var _ = Describe("Webhook", func() {
 				From:       "commit-sha-0",
 				To:         "commit-sha-5",
 				Private:    true,
+				PushTime:   pushTime,
 			}))
 			Expect(actualGitHubID).To(Equal("delivery-id"))
 		})
@@ -182,6 +187,8 @@ var _ = Describe("Webhook", func() {
 
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", body)
 			fakeRequest.Header.Set("X-Hub-Signature", "thisaintnohmacsignature")
+
+			handler = ingestor.NewHandler(logger, in, configuredTokens)
 		})
 
 		It("responds with 403", func() {
@@ -203,6 +210,8 @@ var _ = Describe("Webhook", func() {
 
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", badJSON)
 			fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(signingToken, badJSON.Bytes())))
+
+			handler = ingestor.NewHandler(logger, in, configuredTokens)
 		})
 
 		It("responds with 400", func() {

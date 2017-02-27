@@ -69,6 +69,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		From:       *event.Before,
 		To:         *event.After,
 		Private:    *event.Repo.Private,
+		PushTime:   event.Repo.PushedAt.Time,
 	}
 
 	h.logger.Info("handling-webhook-payload", lager.Data{
