@@ -126,7 +126,7 @@ func (c *changeFetcher) registerFetchResult(
 	repo db.Repository,
 	fetchErr error,
 	changes map[string][]string,
-) (error) {
+) error {
 	if fetchErr != nil {
 		logger.Error("fetch-failed", fetchErr)
 		c.fetchFailedCounter.Inc(logger)
