@@ -82,7 +82,7 @@ type nullEmitter struct {
 func (e *nullEmitter) Counter(name string) Counter {
 	metric := &nullMetric{}
 	return &nullCounter{
-		metric: metric,
+		gauge: metric,
 	}
 }
 

@@ -6,12 +6,6 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-//go:generate counterfeiter . Metric
-
-type Metric interface {
-	Update(lager.Logger, float32, ...string)
-}
-
 type metric struct {
 	name       string
 	metricType string

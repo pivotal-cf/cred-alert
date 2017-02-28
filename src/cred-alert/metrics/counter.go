@@ -10,12 +10,12 @@ type Counter interface {
 }
 
 type counter struct {
-	metric Metric
+	gauge Gauge
 }
 
-func NewCounter(metric Metric) *counter {
+func NewCounter(gauge Gauge) *counter {
 	return &counter{
-		metric: metric,
+		gauge: gauge,
 	}
 }
 
@@ -27,17 +27,17 @@ func (c *counter) IncN(logger lager.Logger, count int, tags ...string) {
 	if count <= 0 {
 		return
 	}
-	c.metric.Update(logger, float32(count), tags...)
+	c.gauge.Update(logger, float32(count), tags...)
 }
 
-func NewNullCounter(metric Metric) *nullCounter {
+func NewNullCounter(gauge Gauge) *nullCounter {
 	return &nullCounter{
-		metric: metric,
+		gauge: gauge,
 	}
 }
 
 type nullCounter struct {
-	metric Metric
+	gauge Gauge
 }
 
 func (c *nullCounter) Inc(logger lager.Logger, tags ...string) {
@@ -45,5 +45,5 @@ func (c *nullCounter) Inc(logger lager.Logger, tags ...string) {
 }
 
 func (c *nullCounter) IncN(logger lager.Logger, count int, tags ...string) {
-	c.metric.Update(logger, float32(count), tags...)
+	c.gauge.Update(logger, float32(count), tags...)
 }

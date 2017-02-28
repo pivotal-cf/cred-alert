@@ -16,7 +16,7 @@ var _ = Describe("Metrics", func() {
 		logger *lagertest.TestLogger
 
 		client             *datadogfakes.FakeClient
-		metric             metrics.Metric
+		metric             metrics.Gauge
 		expectedMetricType string
 		expectedMetricName string
 		expectedEnv        string
@@ -33,14 +33,14 @@ var _ = Describe("Metrics", func() {
 		metric = metrics.NewMetric(expectedMetricName, expectedMetricType, emitter)
 	})
 
-	It("calls BuildMetricCallCount and PublishSeries", func() {
+	It("calls BuildMetric and PublishSeries", func() {
 		expectedValue := float32(0)
 		metric.Update(logger, expectedValue)
 
 		expectedMetric := datadog.Metric{}
 		client.BuildMetricReturns(expectedMetric)
 
-		Expect(client.BuildMetricCallCount()).Should(Equal(1))
+		Expect(client.BuildMetricCallCount()).To(Equal(1))
 
 		metricType, name, value, env := client.BuildMetricArgsForCall(0)
 		Expect(metricType).To(Equal(expectedMetricType))

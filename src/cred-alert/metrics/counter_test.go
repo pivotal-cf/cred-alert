@@ -11,13 +11,13 @@ import (
 
 var _ = Describe("Counters", func() {
 	var (
-		metric  *metricsfakes.FakeMetric
+		metric  *metricsfakes.FakeGauge
 		counter metrics.Counter
 		logger  *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
-		metric = &metricsfakes.FakeMetric{}
+		metric = &metricsfakes.FakeGauge{}
 		logger = lagertest.NewTestLogger("counter")
 	})
 

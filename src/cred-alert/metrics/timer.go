@@ -13,12 +13,12 @@ type Timer interface {
 }
 
 type timer struct {
-	metric Metric
+	gauge Gauge
 }
 
-func NewTimer(metric Metric) *timer {
+func NewTimer(gauge Gauge) *timer {
 	return &timer{
-		metric: metric,
+		gauge: gauge,
 	}
 }
 
@@ -35,7 +35,7 @@ func (t *timer) Time(logger lager.Logger, work func(), tags ...string) {
 		"duration": duration.String(),
 	})
 
-	t.metric.Update(logger, float32(duration.Seconds()), tags...)
+	t.gauge.Update(logger, float32(duration.Seconds()), tags...)
 }
 
 type nullTimer struct{}

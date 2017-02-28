@@ -14,12 +14,12 @@ import (
 var _ = Describe("Timer", func() {
 	var (
 		timer  metrics.Timer
-		metric *metricsfakes.FakeMetric
+		metric *metricsfakes.FakeGauge
 		logger *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
-		metric = &metricsfakes.FakeMetric{}
+		metric = &metricsfakes.FakeGauge{}
 		logger = lagertest.NewTestLogger("timer")
 		timer = metrics.NewTimer(metric)
 	})
