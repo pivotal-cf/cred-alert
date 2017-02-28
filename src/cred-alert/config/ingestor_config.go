@@ -39,6 +39,13 @@ type IngestorConfig struct {
 		DatadogAPIKey string `yaml:"datadog_api_key"`
 		Environment   string `yaml:"environment"`
 	} `yaml:"metrics"`
+
+	Identity struct {
+		CACertificatePath    string `yaml:"ca_certificate_path"`
+		CertificatePath      string `yaml:"certificate_path"`
+		PrivateKeyPath       string `yaml:"private_key_path"`
+		PrivateKeyPassphrase string `yaml:"private_key_passphrase"`
+	} `yaml:"identity"`
 }
 
 func (c *IngestorConfig) Validate() []error {
@@ -58,6 +65,14 @@ func (c *IngestorConfig) Validate() []error {
 
 	if string(c.PubSub.PrivateKeyPath) == "" {
 		errs = append(errs, errors.New("no pubsub private key specified"))
+	}
+
+	if !allBlankOrAllSet(
+		c.Identity.CACertificatePath,
+		c.Identity.CertificatePath,
+		c.Identity.PrivateKeyPath,
+	) {
+		errs = append(errs, errors.New("all identity options required if any are set"))
 	}
 
 	return errs

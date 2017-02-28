@@ -9,6 +9,10 @@ templates:
   config.yml.erb: config/config.yml
   pubsub_private_key.erb: config/pubsub_private_key
 
+  ca_certificate.erb: config/ca_certificate
+  private_key.erb: config/private_key
+  certificate.erb: config/certificate
+
 packages:
 - cred-alert
 - pid_utils_revok
@@ -46,3 +50,19 @@ properties:
   metrics.environment:
     description: |
       Environment tag for metrics
+
+  identity.ca_certificate:
+    description: |
+      CA certificate
+
+  identity.certificate:
+    description: |
+      Certificate
+
+  identity.private_key:
+    description: |
+      Private key
+
+  identity.private_key_passphrase:
+    description: |
+      Private key passphrase

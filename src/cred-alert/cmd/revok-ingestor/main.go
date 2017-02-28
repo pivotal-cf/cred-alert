@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
@@ -80,8 +82,29 @@ func main() {
 	router.Handle("/webhook", ingestor.NewHandler(logger, in, cfg.GitHub.WebhookSecretTokens))
 	router.Handle("/healthcheck", revok.ObliviousHealthCheck())
 
+	certificate, err := config.LoadCertificate(
+		cfg.Identity.CertificatePath,
+		cfg.Identity.PrivateKeyPath,
+		cfg.Identity.PrivateKeyPassphrase,
+	)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	caCertPool, err := config.LoadCertificatePool(cfg.Identity.CACertificatePath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{certificate},
+		RootCAs:      caCertPool,
+	}
+
+	apiServer := http_server.NewTLSServer(fmt.Sprintf(":%d", cfg.Port), router, tlsConfig)
+
 	members := []grouper.Member{
-		{"api", http_server.New(fmt.Sprintf(":%d", cfg.Port), router)},
+		{"api", apiServer},
 	}
 
 	runner := sigmon.New(grouper.NewParallel(os.Interrupt, members))
