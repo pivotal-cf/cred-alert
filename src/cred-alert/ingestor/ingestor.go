@@ -51,6 +51,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID s
 		From:       scan.From,
 		To:         scan.To,
 		Private:    scan.Private,
+		PushTime:   scan.PushTime,
 	}.Task(id)
 
 	logger = logger.Session("enqueuing-task", lager.Data{

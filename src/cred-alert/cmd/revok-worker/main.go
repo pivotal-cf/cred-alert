@@ -272,6 +272,7 @@ func main() {
 		changeFetcher,
 		crypto.NewRSAVerifier(publicKey),
 		emitter,
+		clk,
 	)
 
 	members = append(members, grouper.Member{

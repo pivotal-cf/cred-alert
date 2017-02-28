@@ -10,24 +10,31 @@ import (
 	"errors"
 
 	"cloud.google.com/go/pubsub"
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
 
 type pushEventProcessor struct {
-	changeFetcher       revok.ChangeFetcher
-	verifier            crypto.Verifier
+	changeFetcher revok.ChangeFetcher
+	verifier      crypto.Verifier
+	clock         clock.Clock
+
 	verifyFailedCounter metrics.Counter
+	endToEndGauge       metrics.Gauge
 }
 
 func NewPushEventProcessor(
 	changeFetcher revok.ChangeFetcher,
 	verifier crypto.Verifier,
 	emitter metrics.Emitter,
+	clock clock.Clock,
 ) *pushEventProcessor {
 	return &pushEventProcessor{
 		changeFetcher:       changeFetcher,
 		verifier:            verifier,
+		clock:               clock,
 		verifyFailedCounter: emitter.Counter("queue.push_event_processor.verify.failed"),
+		endToEndGauge:       emitter.Gauge("queue.end-to-end.duration"),
 	}
 }
 
@@ -75,6 +82,9 @@ func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Messag
 	if err != nil {
 		return true, err
 	}
+
+	duration := h.clock.Since(p.PushTime).Seconds()
+	h.endToEndGauge.Update(logger, float32(duration))
 
 	return false, nil
 }

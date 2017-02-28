@@ -11,6 +11,9 @@ import (
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager/lagertest"
 
+	"time"
+
+	"code.cloudfoundry.org/clock/fakeclock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -24,6 +27,8 @@ var _ = Describe("PushEventProcessor", func() {
 		message             *pubsub.Message
 		emitter             *metricsfakes.FakeEmitter
 		verifyFailedCounter *metricsfakes.FakeCounter
+		endToEndGauge       *metricsfakes.FakeGauge
+		fakeClock           *fakeclock.FakeClock
 	)
 
 	BeforeEach(func() {
@@ -31,18 +36,30 @@ var _ = Describe("PushEventProcessor", func() {
 		changeFetcher = &revokfakes.FakeChangeFetcher{}
 		verifier = &cryptofakes.FakeVerifier{}
 		verifyFailedCounter = &metricsfakes.FakeCounter{}
+		endToEndGauge = &metricsfakes.FakeGauge{}
+
 		emitter = &metricsfakes.FakeEmitter{}
 		emitter.CounterStub = func(name string) metrics.Counter {
 			switch name {
 			case "queue.push_event_processor.verify.failed":
 				return verifyFailedCounter
-			default:
-				return &metricsfakes.FakeCounter{}
 			}
+			return nil
 		}
 
-		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, verifier, emitter)
+		emitter.GaugeStub = func(name string) metrics.Gauge {
+			switch name {
+			case "queue.end-to-end.duration":
+				return endToEndGauge
+			}
+			return nil
+		}
 
+		now := time.Date(2017, 10, 8, 16, 20, 42, 0, time.UTC)
+
+		fakeClock = fakeclock.NewFakeClock(now)
+
+		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, verifier, emitter, fakeClock)
 	})
 
 	It("verifies the signature", func() {
@@ -115,6 +132,7 @@ var _ = Describe("PushEventProcessor", func() {
 				From:       "from-sha",
 				To:         "to-sha",
 				Private:    true,
+				PushTime:   time.Date(2017, 10, 8, 16, 19, 22, 0, time.UTC),
 			}.Task("message-id")
 
 			message = &pubsub.Message{
@@ -150,6 +168,17 @@ var _ = Describe("PushEventProcessor", func() {
 				Expect(retry).To(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
 			})
+
+			It("emits the total processing time", func() {
+				_, err := pushEventProcessor.Process(logger, message)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(endToEndGauge.UpdateCallCount()).To(Equal(1))
+
+				passedLogger, duration, _ := endToEndGauge.UpdateArgsForCall(0)
+				Expect(passedLogger).NotTo(BeNil())
+				Expect(duration).To(Equal(float32(80)))
+			})
 		})
 
 		Context("when the fetch fails", func() {
@@ -161,6 +190,13 @@ var _ = Describe("PushEventProcessor", func() {
 				retry, err := pushEventProcessor.Process(logger, message)
 				Expect(retry).To(BeTrue())
 				Expect(err).To(HaveOccurred())
+			})
+
+			It("does not emit the processing time", func() {
+				_, err := pushEventProcessor.Process(logger, message)
+				Expect(err).To(HaveOccurred())
+
+				Expect(endToEndGauge.UpdateCallCount()).To(BeZero())
 			})
 		})
 	})
