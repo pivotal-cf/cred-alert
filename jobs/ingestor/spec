@@ -62,7 +62,3 @@ properties:
   identity.private_key:
     description: |
       Private key
-
-  identity.private_key_passphrase:
-    description: |
-      Private key passphrase
