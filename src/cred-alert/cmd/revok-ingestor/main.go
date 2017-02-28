@@ -32,24 +32,18 @@ func main() {
 
 	logger.Debug("starting")
 
-	_, err := flags.ParseArgs(&flagOpts, os.Args)
+	_, err := flags.Parse(&flagOpts)
 	if err != nil {
-		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
 
-	if flagOpts.ConfigFile != "" {
-		bs, err := ioutil.ReadFile(string(flagOpts.ConfigFile))
-		if err != nil {
-			logger.Error("failed-opening-config-file", err)
-			os.Exit(1)
-		}
-
-		cfg, err = config.LoadIngestorConfig(bs)
-		cfg.Merge(flagOpts.IngestorConfig)
-	} else {
-		cfg = flagOpts.IngestorConfig
+	bs, err := ioutil.ReadFile(string(flagOpts.ConfigFile))
+	if err != nil {
+		logger.Error("failed-opening-config-file", err)
+		os.Exit(1)
 	}
+
+	cfg, err = config.LoadIngestorConfig(bs)
 
 	errs := cfg.Validate()
 	if errs != nil {
