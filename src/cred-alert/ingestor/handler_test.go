@@ -43,7 +43,7 @@ var _ = Describe("Webhook", func() {
 		in = &ingestorfakes.FakeIngestor{}
 		configuredTokens = []string{"example-key"}
 		signingToken = configuredTokens[0]
-		pushTime = time.Now()
+		pushTime = time.Date(2022, 2, 2, 2, 2, 2, 0, time.UTC)
 		pushEvent = github.PushEvent{
 			Before: github.String("commit-sha-0"),
 			After:  github.String("commit-sha-5"),
