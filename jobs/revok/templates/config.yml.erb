@@ -46,6 +46,12 @@ mysql:
   hostname: <%= p("revok.mysql.hostname") %>
   port: <%= p("revok.mysql.port") %>
   db_name: <%= p("revok.mysql.db") %>
+  ca_certificate_path: /var/vcap/jobs/revok/config/mysql_ca_certificate
+  certificate_path: /var/vcap/jobs/revok/config/mysql_certificate
+  private_key_path: /var/vcap/jobs/revok/config/mysql_private_key
+<% if_p("revok.mysql.private_key_passphrase") do |passphrase| %>
+  private_key_passphrase: <%= passphrase %>
+<% end %>
 
 identity:
   ca_certificate_path: /var/vcap/jobs/revok/config/ca_certificate

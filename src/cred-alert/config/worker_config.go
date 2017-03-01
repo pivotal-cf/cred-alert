@@ -56,11 +56,15 @@ type WorkerConfig struct {
 	} `yaml:"slack"`
 
 	MySQL struct {
-		Username string `yaml:"username"`
-		Password string `yaml:"password"`
-		Hostname string `yaml:"hostname"`
-		Port     uint16 `yaml:"port"`
-		DBName   string `yaml:"db_name"`
+		Username             string `yaml:"username"`
+		Password             string `yaml:"password"`
+		Hostname             string `yaml:"hostname"`
+		Port                 uint16 `yaml:"port"`
+		DBName               string `yaml:"db_name"`
+		CACertificatePath    string `yaml:"ca_certificate_path"`
+		CertificatePath      string `yaml:"certificate_path"`
+		PrivateKeyPath       string `yaml:"private_key_path"`
+		PrivateKeyPassphrase string `yaml:"private_key_passphrase"`
 	} `yaml:"mysql"`
 
 	Identity struct {
@@ -106,6 +110,14 @@ func (c *WorkerConfig) Validate() []error {
 		c.Identity.PrivateKeyPath,
 	) {
 		errs = append(errs, errors.New("all identity options required if any are set"))
+	}
+
+	if !allBlankOrAllSet(
+		c.MySQL.CACertificatePath,
+		c.MySQL.CertificatePath,
+		c.MySQL.PrivateKeyPath,
+	) {
+		errs = append(errs, errors.New("all mysql tls options required if any are set"))
 	}
 
 	if !allBlankOrAllSet(

@@ -19,6 +19,10 @@ templates:
   private_key.erb: config/private_key
   certificate.erb: config/certificate
 
+  mysql_ca_certificate.erb: config/mysql_ca_certificate
+  mysql_private_key.erb: config/mysql_private_key
+  mysql_certificate.erb: config/mysql_certificate
+
 packages:
 - cred-alert
 - golang
@@ -96,6 +100,22 @@ properties:
     description: |
       The name of the database to use.
     default: revok
+
+  revok.mysql.ca_certificate:
+    description: |
+      MySQL TLS CA certificate
+
+  revok.mysql.certificate:
+    description: |
+      MySQL TLS certificate
+
+  revok.mysql.private_key:
+    description: |
+      MySQL TLS private key
+
+  revok.mysql.private_key_passphrase:
+    description: |
+      MySQL TLS private key passphrase
 
   revok.rpc_server.bind_ip:
     description: |

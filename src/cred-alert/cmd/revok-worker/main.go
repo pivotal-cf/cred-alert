@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -83,7 +84,23 @@ func main() {
 		log.Fatalf("workdir error: %s", err)
 	}
 
-	dbURI := db.NewDSN(cfg.MySQL.Username, cfg.MySQL.Password, cfg.MySQL.DBName, cfg.MySQL.Hostname, int(cfg.MySQL.Port))
+	dbCertificate, dbCaCertPool := loadCerts(
+		cfg.MySQL.CertificatePath,
+		cfg.MySQL.PrivateKeyPath,
+		cfg.MySQL.PrivateKeyPassphrase,
+		cfg.MySQL.CACertificatePath,
+	)
+
+	dbURI := db.NewDSN(
+		cfg.MySQL.Username,
+		cfg.MySQL.Password,
+		cfg.MySQL.DBName,
+		cfg.MySQL.Hostname,
+		int(cfg.MySQL.Port),
+		dbCertificate,
+		dbCaCertPool,
+	)
+
 	database, err := migrations.LockDBAndMigrate(logger, "mysql", dbURI)
 	if err != nil {
 		log.Fatalf("db error: %s", err)
@@ -109,19 +126,12 @@ func main() {
 	}
 	notifier := notifications.NewSlackNotifier(clk, slackHTTPClient, formatter)
 
-	certificate, err := config.LoadCertificate(
+	certificate, caCertPool := loadCerts(
 		cfg.Identity.CertificatePath,
 		cfg.Identity.PrivateKeyPath,
 		cfg.Identity.PrivateKeyPassphrase,
+		cfg.Identity.CACertificatePath,
 	)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	caCertPool, err := config.LoadCertificatePool(cfg.Identity.CACertificatePath)
-	if err != nil {
-		log.Fatalln(err)
-	}
 
 	rolodexServerAddr := fmt.Sprintf("%s:%d", cfg.Rolodex.ServerAddress, cfg.Rolodex.ServerPort)
 
@@ -335,6 +345,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed-to-start: %s", err)
 	}
+}
+
+func loadCerts(certificatePath, privateKeyPath, privateKeyPassphrase, caCertificatePath string) (tls.Certificate, *x509.CertPool) {
+	certificate, err := config.LoadCertificate(
+		certificatePath,
+		privateKeyPath,
+		privateKeyPassphrase,
+	)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	caCertPool, err := config.LoadCertificatePool(caCertificatePath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return certificate, caCertPool
 }
 
 func keepAliveDial(addr string, timeout time.Duration) (net.Conn, error) {
