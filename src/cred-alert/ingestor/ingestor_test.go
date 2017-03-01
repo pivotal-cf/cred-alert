@@ -1,6 +1,7 @@
 package ingestor_test
 
 import (
+	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ var _ = Describe("Ingestor", func() {
 		subject   ingestor.Ingestor
 		logger    *lagertest.TestLogger
 		fakeQueue *queuefakes.FakeEnqueuer
+		pushScan  ingestor.PushScan
 	)
 
 	BeforeEach(func() {
@@ -29,18 +31,17 @@ var _ = Describe("Ingestor", func() {
 		emitter := &metricsfakes.FakeEmitter{}
 		emitter.CounterReturns(&metricsfakes.FakeCounter{})
 
+		logger = lagertest.NewTestLogger("ingestor")
+
 		subject = ingestor.NewIngestor(
 			fakeQueue,
 			emitter,
 			"metricPrefix",
 			uuidGenerator,
 		)
-	})
 
-	It("Queues Up the message", func() {
-		logger = lagertest.NewTestLogger("ingestor")
 		t := time.Date(2017, 2, 27, 15, 20, 42, 0, time.UTC)
-		pushScan := ingestor.PushScan{
+		pushScan = ingestor.PushScan{
 			Owner:      "owner",
 			Repository: "repo",
 			From:       "sha1",
@@ -48,7 +49,9 @@ var _ = Describe("Ingestor", func() {
 			Private:    true,
 			PushTime:   t,
 		}
+	})
 
+	It("queues up the message", func() {
 		err := subject.IngestPushScan(logger, pushScan, "githubId")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -69,4 +72,10 @@ var _ = Describe("Ingestor", func() {
 		Expect(task.Payload()).To(MatchJSON(expectedJson))
 	})
 
+	It("errors when queueing the message fails", func() {
+		fakeQueue.EnqueueReturns(errors.New("Oh No!"))
+
+		err := subject.IngestPushScan(logger, pushScan, "githubId")
+		Expect(err).To(HaveOccurred())
+	})
 })
