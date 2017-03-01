@@ -10,8 +10,9 @@ import (
 
 func NewDSN(username, password, dbName, hostname string, port int, certificate tls.Certificate, caCertPool *x509.CertPool) string {
 	mysql.RegisterTLSConfig("revok", &tls.Config{
-		RootCAs:      caCertPool,
-		Certificates: []tls.Certificate{certificate},
+		RootCAs:            caCertPool,
+		Certificates:       []tls.Certificate{certificate},
+		InsecureSkipVerify: true,
 	})
 
 	dbConfig := &mysql.Config{
