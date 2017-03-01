@@ -14,6 +14,7 @@ func NewDSN(username, password, dbName, hostname string, port int) string {
 		DBName:          dbName,
 		Addr:            fmt.Sprintf("%s:%d", hostname, port),
 		MultiStatements: true,
+		TLSConfig:       "true",
 		Params: map[string]string{
 			"charset":   "utf8",
 			"parseTime": "True",
