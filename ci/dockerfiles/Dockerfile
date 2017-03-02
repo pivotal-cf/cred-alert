@@ -14,6 +14,7 @@ RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a
     debconf-set-selections << 'mariadb-server-10.1 mysql-server/root_password_again password root' && \
     echo 'deb http://httpredir.debian.org/debian testing main' >> /etc/apt/sources.list && \
     apt-get update && \
+    apt-get upgrade -y -qq && \
     apt-get install -y --no-install-recommends mariadb-server unzip libgit2-dev pkg-config openjdk-8-jre-headless && \
     wget https://s3.amazonaws.com/bosh-cli-artifacts/bosh-cli-0.0.84-linux-amd64 && \
     mv bosh-cli-0.0.84-linux-amd64 /usr/local/bin/bosh-cli && \
