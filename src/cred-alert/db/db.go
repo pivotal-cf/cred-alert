@@ -8,11 +8,11 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-func NewDSN(username, password, dbName, hostname string, port int, certificate tls.Certificate, caCertPool *x509.CertPool) string {
+func NewDSN(username, password, dbName, hostname string, port int, serverName string, certificate tls.Certificate, caCertPool *x509.CertPool) string {
 	mysql.RegisterTLSConfig("revok", &tls.Config{
-		RootCAs:            caCertPool,
-		Certificates:       []tls.Certificate{certificate},
-		InsecureSkipVerify: true,
+		RootCAs:      caCertPool,
+		Certificates: []tls.Certificate{certificate},
+		ServerName:   serverName,
 	})
 
 	dbConfig := &mysql.Config{

@@ -97,6 +97,7 @@ func main() {
 		cfg.MySQL.DBName,
 		cfg.MySQL.Hostname,
 		int(cfg.MySQL.Port),
+		cfg.MySQL.ServerName,
 		dbCertificate,
 		dbCaCertPool,
 	)

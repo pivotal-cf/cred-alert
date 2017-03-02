@@ -61,6 +61,7 @@ type WorkerConfig struct {
 		Hostname             string `yaml:"hostname"`
 		Port                 uint16 `yaml:"port"`
 		DBName               string `yaml:"db_name"`
+		ServerName           string `yaml:"server_name"`
 		CACertificatePath    string `yaml:"ca_certificate_path"`
 		CertificatePath      string `yaml:"certificate_path"`
 		PrivateKeyPath       string `yaml:"private_key_path"`
@@ -116,6 +117,7 @@ func (c *WorkerConfig) Validate() []error {
 		c.MySQL.CACertificatePath,
 		c.MySQL.CertificatePath,
 		c.MySQL.PrivateKeyPath,
+		c.MySQL.ServerName,
 	) {
 		errs = append(errs, errors.New("all mysql tls options required if any are set"))
 	}

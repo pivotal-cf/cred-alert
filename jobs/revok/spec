@@ -101,6 +101,10 @@ properties:
       The name of the database to use.
     default: revok
 
+  revok.mysql.server_name:
+    description: |
+      The Common Name on the MySQL TLS certificate (for Cloud SQL it is <PROJECT NAME>:<INSTANCE NAME>)
+
   revok.mysql.ca_certificate:
     description: |
       MySQL TLS CA certificate
