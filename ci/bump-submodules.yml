@@ -1,0 +1,13 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: pivotalcf/cred-alert-ci
+
+inputs:
+- name: cred-alert
+
+run:
+  path: cred-alert/ci/scripts/bump-submodules

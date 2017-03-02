@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -e
+
+pushd cred-alert
+    git submodule update --remote --merge
+popd
+
+cred-alert/ci/scripts/test
+
+pushd cred-alert
+  git config --global user.name "Submodule Bumper"
+  git config --global user.email "pcf-security-enablement+submodule-bumper@pivotal.io"
+
+  git add .
+
+  git commit -m "Update submodules"
+popd
