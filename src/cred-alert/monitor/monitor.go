@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 //go:generate counterfeiter . RateClient
 
 type RateClient interface {
-	RateLimits() (*github.RateLimits, *github.Response, error)
+	RateLimits(context.Context) (*github.RateLimits, *github.Response, error)
 }
 
 type monitor struct {
@@ -52,7 +53,7 @@ func (m *monitor) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	for {
 		select {
 		case <-timer.C():
-			rates, _, err := m.ghClient.RateLimits()
+			rates, _, err := m.ghClient.RateLimits(context.TODO())
 			if err != nil {
 				m.logger.Error("failed-to-get-remaining-requests", err)
 				continue

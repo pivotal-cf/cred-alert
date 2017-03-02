@@ -1,6 +1,7 @@
 package revok
 
 import (
+	"context"
 	"encoding/json"
 
 	"code.cloudfoundry.org/lager"
@@ -49,7 +50,7 @@ func (c *client) ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]G
 	var repos []GitHubRepository
 
 	for {
-		rs, resp, err := c.ghClient.Repositories.ListByOrg(orgName, opts)
+		rs, resp, err := c.ghClient.Repositories.ListByOrg(context.TODO(), orgName, opts)
 		if err != nil {
 			logger.Error("failed", err, lager.Data{
 				"fetching-page": opts.ListOptions.Page,
@@ -92,7 +93,7 @@ func (c *client) ListOrganizations(logger lager.Logger) ([]GitHubOrganization, e
 	listOptions := &github.ListOptions{PerPage: 30}
 
 	for {
-		os, resp, err := c.ghClient.Organizations.List("", listOptions)
+		os, resp, err := c.ghClient.Organizations.List(context.TODO(), "", listOptions)
 		if err != nil {
 			logger.Error("failed", err, lager.Data{
 				"fetching-page": listOptions.Page,

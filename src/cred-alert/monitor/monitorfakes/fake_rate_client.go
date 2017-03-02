@@ -2,6 +2,7 @@
 package monitorfakes
 
 import (
+	"context"
 	"cred-alert/monitor"
 	"sync"
 
@@ -9,10 +10,12 @@ import (
 )
 
 type FakeRateClient struct {
-	RateLimitsStub        func() (*github.RateLimits, *github.Response, error)
+	RateLimitsStub        func(context.Context) (*github.RateLimits, *github.Response, error)
 	rateLimitsMutex       sync.RWMutex
-	rateLimitsArgsForCall []struct{}
-	rateLimitsReturns     struct {
+	rateLimitsArgsForCall []struct {
+		arg1 context.Context
+	}
+	rateLimitsReturns struct {
 		result1 *github.RateLimits
 		result2 *github.Response
 		result3 error
@@ -21,13 +24,15 @@ type FakeRateClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRateClient) RateLimits() (*github.RateLimits, *github.Response, error) {
+func (fake *FakeRateClient) RateLimits(arg1 context.Context) (*github.RateLimits, *github.Response, error) {
 	fake.rateLimitsMutex.Lock()
-	fake.rateLimitsArgsForCall = append(fake.rateLimitsArgsForCall, struct{}{})
-	fake.recordInvocation("RateLimits", []interface{}{})
+	fake.rateLimitsArgsForCall = append(fake.rateLimitsArgsForCall, struct {
+		arg1 context.Context
+	}{arg1})
+	fake.recordInvocation("RateLimits", []interface{}{arg1})
 	fake.rateLimitsMutex.Unlock()
 	if fake.RateLimitsStub != nil {
-		return fake.RateLimitsStub()
+		return fake.RateLimitsStub(arg1)
 	}
 	return fake.rateLimitsReturns.result1, fake.rateLimitsReturns.result2, fake.rateLimitsReturns.result3
 }
@@ -36,6 +41,12 @@ func (fake *FakeRateClient) RateLimitsCallCount() int {
 	fake.rateLimitsMutex.RLock()
 	defer fake.rateLimitsMutex.RUnlock()
 	return len(fake.rateLimitsArgsForCall)
+}
+
+func (fake *FakeRateClient) RateLimitsArgsForCall(i int) context.Context {
+	fake.rateLimitsMutex.RLock()
+	defer fake.rateLimitsMutex.RUnlock()
+	return fake.rateLimitsArgsForCall[i].arg1
 }
 
 func (fake *FakeRateClient) RateLimitsReturns(result1 *github.RateLimits, result2 *github.Response, result3 error) {
