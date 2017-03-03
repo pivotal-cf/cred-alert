@@ -10,7 +10,7 @@ git clone "$IN_REPO_PATH" "$OUT_REPO_PATH"
 
 cd "$OUT_REPO_PATH"
 
-git submodule update --remote
+git submodule update --init --remote
 
 git add .
 
