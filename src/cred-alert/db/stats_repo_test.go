@@ -55,7 +55,7 @@ var _ = Describe("StatsRepo", func() {
 			for i := 0; i < 6; i++ {
 				err := database.Create(&db.Fetch{
 					Repository: repository,
-					Changes:    []byte("changes"),
+					Changes:    []byte("{}"),
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
 			}

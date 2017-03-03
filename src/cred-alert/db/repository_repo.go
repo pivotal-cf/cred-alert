@@ -63,6 +63,10 @@ func (r *repositoryRepository) MustFind(owner string, name string) (Repository, 
 }
 
 func (r *repositoryRepository) Create(repository *Repository) error {
+	if len(repository.CredentialCounts) == 0 {
+		repository.CredentialCounts = []byte("{}")
+	}
+
 	return r.db.Create(repository).Error
 }
 

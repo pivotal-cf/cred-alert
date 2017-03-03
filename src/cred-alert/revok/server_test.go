@@ -2,6 +2,7 @@ package revok_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -47,27 +48,36 @@ var _ = Describe("Server", func() {
 
 	Describe("GetCredentialCounts", func() {
 		BeforeEach(func() {
+			credentialCounts1, err := json.Marshal(map[string]int{
+				"o1r1b1": 1,
+				"o1r1b2": 2,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			credentialCounts2, err := json.Marshal(map[string]int{
+				"o1r2b1": 3,
+				"o1r2b2": 4,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			credentialCounts3, err := json.Marshal(map[string]int{
+				"o2b1": 5,
+				"o2b2": 6,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
 			repoDB.AllReturns([]db.Repository{
 				{
-					Owner: "some-owner",
-					CredentialCounts: db.PropertyMap{
-						"o1r1b1": float64(1),
-						"o1r1b2": float64(2),
-					},
+					Owner:            "some-owner",
+					CredentialCounts: credentialCounts1,
 				},
 				{
-					Owner: "some-owner",
-					CredentialCounts: db.PropertyMap{
-						"o1r2b1": float64(3),
-						"o1r2b2": float64(4),
-					},
+					Owner:            "some-owner",
+					CredentialCounts: credentialCounts2,
 				},
 				{
-					Owner: "some-other-owner",
-					CredentialCounts: db.PropertyMap{
-						"o2b1": float64(5),
-						"o2b2": float64(6),
-					},
+					Owner:            "some-other-owner",
+					CredentialCounts: credentialCounts3,
 				},
 			}, nil)
 

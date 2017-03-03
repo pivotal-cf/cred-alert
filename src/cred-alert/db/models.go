@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -75,7 +76,15 @@ type Repository struct {
 	FailedFetches int `gorm:"column:failed_fetches"`
 	Disabled      bool
 
-	CredentialCounts PropertyMap `gorm:"default:'{}'"`
+	CredentialCounts []byte
+}
+
+func (r Repository) GetCredentialCounts() map[string]int {
+	credentialCounts := map[string]int{}
+
+	json.Unmarshal(r.CredentialCounts, &credentialCounts)
+
+	return credentialCounts
 }
 
 type Fetch struct {

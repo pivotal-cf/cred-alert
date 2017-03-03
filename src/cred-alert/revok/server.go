@@ -52,12 +52,10 @@ func (s *server) GetCredentialCounts(
 		return nil, err
 	}
 
-	orgCounts := map[string]float64{}
+	orgCounts := map[string]int64{}
 	for i := range repositories {
-		for _, branchCountInt := range repositories[i].CredentialCounts {
-			if branchCount, ok := branchCountInt.(float64); ok {
-				orgCounts[repositories[i].Owner] += branchCount
-			}
+		for _, branchCount := range repositories[i].GetCredentialCounts() {
+			orgCounts[repositories[i].Owner] += int64(branchCount)
 		}
 	}
 
@@ -71,7 +69,7 @@ func (s *server) GetCredentialCounts(
 	for _, orgName := range orgNames {
 		occ := &revokpb.OrganizationCredentialCount{
 			Owner: orgName,
-			Count: int64(orgCounts[orgName]),
+			Count: orgCounts[orgName],
 		}
 		response.CredentialCounts = append(response.CredentialCounts, occ)
 	}
@@ -94,10 +92,8 @@ func (s *server) GetOrganizationCredentialCounts(
 	rccs := []*revokpb.RepositoryCredentialCount{}
 	for i := range repositories {
 		var count int64
-		for _, branchCountInt := range repositories[i].CredentialCounts {
-			if branchCount, ok := branchCountInt.(float64); ok {
-				count += int64(branchCount)
-			}
+		for _, branchCount := range repositories[i].GetCredentialCounts() {
+			count += int64(branchCount)
 		}
 
 		rccs = append(rccs, &revokpb.RepositoryCredentialCount{
@@ -129,13 +125,11 @@ func (s *server) GetRepositoryCredentialCounts(
 	}
 
 	bccs := []*revokpb.BranchCredentialCount{}
-	for branch, countInt := range repository.CredentialCounts {
-		if count, ok := countInt.(float64); ok {
-			bccs = append(bccs, &revokpb.BranchCredentialCount{
-				Name:  branch,
-				Count: int64(count),
-			})
-		}
+	for branch, count := range repository.GetCredentialCounts() {
+		bccs = append(bccs, &revokpb.BranchCredentialCount{
+			Name:  branch,
+			Count: int64(count),
+		})
 	}
 
 	sort.Sort(revokpb.BCCByName(bccs))

@@ -95,34 +95,19 @@ var _ = Describe("RepositoryRepo", func() {
 
 	Describe("Create", func() {
 		var (
-			rawJSON      map[string]interface{}
-			rawJSONBytes []byte
-			repository   *db.Repository
+			repository *db.Repository
 		)
 
 		BeforeEach(func() {
-			rawJSON = map[string]interface{}{
-				"path": "path-to-repo-on-disk",
-				"name": "repo-name",
-				"owner": map[string]interface{}{
-					"login": "owner-name",
-				},
-				"private":        true,
-				"default_branch": "master",
-			}
-
-			var err error
-			rawJSONBytes, err = json.Marshal(rawJSON)
-			Expect(err).NotTo(HaveOccurred())
-
 			repository = &db.Repository{
-				Name:          "repo-name",
-				Owner:         "owner-name",
-				Path:          "path-to-repo-on-disk",
-				SSHURL:        "repo-ssh-url",
-				Private:       true,
-				DefaultBranch: "master",
-				RawJSON:       rawJSONBytes,
+				Name:             "repo-name",
+				Owner:            "owner-name",
+				Path:             "path-to-repo-on-disk",
+				SSHURL:           "repo-ssh-url",
+				Private:          true,
+				DefaultBranch:    "master",
+				RawJSON:          []byte("some-raw-json"),
+				CredentialCounts: []byte("some-credential-counts"),
 			}
 		})
 
@@ -130,7 +115,7 @@ var _ = Describe("RepositoryRepo", func() {
 			err := repo.Create(repository)
 			Expect(err).NotTo(HaveOccurred())
 
-			savedRepository := &db.Repository{}
+			savedRepository := db.Repository{}
 			database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&savedRepository)
 
 			Expect(savedRepository.Name).To(Equal("repo-name"))
@@ -139,12 +124,20 @@ var _ = Describe("RepositoryRepo", func() {
 			Expect(savedRepository.SSHURL).To(Equal("repo-ssh-url"))
 			Expect(savedRepository.Private).To(BeTrue())
 			Expect(savedRepository.DefaultBranch).To(Equal("master"))
+			Expect(savedRepository.RawJSON).To(Equal(repository.RawJSON))
+			Expect(savedRepository.CredentialCounts).To(Equal(repository.CredentialCounts))
+		})
 
-			var actualRaw map[string]interface{}
-			err = json.Unmarshal(savedRepository.RawJSON, &actualRaw)
+		It("sets a default for CredentialCounts if not set", func() {
+			repository.CredentialCounts = []byte{}
+
+			err := repo.Create(repository)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(actualRaw).To(Equal(rawJSON))
+			savedRepository := db.Repository{}
+			database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&savedRepository)
+
+			Expect(savedRepository.CredentialCounts).To(Equal([]byte("{}")))
 		})
 	})
 
