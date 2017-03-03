@@ -9,5 +9,8 @@ image_resource:
 inputs:
 - name: cred-alert
 
+outputs:
+- name: bump-submodules-output
+
 run:
   path: cred-alert/ci/scripts/bump-submodules

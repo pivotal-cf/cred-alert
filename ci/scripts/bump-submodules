@@ -2,8 +2,10 @@
 
 set -e
 
+OUTPUT="$PWD/bump-submodules-output"
+
 pushd cred-alert
-    git submodule update --remote --merge
+  git submodule update --remote --merge
 popd
 
 cred-alert/ci/scripts/test
@@ -14,5 +16,15 @@ pushd cred-alert
 
   git add .
 
-  git commit -m "Update submodules"
+  STATUS=$(git status --porcelain)
+
+  if [ "$STATUS" != "" ]; then
+    git commit -m "Update submodules"
+
+    cat > "$OUTPUT/message" << EOF
+Submodules were updated:
+
+$STATUS
+EOF
+  fi
 popd
