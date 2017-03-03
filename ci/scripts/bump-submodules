@@ -1,30 +1,32 @@
 #!/usr/bin/env bash
 
-set -e
+set -eu
 
-OUTPUT="$PWD/bump-submodules-output"
+MESSAGE_PATH="$PWD/bump-submodules-message/message"
+IN_REPO_PATH="$PWD/repo"
+OUT_REPO_PATH="$PWD/bumped-repo"
 
-pushd cred-alert
-  git submodule update --remote
-popd
+git clone "$IN_REPO_PATH" "$OUT_REPO_PATH"
 
-cred-alert/ci/scripts/test
+cd "$OUT_REPO_PATH"
 
-pushd cred-alert
-  git config --global user.name "Submodule Bumper"
-  git config --global user.email "pcf-security-enablement+submodule-bumper@pivotal.io"
+git submodule update --remote
 
-  git add .
+git add .
 
-  STATUS=$(git status --porcelain)
+STATUS=$(git status --porcelain)
 
-  if [ "$STATUS" != "" ]; then
-    git commit -m "Update submodules"
+if [ "$STATUS" == "" ]; then
+  exit 0
+fi
 
-    cat > "$OUTPUT/message" << EOF
+git config --global user.name "Submodule Bumper"
+git config --global user.email "pcf-security-enablement+submodule-bumper@pivotal.io"
+
+git commit -m "Update submodules"
+
+cat > "$MESSAGE_PATH" << EOF
 Submodules were updated:
 
 $STATUS
 EOF
-  fi
-popd

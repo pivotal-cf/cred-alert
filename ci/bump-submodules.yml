@@ -7,10 +7,11 @@ image_resource:
     repository: pivotalcf/cred-alert-ci
 
 inputs:
-- name: cred-alert
+- name: repo
 
 outputs:
-- name: bump-submodules-output
+- name: bumped-repo
+- name: bump-submodules-message
 
 run:
   path: cred-alert/ci/scripts/bump-submodules
