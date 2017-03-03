@@ -1,6 +1,7 @@
 package rats_test
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -73,7 +74,7 @@ func randomCredential() string {
 }
 
 func makeCommit(githubClient *github.Client, owner string, repo string) string {
-	commits, _, err := githubClient.Repositories.ListCommits(owner, repo, &github.CommitsListOptions{
+	commits, _, err := githubClient.Repositories.ListCommits(context.TODO(), owner, repo, &github.CommitsListOptions{
 		SHA: "master",
 		ListOptions: github.ListOptions{
 			PerPage: 1,
@@ -83,10 +84,10 @@ func makeCommit(githubClient *github.Client, owner string, repo string) string {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(commits).To(HaveLen(1))
 
-	headCommit, _, err := githubClient.Git.GetCommit(owner, repo, *commits[0].SHA)
+	headCommit, _, err := githubClient.Git.GetCommit(context.TODO(), owner, repo, *commits[0].SHA)
 	Expect(err).NotTo(HaveOccurred())
 
-	tree, _, err := githubClient.Git.CreateTree(owner, repo, *headCommit.Tree.SHA, []github.TreeEntry{
+	tree, _, err := githubClient.Git.CreateTree(context.TODO(), owner, repo, *headCommit.Tree.SHA, []github.TreeEntry{
 		{
 			Path:    github.String("system-test.txt"),
 			Mode:    github.String("100644"),
@@ -101,7 +102,7 @@ func makeCommit(githubClient *github.Client, owner string, repo string) string {
 		Email: github.String("pcf-security-enablement+revok-system-test@pivotal.io"),
 	}
 
-	commit, _, err := githubClient.Git.CreateCommit(owner, repo, &github.Commit{
+	commit, _, err := githubClient.Git.CreateCommit(context.TODO(), owner, repo, &github.Commit{
 		Message:   github.String("system test commit"),
 		Author:    author,
 		Committer: author,
@@ -111,7 +112,7 @@ func makeCommit(githubClient *github.Client, owner string, repo string) string {
 
 	Expect(err).NotTo(HaveOccurred())
 
-	_, _, err = githubClient.Git.UpdateRef(owner, repo, &github.Reference{
+	_, _, err = githubClient.Git.UpdateRef(context.TODO(), owner, repo, &github.Reference{
 		Ref: github.String("refs/heads/master"),
 		Object: &github.GitObject{
 			SHA: commit.SHA,
