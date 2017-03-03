@@ -5,7 +5,7 @@ set -e
 OUTPUT="$PWD/bump-submodules-output"
 
 pushd cred-alert
-  git submodule update --remote --merge
+  git submodule update --remote
 popd
 
 cred-alert/ci/scripts/test
