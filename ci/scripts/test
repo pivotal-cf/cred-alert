@@ -8,6 +8,9 @@ export PATH=$GOPATH/bin:$PATH
 service mysql start
 
 pushd ${GOPATH}
+  # Initialize submodules so that we can use this task with a fresh clone
+  git submodule update --init
+
   go install github.com/onsi/ginkgo/ginkgo
 
   ./scripts/test -race $@
