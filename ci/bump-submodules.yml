@@ -14,4 +14,4 @@ outputs:
 - name: bump-submodules-message
 
 run:
-  path: cred-alert/ci/scripts/bump-submodules
+  path: repo/ci/scripts/bump-submodules
