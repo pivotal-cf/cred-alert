@@ -17,7 +17,7 @@ export GOPATH="$PWD"
 ./scripts/sync-package-specs
 ./scripts/sync-submodules
 
-git add .
+git add -A
 
 STATUS=$(git status --porcelain)
 
