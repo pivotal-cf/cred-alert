@@ -89,16 +89,16 @@ func (s *scanner) scan(
 			quietLogger,
 			diffscanner.NewDiffScanner(strings.NewReader(diff)),
 			func(logger lager.Logger, violation scanners.Violation) error {
-				credential := db.NewCredential(
-					dbRepository.Owner,
-					dbRepository.Name,
-					child,
-					violation.Line.Path,
-					violation.Line.LineNumber,
-					violation.Start,
-					violation.End,
-					dbRepository.Private,
-				)
+				credential := db.Credential{
+					Owner:      dbRepository.Owner,
+					Repository: dbRepository.Name,
+					SHA:        child,
+					Path:       violation.Line.Path,
+					LineNumber: violation.Line.LineNumber,
+					MatchStart: violation.Start,
+					MatchEnd:   violation.End,
+					Private:    dbRepository.Private,
+				}
 
 				scan.RecordCredential(credential)
 				credentials = append(credentials, credential)

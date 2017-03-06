@@ -30,25 +30,3 @@ func NewDSN(username, password, dbName, hostname string, port int, serverName st
 	}
 	return dbConfig.FormatDSN()
 }
-
-func NewCredential(
-	owner string,
-	repository string,
-	sha string,
-	path string,
-	lineNumber int,
-	matchStart int,
-	matchEnd int,
-	private bool,
-) Credential {
-	return Credential{
-		Owner:      owner,
-		Repository: repository,
-		SHA:        sha,
-		Path:       path,
-		LineNumber: lineNumber,
-		MatchStart: matchStart,
-		MatchEnd:   matchEnd,
-		Private:    private,
-	}
-}

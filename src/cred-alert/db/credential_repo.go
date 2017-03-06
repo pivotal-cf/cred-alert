@@ -62,16 +62,16 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 			return nil, scanErr
 		}
 
-		credentials = append(credentials, NewCredential(
-			owner,
-			repository,
-			sha,
-			path,
-			lineNumber,
-			matchStart,
-			matchEnd,
-			private,
-		))
+		credentials = append(credentials, Credential{
+			Owner:      owner,
+			Repository: repository,
+			SHA:        sha,
+			Path:       path,
+			LineNumber: lineNumber,
+			MatchStart: matchStart,
+			MatchEnd:   matchEnd,
+			Private:    private,
+		})
 	}
 
 	return credentials, nil
