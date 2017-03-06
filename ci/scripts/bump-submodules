@@ -13,7 +13,7 @@ cd "$OUT_REPO_PATH"
 git submodule update --init --remote
 
 go get github.com/vito/gosub
-./scripts/sync-submodules
+./scripts/sync-package-specs
 
 git add .
 
