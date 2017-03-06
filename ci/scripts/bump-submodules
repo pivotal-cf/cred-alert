@@ -12,6 +12,8 @@ cd "$OUT_REPO_PATH"
 
 git submodule update --init --remote
 
+./scripts/sync-submodules
+
 git add .
 
 STATUS=$(git status --porcelain)
