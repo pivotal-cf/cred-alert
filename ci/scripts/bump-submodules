@@ -13,8 +13,9 @@ cd "$OUT_REPO_PATH"
 git submodule update --init --remote
 
 go get github.com/vito/gosub
-GOPATH="$PWD"
+export GOPATH="$PWD"
 ./scripts/sync-package-specs
+./scripts/sync-submodules
 
 git add .
 
