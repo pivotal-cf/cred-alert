@@ -11,6 +11,7 @@ files:
   - cloud.google.com/go/compute/metadata/*.{go,c} # gosub
   - cloud.google.com/go/iam/*.{go,c} # gosub
   - cloud.google.com/go/internal/*.{go,c} # gosub
+  - cloud.google.com/go/internal/version/*.{go,c} # gosub
   - cloud.google.com/go/pubsub/*.{go,c} # gosub
   - cloud.google.com/go/pubsub/apiv1/*.{go,c} # gosub
   - code.cloudfoundry.org/clock/*.{go,c} # gosub
@@ -79,10 +80,6 @@ files:
   - golang.org/x/oauth2/internal/*.{go,c} # gosub
   - golang.org/x/oauth2/jws/*.{go,c} # gosub
   - golang.org/x/oauth2/jwt/*.{go,c} # gosub
-  - golang.org/x/text/secure/bidirule/*.{go,c} # gosub
-  - golang.org/x/text/transform/*.{go,c} # gosub
-  - golang.org/x/text/unicode/bidi/*.{go,c} # gosub
-  - golang.org/x/text/unicode/norm/*.{go,c} # gosub
   - google.golang.org/api/googleapi/transport/*.{go,c} # gosub
   - google.golang.org/api/internal/*.{go,c} # gosub
   - google.golang.org/api/iterator/*.{go,c} # gosub
