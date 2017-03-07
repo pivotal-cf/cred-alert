@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"net"
 	"os"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -97,8 +99,11 @@ func main() {
 		RootCAs:      rootCertPool,
 	})
 
-	dialOption := grpc.WithTransportCredentials(transportCreds)
-	conn, err := grpc.Dial(serverAddr, dialOption)
+	conn, err := grpc.Dial(
+		serverAddr,
+		grpc.WithTransportCredentials(transportCreds),
+		grpc.WithDialer(keepAliveDial),
+	)
 	if err != nil {
 		log.Fatalf("failed to create handler: %s", err.Error())
 	}
@@ -122,4 +127,12 @@ func main() {
 	if err != nil {
 		logger.Error("running-server-failed", err)
 	}
+}
+
+func keepAliveDial(addr string, timeout time.Duration) (net.Conn, error) {
+	d := net.Dialer{
+		Timeout:   timeout,
+		KeepAlive: 60 * time.Second,
+	}
+	return d.Dial("tcp", addr)
 }
