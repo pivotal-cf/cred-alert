@@ -30,6 +30,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 	var (
 		logger               *lagertest.TestLogger
 		repositoryRepository *dbfakes.FakeRepositoryRepository
+		branchRepository     *dbfakes.FakeBranchRepository
 		clock                *fakeclock.FakeClock
 		interval             time.Duration
 		gitClient            *gitclientfakes.FakeClient
@@ -42,6 +43,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
+		branchRepository = &dbfakes.FakeBranchRepository{}
 		clock = fakeclock.NewFakeClock(time.Now())
 		interval = 1 * time.Hour
 		gitClient = &gitclientfakes.FakeClient{}
@@ -69,6 +71,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 	JustBeforeEach(func() {
 		runner = revok.NewHeadCredentialCounter(
 			logger,
+			branchRepository,
 			repositoryRepository,
 			clock,
 			interval,
@@ -147,19 +150,31 @@ var _ = Describe("HeadCredentialCounter", func() {
 			})
 
 			It("tries to store the count of credentials in the repository in the database", func() {
-				Eventually(repositoryRepository.UpdateCredentialCountCallCount).Should(Equal(2))
-				repo, counts := repositoryRepository.UpdateCredentialCountArgsForCall(0)
-				Expect(repo).To(Equal(&repo1))
-				Expect(counts).To(Equal(map[string]uint{
-					"branch-1": 1,
-					"branch-2": 2,
+				Eventually(branchRepository.UpdateBranchesCallCount).Should(Equal(2))
+				repo, branches := branchRepository.UpdateBranchesArgsForCall(0)
+				Expect(repo).To(Equal(repo1))
+				Expect(branches).To(ConsistOf([]db.Branch{
+					{
+						Name:            "branch-1",
+						CredentialCount: 1,
+					},
+					{
+						Name:            "branch-2",
+						CredentialCount: 2,
+					},
 				}))
 
-				repo, counts = repositoryRepository.UpdateCredentialCountArgsForCall(1)
-				Expect(repo).To(Equal(&repo2))
-				Expect(counts).To(Equal(map[string]uint{
-					"branch-3": 3,
-					"branch-4": 4,
+				repo, branches = branchRepository.UpdateBranchesArgsForCall(1)
+				Expect(repo).To(Equal(repo2))
+				Expect(branches).To(ConsistOf([]db.Branch{
+					{
+						Name:            "branch-3",
+						CredentialCount: 3,
+					},
+					{
+						Name:            "branch-4",
+						CredentialCount: 4,
+					},
 				}))
 			})
 		})
@@ -182,7 +197,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 				process.Signal(os.Interrupt)
 
 				// give the counts time to converge; they should eventually be the same
-				Eventually(repositoryRepository.UpdateCredentialCountCallCount, 2*time.Second).Should(BeNumerically("~", gitClient.BranchCredentialCountsCallCount(), 1))
+				Eventually(branchRepository.UpdateBranchesCallCount, 2*time.Second).Should(BeNumerically("~", gitClient.BranchCredentialCountsCallCount(), 1))
 			})
 		})
 
@@ -206,12 +221,18 @@ var _ = Describe("HeadCredentialCounter", func() {
 			})
 
 			It("continues to the next repository", func() {
-				Eventually(repositoryRepository.UpdateCredentialCountCallCount).Should(Equal(1))
-				repo, counts := repositoryRepository.UpdateCredentialCountArgsForCall(0)
-				Expect(repo).To(Equal(&repo2))
-				Expect(counts).To(Equal(map[string]uint{
-					"branch-3": 3,
-					"branch-4": 4,
+				Eventually(branchRepository.UpdateBranchesCallCount).Should(Equal(1))
+				repo, branches := branchRepository.UpdateBranchesArgsForCall(0)
+				Expect(repo).To(Equal(repo2))
+				Expect(branches).To(ConsistOf([]db.Branch{
+					{
+						Name:            "branch-3",
+						CredentialCount: 3,
+					},
+					{
+						Name:            "branch-4",
+						CredentialCount: 4,
+					},
 				}))
 			})
 		})
@@ -225,7 +246,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 			})
 
 			It("returns immediately", func() {
-				Consistently(repositoryRepository.UpdateCredentialCountCallCount).Should(BeZero())
+				Consistently(branchRepository.UpdateBranchesCallCount).Should(BeZero())
 			})
 		})
 	})

@@ -1,7 +1,6 @@
 package db
 
 import (
-	"encoding/json"
 	"errors"
 
 	"code.cloudfoundry.org/lager"
@@ -11,6 +10,8 @@ import (
 )
 
 //go:generate counterfeiter . RepositoryRepository
+
+const FailedFetchThreshold = 3
 
 type RepositoryRepository interface {
 	Create(*Repository) error
@@ -26,7 +27,6 @@ type RepositoryRepository interface {
 	MarkAsCloned(string, string, string) error
 	Reenable(string, string) error
 	RegisterFailedFetch(lager.Logger, *Repository) error
-	UpdateCredentialCount(*Repository, map[string]uint) error
 }
 
 type repositoryRepository struct {
@@ -63,10 +63,6 @@ func (r *repositoryRepository) MustFind(owner string, name string) (Repository, 
 }
 
 func (r *repositoryRepository) Create(repository *Repository) error {
-	if len(repository.CredentialCounts) == 0 {
-		repository.CredentialCounts = []byte("{}")
-	}
-
 	return r.db.Create(repository).Error
 }
 
@@ -153,8 +149,6 @@ func (r *repositoryRepository) NotScannedWithVersion(version int) ([]Repository,
 	return repositories, nil
 }
 
-const FailedFetchThreshold = 3
-
 func (r *repositoryRepository) RegisterFailedFetch(
 	logger lager.Logger,
 	repo *Repository,
@@ -211,19 +205,4 @@ func (r *repositoryRepository) RegisterFailedFetch(
 	}
 
 	return tx.Commit()
-}
-
-func (r *repositoryRepository) UpdateCredentialCount(repository *Repository, credentialCounts map[string]uint) error {
-	credentialCountJSON, err := json.Marshal(credentialCounts)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.db.DB().Exec(`
-		UPDATE repositories
-		SET credential_counts = ?
-		WHERE id = ?
-	`, credentialCountJSON, repository.ID)
-
-	return err
 }

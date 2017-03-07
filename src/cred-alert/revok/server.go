@@ -27,16 +27,24 @@ type Server interface {
 }
 
 type server struct {
-	logger         lager.Logger
-	repoRepository db.RepositoryRepository
-	searcher       search.Searcher
+	logger   lager.Logger
+	searcher search.Searcher
+
+	repositoryRepository db.RepositoryRepository
+	branchRepository     db.BranchRepository
 }
 
-func NewServer(logger lager.Logger, repoRepository db.RepositoryRepository, searcher search.Searcher) Server {
+func NewServer(
+	logger lager.Logger,
+	searcher search.Searcher,
+	repositoryRepository db.RepositoryRepository,
+	branchRepository db.BranchRepository,
+) Server {
 	return &server{
-		logger:         logger,
-		repoRepository: repoRepository,
-		searcher:       searcher,
+		logger:               logger,
+		searcher:             searcher,
+		repositoryRepository: repositoryRepository,
+		branchRepository:     branchRepository,
 	}
 }
 
@@ -46,16 +54,22 @@ func (s *server) GetCredentialCounts(
 ) (*revokpb.CredentialCountResponse, error) {
 	logger := s.logger.Session("get-organization-credential-counts")
 
-	repositories, err := s.repoRepository.All()
+	repositories, err := s.repositoryRepository.All()
 	if err != nil {
 		logger.Error("failed-getting-repositories-from-db", err)
 		return nil, err
 	}
 
 	orgCounts := map[string]int64{}
-	for i := range repositories {
-		for _, branchCount := range repositories[i].GetCredentialCounts() {
-			orgCounts[repositories[i].Owner] += int64(branchCount)
+
+	for _, repository := range repositories {
+		branches, err := s.branchRepository.GetBranches(repository)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, branch := range branches {
+			orgCounts[repository.Owner] += int64(branch.CredentialCount)
 		}
 	}
 
@@ -83,22 +97,28 @@ func (s *server) GetOrganizationCredentialCounts(
 ) (*revokpb.OrganizationCredentialCountResponse, error) {
 	logger := s.logger.Session("get-repository-credential-counts")
 
-	repositories, err := s.repoRepository.AllForOrganization(in.Owner)
+	repositories, err := s.repositoryRepository.AllForOrganization(in.Owner)
 	if err != nil {
 		logger.Error("failed-getting-repositories-from-db", err)
 		return nil, err
 	}
 
 	rccs := []*revokpb.RepositoryCredentialCount{}
-	for i := range repositories {
+	for _, repository := range repositories {
 		var count int64
-		for _, branchCount := range repositories[i].GetCredentialCounts() {
-			count += int64(branchCount)
+
+		branches, err := s.branchRepository.GetBranches(repository)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, branch := range branches {
+			count += int64(branch.CredentialCount)
 		}
 
 		rccs = append(rccs, &revokpb.RepositoryCredentialCount{
-			Owner: repositories[i].Owner,
-			Name:  repositories[i].Name,
+			Owner: repository.Owner,
+			Name:  repository.Name,
 			Count: count,
 		})
 	}
@@ -118,17 +138,23 @@ func (s *server) GetRepositoryCredentialCounts(
 ) (*revokpb.RepositoryCredentialCountResponse, error) {
 	logger := s.logger.Session("get-repository-credential-counts")
 
-	repository, err := s.repoRepository.MustFind(in.Owner, in.Name)
+	repository, err := s.repositoryRepository.MustFind(in.Owner, in.Name)
 	if err != nil {
 		logger.Error("failed-getting-repository-from-db", err)
 		return nil, err
 	}
 
 	bccs := []*revokpb.BranchCredentialCount{}
-	for branch, count := range repository.GetCredentialCounts() {
+
+	branches, err := s.branchRepository.GetBranches(repository)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, branch := range branches {
 		bccs = append(bccs, &revokpb.BranchCredentialCount{
-			Name:  branch,
-			Count: int64(count),
+			Name:  branch.Name,
+			Count: int64(branch.CredentialCount),
 		})
 	}
 

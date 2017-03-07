@@ -227,8 +227,11 @@ func main() {
 		emitter,
 	)
 
+	branchRepository := db.NewBranchRepository(database)
+
 	headCredentialCounter := revok.NewHeadCredentialCounter(
 		logger,
+		branchRepository,
 		repositoryRepository,
 		clk,
 		cfg.CredentialCounterInterval,
@@ -257,7 +260,7 @@ func main() {
 			ClientCAs:    caCertPool,
 		},
 		func(server *grpc.Server) {
-			revokpb.RegisterRevokServer(server, revok.NewServer(logger, repositoryRepository, searcher))
+			revokpb.RegisterRevokServer(server, revok.NewServer(logger, searcher, repositoryRepository, branchRepository))
 		},
 	)
 

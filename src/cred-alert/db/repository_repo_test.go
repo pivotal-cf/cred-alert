@@ -2,7 +2,6 @@ package db_test
 
 import (
 	"cred-alert/db"
-	"encoding/json"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -100,14 +99,13 @@ var _ = Describe("RepositoryRepo", func() {
 
 		BeforeEach(func() {
 			repository = &db.Repository{
-				Name:             "repo-name",
-				Owner:            "owner-name",
-				Path:             "path-to-repo-on-disk",
-				SSHURL:           "repo-ssh-url",
-				Private:          true,
-				DefaultBranch:    "master",
-				RawJSON:          []byte("some-raw-json"),
-				CredentialCounts: []byte("some-credential-counts"),
+				Name:          "repo-name",
+				Owner:         "owner-name",
+				Path:          "path-to-repo-on-disk",
+				SSHURL:        "repo-ssh-url",
+				Private:       true,
+				DefaultBranch: "master",
+				RawJSON:       []byte("some-raw-json"),
 			}
 		})
 
@@ -125,19 +123,6 @@ var _ = Describe("RepositoryRepo", func() {
 			Expect(savedRepository.Private).To(BeTrue())
 			Expect(savedRepository.DefaultBranch).To(Equal("master"))
 			Expect(savedRepository.RawJSON).To(Equal(repository.RawJSON))
-			Expect(savedRepository.CredentialCounts).To(Equal(repository.CredentialCounts))
-		})
-
-		It("sets a default for CredentialCounts if not set", func() {
-			repository.CredentialCounts = []byte{}
-
-			err := repo.Create(repository)
-			Expect(err).NotTo(HaveOccurred())
-
-			savedRepository := db.Repository{}
-			database.Where("name = ? AND owner = ?", repository.Name, repository.Owner).Last(&savedRepository)
-
-			Expect(savedRepository.CredentialCounts).To(Equal([]byte("{}")))
 		})
 	})
 
@@ -394,48 +379,6 @@ var _ = Describe("RepositoryRepo", func() {
 				RawJSON: []byte("bad-json"),
 			})
 			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	Describe("UpdateCredentialCount", func() {
-		var repository *db.Repository
-
-		BeforeEach(func() {
-			repository = &db.Repository{
-				Name:          "some-repo",
-				Owner:         "some-owner",
-				SSHURL:        "some-url",
-				DefaultBranch: "some-branch",
-				RawJSON:       []byte("some-json"),
-				Cloned:        true,
-			}
-			err := repo.Create(repository)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("updates the credential count on the repository", func() {
-			expectedCredentialCounts := map[string]uint{
-				"some-branch":       42,
-				"some-other-branch": 84,
-			}
-
-			err := repo.UpdateCredentialCount(repository, expectedCredentialCounts)
-			Expect(err).NotTo(HaveOccurred())
-
-			var counts []byte
-			err = database.DB().QueryRow(`
-				SELECT credential_counts
-				FROM repositories
-				WHERE id = ?
-			`, repository.ID).Scan(&counts)
-			Expect(err).NotTo(HaveOccurred())
-
-			actualCredentialCounts := make(map[string]interface{})
-			err = json.Unmarshal(counts, &actualCredentialCounts)
-			Expect(err).NotTo(HaveOccurred())
-			for k, v := range actualCredentialCounts {
-				Expect(v).To(BeNumerically("==", expectedCredentialCounts[k]))
-			}
 		})
 	})
 })

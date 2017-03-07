@@ -98,15 +98,6 @@ type FakeRepositoryRepository struct {
 	registerFailedFetchReturns struct {
 		result1 error
 	}
-	UpdateCredentialCountStub        func(*db.Repository, map[string]uint) error
-	updateCredentialCountMutex       sync.RWMutex
-	updateCredentialCountArgsForCall []struct {
-		arg1 *db.Repository
-		arg2 map[string]uint
-	}
-	updateCredentialCountReturns struct {
-		result1 error
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -428,39 +419,6 @@ func (fake *FakeRepositoryRepository) RegisterFailedFetchReturns(result1 error) 
 	}{result1}
 }
 
-func (fake *FakeRepositoryRepository) UpdateCredentialCount(arg1 *db.Repository, arg2 map[string]uint) error {
-	fake.updateCredentialCountMutex.Lock()
-	fake.updateCredentialCountArgsForCall = append(fake.updateCredentialCountArgsForCall, struct {
-		arg1 *db.Repository
-		arg2 map[string]uint
-	}{arg1, arg2})
-	fake.recordInvocation("UpdateCredentialCount", []interface{}{arg1, arg2})
-	fake.updateCredentialCountMutex.Unlock()
-	if fake.UpdateCredentialCountStub != nil {
-		return fake.UpdateCredentialCountStub(arg1, arg2)
-	}
-	return fake.updateCredentialCountReturns.result1
-}
-
-func (fake *FakeRepositoryRepository) UpdateCredentialCountCallCount() int {
-	fake.updateCredentialCountMutex.RLock()
-	defer fake.updateCredentialCountMutex.RUnlock()
-	return len(fake.updateCredentialCountArgsForCall)
-}
-
-func (fake *FakeRepositoryRepository) UpdateCredentialCountArgsForCall(i int) (*db.Repository, map[string]uint) {
-	fake.updateCredentialCountMutex.RLock()
-	defer fake.updateCredentialCountMutex.RUnlock()
-	return fake.updateCredentialCountArgsForCall[i].arg1, fake.updateCredentialCountArgsForCall[i].arg2
-}
-
-func (fake *FakeRepositoryRepository) UpdateCredentialCountReturns(result1 error) {
-	fake.UpdateCredentialCountStub = nil
-	fake.updateCredentialCountReturns = struct {
-		result1 error
-	}{result1}
-}
-
 func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -484,8 +442,6 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.reenableMutex.RUnlock()
 	fake.registerFailedFetchMutex.RLock()
 	defer fake.registerFailedFetchMutex.RUnlock()
-	fake.updateCredentialCountMutex.RLock()
-	defer fake.updateCredentialCountMutex.RUnlock()
 	return fake.invocations
 }
 

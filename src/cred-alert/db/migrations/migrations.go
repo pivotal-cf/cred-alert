@@ -22,4 +22,6 @@ var Migrations = []migration.Migrator{
 	UpdateNullCredentialCounts,
 	UpdateNullCredentialCountsAgain,
 	RemoveFetchInterval,
+	AddBranches,
+	MigrateCredentialCounts,
 }

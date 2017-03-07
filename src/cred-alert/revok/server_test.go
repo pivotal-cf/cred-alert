@@ -2,8 +2,8 @@ package revok_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 
@@ -14,19 +14,20 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"red/redpb"
-
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/revok"
 	"cred-alert/revokpb"
 	"cred-alert/search"
 	"cred-alert/search/searchfakes"
+	"red/redpb"
 )
 
 var _ = Describe("Server", func() {
 	var (
-		repoDB   *dbfakes.FakeRepositoryRepository
+		repositoryRepository *dbfakes.FakeRepositoryRepository
+		branchRepository     *dbfakes.FakeBranchRepository
+
 		searcher *searchfakes.FakeSearcher
 		server   revok.Server
 
@@ -39,45 +40,59 @@ var _ = Describe("Server", func() {
 
 	BeforeEach(func() {
 		logger := lagertest.NewTestLogger("revok-server")
-		repoDB = &dbfakes.FakeRepositoryRepository{}
+
+		branchRepository = &dbfakes.FakeBranchRepository{}
+		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
+
 		searcher = &searchfakes.FakeSearcher{}
 		ctx = context.Background()
 
-		server = revok.NewServer(logger, repoDB, searcher)
+		server = revok.NewServer(logger, searcher, repositoryRepository, branchRepository)
 	})
 
 	Describe("GetCredentialCounts", func() {
 		BeforeEach(func() {
-			credentialCounts1, err := json.Marshal(map[string]int{
-				"o1r1b1": 1,
-				"o1r1b2": 2,
-			})
-			Expect(err).NotTo(HaveOccurred())
+			branchRepository.GetBranchesStub = func(repository db.Repository) ([]db.Branch, error) {
+				repo := fmt.Sprintf("%s/%s", repository.Owner, repository.Name)
 
-			credentialCounts2, err := json.Marshal(map[string]int{
-				"o1r2b1": 3,
-				"o1r2b2": 4,
-			})
-			Expect(err).NotTo(HaveOccurred())
+				switch repo {
+				case "some-owner/repo-1":
+					return []db.Branch{
+						{Name: "o1r1b1", CredentialCount: 1},
+						{Name: "o1r1b2", CredentialCount: 2},
+					}, nil
 
-			credentialCounts3, err := json.Marshal(map[string]int{
-				"o2b1": 5,
-				"o2b2": 6,
-			})
-			Expect(err).NotTo(HaveOccurred())
+				case "some-owner/repo-2":
+					return []db.Branch{
+						{Name: "o1r2b1", CredentialCount: 3},
+						{Name: "o1r2b2", CredentialCount: 4},
+					}, nil
 
-			repoDB.AllReturns([]db.Repository{
+				case "some-other-owner/repo-3":
+					return []db.Branch{
+						{Name: "o2b1", CredentialCount: 5},
+						{Name: "o2b2", CredentialCount: 6},
+					}, nil
+
+				default:
+					panic("Unexpected Repository")
+				}
+
+				return nil, nil
+			}
+
+			repositoryRepository.AllReturns([]db.Repository{
 				{
-					Owner:            "some-owner",
-					CredentialCounts: credentialCounts1,
+					Owner: "some-owner",
+					Name:  "repo-1",
 				},
 				{
-					Owner:            "some-owner",
-					CredentialCounts: credentialCounts2,
+					Owner: "some-owner",
+					Name:  "repo-2",
 				},
 				{
-					Owner:            "some-other-owner",
-					CredentialCounts: credentialCounts3,
+					Owner: "some-other-owner",
+					Name:  "repo-3",
 				},
 			}, nil)
 
@@ -90,7 +105,7 @@ var _ = Describe("Server", func() {
 
 		It("gets repositories from the database", func() {
 			Expect(err).NotTo(HaveOccurred())
-			Expect(repoDB.AllCallCount()).To(Equal(1))
+			Expect(repositoryRepository.AllCallCount()).To(Equal(1))
 		})
 
 		It("returns counts for all repositories in owner-alphabetical order", func() {

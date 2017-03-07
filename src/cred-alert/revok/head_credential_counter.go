@@ -17,6 +17,7 @@ import (
 
 type headCredentialCounter struct {
 	logger               lager.Logger
+	branchRepository     db.BranchRepository
 	repositoryRepository db.RepositoryRepository
 	clock                clock.Clock
 	interval             time.Duration
@@ -26,6 +27,7 @@ type headCredentialCounter struct {
 
 func NewHeadCredentialCounter(
 	logger lager.Logger,
+	branchRepository db.BranchRepository,
 	repositoryRepository db.RepositoryRepository,
 	clock clock.Clock,
 	interval time.Duration,
@@ -34,6 +36,7 @@ func NewHeadCredentialCounter(
 ) ifrit.Runner {
 	return &headCredentialCounter{
 		logger:               logger,
+		branchRepository:     branchRepository,
 		repositoryRepository: repositoryRepository,
 		clock:                clock,
 		interval:             interval,
@@ -98,7 +101,15 @@ func (c *headCredentialCounter) work(
 				continue
 			}
 
-			err = c.repositoryRepository.UpdateCredentialCount(&repository, credentialCounts)
+			branches := make([]db.Branch, 0, len(credentialCounts))
+			for branchName, credentialCount := range credentialCounts {
+				branches = append(branches, db.Branch{
+					Name:            branchName,
+					CredentialCount: credentialCount,
+				})
+			}
+
+			err = c.branchRepository.UpdateBranches(repository, branches)
 			if err != nil {
 				repoLogger.Error("failed-to-update-credential-count", err)
 				continue
