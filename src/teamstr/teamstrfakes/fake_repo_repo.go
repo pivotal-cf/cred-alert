@@ -2,6 +2,7 @@
 package teamstrfakes
 
 import (
+	"context"
 	"sync"
 	"teamstr"
 
@@ -9,9 +10,10 @@ import (
 )
 
 type FakeRepoRepo struct {
-	ListByOrgStub        func(org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error)
+	ListByOrgStub        func(ctx context.Context, org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error)
 	listByOrgMutex       sync.RWMutex
 	listByOrgArgsForCall []struct {
+		ctx context.Context
 		org string
 		opt *github.RepositoryListByOrgOptions
 	}
@@ -24,19 +26,19 @@ type FakeRepoRepo struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRepoRepo) ListByOrg(org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error) {
+func (fake *FakeRepoRepo) ListByOrg(ctx context.Context, org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error) {
 	fake.listByOrgMutex.Lock()
 	fake.listByOrgArgsForCall = append(fake.listByOrgArgsForCall, struct {
+		ctx context.Context
 		org string
 		opt *github.RepositoryListByOrgOptions
-	}{org, opt})
-	fake.recordInvocation("ListByOrg", []interface{}{org, opt})
+	}{ctx, org, opt})
+	fake.recordInvocation("ListByOrg", []interface{}{ctx, org, opt})
 	fake.listByOrgMutex.Unlock()
 	if fake.ListByOrgStub != nil {
-		return fake.ListByOrgStub(org, opt)
-	} else {
-		return fake.listByOrgReturns.result1, fake.listByOrgReturns.result2, fake.listByOrgReturns.result3
+		return fake.ListByOrgStub(ctx, org, opt)
 	}
+	return fake.listByOrgReturns.result1, fake.listByOrgReturns.result2, fake.listByOrgReturns.result3
 }
 
 func (fake *FakeRepoRepo) ListByOrgCallCount() int {
@@ -45,10 +47,10 @@ func (fake *FakeRepoRepo) ListByOrgCallCount() int {
 	return len(fake.listByOrgArgsForCall)
 }
 
-func (fake *FakeRepoRepo) ListByOrgArgsForCall(i int) (string, *github.RepositoryListByOrgOptions) {
+func (fake *FakeRepoRepo) ListByOrgArgsForCall(i int) (context.Context, string, *github.RepositoryListByOrgOptions) {
 	fake.listByOrgMutex.RLock()
 	defer fake.listByOrgMutex.RUnlock()
-	return fake.listByOrgArgsForCall[i].org, fake.listByOrgArgsForCall[i].opt
+	return fake.listByOrgArgsForCall[i].ctx, fake.listByOrgArgsForCall[i].org, fake.listByOrgArgsForCall[i].opt
 }
 
 func (fake *FakeRepoRepo) ListByOrgReturns(result1 []*github.Repository, result2 *github.Response, result3 error) {

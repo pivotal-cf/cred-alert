@@ -2,6 +2,7 @@
 package teamstrfakes
 
 import (
+	"context"
 	"sync"
 	"teamstr"
 
@@ -9,9 +10,10 @@ import (
 )
 
 type FakeOrgRepo struct {
-	AddTeamRepoStub        func(team int, owner string, repo string, opt *github.OrganizationAddTeamRepoOptions) (*github.Response, error)
+	AddTeamRepoStub        func(ctx context.Context, team int, owner string, repo string, opt *github.OrganizationAddTeamRepoOptions) (*github.Response, error)
 	addTeamRepoMutex       sync.RWMutex
 	addTeamRepoArgsForCall []struct {
+		ctx   context.Context
 		team  int
 		owner string
 		repo  string
@@ -21,9 +23,10 @@ type FakeOrgRepo struct {
 		result1 *github.Response
 		result2 error
 	}
-	ListTeamReposStub        func(team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error)
+	ListTeamReposStub        func(ctx context.Context, team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error)
 	listTeamReposMutex       sync.RWMutex
 	listTeamReposArgsForCall []struct {
+		ctx  context.Context
 		team int
 		opt  *github.ListOptions
 	}
@@ -36,21 +39,21 @@ type FakeOrgRepo struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeOrgRepo) AddTeamRepo(team int, owner string, repo string, opt *github.OrganizationAddTeamRepoOptions) (*github.Response, error) {
+func (fake *FakeOrgRepo) AddTeamRepo(ctx context.Context, team int, owner string, repo string, opt *github.OrganizationAddTeamRepoOptions) (*github.Response, error) {
 	fake.addTeamRepoMutex.Lock()
 	fake.addTeamRepoArgsForCall = append(fake.addTeamRepoArgsForCall, struct {
+		ctx   context.Context
 		team  int
 		owner string
 		repo  string
 		opt   *github.OrganizationAddTeamRepoOptions
-	}{team, owner, repo, opt})
-	fake.recordInvocation("AddTeamRepo", []interface{}{team, owner, repo, opt})
+	}{ctx, team, owner, repo, opt})
+	fake.recordInvocation("AddTeamRepo", []interface{}{ctx, team, owner, repo, opt})
 	fake.addTeamRepoMutex.Unlock()
 	if fake.AddTeamRepoStub != nil {
-		return fake.AddTeamRepoStub(team, owner, repo, opt)
-	} else {
-		return fake.addTeamRepoReturns.result1, fake.addTeamRepoReturns.result2
+		return fake.AddTeamRepoStub(ctx, team, owner, repo, opt)
 	}
+	return fake.addTeamRepoReturns.result1, fake.addTeamRepoReturns.result2
 }
 
 func (fake *FakeOrgRepo) AddTeamRepoCallCount() int {
@@ -59,10 +62,10 @@ func (fake *FakeOrgRepo) AddTeamRepoCallCount() int {
 	return len(fake.addTeamRepoArgsForCall)
 }
 
-func (fake *FakeOrgRepo) AddTeamRepoArgsForCall(i int) (int, string, string, *github.OrganizationAddTeamRepoOptions) {
+func (fake *FakeOrgRepo) AddTeamRepoArgsForCall(i int) (context.Context, int, string, string, *github.OrganizationAddTeamRepoOptions) {
 	fake.addTeamRepoMutex.RLock()
 	defer fake.addTeamRepoMutex.RUnlock()
-	return fake.addTeamRepoArgsForCall[i].team, fake.addTeamRepoArgsForCall[i].owner, fake.addTeamRepoArgsForCall[i].repo, fake.addTeamRepoArgsForCall[i].opt
+	return fake.addTeamRepoArgsForCall[i].ctx, fake.addTeamRepoArgsForCall[i].team, fake.addTeamRepoArgsForCall[i].owner, fake.addTeamRepoArgsForCall[i].repo, fake.addTeamRepoArgsForCall[i].opt
 }
 
 func (fake *FakeOrgRepo) AddTeamRepoReturns(result1 *github.Response, result2 error) {
@@ -73,19 +76,19 @@ func (fake *FakeOrgRepo) AddTeamRepoReturns(result1 *github.Response, result2 er
 	}{result1, result2}
 }
 
-func (fake *FakeOrgRepo) ListTeamRepos(team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error) {
+func (fake *FakeOrgRepo) ListTeamRepos(ctx context.Context, team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error) {
 	fake.listTeamReposMutex.Lock()
 	fake.listTeamReposArgsForCall = append(fake.listTeamReposArgsForCall, struct {
+		ctx  context.Context
 		team int
 		opt  *github.ListOptions
-	}{team, opt})
-	fake.recordInvocation("ListTeamRepos", []interface{}{team, opt})
+	}{ctx, team, opt})
+	fake.recordInvocation("ListTeamRepos", []interface{}{ctx, team, opt})
 	fake.listTeamReposMutex.Unlock()
 	if fake.ListTeamReposStub != nil {
-		return fake.ListTeamReposStub(team, opt)
-	} else {
-		return fake.listTeamReposReturns.result1, fake.listTeamReposReturns.result2, fake.listTeamReposReturns.result3
+		return fake.ListTeamReposStub(ctx, team, opt)
 	}
+	return fake.listTeamReposReturns.result1, fake.listTeamReposReturns.result2, fake.listTeamReposReturns.result3
 }
 
 func (fake *FakeOrgRepo) ListTeamReposCallCount() int {
@@ -94,10 +97,10 @@ func (fake *FakeOrgRepo) ListTeamReposCallCount() int {
 	return len(fake.listTeamReposArgsForCall)
 }
 
-func (fake *FakeOrgRepo) ListTeamReposArgsForCall(i int) (int, *github.ListOptions) {
+func (fake *FakeOrgRepo) ListTeamReposArgsForCall(i int) (context.Context, int, *github.ListOptions) {
 	fake.listTeamReposMutex.RLock()
 	defer fake.listTeamReposMutex.RUnlock()
-	return fake.listTeamReposArgsForCall[i].team, fake.listTeamReposArgsForCall[i].opt
+	return fake.listTeamReposArgsForCall[i].ctx, fake.listTeamReposArgsForCall[i].team, fake.listTeamReposArgsForCall[i].opt
 }
 
 func (fake *FakeOrgRepo) ListTeamReposReturns(result1 []*github.Repository, result2 *github.Response, result3 error) {

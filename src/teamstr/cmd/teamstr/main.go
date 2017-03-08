@@ -4,12 +4,14 @@ import (
 	"errors"
 	"log"
 	"os"
+	"context"
 
 	"github.com/google/go-github/github"
 	"github.com/jessevdk/go-flags"
 	"golang.org/x/oauth2"
 
 	"teamstr"
+
 )
 
 type Opts struct {
@@ -50,7 +52,7 @@ func fetchTeamID(client *github.Client, orgName string, teamName string) (int, e
 	}
 
 	for {
-		teams, resp, err := client.Organizations.ListTeams(orgName, opts)
+		teams, resp, err := client.Organizations.ListTeams(context.TODO(), orgName, opts)
 		if err != nil {
 			return 0, err
 		}

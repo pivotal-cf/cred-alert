@@ -1,12 +1,16 @@
 package teamstr_test
 
 import (
+	"context"
+	
 	"github.com/google/go-github/github"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+
 	"teamstr"
 	"teamstr/teamstrfakes"
+
 )
 
 var _ = Describe("Syncer", func() {
@@ -26,7 +30,7 @@ var _ = Describe("Syncer", func() {
 
 	It("adds all organization repos to a team", func() {
 		orgRepoCalls := 0
-		orgRepo.ListTeamReposStub = func(team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error) {
+		orgRepo.ListTeamReposStub = func(context context.Context, team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error) {
 			orgRepoCalls++
 			switch orgRepoCalls {
 			case 1:
@@ -51,7 +55,7 @@ var _ = Describe("Syncer", func() {
 		}
 
 		repoRepoCalls := 0
-		repoRepo.ListByOrgStub = func(org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error) {
+		repoRepo.ListByOrgStub = func(context context.Context, org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error) {
 			repoRepoCalls++
 			switch repoRepoCalls {
 			case 1:
@@ -87,7 +91,7 @@ var _ = Describe("Syncer", func() {
 
 		Expect(orgRepo.AddTeamRepoCallCount()).To(Equal(2))
 
-		addedTeam, addedOwner, addedRepo, addedOpts := orgRepo.AddTeamRepoArgsForCall(0)
+		_, addedTeam, addedOwner, addedRepo, addedOpts := orgRepo.AddTeamRepoArgsForCall(0)
 		Expect(addedTeam).To(Equal(123456))
 		Expect(addedOwner).To(Equal("example-org"))
 		Expect(addedRepo).To(Equal("repo-g"))
@@ -95,7 +99,7 @@ var _ = Describe("Syncer", func() {
 			Permission: "pull",
 		}))
 
-		addedTeam, addedOwner, addedRepo, addedOpts = orgRepo.AddTeamRepoArgsForCall(1)
+		_, addedTeam, addedOwner, addedRepo, addedOpts = orgRepo.AddTeamRepoArgsForCall(1)
 		Expect(addedTeam).To(Equal(123456))
 		Expect(addedOwner).To(Equal("example-org"))
 		Expect(addedRepo).To(Equal("repo-h"))

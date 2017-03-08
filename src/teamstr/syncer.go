@@ -3,6 +3,7 @@ package teamstr
 import (
 	"log"
 	"sort"
+	"context"
 
 	"github.com/deckarep/golang-set"
 	"github.com/google/go-github/github"
@@ -11,14 +12,14 @@ import (
 //go:generate counterfeiter . OrgRepo
 
 type OrgRepo interface {
-	AddTeamRepo(team int, owner string, repo string, opt *github.OrganizationAddTeamRepoOptions) (*github.Response, error)
-	ListTeamRepos(team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error)
+	AddTeamRepo(ctx context.Context , team int, owner string, repo string, opt *github.OrganizationAddTeamRepoOptions) (*github.Response, error)
+	ListTeamRepos(ctx context.Context, team int, opt *github.ListOptions) ([]*github.Repository, *github.Response, error)
 }
 
 //go:generate counterfeiter . RepoRepo
 
 type RepoRepo interface {
-	ListByOrg(org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error)
+	ListByOrg(ctx context.Context, org string, opt *github.RepositoryListByOrgOptions) ([]*github.Repository, *github.Response, error)
 }
 
 type Syncer struct {
@@ -57,7 +58,7 @@ func (s *Syncer) orgRepos(orgName string) (mapset.Set, error) {
 	var repos []*github.Repository
 
 	for {
-		rs, resp, err := s.repoRepo.ListByOrg(orgName, opts)
+		rs, resp, err := s.repoRepo.ListByOrg(context.TODO(), orgName, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +86,7 @@ func (s *Syncer) teamRepos(teamID int) (mapset.Set, error) {
 	var repos []*github.Repository
 
 	for {
-		rs, resp, err := s.orgRepo.ListTeamRepos(teamID, opts)
+		rs, resp, err := s.orgRepo.ListTeamRepos(context.TODO(), teamID, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +121,7 @@ func (s *Syncer) sync(orgName string, teamID int, reposToAdd []interface{}) erro
 
 	for _, repo := range strRepos {
 		log.Println("Adding repo: ", repo)
-		_, err := s.orgRepo.AddTeamRepo(teamID, orgName, repo, &github.OrganizationAddTeamRepoOptions{
+		_, err := s.orgRepo.AddTeamRepo(context.TODO(), teamID, orgName, repo, &github.OrganizationAddTeamRepoOptions{
 			Permission: "pull",
 		})
 
