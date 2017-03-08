@@ -11,7 +11,8 @@ func MigrateCredentialCounts(tx migration.LimitedTx) error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+
+	branches := map[uint]map[string]uint{}
 
 	for rows.Next() {
 		var repositoryID uint
@@ -19,12 +20,19 @@ func MigrateCredentialCounts(tx migration.LimitedTx) error {
 
 		err = rows.Scan(&repositoryID, &credentialCountsJSON)
 		if err != nil {
+			rows.Close()
 			return err
 		}
 
 		credentialCounts := map[string]uint{}
 		json.Unmarshal(credentialCountsJSON, &credentialCounts)
 
+		branches[repositoryID] = credentialCounts
+	}
+
+	rows.Close()
+
+	for repositoryID, credentialCounts := range branches {
 		for branchName, credentialCount := range credentialCounts {
 			_, err := tx.Exec(`INSERT INTO branches (
 			  created_at,
