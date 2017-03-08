@@ -117,6 +117,8 @@ func main() {
 	repositoryRepository := db.NewRepositoryRepository(database)
 	fetchRepository := db.NewFetchRepository(database)
 	credentialRepository := db.NewCredentialRepository(database)
+	branchRepository := db.NewBranchRepository(database)
+
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
 	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
@@ -226,8 +228,6 @@ func main() {
 		db.NewStatsRepository(database),
 		emitter,
 	)
-
-	branchRepository := db.NewBranchRepository(database)
 
 	headCredentialCounter := revok.NewHeadCredentialCounter(
 		logger,
