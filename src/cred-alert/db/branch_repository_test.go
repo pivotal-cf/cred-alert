@@ -102,5 +102,19 @@ var _ = Describe("BranchRepository", func() {
 			Expect(branches[0].Name).To(Equal("branch-1"))
 			Expect(branches[0].CredentialCount).To(Equal(uint(56)))
 		})
+
+		It("allows branches that have the same name (case-insensitively)", func() {
+			err := branchRepository.UpdateBranches(repository, []db.Branch{
+				{
+					Name:            "BRANCH",
+					CredentialCount: 42,
+				},
+				{
+					Name:            "branch",
+					CredentialCount: 8,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })

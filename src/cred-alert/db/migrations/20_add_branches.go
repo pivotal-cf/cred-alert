@@ -11,7 +11,7 @@ func AddBranches(tx migration.LimitedTx) error {
 
 			 repository_id INT NOT NULL,
 
-			 name             VARCHAR(255) NOT NULL,
+			 name             VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
 			 credential_count INT UNSIGNED NOT NULL,
 
 			 FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE,
