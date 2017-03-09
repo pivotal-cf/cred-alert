@@ -2,7 +2,7 @@
 
 set -e -u
 
-for unit in src/cred-alert src/rolodex src/red; do
+for unit in src/cred-alert src/rolodex src/red src/teamstr; do
   pushd $unit
     ginkgo -r -p "$@"
   popd
