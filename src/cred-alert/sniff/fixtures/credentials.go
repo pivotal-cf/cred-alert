@@ -20,4 +20,9 @@ $1$ABCDEF0./3456789$1./47/8900123456789abc # should_match
 
   -----BEGIN RSA PRIVATE KEY----- # should_match
 
+
+# Private Key Generic
+
+  -----BEGIN PRIVATE KEY----- # should_match
+  -----BEGIN ENCRYPTED SPECIAL PRIVATE KEY----- # should_match
 `

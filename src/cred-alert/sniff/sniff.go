@@ -19,7 +19,7 @@ const awsSecretAccessKeyPattern = `KEY["']?\s*(?::|=>|=)\s*["']?[A-Z0-9/\+=]{40}
 const cryptMD5Pattern = `\$1\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{22}`
 const cryptSHA256Pattern = `\$5\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{43}`
 const cryptSHA512Pattern = `\$6\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{86}`
-const rsaPrivateKeyHeaderPattern = `-----BEGIN RSA PRIVATE KEY-----`
+const privateKeyHeaderPattern = `-----BEGIN(.*)PRIVATE KEY-----`
 
 //go:generate counterfeiter . Scanner
 
@@ -54,7 +54,7 @@ func NewDefaultSniffer() Sniffer {
 			matchers.Filter(matchers.Format(cryptMD5Pattern), "$1$"),
 			matchers.Filter(matchers.Format(cryptSHA256Pattern), "$5$"),
 			matchers.Filter(matchers.Format(cryptSHA512Pattern), "$6$"),
-			matchers.Substring(rsaPrivateKeyHeaderPattern),
+			matchers.Format(privateKeyHeaderPattern),
 		),
 		exclusionMatcher: matchers.UpcasedMulti(
 			matchers.Substring(bashStringInterpolationPattern),
