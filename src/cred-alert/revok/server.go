@@ -54,38 +54,19 @@ func (s *server) GetCredentialCounts(
 ) (*revokpb.CredentialCountResponse, error) {
 	logger := s.logger.Session("get-organization-credential-counts")
 
-	repositories, err := s.repositoryRepository.All()
+	credentialsByOwner, err := s.branchRepository.GetCredentialCountByOwner()
 	if err != nil {
-		logger.Error("failed-getting-repositories-from-db", err)
+		logger.Error("failed-to-get-owner-credential-counts", err)
 		return nil, err
 	}
 
-	orgCounts := map[string]int64{}
-
-	for _, repository := range repositories {
-		branches, err := s.branchRepository.GetBranches(repository)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, branch := range branches {
-			orgCounts[repository.Owner] += int64(branch.CredentialCount)
-		}
-	}
-
-	orgNames := []string{}
-	for name := range orgCounts {
-		orgNames = append(orgNames, name)
-	}
-	sort.Strings(orgNames)
-
 	response := &revokpb.CredentialCountResponse{}
-	for _, orgName := range orgNames {
-		occ := &revokpb.OrganizationCredentialCount{
-			Owner: orgName,
-			Count: orgCounts[orgName],
-		}
-		response.CredentialCounts = append(response.CredentialCounts, occ)
+
+	for _, report := range credentialsByOwner {
+		response.CredentialCounts = append(response.CredentialCounts, &revokpb.OrganizationCredentialCount{
+			Owner: report.Owner,
+			Count: int64(report.CredentialCount),
+		})
 	}
 
 	return response, nil

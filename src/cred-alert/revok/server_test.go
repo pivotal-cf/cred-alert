@@ -3,7 +3,6 @@ package revok_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 
@@ -30,12 +29,6 @@ var _ = Describe("Server", func() {
 
 		searcher *searchfakes.FakeSearcher
 		server   revok.Server
-
-		ctx     context.Context
-		request *revokpb.CredentialCountRequest
-
-		response *revokpb.CredentialCountResponse
-		err      error
 	)
 
 	BeforeEach(func() {
@@ -45,67 +38,34 @@ var _ = Describe("Server", func() {
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 
 		searcher = &searchfakes.FakeSearcher{}
-		ctx = context.Background()
 
 		server = revok.NewServer(logger, searcher, repositoryRepository, branchRepository)
 	})
 
 	Describe("GetCredentialCounts", func() {
+		var (
+			response *revokpb.CredentialCountResponse
+			err      error
+		)
+
 		BeforeEach(func() {
-			branchRepository.GetBranchesStub = func(repository db.Repository) ([]db.Branch, error) {
-				repo := fmt.Sprintf("%s/%s", repository.Owner, repository.Name)
-
-				switch repo {
-				case "some-owner/repo-1":
-					return []db.Branch{
-						{Name: "o1r1b1", CredentialCount: 1},
-						{Name: "o1r1b2", CredentialCount: 2},
-					}, nil
-
-				case "some-owner/repo-2":
-					return []db.Branch{
-						{Name: "o1r2b1", CredentialCount: 3},
-						{Name: "o1r2b2", CredentialCount: 4},
-					}, nil
-
-				case "some-other-owner/repo-3":
-					return []db.Branch{
-						{Name: "o2b1", CredentialCount: 5},
-						{Name: "o2b2", CredentialCount: 6},
-					}, nil
-
-				default:
-					panic("Unexpected Repository")
-				}
-
-				return nil, nil
-			}
-
-			repositoryRepository.AllReturns([]db.Repository{
+			branchRepository.GetCredentialCountByOwnerReturns([]db.OwnerCredentialCount{
 				{
-					Owner: "some-owner",
-					Name:  "repo-1",
+					Owner:           "some-other-owner",
+					CredentialCount: 11,
 				},
 				{
-					Owner: "some-owner",
-					Name:  "repo-2",
-				},
-				{
-					Owner: "some-other-owner",
-					Name:  "repo-3",
+					Owner:           "some-owner",
+					CredentialCount: 10,
 				},
 			}, nil)
 
-			request = &revokpb.CredentialCountRequest{}
+			request := &revokpb.CredentialCountRequest{}
+			response, err = server.GetCredentialCounts(context.Background(), request)
 		})
 
-		JustBeforeEach(func() {
-			response, err = server.GetCredentialCounts(ctx, request)
-		})
-
-		It("gets repositories from the database", func() {
+		It("does not error", func() {
 			Expect(err).NotTo(HaveOccurred())
-			Expect(repositoryRepository.AllCallCount()).To(Equal(1))
 		})
 
 		It("returns counts for all repositories in owner-alphabetical order", func() {
@@ -123,6 +83,19 @@ var _ = Describe("Server", func() {
 			Expect(response.CredentialCounts).NotTo(BeNil())
 			Expect(response.CredentialCounts).To(Equal([]*revokpb.OrganizationCredentialCount{occ1, occ2}))
 		})
+
+		Context("when the database returns an error", func() {
+			BeforeEach(func() {
+				branchRepository.GetCredentialCountByOwnerReturns(nil, errors.New("disaster"))
+			})
+
+			It("does not error", func() {
+				request := &revokpb.CredentialCountRequest{}
+				_, err = server.GetCredentialCounts(context.Background(), request)
+				Expect(err).To(HaveOccurred())
+			})
+
+		})
 	})
 
 	Describe("Search", func() {
@@ -134,6 +107,7 @@ var _ = Describe("Server", func() {
 		)
 
 		BeforeEach(func() {
+			var err error
 			listener, err = net.Listen("tcp", "127.0.0.1:0")
 			Expect(err).NotTo(HaveOccurred())
 

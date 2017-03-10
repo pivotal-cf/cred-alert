@@ -25,6 +25,13 @@ type FakeBranchRepository struct {
 	updateBranchesReturns struct {
 		result1 error
 	}
+	GetCredentialCountByOwnerStub        func() ([]db.OwnerCredentialCount, error)
+	getCredentialCountByOwnerMutex       sync.RWMutex
+	getCredentialCountByOwnerArgsForCall []struct{}
+	getCredentialCountByOwnerReturns     struct {
+		result1 []db.OwnerCredentialCount
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -100,6 +107,31 @@ func (fake *FakeBranchRepository) UpdateBranchesReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeBranchRepository) GetCredentialCountByOwner() ([]db.OwnerCredentialCount, error) {
+	fake.getCredentialCountByOwnerMutex.Lock()
+	fake.getCredentialCountByOwnerArgsForCall = append(fake.getCredentialCountByOwnerArgsForCall, struct{}{})
+	fake.recordInvocation("GetCredentialCountByOwner", []interface{}{})
+	fake.getCredentialCountByOwnerMutex.Unlock()
+	if fake.GetCredentialCountByOwnerStub != nil {
+		return fake.GetCredentialCountByOwnerStub()
+	}
+	return fake.getCredentialCountByOwnerReturns.result1, fake.getCredentialCountByOwnerReturns.result2
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountByOwnerCallCount() int {
+	fake.getCredentialCountByOwnerMutex.RLock()
+	defer fake.getCredentialCountByOwnerMutex.RUnlock()
+	return len(fake.getCredentialCountByOwnerArgsForCall)
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountByOwnerReturns(result1 []db.OwnerCredentialCount, result2 error) {
+	fake.GetCredentialCountByOwnerStub = nil
+	fake.getCredentialCountByOwnerReturns = struct {
+		result1 []db.OwnerCredentialCount
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeBranchRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -107,6 +139,8 @@ func (fake *FakeBranchRepository) Invocations() map[string][][]interface{} {
 	defer fake.getBranchesMutex.RUnlock()
 	fake.updateBranchesMutex.RLock()
 	defer fake.updateBranchesMutex.RUnlock()
+	fake.getCredentialCountByOwnerMutex.RLock()
+	defer fake.getCredentialCountByOwnerMutex.RUnlock()
 	return fake.invocations
 }
 
