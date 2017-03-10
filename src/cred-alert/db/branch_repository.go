@@ -9,10 +9,28 @@ type BranchRepository interface {
 	UpdateBranches(repository Repository, branches []Branch) error
 
 	GetCredentialCountByOwner() ([]OwnerCredentialCount, error)
+	GetCredentialCountForOwner(owner string) ([]RepositoryCredentialCount, error)
+	GetCredentialCountForRepo(owner string, repo string) ([]BranchCredentialCount, error)
 }
 
 type OwnerCredentialCount struct {
+	Owner           string
+	CredentialCount int
+}
+
+type RepositoryCredentialCount struct {
 	Owner string
+	Name  string
+
+	CredentialCount int
+}
+
+type BranchCredentialCount struct {
+	Owner string
+	Name  string
+
+	Branch string
+
 	CredentialCount int
 }
 
@@ -75,6 +93,65 @@ func (b *branchRepository) GetCredentialCountByOwner() ([]OwnerCredentialCount, 
 		var count OwnerCredentialCount
 
 		err := rows.Scan(&count.Owner, &count.CredentialCount)
+		if err != nil {
+			return nil, err
+		}
+
+		counts = append(counts, count)
+	}
+
+	return counts, nil
+}
+
+func (b *branchRepository) GetCredentialCountForOwner(owner string) ([]RepositoryCredentialCount, error) {
+	rows, err := b.db.DB().Query(`
+		SELECT r.owner, r.name, SUM(b.credential_count)
+		FROM repositories r
+		JOIN branches b
+		  ON r.id = b.repository_id
+		WHERE r.owner = ?
+		GROUP BY r.owner, r.name
+		ORDER BY r.name
+	`, owner)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := []RepositoryCredentialCount{}
+
+	for rows.Next() {
+		var count RepositoryCredentialCount
+
+		err := rows.Scan(&count.Owner, &count.Name, &count.CredentialCount)
+		if err != nil {
+			return nil, err
+		}
+
+		counts = append(counts, count)
+	}
+
+	return counts, nil
+}
+
+func (b *branchRepository) GetCredentialCountForRepo(owner string, repo string) ([]BranchCredentialCount, error) {
+	rows, err := b.db.DB().Query(`
+		SELECT r.owner, r.name, b.name, b.credential_count
+		FROM repositories r JOIN branches b ON r.id = b.repository_id
+		WHERE r.owner = ? AND r.name = ?
+		ORDER BY b.name
+	`, owner, repo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := []BranchCredentialCount{}
+
+	for rows.Next() {
+		var count BranchCredentialCount
+
+		err := rows.Scan(&count.Owner, &count.Name, &count.Branch, &count.CredentialCount)
 		if err != nil {
 			return nil, err
 		}

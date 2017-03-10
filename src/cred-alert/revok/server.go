@@ -1,8 +1,6 @@
 package revok
 
 import (
-	"sort"
-
 	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -52,11 +50,11 @@ func (s *server) GetCredentialCounts(
 	ctx context.Context,
 	in *revokpb.CredentialCountRequest,
 ) (*revokpb.CredentialCountResponse, error) {
-	logger := s.logger.Session("get-organization-credential-counts")
+	logger := s.logger.Session("get-all-credential-counts")
 
 	credentialsByOwner, err := s.branchRepository.GetCredentialCountByOwner()
 	if err != nil {
-		logger.Error("failed-to-get-owner-credential-counts", err)
+		logger.Error("failed-to-get-all-credential-counts", err)
 		return nil, err
 	}
 
@@ -76,35 +74,25 @@ func (s *server) GetOrganizationCredentialCounts(
 	ctx context.Context,
 	in *revokpb.OrganizationCredentialCountRequest,
 ) (*revokpb.OrganizationCredentialCountResponse, error) {
-	logger := s.logger.Session("get-repository-credential-counts")
+	logger := s.logger.Session("get-owner-credential-counts", lager.Data{
+		"owner": in.GetOwner(),
+	})
 
-	repositories, err := s.repositoryRepository.AllForOrganization(in.Owner)
+	credentialsForOwner, err := s.branchRepository.GetCredentialCountForOwner(in.GetOwner())
 	if err != nil {
-		logger.Error("failed-getting-repositories-from-db", err)
+		logger.Error("failed-to-get-owner-credential-count", err)
 		return nil, err
 	}
 
 	rccs := []*revokpb.RepositoryCredentialCount{}
-	for _, repository := range repositories {
-		var count int64
 
-		branches, err := s.branchRepository.GetBranches(repository)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, branch := range branches {
-			count += int64(branch.CredentialCount)
-		}
-
+	for _, report := range credentialsForOwner {
 		rccs = append(rccs, &revokpb.RepositoryCredentialCount{
-			Owner: repository.Owner,
-			Name:  repository.Name,
-			Count: count,
+			Owner: report.Owner,
+			Name:  report.Name,
+			Count: int64(report.CredentialCount),
 		})
 	}
-
-	sort.Sort(revokpb.RCCByName(rccs))
 
 	response := &revokpb.OrganizationCredentialCountResponse{
 		CredentialCounts: rccs,
@@ -119,27 +107,20 @@ func (s *server) GetRepositoryCredentialCounts(
 ) (*revokpb.RepositoryCredentialCountResponse, error) {
 	logger := s.logger.Session("get-repository-credential-counts")
 
-	repository, err := s.repositoryRepository.MustFind(in.Owner, in.Name)
+	credentialsForOwner, err := s.branchRepository.GetCredentialCountForRepo(in.GetOwner(), in.GetName())
 	if err != nil {
-		logger.Error("failed-getting-repository-from-db", err)
+		logger.Error("failed-to-get-repository-credential-count", err)
 		return nil, err
 	}
 
 	bccs := []*revokpb.BranchCredentialCount{}
 
-	branches, err := s.branchRepository.GetBranches(repository)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, branch := range branches {
+	for _, report := range credentialsForOwner {
 		bccs = append(bccs, &revokpb.BranchCredentialCount{
-			Name:  branch.Name,
-			Count: int64(branch.CredentialCount),
+			Name:  report.Branch,
+			Count: int64(report.CredentialCount),
 		})
 	}
-
-	sort.Sort(revokpb.BCCByName(bccs))
 
 	response := &revokpb.RepositoryCredentialCountResponse{
 		CredentialCounts: bccs,

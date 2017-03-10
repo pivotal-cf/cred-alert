@@ -162,12 +162,130 @@ var _ = Describe("BranchRepository", func() {
 
 			Expect(report).To(Equal([]db.OwnerCredentialCount{
 				{
-					Owner: "my-different-owner",
+					Owner:           "my-different-owner",
 					CredentialCount: 100,
 				},
 				{
-					Owner: "my-special-owner",
+					Owner:           "my-special-owner",
 					CredentialCount: 98,
+				},
+			}))
+		})
+	})
+
+	Describe("GetCredentialCountForOwner", func() {
+		var (
+			yetAnotherRepository db.Repository
+			otherRepository      db.Repository
+		)
+
+		BeforeEach(func() {
+			otherRepository = db.Repository{
+				Owner:   "my-different-owner",
+				Name:    "my-special-name",
+				RawJSON: []byte("{}"),
+			}
+
+			err := repositoryRepository.Create(&otherRepository)
+			Expect(err).NotTo(HaveOccurred())
+
+			yetAnotherRepository = db.Repository{
+				Owner:   "my-different-owner",
+				Name:    "my-other-name",
+				RawJSON: []byte("{}"),
+			}
+
+			err = repositoryRepository.Create(&yetAnotherRepository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("sums up all of the credential counts per repository", func() {
+			err := branchRepository.UpdateBranches(otherRepository, []db.Branch{
+				{
+					Name:            "branch-1",
+					CredentialCount: 42,
+				},
+				{
+					Name:            "branch-2",
+					CredentialCount: 56,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			err = branchRepository.UpdateBranches(yetAnotherRepository, []db.Branch{
+				{
+					Name:            "branch-1",
+					CredentialCount: 7,
+				},
+				{
+					Name:            "branch-2",
+					CredentialCount: 35,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			report, err := branchRepository.GetCredentialCountForOwner("my-different-owner")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(report).To(Equal([]db.RepositoryCredentialCount{
+				{
+					Owner:           "my-different-owner",
+					Name:            "my-other-name",
+					CredentialCount: 42,
+				},
+				{
+					Owner:           "my-different-owner",
+					Name:            "my-special-name",
+					CredentialCount: 98,
+				},
+			}))
+		})
+	})
+
+	Describe("GetCredentialCountForRepo", func() {
+		var (
+			otherRepository db.Repository
+		)
+
+		BeforeEach(func() {
+			otherRepository = db.Repository{
+				Owner:   "my-different-owner",
+				Name:    "my-special-name",
+				RawJSON: []byte("{}"),
+			}
+
+			err := repositoryRepository.Create(&otherRepository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("sums up all of the credential counts per branch", func() {
+			err := branchRepository.UpdateBranches(otherRepository, []db.Branch{
+				{
+					Name:            "branch-1",
+					CredentialCount: 42,
+				},
+				{
+					Name:            "branch-2",
+					CredentialCount: 56,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			report, err := branchRepository.GetCredentialCountForRepo("my-different-owner", "my-special-name")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(report).To(Equal([]db.BranchCredentialCount{
+				{
+					Owner:           "my-different-owner",
+					Name:            "my-special-name",
+					Branch:          "branch-1",
+					CredentialCount: 42,
+				},
+				{
+					Owner:           "my-different-owner",
+					Name:            "my-special-name",
+					Branch:          "branch-2",
+					CredentialCount: 56,
 				},
 			}))
 		})

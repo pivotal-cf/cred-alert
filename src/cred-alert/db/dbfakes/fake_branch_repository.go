@@ -32,6 +32,25 @@ type FakeBranchRepository struct {
 		result1 []db.OwnerCredentialCount
 		result2 error
 	}
+	GetCredentialCountForOwnerStub        func(owner string) ([]db.RepositoryCredentialCount, error)
+	getCredentialCountForOwnerMutex       sync.RWMutex
+	getCredentialCountForOwnerArgsForCall []struct {
+		owner string
+	}
+	getCredentialCountForOwnerReturns struct {
+		result1 []db.RepositoryCredentialCount
+		result2 error
+	}
+	GetCredentialCountForRepoStub        func(owner string, repo string) ([]db.BranchCredentialCount, error)
+	getCredentialCountForRepoMutex       sync.RWMutex
+	getCredentialCountForRepoArgsForCall []struct {
+		owner string
+		repo  string
+	}
+	getCredentialCountForRepoReturns struct {
+		result1 []db.BranchCredentialCount
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -132,6 +151,73 @@ func (fake *FakeBranchRepository) GetCredentialCountByOwnerReturns(result1 []db.
 	}{result1, result2}
 }
 
+func (fake *FakeBranchRepository) GetCredentialCountForOwner(owner string) ([]db.RepositoryCredentialCount, error) {
+	fake.getCredentialCountForOwnerMutex.Lock()
+	fake.getCredentialCountForOwnerArgsForCall = append(fake.getCredentialCountForOwnerArgsForCall, struct {
+		owner string
+	}{owner})
+	fake.recordInvocation("GetCredentialCountForOwner", []interface{}{owner})
+	fake.getCredentialCountForOwnerMutex.Unlock()
+	if fake.GetCredentialCountForOwnerStub != nil {
+		return fake.GetCredentialCountForOwnerStub(owner)
+	}
+	return fake.getCredentialCountForOwnerReturns.result1, fake.getCredentialCountForOwnerReturns.result2
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForOwnerCallCount() int {
+	fake.getCredentialCountForOwnerMutex.RLock()
+	defer fake.getCredentialCountForOwnerMutex.RUnlock()
+	return len(fake.getCredentialCountForOwnerArgsForCall)
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForOwnerArgsForCall(i int) string {
+	fake.getCredentialCountForOwnerMutex.RLock()
+	defer fake.getCredentialCountForOwnerMutex.RUnlock()
+	return fake.getCredentialCountForOwnerArgsForCall[i].owner
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForOwnerReturns(result1 []db.RepositoryCredentialCount, result2 error) {
+	fake.GetCredentialCountForOwnerStub = nil
+	fake.getCredentialCountForOwnerReturns = struct {
+		result1 []db.RepositoryCredentialCount
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForRepo(owner string, repo string) ([]db.BranchCredentialCount, error) {
+	fake.getCredentialCountForRepoMutex.Lock()
+	fake.getCredentialCountForRepoArgsForCall = append(fake.getCredentialCountForRepoArgsForCall, struct {
+		owner string
+		repo  string
+	}{owner, repo})
+	fake.recordInvocation("GetCredentialCountForRepo", []interface{}{owner, repo})
+	fake.getCredentialCountForRepoMutex.Unlock()
+	if fake.GetCredentialCountForRepoStub != nil {
+		return fake.GetCredentialCountForRepoStub(owner, repo)
+	}
+	return fake.getCredentialCountForRepoReturns.result1, fake.getCredentialCountForRepoReturns.result2
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForRepoCallCount() int {
+	fake.getCredentialCountForRepoMutex.RLock()
+	defer fake.getCredentialCountForRepoMutex.RUnlock()
+	return len(fake.getCredentialCountForRepoArgsForCall)
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForRepoArgsForCall(i int) (string, string) {
+	fake.getCredentialCountForRepoMutex.RLock()
+	defer fake.getCredentialCountForRepoMutex.RUnlock()
+	return fake.getCredentialCountForRepoArgsForCall[i].owner, fake.getCredentialCountForRepoArgsForCall[i].repo
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForRepoReturns(result1 []db.BranchCredentialCount, result2 error) {
+	fake.GetCredentialCountForRepoStub = nil
+	fake.getCredentialCountForRepoReturns = struct {
+		result1 []db.BranchCredentialCount
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeBranchRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -141,6 +227,10 @@ func (fake *FakeBranchRepository) Invocations() map[string][][]interface{} {
 	defer fake.updateBranchesMutex.RUnlock()
 	fake.getCredentialCountByOwnerMutex.RLock()
 	defer fake.getCredentialCountByOwnerMutex.RUnlock()
+	fake.getCredentialCountForOwnerMutex.RLock()
+	defer fake.getCredentialCountForOwnerMutex.RUnlock()
+	fake.getCredentialCountForRepoMutex.RLock()
+	defer fake.getCredentialCountForRepoMutex.RUnlock()
 	return fake.invocations
 }
 
