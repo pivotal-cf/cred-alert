@@ -170,18 +170,6 @@ var _ = Describe("Scan Repository", func() {
 			)
 
 			BeforeEach(func() {
-				repoJSON := map[string]interface{}{
-					"path": "path-to-repo-on-disk",
-					"name": "repo-name",
-					"owner": map[string]interface{}{
-						"login": "owner-name",
-					},
-					"private":        true,
-					"default_branch": "master",
-				}
-
-				repoJSONBytes, err := json.Marshal(repoJSON)
-				Expect(err).NotTo(HaveOccurred())
 				repository = &db.Repository{
 					Name:          uuid.NewV4().String(),
 					Owner:         "owner-name",
@@ -189,10 +177,9 @@ var _ = Describe("Scan Repository", func() {
 					SSHURL:        "repo-ssh-url",
 					Private:       true,
 					DefaultBranch: "master",
-					RawJSON:       repoJSONBytes,
 				}
 
-				err = database.FirstOrCreate(repository, *repository).Error
+				err := database.FirstOrCreate(repository, *repository).Error
 				Expect(err).NotTo(HaveOccurred())
 
 				changes := map[string][]string{
@@ -232,11 +219,10 @@ var _ = Describe("Scan Repository", func() {
 
 		BeforeEach(func() {
 			_, err := database.DB().Exec(`
-					INSERT INTO repositories (name, owner, raw_json)
+					INSERT INTO repositories (name, owner)
 					VALUES (
 						'some-repo',
-						'some-owner',
-						'some-bytes'
+						'some-owner'
 					)
 				`)
 			Expect(err).NotTo(HaveOccurred())

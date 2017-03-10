@@ -31,7 +31,6 @@ var _ = Describe("StatsRepo", func() {
 				err := database.Create(&db.Repository{
 					Name:    fmt.Sprintf("some-name-%d", i),
 					Owner:   "some-owner",
-					RawJSON: []byte("some-raw-json"),
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -47,7 +46,6 @@ var _ = Describe("StatsRepo", func() {
 			repository := &db.Repository{
 				Name:    "some-name",
 				Owner:   "some-owner",
-				RawJSON: []byte("some-raw-json"),
 			}
 			err := database.Create(repository).Error
 			Expect(err).NotTo(HaveOccurred())
@@ -91,7 +89,6 @@ var _ = Describe("StatsRepo", func() {
 				err := database.Create(&db.Repository{
 					Name:     fmt.Sprintf("some-name-disabled-%d", i),
 					Owner:    "some-owner",
-					RawJSON:  []byte("some-raw-json"),
 					Disabled: true,
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
@@ -101,7 +98,6 @@ var _ = Describe("StatsRepo", func() {
 				err := database.Create(&db.Repository{
 					Name:     fmt.Sprintf("some-name-%d", i),
 					Owner:    "some-owner",
-					RawJSON:  []byte("some-raw-json"),
 					Disabled: false,
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
@@ -119,7 +115,6 @@ var _ = Describe("StatsRepo", func() {
 				err := database.Create(&db.Repository{
 					Name:    fmt.Sprintf("some-name-cloned-%d", i),
 					Owner:   "some-owner",
-					RawJSON: []byte("some-raw-json"),
 					Cloned:  true,
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
@@ -129,7 +124,6 @@ var _ = Describe("StatsRepo", func() {
 				err := database.Create(&db.Repository{
 					Name:    fmt.Sprintf("some-name-%d", i),
 					Owner:   "some-owner",
-					RawJSON: []byte("some-raw-json"),
 					Cloned:  false,
 				}).Error
 				Expect(err).NotTo(HaveOccurred())

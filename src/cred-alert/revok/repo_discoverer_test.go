@@ -173,7 +173,6 @@ var _ = Describe("RepoDiscoverer", func() {
 		Expect(repo.SSHURL).To(Equal("org-1-repo-1-ssh-url"))
 		Expect(repo.Private).To(BeTrue())
 		Expect(repo.DefaultBranch).To(Equal("org-1-repo-1-branch"))
-		Expect(repo.RawJSON).To(MatchJSON([]byte(`{"some-key":"some-value"}`)))
 
 		// org-1-repo-2 comes later
 		repo = repositoryRepository.CreateArgsForCall(1)
@@ -184,7 +183,6 @@ var _ = Describe("RepoDiscoverer", func() {
 		Expect(repo.SSHURL).To(Equal("org-2-repo-1-ssh-url"))
 		Expect(repo.Private).To(BeTrue())
 		Expect(repo.DefaultBranch).To(Equal("org-2-repo-1-branch"))
-		Expect(repo.RawJSON).To(MatchJSON([]byte(`{"some-key":"some-value"}`)))
 
 		repo = repositoryRepository.CreateArgsForCall(2)
 		Expect(repo.Owner).To(Equal("some-other-org"))
@@ -194,7 +192,6 @@ var _ = Describe("RepoDiscoverer", func() {
 		Expect(repo.SSHURL).To(Equal("org-2-repo-2-ssh-url"))
 		Expect(repo.Private).To(BeTrue())
 		Expect(repo.DefaultBranch).To(Equal("org-2-repo-2-branch"))
-		Expect(repo.RawJSON).To(MatchJSON([]byte(`{"some-key":"some-value"}`)))
 
 		clock.Increment(interval)
 
@@ -208,6 +205,5 @@ var _ = Describe("RepoDiscoverer", func() {
 		Expect(repo.SSHURL).To(Equal("org-1-repo-2-ssh-url"))
 		Expect(repo.Private).To(BeTrue())
 		Expect(repo.DefaultBranch).To(Equal("org-1-repo-2-branch"))
-		Expect(repo.RawJSON).To(MatchJSON([]byte(`{"some-key":"some-value"}`)))
 	})
 })

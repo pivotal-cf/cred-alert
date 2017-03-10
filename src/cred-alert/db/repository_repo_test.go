@@ -32,7 +32,6 @@ var _ = Describe("RepositoryRepo", func() {
 			err := repo.Create(&db.Repository{
 				Name:    "my-special-repo",
 				Owner:   "my-special-owner",
-				RawJSON: []byte("my-special-json"),
 			})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -65,7 +64,6 @@ var _ = Describe("RepositoryRepo", func() {
 			err := repo.Create(&db.Repository{
 				Name:    "my-special-repo",
 				Owner:   "my-special-owner",
-				RawJSON: []byte("my-special-json"),
 			})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -105,7 +103,6 @@ var _ = Describe("RepositoryRepo", func() {
 				SSHURL:        "repo-ssh-url",
 				Private:       true,
 				DefaultBranch: "master",
-				RawJSON:       []byte("some-raw-json"),
 			}
 		})
 
@@ -122,7 +119,6 @@ var _ = Describe("RepositoryRepo", func() {
 			Expect(savedRepository.SSHURL).To(Equal("repo-ssh-url"))
 			Expect(savedRepository.Private).To(BeTrue())
 			Expect(savedRepository.DefaultBranch).To(Equal("master"))
-			Expect(savedRepository.RawJSON).To(Equal(repository.RawJSON))
 		})
 	})
 
@@ -136,7 +132,6 @@ var _ = Describe("RepositoryRepo", func() {
 				SSHURL:        "some-url",
 				Private:       true,
 				DefaultBranch: "some-branch",
-				RawJSON:       []byte("some-json"),
 			}
 			err := repo.Create(repository)
 			Expect(err).NotTo(HaveOccurred())
@@ -173,7 +168,6 @@ var _ = Describe("RepositoryRepo", func() {
 				SSHURL:        "some-url",
 				Private:       true,
 				DefaultBranch: "some-branch",
-				RawJSON:       []byte("some-json"),
 				Disabled:      true,
 			}
 			err := repo.Create(repository)
@@ -203,7 +197,6 @@ var _ = Describe("RepositoryRepo", func() {
 				SSHURL:        "some-url",
 				Private:       true,
 				DefaultBranch: "some-branch",
-				RawJSON:       []byte("some-json"),
 				Cloned:        true,
 			}
 			err := repo.Create(repository)
@@ -260,7 +253,6 @@ var _ = Describe("RepositoryRepo", func() {
 				SSHURL:        "some-url",
 				Private:       true,
 				DefaultBranch: "some-branch",
-				RawJSON:       []byte("some-json"),
 				Cloned:        true,
 			}
 			err := repo.Create(repository)
@@ -301,7 +293,6 @@ var _ = Describe("RepositoryRepo", func() {
 				SSHURL:        "some-url",
 				Private:       true,
 				DefaultBranch: "some-branch",
-				RawJSON:       []byte("some-json"),
 				Cloned:        true,
 				FailedFetches: db.FailedFetchThreshold - 2,
 			}
@@ -376,7 +367,6 @@ var _ = Describe("RepositoryRepo", func() {
 				},
 				Name:    "bad-repo",
 				Owner:   "bad-owner",
-				RawJSON: []byte("bad-json"),
 			})
 			Expect(err).To(HaveOccurred())
 		})

@@ -123,7 +123,6 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 				SSHURL:        repo.SSHURL,
 				Private:       repo.Private,
 				DefaultBranch: repo.DefaultBranch,
-				RawJSON:       repo.RawJSON,
 			})
 			if err != nil {
 				logger.Error("failed-to-create-repository", err, lager.Data{

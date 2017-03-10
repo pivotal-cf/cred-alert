@@ -30,14 +30,13 @@ var _ = Describe("CredentialRepo", func() {
 
 		BeforeEach(func() {
 			result, err := sqlDB.Exec(`
-				INSERT INTO repositories (name, owner, path, ssh_url, default_branch, raw_json, created_at, updated_at)
+				INSERT INTO repositories (name, owner, path, ssh_url, default_branch, created_at, updated_at)
 				VALUES (
 					'some-repo',
 					'some-owner',
 					'some-path',
 					'some-url',
 					'some-branch',
-					'{}',
 					NOW(),
 					NOW()
 				)`)

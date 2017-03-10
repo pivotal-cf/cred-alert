@@ -57,17 +57,6 @@ var _ = Describe("FetchRepo", func() {
 				"refs/remotes/origin/develop": {c.String(), d.String()},
 			}
 
-			repoJSON := map[string]interface{}{
-				"path": "path-to-repo-on-disk",
-				"name": "repo-name",
-				"owner": map[string]interface{}{
-					"login": "owner-name",
-				},
-				"private":        true,
-				"default_branch": "master",
-			}
-
-			repoJSONBytes, err := json.Marshal(repoJSON)
 			Expect(err).NotTo(HaveOccurred())
 
 			actualName = uuid.NewV4().String()
@@ -78,7 +67,6 @@ var _ = Describe("FetchRepo", func() {
 				SSHURL:        "repo-ssh-url",
 				Private:       true,
 				DefaultBranch: "master",
-				RawJSON:       repoJSONBytes,
 			}
 
 			err = database.Save(repository).Error
@@ -91,7 +79,6 @@ var _ = Describe("FetchRepo", func() {
 				SSHURL:        "repo-ssh-url",
 				Private:       true,
 				DefaultBranch: "master",
-				RawJSON:       repoJSONBytes,
 				FailedFetches: 5,
 			}).Error
 			Expect(err).NotTo(HaveOccurred())

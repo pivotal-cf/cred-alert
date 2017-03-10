@@ -27,7 +27,6 @@ var _ = Describe("BranchRepository", func() {
 		repository = db.Repository{
 			Owner:   "my-special-owner",
 			Name:    "my-special-name",
-			RawJSON: []byte("{}"),
 		}
 
 		err = repositoryRepository.Create(&repository)
@@ -125,7 +124,6 @@ var _ = Describe("BranchRepository", func() {
 			otherRepository = db.Repository{
 				Owner:   "my-different-owner",
 				Name:    "my-special-name",
-				RawJSON: []byte("{}"),
 			}
 
 			err := repositoryRepository.Create(&otherRepository)
@@ -183,7 +181,6 @@ var _ = Describe("BranchRepository", func() {
 			otherRepository = db.Repository{
 				Owner:   "my-different-owner",
 				Name:    "my-special-name",
-				RawJSON: []byte("{}"),
 			}
 
 			err := repositoryRepository.Create(&otherRepository)
@@ -192,7 +189,6 @@ var _ = Describe("BranchRepository", func() {
 			yetAnotherRepository = db.Repository{
 				Owner:   "my-different-owner",
 				Name:    "my-other-name",
-				RawJSON: []byte("{}"),
 			}
 
 			err = repositoryRepository.Create(&yetAnotherRepository)
@@ -251,7 +247,6 @@ var _ = Describe("BranchRepository", func() {
 			otherRepository = db.Repository{
 				Owner:   "my-different-owner",
 				Name:    "my-special-name",
-				RawJSON: []byte("{}"),
 			}
 
 			err := repositoryRepository.Create(&otherRepository)
