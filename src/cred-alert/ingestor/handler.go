@@ -6,25 +6,34 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"github.com/google/go-github/github"
+
+	"cred-alert/metrics"
 )
 
 type handler struct {
-	logger     lager.Logger
-	secretKeys []string
-	ingestor   Ingestor
+	logger            lager.Logger
+	secretKeys        []string
+	ingestor          Ingestor
+	clock             clock.Clock
+	webhookDelayGauge metrics.Gauge
 }
 
-func NewHandler(logger lager.Logger, ingestor Ingestor, secretKeys []string) http.Handler {
+func NewHandler(logger lager.Logger, ingestor Ingestor, clock clock.Clock, emitter metrics.Emitter, secretKeys []string) http.Handler {
 	return &handler{
-		logger:     logger.Session("webhook-handler"),
-		secretKeys: secretKeys,
-		ingestor:   ingestor,
+		logger:            logger.Session("webhook-handler"),
+		secretKeys:        secretKeys,
+		ingestor:          ingestor,
+		clock:             clock,
+		webhookDelayGauge: emitter.Gauge("ingestor.webhook-delay"),
 	}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	now := h.clock.Now()
+
 	h.logger.Debug("starting")
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -63,13 +72,16 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	delay := now.Sub(event.Repo.PushedAt.Time).Seconds()
+	h.webhookDelayGauge.Update(h.logger, float32(delay))
+
 	scan := PushScan{
 		Owner:      *event.Repo.Owner.Name,
 		Repository: *event.Repo.Name,
 		From:       *event.Before,
 		To:         *event.After,
 		Private:    *event.Repo.Private,
-		PushTime:   event.Repo.PushedAt.Time,
+		PushTime:   now,
 	}
 
 	h.logger.Info("handling-webhook-payload", lager.Data{

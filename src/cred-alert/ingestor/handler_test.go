@@ -14,11 +14,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/google/go-github/github"
 
 	"cred-alert/ingestor"
 	"cred-alert/ingestor/ingestorfakes"
+	"cred-alert/metrics"
+	"cred-alert/metrics/metricsfakes"
 )
 
 var _ = Describe("Webhook", func() {
@@ -27,6 +30,10 @@ var _ = Describe("Webhook", func() {
 
 		handler http.Handler
 		in      *ingestorfakes.FakeIngestor
+		clk     *fakeclock.FakeClock
+		emitter *metricsfakes.FakeEmitter
+
+		webhookDelayGauge *metricsfakes.FakeGauge
 
 		fakeRequest *http.Request
 		recorder    *httptest.ResponseRecorder
@@ -35,15 +42,37 @@ var _ = Describe("Webhook", func() {
 		signingToken     string
 		pushEvent        github.PushEvent
 		pushTime         time.Time
+		now              time.Time
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("ingestor")
+
 		recorder = httptest.NewRecorder()
+
 		in = &ingestorfakes.FakeIngestor{}
+
 		configuredTokens = []string{"example-key"}
+
 		signingToken = configuredTokens[0]
+
 		pushTime = time.Date(2022, 2, 2, 2, 2, 2, 0, time.UTC)
+		now = pushTime.Add(42 * time.Second)
+
+		clk = fakeclock.NewFakeClock(now)
+
+		webhookDelayGauge = &metricsfakes.FakeGauge{}
+
+		emitter = &metricsfakes.FakeEmitter{}
+		emitter.GaugeStub = func(name string) metrics.Gauge {
+			switch name {
+			case "ingestor.webhook-delay":
+				return webhookDelayGauge
+			default:
+				panic("unexpected metric!")
+			}
+		}
+
 		pushEvent = github.PushEvent{
 			Before: github.String("commit-sha-0"),
 			After:  github.String("commit-sha-5"),
@@ -70,7 +99,7 @@ var _ = Describe("Webhook", func() {
 
 	Context("when the request is properly formed", func() {
 		JustBeforeEach(func() {
-			handler = ingestor.NewHandler(logger, in, configuredTokens)
+			handler = ingestor.NewHandler(logger, in, clk, emitter, configuredTokens)
 
 			body := &bytes.Buffer{}
 			err := json.NewEncoder(body).Encode(pushEvent)
@@ -101,9 +130,18 @@ var _ = Describe("Webhook", func() {
 				From:       "commit-sha-0",
 				To:         "commit-sha-5",
 				Private:    true,
-				PushTime:   pushTime,
+				PushTime:   now,
 			}))
 			Expect(actualGitHubID).To(Equal("delivery-id"))
+		})
+
+		It("emits the webhook delay", func() {
+			handler.ServeHTTP(recorder, fakeRequest)
+
+			Expect(webhookDelayGauge.UpdateCallCount()).To(Equal(1))
+
+			_, value, _ := webhookDelayGauge.UpdateArgsForCall(0)
+			Expect(value).To(BeNumerically("==", 42))
 		})
 
 		Context("when multiple configuredTokens are configured", func() {
@@ -188,7 +226,7 @@ var _ = Describe("Webhook", func() {
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", body)
 			fakeRequest.Header.Set("X-Hub-Signature", "thisaintnohmacsignature")
 
-			handler = ingestor.NewHandler(logger, in, configuredTokens)
+			handler = ingestor.NewHandler(logger, in, clk, emitter, configuredTokens)
 		})
 
 		It("responds with 403", func() {
@@ -211,7 +249,7 @@ var _ = Describe("Webhook", func() {
 			fakeRequest, _ = http.NewRequest("POST", "http://example.com/webhook", badJSON)
 			fakeRequest.Header.Set("X-Hub-Signature", fmt.Sprintf("sha1=%s", messageMAC(signingToken, badJSON.Bytes())))
 
-			handler = ingestor.NewHandler(logger, in, configuredTokens)
+			handler = ingestor.NewHandler(logger, in, clk, emitter, configuredTokens)
 		})
 
 		It("responds with 400", func() {

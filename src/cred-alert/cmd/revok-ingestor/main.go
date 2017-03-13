@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"cloud.google.com/go/pubsub"
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
@@ -78,8 +79,10 @@ func main() {
 	enqueuer := queue.NewPubSubEnqueuer(logger, topic, signer)
 	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
 
+	clk := clock.NewClock()
+
 	router := http.NewServeMux()
-	router.Handle("/webhook", ingestor.NewHandler(logger, in, cfg.GitHub.WebhookSecretTokens))
+	router.Handle("/webhook", ingestor.NewHandler(logger, in, clk, emitter, cfg.GitHub.WebhookSecretTokens))
 	router.Handle("/healthcheck", revok.ObliviousHealthCheck())
 
 	certificate, err := config.LoadCertificate(
