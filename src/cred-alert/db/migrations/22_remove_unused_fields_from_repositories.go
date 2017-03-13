@@ -11,6 +11,5 @@ func RemoveCredentialCountsAndRawJson(tx migration.LimitedTx) error {
 		  DROP COLUMN credential_counts
 	`)
 
-
 	return err
 }

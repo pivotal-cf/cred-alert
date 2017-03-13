@@ -30,8 +30,8 @@ var _ = Describe("RepositoryRepo", func() {
 	Describe("Find", func() {
 		It("returns a matching repository", func() {
 			err := repo.Create(&db.Repository{
-				Name:    "my-special-repo",
-				Owner:   "my-special-owner",
+				Name:  "my-special-repo",
+				Owner: "my-special-owner",
 			})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -62,8 +62,8 @@ var _ = Describe("RepositoryRepo", func() {
 	Describe("MustFind", func() {
 		It("returns a matching repository", func() {
 			err := repo.Create(&db.Repository{
-				Name:    "my-special-repo",
-				Owner:   "my-special-owner",
+				Name:  "my-special-repo",
+				Owner: "my-special-owner",
 			})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -365,8 +365,8 @@ var _ = Describe("RepositoryRepo", func() {
 				Model: db.Model{
 					ID: 1337,
 				},
-				Name:    "bad-repo",
-				Owner:   "bad-owner",
+				Name:  "bad-repo",
+				Owner: "bad-owner",
 			})
 			Expect(err).To(HaveOccurred())
 		})

@@ -25,8 +25,8 @@ var _ = Describe("BranchRepository", func() {
 		repositoryRepository = db.NewRepositoryRepository(database)
 
 		repository = db.Repository{
-			Owner:   "my-special-owner",
-			Name:    "my-special-name",
+			Owner: "my-special-owner",
+			Name:  "my-special-name",
 		}
 
 		err = repositoryRepository.Create(&repository)
@@ -122,8 +122,8 @@ var _ = Describe("BranchRepository", func() {
 
 		BeforeEach(func() {
 			otherRepository = db.Repository{
-				Owner:   "my-different-owner",
-				Name:    "my-special-name",
+				Owner: "my-different-owner",
+				Name:  "my-special-name",
 			}
 
 			err := repositoryRepository.Create(&otherRepository)
@@ -179,16 +179,16 @@ var _ = Describe("BranchRepository", func() {
 
 		BeforeEach(func() {
 			otherRepository = db.Repository{
-				Owner:   "my-different-owner",
-				Name:    "my-special-name",
+				Owner: "my-different-owner",
+				Name:  "my-special-name",
 			}
 
 			err := repositoryRepository.Create(&otherRepository)
 			Expect(err).NotTo(HaveOccurred())
 
 			yetAnotherRepository = db.Repository{
-				Owner:   "my-different-owner",
-				Name:    "my-other-name",
+				Owner: "my-different-owner",
+				Name:  "my-other-name",
 			}
 
 			err = repositoryRepository.Create(&yetAnotherRepository)
@@ -245,8 +245,8 @@ var _ = Describe("BranchRepository", func() {
 
 		BeforeEach(func() {
 			otherRepository = db.Repository{
-				Owner:   "my-different-owner",
-				Name:    "my-special-name",
+				Owner: "my-different-owner",
+				Name:  "my-special-name",
 			}
 
 			err := repositoryRepository.Create(&otherRepository)

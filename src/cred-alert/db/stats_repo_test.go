@@ -29,8 +29,8 @@ var _ = Describe("StatsRepo", func() {
 		BeforeEach(func() {
 			for i := 0; i < 6; i++ {
 				err := database.Create(&db.Repository{
-					Name:    fmt.Sprintf("some-name-%d", i),
-					Owner:   "some-owner",
+					Name:  fmt.Sprintf("some-name-%d", i),
+					Owner: "some-owner",
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -44,8 +44,8 @@ var _ = Describe("StatsRepo", func() {
 	Describe("FetchCount", func() {
 		BeforeEach(func() {
 			repository := &db.Repository{
-				Name:    "some-name",
-				Owner:   "some-owner",
+				Name:  "some-name",
+				Owner: "some-owner",
 			}
 			err := database.Create(repository).Error
 			Expect(err).NotTo(HaveOccurred())
@@ -113,18 +113,18 @@ var _ = Describe("StatsRepo", func() {
 		BeforeEach(func() {
 			for i := 0; i < 3; i++ {
 				err := database.Create(&db.Repository{
-					Name:    fmt.Sprintf("some-name-cloned-%d", i),
-					Owner:   "some-owner",
-					Cloned:  true,
+					Name:   fmt.Sprintf("some-name-cloned-%d", i),
+					Owner:  "some-owner",
+					Cloned: true,
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
 			}
 
 			for i := 0; i < 2; i++ {
 				err := database.Create(&db.Repository{
-					Name:    fmt.Sprintf("some-name-%d", i),
-					Owner:   "some-owner",
-					Cloned:  false,
+					Name:   fmt.Sprintf("some-name-%d", i),
+					Owner:  "some-owner",
+					Cloned: false,
 				}).Error
 				Expect(err).NotTo(HaveOccurred())
 			}
