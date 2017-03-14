@@ -1,7 +1,9 @@
 package notifications_test
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -344,6 +346,7 @@ var _ = Describe("Slack Notifier", func() {
 					if fakeHTTPClient.DoCallCount() > 2 {
 						return &http.Response{
 							StatusCode: http.StatusOK,
+							Body:       ioutil.NopCloser(&bytes.Buffer{}),
 						}, nil
 					}
 

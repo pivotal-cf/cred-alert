@@ -118,6 +118,8 @@ func (n *slackNotifier) makeSingleAttempt(logger lager.Logger, currentAttempt in
 		return false, err
 	}
 
+	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusOK:
 		return false, nil
