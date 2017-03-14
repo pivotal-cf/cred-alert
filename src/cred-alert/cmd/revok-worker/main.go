@@ -49,7 +49,7 @@ func main() {
 	var flagOpts config.WorkerOpts
 
 	logger := lager.NewLogger("revok-worker")
-	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
 	logger.Info("starting")
 
