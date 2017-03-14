@@ -127,9 +127,6 @@ var _ = Describe("Webhook", func() {
 			Expect(actualScan).To(Equal(ingestor.PushScan{
 				Owner:      "repository-owner",
 				Repository: "repository-name",
-				From:       "commit-sha-0",
-				To:         "commit-sha-5",
-				Private:    true,
 				PushTime:   now,
 			}))
 			Expect(actualGitHubID).To(Equal("delivery-id"))

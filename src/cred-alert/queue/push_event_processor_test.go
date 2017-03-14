@@ -129,9 +129,6 @@ var _ = Describe("PushEventProcessor", func() {
 			task := queue.PushEventPlan{
 				Owner:      "some-owner",
 				Repository: "some-repo",
-				From:       "from-sha",
-				To:         "to-sha",
-				Private:    true,
 				PushTime:   time.Date(2017, 10, 8, 16, 19, 22, 0, time.UTC),
 			}.Task("message-id")
 

@@ -48,9 +48,6 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID s
 	task := queue.PushEventPlan{
 		Owner:      scan.Owner,
 		Repository: scan.Repository,
-		From:       scan.From,
-		To:         scan.To,
-		Private:    scan.Private,
 		PushTime:   scan.PushTime,
 	}.Task(id)
 

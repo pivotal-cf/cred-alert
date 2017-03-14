@@ -15,9 +15,6 @@ var _ = Describe("Plans", func() {
 			task := queue.PushEventPlan{
 				Owner:      "owner",
 				Repository: "repository",
-				Private:    true,
-				From:       "sha-1",
-				To:         "sha-2",
 				PushTime:   time.Date(2017, 6, 20, 8, 5, 56, 0, time.UTC),
 			}.Task("id-1")
 
@@ -25,12 +22,9 @@ var _ = Describe("Plans", func() {
 			Expect(task.Type()).To(Equal(queue.TaskTypePushEvent))
 			Expect(task.Payload()).To(MatchJSON(`
 				{
-						"owner": "owner",
-						"repository": "repository",
-						"private": true,
-						"from": "sha-1",
-						"to": "sha-2",
-						"pushTime":"2017-06-20T08:05:56Z"
+					"owner": "owner",
+					"repository": "repository",
+					"pushTime": "2017-06-20T08:05:56Z"
 				}`))
 		})
 	})

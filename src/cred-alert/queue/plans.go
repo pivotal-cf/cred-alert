@@ -10,9 +10,6 @@ const TaskTypePushEvent = "push-event"
 type PushEventPlan struct {
 	Owner      string    `json:"owner"`
 	Repository string    `json:"repository"`
-	From       string    `json:"from"`
-	To         string    `json:"to"`
-	Private    bool      `json:"private"`
 	PushTime   time.Time `json:"pushTime"`
 }
 

@@ -44,9 +44,6 @@ var _ = Describe("Ingestor", func() {
 		pushScan = ingestor.PushScan{
 			Owner:      "owner",
 			Repository: "repo",
-			From:       "sha1",
-			To:         "sha2",
-			Private:    true,
 			PushTime:   t,
 		}
 	})
@@ -60,9 +57,6 @@ var _ = Describe("Ingestor", func() {
 		expectedJson := `{
 			"owner":"owner",
 			"repository":"repo",
-			"from":"sha1",
-			"to":"sha2",
-			"private":true,
 			"pushTime":"2017-02-27T15:20:42Z"
 		}`
 
