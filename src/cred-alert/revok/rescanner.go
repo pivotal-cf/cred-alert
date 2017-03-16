@@ -54,19 +54,17 @@ func (r *Rescanner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		logger.Error("failed-getting-prior-scans", err)
 	}
 
-	if len(priorScans) > 0 {
-		for _, priorScan := range priorScans {
-			select {
-			case <-signals:
-				return nil
-			default:
-				err := r.work(logger, priorScan)
-				if err != nil {
-					r.failedCounter.Inc(logger)
-					logger.Error("failed-to-rescan", err, lager.Data{
-						"scan-id": priorScan.ID,
-					})
-				}
+	for _, priorScan := range priorScans {
+		select {
+		case <-signals:
+			return nil
+		default:
+			err := r.work(logger, priorScan)
+			if err != nil {
+				r.failedCounter.Inc(logger)
+				logger.Error("failed-to-rescan", err, lager.Data{
+					"scan-id": priorScan.ID,
+				})
 			}
 		}
 	}
