@@ -12,8 +12,6 @@ import (
 	"cred-alert/metrics"
 )
 
-const SubscriberCount = 2
-
 type pubSubSubscriber struct {
 	logger       lager.Logger
 	subscription *pubsub.Subscription
@@ -56,12 +54,9 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	finished := make(chan error)
 	close(ready)
 
-	messages := make(chan *pubsub.Message)
-
 	go func() {
 		for {
 			message, err := it.Next()
-
 			if err == iterator.Done {
 				break
 			}
@@ -71,16 +66,37 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 				continue
 			}
 
-			messages <- message
+			logger := p.logger.Session("processing-message", lager.Data{
+				"pubsub-message":      message.ID,
+				"pubsub-publish-time": message.PublishTime.String(),
+			})
+
+			var retryable bool
+
+			p.processTimer.Time(logger, func() {
+				retryable, err = p.processor.Process(logger, message)
+			})
+
+			if err != nil {
+				logger.Error("failed-to-process-message", err)
+
+				if retryable {
+					logger.Info("queuing-message-for-retry")
+					message.Done(false)
+					p.processRetryCounter.Inc(logger)
+				} else {
+					message.Done(true)
+				}
+
+				p.processFailureCounter.Inc(logger)
+			} else {
+				message.Done(true)
+				p.processSuccessCounter.Inc(logger)
+			}
 		}
 
-		close(messages)
 		close(finished)
 	}()
-
-	for i := 0; i < SubscriberCount; i++ {
-		go p.processMessageQueue(messages)
-	}
 
 	<-signals
 	p.logger.Info("told-to-exit")
@@ -88,44 +104,4 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	<-finished
 	p.logger.Info("done")
 	return nil
-}
-
-func (p *pubSubSubscriber) processMessageQueue(messages <-chan *pubsub.Message) {
-	for {
-		message, ok := <-messages
-		if !ok {
-			break
-		}
-
-		var (
-			retryable bool
-			err       error
-		)
-
-		logger := p.logger.Session("processing-message", lager.Data{
-			"pubsub-message":      message.ID,
-			"pubsub-publish-time": message.PublishTime.String(),
-		})
-
-		p.processTimer.Time(logger, func() {
-			retryable, err = p.processor.Process(logger, message)
-		})
-
-		if err != nil {
-			logger.Error("failed-to-process-message", err)
-
-			if retryable {
-				logger.Info("queuing-message-for-retry")
-				message.Done(false)
-				p.processRetryCounter.Inc(logger)
-			} else {
-				message.Done(true)
-			}
-
-			p.processFailureCounter.Inc(logger)
-		} else {
-			message.Done(true)
-			p.processSuccessCounter.Inc(logger)
-		}
-	}
 }
