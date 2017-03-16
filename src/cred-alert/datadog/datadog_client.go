@@ -112,6 +112,7 @@ func (c *client) PublishSeries(logger lager.Logger, series Series) {
 		logger.Error("failed error sending metric to datadog:", err)
 		return
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
 		body, err := ioutil.ReadAll(resp.Body)
@@ -123,9 +124,4 @@ func (c *client) PublishSeries(logger lager.Logger, series Series) {
 		logger.Error("failed", fmt.Errorf("bad response (!202): %d - %s", resp.StatusCode, string(body)))
 		return
 	}
-
-	if err = resp.Body.Close(); err != nil {
-		logger.Error("failed", err)
-	}
-	return
 }
