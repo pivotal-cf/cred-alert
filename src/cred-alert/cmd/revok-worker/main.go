@@ -60,11 +60,15 @@ func main() {
 
 	bs, err := ioutil.ReadFile(string(flagOpts.ConfigFile))
 	if err != nil {
-		logger.Error("failed-opening-config-file", err)
+		logger.Error("failed-to-open-config-file", err)
 		os.Exit(1)
 	}
 
 	cfg, err = config.LoadWorkerConfig(bs)
+	if err != nil {
+		logger.Error("failed-to-load-config-file", err)
+		os.Exit(1)
+	}
 
 	errs := cfg.Validate()
 	if errs != nil {
