@@ -54,7 +54,7 @@ var _ = Describe("Ingestor", func() {
 
 		Expect(fakeQueue.EnqueueCallCount()).To(Equal(1))
 
-		expectedJson := `{
+		expectedJSON := `{
 			"owner":"owner",
 			"repository":"repo",
 			"pushTime":"2017-02-27T15:20:42Z"
@@ -63,11 +63,11 @@ var _ = Describe("Ingestor", func() {
 		task := fakeQueue.EnqueueArgsForCall(0)
 		Expect(task.ID()).To(Equal("my-special-uuid"))
 		Expect(task.Type()).To(Equal("push-event"))
-		Expect(task.Payload()).To(MatchJSON(expectedJson))
+		Expect(task.Payload()).To(MatchJSON(expectedJSON))
 	})
 
 	It("errors when queueing the message fails", func() {
-		fakeQueue.EnqueueReturns(errors.New("Oh No!"))
+		fakeQueue.EnqueueReturns(errors.New("disaster"))
 
 		err := subject.IngestPushScan(logger, pushScan)
 		Expect(err).To(HaveOccurred())

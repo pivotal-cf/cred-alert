@@ -11,7 +11,7 @@ import (
 )
 
 type syncer struct {
-	repoUrl   string
+	repoURL   string
 	repoPath  string
 	gitClient gitclient.Client
 	teamRepo  TeamRepository
@@ -27,14 +27,14 @@ type Syncer interface {
 	Sync()
 }
 
-func NewSyncer(logger lager.Logger, emitter metrics.Emitter, repoUrl, repoPath string, gitClient gitclient.Client, teamRepo TeamRepository) Syncer {
+func NewSyncer(logger lager.Logger, emitter metrics.Emitter, repoURL, repoPath string, gitClient gitclient.Client, teamRepo TeamRepository) Syncer {
 	syncLogger := logger.Session("syncer", lager.Data{
-		"upstream": repoUrl,
+		"upstream": repoURL,
 		"local":    repoPath,
 	})
 
 	return &syncer{
-		repoUrl:   repoUrl,
+		repoURL:   repoURL,
 		repoPath:  repoPath,
 		gitClient: gitClient,
 		teamRepo:  teamRepo,
@@ -49,9 +49,11 @@ func NewSyncer(logger lager.Logger, emitter metrics.Emitter, repoUrl, repoPath s
 
 const remoteMaster = "refs/remotes/origin/master"
 
+var errMissingMaster = errors.New("no remote master branch found")
+
 func (s *syncer) Sync() {
 	if _, err := os.Stat(s.repoPath); os.IsNotExist(err) {
-		err := s.gitClient.Clone(s.repoUrl, s.repoPath)
+		err := s.gitClient.Clone(s.repoURL, s.repoPath)
 		if err != nil {
 			s.logger.Error("cloning", err)
 			return
@@ -78,14 +80,12 @@ func (s *syncer) Sync() {
 
 		upstream, found := heads[remoteMaster]
 		if !found {
-			err := errors.New("no remote master branch found")
-			s.logger.Error("failed-to-find-updated-master", err)
-			fetchErr = err
+			s.logger.Error("failed-to-find-updated-master", errMissingMaster)
+			fetchErr = errMissingMaster
 			return
 		}
 
-		err = s.gitClient.HardReset(s.repoPath, upstream[1])
-		if err != nil {
+		if err = s.gitClient.HardReset(s.repoPath, upstream[1]); err != nil {
 			s.logger.Error("reseting", err)
 			fetchErr = err
 			return

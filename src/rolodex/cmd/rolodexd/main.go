@@ -96,7 +96,7 @@ func main() {
 	}
 }
 
-func loadConfig() rolodex.RolodexConfig {
+func loadConfig() rolodex.Config {
 	var flagOpts RolodexOpts
 
 	_, err := flags.Parse(&flagOpts)
@@ -104,7 +104,7 @@ func loadConfig() rolodex.RolodexConfig {
 		os.Exit(1)
 	}
 
-	cfg, err := rolodex.LoadRolodexConfig(string(flagOpts.ConfigFile))
+	cfg, err := rolodex.LoadConfig(string(flagOpts.ConfigFile))
 	if err != nil {
 		log.Fatalln("failed to load config", err)
 	}

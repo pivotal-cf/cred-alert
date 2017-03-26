@@ -2,7 +2,7 @@ package rolodex_test
 
 import (
 	"errors"
-	"net"
+	"fmt"
 
 	"code.cloudfoundry.org/lager/lagertest"
 	"golang.org/x/net/context"
@@ -11,6 +11,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/ginkgomon"
 
 	"cred-alert/metrics/metricsfakes"
 	"red/redpb"
@@ -21,10 +24,11 @@ import (
 
 var _ = Describe("Handler", func() {
 	var (
-		grpcServer *grpc.Server
-		listener   net.Listener
+		server ifrit.Process
+		addr   string
+
 		client     rolodexpb.RolodexClient
-		connection *grpc.ClientConn
+		clientConn *grpc.ClientConn
 		logger     *lagertest.TestLogger
 		emitter    *metricsfakes.FakeEmitter
 
@@ -32,8 +36,6 @@ var _ = Describe("Handler", func() {
 	)
 
 	BeforeEach(func() {
-		var err error
-
 		logger = lagertest.NewTestLogger("handler")
 		emitter = &metricsfakes.FakeEmitter{}
 		fakeCounter := &metricsfakes.FakeCounter{}
@@ -42,26 +44,31 @@ var _ = Describe("Handler", func() {
 		teamRepo = &rolodexfakes.FakeTeamRepository{}
 		handler := rolodex.NewHandler(logger, teamRepo, emitter)
 
-		listener, err = net.Listen("tcp", "127.0.0.1:0")
-		Expect(err).NotTo(HaveOccurred())
+		addr = fmt.Sprintf("127.0.0.1:%d", 38000+GinkgoParallelNode())
+		grpcRunner := grpcrunner.NewGRPCServer(
+			logger,
+			addr,
+			func(s *grpc.Server) {
+				rolodexpb.RegisterRolodexServer(s, handler)
+			},
+		)
 
-		grpcServer = grpc.NewServer()
-		rolodexpb.RegisterRolodexServer(grpcServer, handler)
+		server = ginkgomon.Invoke(grpcRunner)
 
-		go grpcServer.Serve(listener)
-
-		connection, err = grpc.Dial(
-			listener.Addr().String(),
+		var err error
+		clientConn, err = grpc.Dial(
+			addr,
 			grpc.WithInsecure(),
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		client = rolodexpb.NewRolodexClient(connection)
+		client = rolodexpb.NewRolodexClient(clientConn)
 	})
 
 	AfterEach(func() {
-		Expect(connection.Close()).To(Succeed())
-		grpcServer.Stop()
+		Expect(clientConn.Close()).To(Succeed())
+
+		ginkgomon.Interrupt(server)
 	})
 
 	Describe("GetOwners", func() {

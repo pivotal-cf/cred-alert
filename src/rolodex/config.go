@@ -7,13 +7,13 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func LoadRolodexConfig(configPath string) (*RolodexConfig, error) {
+func LoadConfig(configPath string) (*Config, error) {
 	bs, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
 
-	c := &RolodexConfig{}
+	c := &Config{}
 	err = yaml.Unmarshal(bs, c)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func LoadRolodexConfig(configPath string) (*RolodexConfig, error) {
 	return c, nil
 }
 
-type RolodexConfig struct {
+type Config struct {
 	RepositoryPath string `yaml:"repository_path"`
 	RepositoryURL  string `yaml:"repository_url"`
 
@@ -48,7 +48,7 @@ type RolodexConfig struct {
 	} `yaml:"rpc_server"`
 }
 
-func (c *RolodexConfig) Validate() []error {
+func (c *Config) Validate() []error {
 	var errs []error
 
 	if c.RepositoryPath == "" {
