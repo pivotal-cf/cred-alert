@@ -16,6 +16,9 @@ type FakeVerifier struct {
 	verifyReturns struct {
 		result1 error
 	}
+	verifyReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -32,6 +35,7 @@ func (fake *FakeVerifier) Verify(arg1 []byte, arg2 []byte) error {
 		copy(arg2Copy, arg2)
 	}
 	fake.verifyMutex.Lock()
+	ret, specificReturn := fake.verifyReturnsOnCall[len(fake.verifyArgsForCall)]
 	fake.verifyArgsForCall = append(fake.verifyArgsForCall, struct {
 		arg1 []byte
 		arg2 []byte
@@ -40,6 +44,9 @@ func (fake *FakeVerifier) Verify(arg1 []byte, arg2 []byte) error {
 	fake.verifyMutex.Unlock()
 	if fake.VerifyStub != nil {
 		return fake.VerifyStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.verifyReturns.result1
 }
@@ -59,6 +66,18 @@ func (fake *FakeVerifier) VerifyArgsForCall(i int) ([]byte, []byte) {
 func (fake *FakeVerifier) VerifyReturns(result1 error) {
 	fake.VerifyStub = nil
 	fake.verifyReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeVerifier) VerifyReturnsOnCall(i int, result1 error) {
+	fake.VerifyStub = nil
+	if fake.verifyReturnsOnCall == nil {
+		fake.verifyReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.verifyReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

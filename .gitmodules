@@ -135,7 +135,7 @@
 	branch = master
 [submodule "src/gopkg.in/libgit2/git2go.v24"]
 	path = src/gopkg.in/libgit2/git2go.v24
-	url = https://github.com/cbguder/git2go.git
+	url = https://gopkg.in/libgit2/git2go.v24
 	branch = v24
 [submodule "src/github.com/cenkalti/backoff"]
 	path = src/github.com/cenkalti/backoff
@@ -149,3 +149,27 @@
 	path = src/code.cloudfoundry.org/archiver
 	url = https://github.com/cloudfoundry/archiver
 	branch = master
+[submodule "src/github.com/golang/geo"]
+	path = src/github.com/golang/geo
+	url = https://github.com/golang/geo
+[submodule "src/github.com/golang/glog"]
+	path = src/github.com/golang/glog
+	url = https://github.com/golang/glog
+[submodule "src/golang.org/x/crypto"]
+	path = src/golang.org/x/crypto
+	url = https://go.googlesource.com/crypto
+[submodule "src/golang.org/x/debug"]
+	path = src/golang.org/x/debug
+	url = https://go.googlesource.com/debug
+[submodule "src/golang.org/x/sync"]
+	path = src/golang.org/x/sync
+	url = https://go.googlesource.com/sync
+[submodule "src/golang.org/x/text"]
+	path = src/golang.org/x/text
+	url = https://go.googlesource.com/text
+[submodule "src/golang.org/x/time"]
+	path = src/golang.org/x/time
+	url = https://go.googlesource.com/time
+[submodule "src/google.golang.org/appengine"]
+	path = src/google.golang.org/appengine
+	url = https://github.com/golang/appengine

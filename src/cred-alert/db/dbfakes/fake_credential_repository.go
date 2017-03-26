@@ -16,6 +16,10 @@ type FakeCredentialRepository struct {
 		result1 []db.Credential
 		result2 error
 	}
+	forScanWithIDReturnsOnCall map[int]struct {
+		result1 []db.Credential
+		result2 error
+	}
 	UniqueSHAsForRepoAndRulesVersionStub        func(db.Repository, int) ([]string, error)
 	uniqueSHAsForRepoAndRulesVersionMutex       sync.RWMutex
 	uniqueSHAsForRepoAndRulesVersionArgsForCall []struct {
@@ -26,12 +30,17 @@ type FakeCredentialRepository struct {
 		result1 []string
 		result2 error
 	}
+	uniqueSHAsForRepoAndRulesVersionReturnsOnCall map[int]struct {
+		result1 []string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeCredentialRepository) ForScanWithID(arg1 int) ([]db.Credential, error) {
 	fake.forScanWithIDMutex.Lock()
+	ret, specificReturn := fake.forScanWithIDReturnsOnCall[len(fake.forScanWithIDArgsForCall)]
 	fake.forScanWithIDArgsForCall = append(fake.forScanWithIDArgsForCall, struct {
 		arg1 int
 	}{arg1})
@@ -39,6 +48,9 @@ func (fake *FakeCredentialRepository) ForScanWithID(arg1 int) ([]db.Credential, 
 	fake.forScanWithIDMutex.Unlock()
 	if fake.ForScanWithIDStub != nil {
 		return fake.ForScanWithIDStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.forScanWithIDReturns.result1, fake.forScanWithIDReturns.result2
 }
@@ -63,8 +75,23 @@ func (fake *FakeCredentialRepository) ForScanWithIDReturns(result1 []db.Credenti
 	}{result1, result2}
 }
 
+func (fake *FakeCredentialRepository) ForScanWithIDReturnsOnCall(i int, result1 []db.Credential, result2 error) {
+	fake.ForScanWithIDStub = nil
+	if fake.forScanWithIDReturnsOnCall == nil {
+		fake.forScanWithIDReturnsOnCall = make(map[int]struct {
+			result1 []db.Credential
+			result2 error
+		})
+	}
+	fake.forScanWithIDReturnsOnCall[i] = struct {
+		result1 []db.Credential
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersion(arg1 db.Repository, arg2 int) ([]string, error) {
 	fake.uniqueSHAsForRepoAndRulesVersionMutex.Lock()
+	ret, specificReturn := fake.uniqueSHAsForRepoAndRulesVersionReturnsOnCall[len(fake.uniqueSHAsForRepoAndRulesVersionArgsForCall)]
 	fake.uniqueSHAsForRepoAndRulesVersionArgsForCall = append(fake.uniqueSHAsForRepoAndRulesVersionArgsForCall, struct {
 		arg1 db.Repository
 		arg2 int
@@ -73,6 +100,9 @@ func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersion(arg1 db.R
 	fake.uniqueSHAsForRepoAndRulesVersionMutex.Unlock()
 	if fake.UniqueSHAsForRepoAndRulesVersionStub != nil {
 		return fake.UniqueSHAsForRepoAndRulesVersionStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.uniqueSHAsForRepoAndRulesVersionReturns.result1, fake.uniqueSHAsForRepoAndRulesVersionReturns.result2
 }
@@ -92,6 +122,20 @@ func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersionArgsForCal
 func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersionReturns(result1 []string, result2 error) {
 	fake.UniqueSHAsForRepoAndRulesVersionStub = nil
 	fake.uniqueSHAsForRepoAndRulesVersionReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersionReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.UniqueSHAsForRepoAndRulesVersionStub = nil
+	if fake.uniqueSHAsForRepoAndRulesVersionReturnsOnCall == nil {
+		fake.uniqueSHAsForRepoAndRulesVersionReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.uniqueSHAsForRepoAndRulesVersionReturnsOnCall[i] = struct {
 		result1 []string
 		result2 error
 	}{result1, result2}

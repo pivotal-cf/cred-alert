@@ -20,12 +20,18 @@ type FakeRateClient struct {
 		result2 *github.Response
 		result3 error
 	}
+	rateLimitsReturnsOnCall map[int]struct {
+		result1 *github.RateLimits
+		result2 *github.Response
+		result3 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeRateClient) RateLimits(arg1 context.Context) (*github.RateLimits, *github.Response, error) {
 	fake.rateLimitsMutex.Lock()
+	ret, specificReturn := fake.rateLimitsReturnsOnCall[len(fake.rateLimitsArgsForCall)]
 	fake.rateLimitsArgsForCall = append(fake.rateLimitsArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
@@ -33,6 +39,9 @@ func (fake *FakeRateClient) RateLimits(arg1 context.Context) (*github.RateLimits
 	fake.rateLimitsMutex.Unlock()
 	if fake.RateLimitsStub != nil {
 		return fake.RateLimitsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
 	}
 	return fake.rateLimitsReturns.result1, fake.rateLimitsReturns.result2, fake.rateLimitsReturns.result3
 }
@@ -52,6 +61,22 @@ func (fake *FakeRateClient) RateLimitsArgsForCall(i int) context.Context {
 func (fake *FakeRateClient) RateLimitsReturns(result1 *github.RateLimits, result2 *github.Response, result3 error) {
 	fake.RateLimitsStub = nil
 	fake.rateLimitsReturns = struct {
+		result1 *github.RateLimits
+		result2 *github.Response
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeRateClient) RateLimitsReturnsOnCall(i int, result1 *github.RateLimits, result2 *github.Response, result3 error) {
+	fake.RateLimitsStub = nil
+	if fake.rateLimitsReturnsOnCall == nil {
+		fake.rateLimitsReturnsOnCall = make(map[int]struct {
+			result1 *github.RateLimits
+			result2 *github.Response
+			result3 error
+		})
+	}
+	fake.rateLimitsReturnsOnCall[i] = struct {
 		result1 *github.RateLimits
 		result2 *github.Response
 		result3 error

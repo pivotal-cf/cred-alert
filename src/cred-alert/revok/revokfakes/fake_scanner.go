@@ -25,12 +25,17 @@ type FakeScanner struct {
 		result1 []db.Credential
 		result2 error
 	}
+	scanReturnsOnCall map[int]struct {
+		result1 []db.Credential
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[string]struct{}, arg5 string, arg6 string, arg7 string) ([]db.Credential, error) {
 	fake.scanMutex.Lock()
+	ret, specificReturn := fake.scanReturnsOnCall[len(fake.scanArgsForCall)]
 	fake.scanArgsForCall = append(fake.scanArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
@@ -44,6 +49,9 @@ func (fake *FakeScanner) Scan(arg1 lager.Logger, arg2 string, arg3 string, arg4 
 	fake.scanMutex.Unlock()
 	if fake.ScanStub != nil {
 		return fake.ScanStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.scanReturns.result1, fake.scanReturns.result2
 }
@@ -63,6 +71,20 @@ func (fake *FakeScanner) ScanArgsForCall(i int) (lager.Logger, string, string, m
 func (fake *FakeScanner) ScanReturns(result1 []db.Credential, result2 error) {
 	fake.ScanStub = nil
 	fake.scanReturns = struct {
+		result1 []db.Credential
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeScanner) ScanReturnsOnCall(i int, result1 []db.Credential, result2 error) {
+	fake.ScanStub = nil
+	if fake.scanReturnsOnCall == nil {
+		fake.scanReturnsOnCall = make(map[int]struct {
+			result1 []db.Credential
+			result2 error
+		})
+	}
+	fake.scanReturnsOnCall[i] = struct {
 		result1 []db.Credential
 		result2 error
 	}{result1, result2}

@@ -64,7 +64,12 @@ var _ = Describe("PubSubSubscriber", func() {
 		subscription, err = client.CreateSubscription(ctx, "a-subscription-id", topic, 0, nil)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = topic.Publish(ctx, firstMessage, secondMessage)
+		res := topic.Publish(ctx, firstMessage)
+		_, err = res.Get(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
+		res = topic.Publish(ctx, secondMessage)
+		_, err = res.Get(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		processor = &queuefakes.FakePubSubProcessor{}
@@ -100,7 +105,8 @@ var _ = Describe("PubSubSubscriber", func() {
 			Eventually(processor.ProcessCallCount).Should(Equal(2))
 			process.Signal(os.Interrupt)
 
-			_, err := topic.Publish(context.Background(), firstMessage)
+			res := topic.Publish(context.Background(), firstMessage)
+			_, err := res.Get(context.Background())
 			Expect(err).NotTo(HaveOccurred())
 
 			Consistently(processor.ProcessCallCount).Should(Equal(2))

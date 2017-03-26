@@ -53,6 +53,10 @@ files:
   - golang.org/x/net/internal/timeseries/*.{go,c} # gosub
   - golang.org/x/net/lex/httplex/*.{go,c} # gosub
   - golang.org/x/net/trace/*.{go,c} # gosub
+  - golang.org/x/text/secure/bidirule/*.{go,c} # gosub
+  - golang.org/x/text/transform/*.{go,c} # gosub
+  - golang.org/x/text/unicode/bidi/*.{go,c} # gosub
+  - golang.org/x/text/unicode/norm/*.{go,c} # gosub
   - google.golang.org/grpc/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub

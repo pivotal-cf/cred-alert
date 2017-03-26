@@ -16,6 +16,10 @@ type FakeSigner struct {
 		result1 []byte
 		result2 error
 	}
+	signReturnsOnCall map[int]struct {
+		result1 []byte
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -27,6 +31,7 @@ func (fake *FakeSigner) Sign(arg1 []byte) ([]byte, error) {
 		copy(arg1Copy, arg1)
 	}
 	fake.signMutex.Lock()
+	ret, specificReturn := fake.signReturnsOnCall[len(fake.signArgsForCall)]
 	fake.signArgsForCall = append(fake.signArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
@@ -34,6 +39,9 @@ func (fake *FakeSigner) Sign(arg1 []byte) ([]byte, error) {
 	fake.signMutex.Unlock()
 	if fake.SignStub != nil {
 		return fake.SignStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.signReturns.result1, fake.signReturns.result2
 }
@@ -53,6 +61,20 @@ func (fake *FakeSigner) SignArgsForCall(i int) []byte {
 func (fake *FakeSigner) SignReturns(result1 []byte, result2 error) {
 	fake.SignStub = nil
 	fake.signReturns = struct {
+		result1 []byte
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSigner) SignReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.SignStub = nil
+	if fake.signReturnsOnCall == nil {
+		fake.signReturnsOnCall = make(map[int]struct {
+			result1 []byte
+			result2 error
+		})
+	}
+	fake.signReturnsOnCall[i] = struct {
 		result1 []byte
 		result2 error
 	}{result1, result2}

@@ -17,12 +17,17 @@ type FakeHTTPClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	doReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeHTTPClient) Do(r *http.Request) (*http.Response, error) {
 	fake.doMutex.Lock()
+	ret, specificReturn := fake.doReturnsOnCall[len(fake.doArgsForCall)]
 	fake.doArgsForCall = append(fake.doArgsForCall, struct {
 		r *http.Request
 	}{r})
@@ -30,6 +35,9 @@ func (fake *FakeHTTPClient) Do(r *http.Request) (*http.Response, error) {
 	fake.doMutex.Unlock()
 	if fake.DoStub != nil {
 		return fake.DoStub(r)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.doReturns.result1, fake.doReturns.result2
 }
@@ -49,6 +57,20 @@ func (fake *FakeHTTPClient) DoArgsForCall(i int) *http.Request {
 func (fake *FakeHTTPClient) DoReturns(result1 *http.Response, result2 error) {
 	fake.DoStub = nil
 	fake.doReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeHTTPClient) DoReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.DoStub = nil
+	if fake.doReturnsOnCall == nil {
+		fake.doReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.doReturnsOnCall[i] = struct {
 		result1 *http.Response
 		result2 error
 	}{result1, result2}

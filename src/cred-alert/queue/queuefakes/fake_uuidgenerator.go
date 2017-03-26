@@ -13,17 +13,24 @@ type FakeUUIDGenerator struct {
 	generateReturns     struct {
 		result1 string
 	}
+	generateReturnsOnCall map[int]struct {
+		result1 string
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeUUIDGenerator) Generate() string {
 	fake.generateMutex.Lock()
+	ret, specificReturn := fake.generateReturnsOnCall[len(fake.generateArgsForCall)]
 	fake.generateArgsForCall = append(fake.generateArgsForCall, struct{}{})
 	fake.recordInvocation("Generate", []interface{}{})
 	fake.generateMutex.Unlock()
 	if fake.GenerateStub != nil {
 		return fake.GenerateStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.generateReturns.result1
 }
@@ -37,6 +44,18 @@ func (fake *FakeUUIDGenerator) GenerateCallCount() int {
 func (fake *FakeUUIDGenerator) GenerateReturns(result1 string) {
 	fake.GenerateStub = nil
 	fake.generateReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeUUIDGenerator) GenerateReturnsOnCall(i int, result1 string) {
+	fake.GenerateStub = nil
+	if fake.generateReturnsOnCall == nil {
+		fake.generateReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.generateReturnsOnCall[i] = struct {
 		result1 string
 	}{result1}
 }

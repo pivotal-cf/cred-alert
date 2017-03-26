@@ -15,6 +15,9 @@ type FakeSlackNotificationFormatter struct {
 	formatNotificationsReturns struct {
 		result1 []notifications.SlackMessage
 	}
+	formatNotificationsReturnsOnCall map[int]struct {
+		result1 []notifications.SlackMessage
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -26,6 +29,7 @@ func (fake *FakeSlackNotificationFormatter) FormatNotifications(batch []notifica
 		copy(batchCopy, batch)
 	}
 	fake.formatNotificationsMutex.Lock()
+	ret, specificReturn := fake.formatNotificationsReturnsOnCall[len(fake.formatNotificationsArgsForCall)]
 	fake.formatNotificationsArgsForCall = append(fake.formatNotificationsArgsForCall, struct {
 		batch []notifications.Notification
 	}{batchCopy})
@@ -33,6 +37,9 @@ func (fake *FakeSlackNotificationFormatter) FormatNotifications(batch []notifica
 	fake.formatNotificationsMutex.Unlock()
 	if fake.FormatNotificationsStub != nil {
 		return fake.FormatNotificationsStub(batch)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.formatNotificationsReturns.result1
 }
@@ -52,6 +59,18 @@ func (fake *FakeSlackNotificationFormatter) FormatNotificationsArgsForCall(i int
 func (fake *FakeSlackNotificationFormatter) FormatNotificationsReturns(result1 []notifications.SlackMessage) {
 	fake.FormatNotificationsStub = nil
 	fake.formatNotificationsReturns = struct {
+		result1 []notifications.SlackMessage
+	}{result1}
+}
+
+func (fake *FakeSlackNotificationFormatter) FormatNotificationsReturnsOnCall(i int, result1 []notifications.SlackMessage) {
+	fake.FormatNotificationsStub = nil
+	if fake.formatNotificationsReturnsOnCall == nil {
+		fake.formatNotificationsReturnsOnCall = make(map[int]struct {
+			result1 []notifications.SlackMessage
+		})
+	}
+	fake.formatNotificationsReturnsOnCall[i] = struct {
 		result1 []notifications.SlackMessage
 	}{result1}
 }

@@ -19,6 +19,10 @@ type FakeClient struct {
 		result1 map[string]string
 		result2 error
 	}
+	branchTargetsReturnsOnCall map[int]struct {
+		result1 map[string]string
+		result2 error
+	}
 	CloneStub        func(string, string) error
 	cloneMutex       sync.RWMutex
 	cloneArgsForCall []struct {
@@ -26,6 +30,9 @@ type FakeClient struct {
 		arg2 string
 	}
 	cloneReturns struct {
+		result1 error
+	}
+	cloneReturnsOnCall map[int]struct {
 		result1 error
 	}
 	GetParentsStub        func(string, string) ([]string, error)
@@ -38,12 +45,20 @@ type FakeClient struct {
 		result1 []string
 		result2 error
 	}
+	getParentsReturnsOnCall map[int]struct {
+		result1 []string
+		result2 error
+	}
 	FetchStub        func(string) (map[string][]string, error)
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
 		arg1 string
 	}
 	fetchReturns struct {
+		result1 map[string][]string
+		result2 error
+	}
+	fetchReturnsOnCall map[int]struct {
 		result1 map[string][]string
 		result2 error
 	}
@@ -56,6 +71,9 @@ type FakeClient struct {
 	hardResetReturns struct {
 		result1 error
 	}
+	hardResetReturnsOnCall map[int]struct {
+		result1 error
+	}
 	DiffStub        func(repositoryPath, parent, child string) (string, error)
 	diffMutex       sync.RWMutex
 	diffArgsForCall []struct {
@@ -64,6 +82,10 @@ type FakeClient struct {
 		child          string
 	}
 	diffReturns struct {
+		result1 string
+		result2 error
+	}
+	diffReturnsOnCall map[int]struct {
 		result1 string
 		result2 error
 	}
@@ -78,12 +100,17 @@ type FakeClient struct {
 		result1 map[string]uint
 		result2 error
 	}
+	branchCredentialCountsReturnsOnCall map[int]struct {
+		result1 map[string]uint
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeClient) BranchTargets(arg1 string) (map[string]string, error) {
 	fake.branchTargetsMutex.Lock()
+	ret, specificReturn := fake.branchTargetsReturnsOnCall[len(fake.branchTargetsArgsForCall)]
 	fake.branchTargetsArgsForCall = append(fake.branchTargetsArgsForCall, struct {
 		arg1 string
 	}{arg1})
@@ -91,6 +118,9 @@ func (fake *FakeClient) BranchTargets(arg1 string) (map[string]string, error) {
 	fake.branchTargetsMutex.Unlock()
 	if fake.BranchTargetsStub != nil {
 		return fake.BranchTargetsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.branchTargetsReturns.result1, fake.branchTargetsReturns.result2
 }
@@ -115,8 +145,23 @@ func (fake *FakeClient) BranchTargetsReturns(result1 map[string]string, result2 
 	}{result1, result2}
 }
 
+func (fake *FakeClient) BranchTargetsReturnsOnCall(i int, result1 map[string]string, result2 error) {
+	fake.BranchTargetsStub = nil
+	if fake.branchTargetsReturnsOnCall == nil {
+		fake.branchTargetsReturnsOnCall = make(map[int]struct {
+			result1 map[string]string
+			result2 error
+		})
+	}
+	fake.branchTargetsReturnsOnCall[i] = struct {
+		result1 map[string]string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Clone(arg1 string, arg2 string) error {
 	fake.cloneMutex.Lock()
+	ret, specificReturn := fake.cloneReturnsOnCall[len(fake.cloneArgsForCall)]
 	fake.cloneArgsForCall = append(fake.cloneArgsForCall, struct {
 		arg1 string
 		arg2 string
@@ -125,6 +170,9 @@ func (fake *FakeClient) Clone(arg1 string, arg2 string) error {
 	fake.cloneMutex.Unlock()
 	if fake.CloneStub != nil {
 		return fake.CloneStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.cloneReturns.result1
 }
@@ -148,8 +196,21 @@ func (fake *FakeClient) CloneReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeClient) CloneReturnsOnCall(i int, result1 error) {
+	fake.CloneStub = nil
+	if fake.cloneReturnsOnCall == nil {
+		fake.cloneReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.cloneReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeClient) GetParents(arg1 string, arg2 string) ([]string, error) {
 	fake.getParentsMutex.Lock()
+	ret, specificReturn := fake.getParentsReturnsOnCall[len(fake.getParentsArgsForCall)]
 	fake.getParentsArgsForCall = append(fake.getParentsArgsForCall, struct {
 		arg1 string
 		arg2 string
@@ -158,6 +219,9 @@ func (fake *FakeClient) GetParents(arg1 string, arg2 string) ([]string, error) {
 	fake.getParentsMutex.Unlock()
 	if fake.GetParentsStub != nil {
 		return fake.GetParentsStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.getParentsReturns.result1, fake.getParentsReturns.result2
 }
@@ -182,8 +246,23 @@ func (fake *FakeClient) GetParentsReturns(result1 []string, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeClient) GetParentsReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.GetParentsStub = nil
+	if fake.getParentsReturnsOnCall == nil {
+		fake.getParentsReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.getParentsReturnsOnCall[i] = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Fetch(arg1 string) (map[string][]string, error) {
 	fake.fetchMutex.Lock()
+	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
 		arg1 string
 	}{arg1})
@@ -191,6 +270,9 @@ func (fake *FakeClient) Fetch(arg1 string) (map[string][]string, error) {
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
 		return fake.FetchStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.fetchReturns.result1, fake.fetchReturns.result2
 }
@@ -215,8 +297,23 @@ func (fake *FakeClient) FetchReturns(result1 map[string][]string, result2 error)
 	}{result1, result2}
 }
 
+func (fake *FakeClient) FetchReturnsOnCall(i int, result1 map[string][]string, result2 error) {
+	fake.FetchStub = nil
+	if fake.fetchReturnsOnCall == nil {
+		fake.fetchReturnsOnCall = make(map[int]struct {
+			result1 map[string][]string
+			result2 error
+		})
+	}
+	fake.fetchReturnsOnCall[i] = struct {
+		result1 map[string][]string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) HardReset(arg1 string, arg2 string) error {
 	fake.hardResetMutex.Lock()
+	ret, specificReturn := fake.hardResetReturnsOnCall[len(fake.hardResetArgsForCall)]
 	fake.hardResetArgsForCall = append(fake.hardResetArgsForCall, struct {
 		arg1 string
 		arg2 string
@@ -225,6 +322,9 @@ func (fake *FakeClient) HardReset(arg1 string, arg2 string) error {
 	fake.hardResetMutex.Unlock()
 	if fake.HardResetStub != nil {
 		return fake.HardResetStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.hardResetReturns.result1
 }
@@ -248,8 +348,21 @@ func (fake *FakeClient) HardResetReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeClient) HardResetReturnsOnCall(i int, result1 error) {
+	fake.HardResetStub = nil
+	if fake.hardResetReturnsOnCall == nil {
+		fake.hardResetReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.hardResetReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeClient) Diff(repositoryPath string, parent string, child string) (string, error) {
 	fake.diffMutex.Lock()
+	ret, specificReturn := fake.diffReturnsOnCall[len(fake.diffArgsForCall)]
 	fake.diffArgsForCall = append(fake.diffArgsForCall, struct {
 		repositoryPath string
 		parent         string
@@ -259,6 +372,9 @@ func (fake *FakeClient) Diff(repositoryPath string, parent string, child string)
 	fake.diffMutex.Unlock()
 	if fake.DiffStub != nil {
 		return fake.DiffStub(repositoryPath, parent, child)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.diffReturns.result1, fake.diffReturns.result2
 }
@@ -283,8 +399,23 @@ func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
+func (fake *FakeClient) DiffReturnsOnCall(i int, result1 string, result2 error) {
+	fake.DiffStub = nil
+	if fake.diffReturnsOnCall == nil {
+		fake.diffReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.diffReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, arg3 sniff.Sniffer) (map[string]uint, error) {
 	fake.branchCredentialCountsMutex.Lock()
+	ret, specificReturn := fake.branchCredentialCountsReturnsOnCall[len(fake.branchCredentialCountsArgsForCall)]
 	fake.branchCredentialCountsArgsForCall = append(fake.branchCredentialCountsArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
@@ -294,6 +425,9 @@ func (fake *FakeClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, a
 	fake.branchCredentialCountsMutex.Unlock()
 	if fake.BranchCredentialCountsStub != nil {
 		return fake.BranchCredentialCountsStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.branchCredentialCountsReturns.result1, fake.branchCredentialCountsReturns.result2
 }
@@ -313,6 +447,20 @@ func (fake *FakeClient) BranchCredentialCountsArgsForCall(i int) (lager.Logger, 
 func (fake *FakeClient) BranchCredentialCountsReturns(result1 map[string]uint, result2 error) {
 	fake.BranchCredentialCountsStub = nil
 	fake.branchCredentialCountsReturns = struct {
+		result1 map[string]uint
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) BranchCredentialCountsReturnsOnCall(i int, result1 map[string]uint, result2 error) {
+	fake.BranchCredentialCountsStub = nil
+	if fake.branchCredentialCountsReturnsOnCall == nil {
+		fake.branchCredentialCountsReturnsOnCall = make(map[int]struct {
+			result1 map[string]uint
+			result2 error
+		})
+	}
+	fake.branchCredentialCountsReturnsOnCall[i] = struct {
 		result1 map[string]uint
 		result2 error
 	}{result1, result2}

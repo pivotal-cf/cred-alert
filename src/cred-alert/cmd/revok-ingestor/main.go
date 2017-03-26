@@ -69,6 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 	topic := pubSubClient.Topic(cfg.PubSub.Topic)
+	defer topic.Stop()
 
 	privateKey, err := crypto.ReadRSAPrivateKey(string(cfg.PubSub.PrivateKeyPath))
 	if err != nil {

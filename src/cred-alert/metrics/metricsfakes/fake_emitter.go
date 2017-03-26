@@ -15,12 +15,18 @@ type FakeEmitter struct {
 	counterReturns struct {
 		result1 metrics.Counter
 	}
+	counterReturnsOnCall map[int]struct {
+		result1 metrics.Counter
+	}
 	GaugeStub        func(name string) metrics.Gauge
 	gaugeMutex       sync.RWMutex
 	gaugeArgsForCall []struct {
 		name string
 	}
 	gaugeReturns struct {
+		result1 metrics.Gauge
+	}
+	gaugeReturnsOnCall map[int]struct {
 		result1 metrics.Gauge
 	}
 	TimerStub        func(name string) metrics.Timer
@@ -31,12 +37,16 @@ type FakeEmitter struct {
 	timerReturns struct {
 		result1 metrics.Timer
 	}
+	timerReturnsOnCall map[int]struct {
+		result1 metrics.Timer
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeEmitter) Counter(name string) metrics.Counter {
 	fake.counterMutex.Lock()
+	ret, specificReturn := fake.counterReturnsOnCall[len(fake.counterArgsForCall)]
 	fake.counterArgsForCall = append(fake.counterArgsForCall, struct {
 		name string
 	}{name})
@@ -44,6 +54,9 @@ func (fake *FakeEmitter) Counter(name string) metrics.Counter {
 	fake.counterMutex.Unlock()
 	if fake.CounterStub != nil {
 		return fake.CounterStub(name)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.counterReturns.result1
 }
@@ -67,8 +80,21 @@ func (fake *FakeEmitter) CounterReturns(result1 metrics.Counter) {
 	}{result1}
 }
 
+func (fake *FakeEmitter) CounterReturnsOnCall(i int, result1 metrics.Counter) {
+	fake.CounterStub = nil
+	if fake.counterReturnsOnCall == nil {
+		fake.counterReturnsOnCall = make(map[int]struct {
+			result1 metrics.Counter
+		})
+	}
+	fake.counterReturnsOnCall[i] = struct {
+		result1 metrics.Counter
+	}{result1}
+}
+
 func (fake *FakeEmitter) Gauge(name string) metrics.Gauge {
 	fake.gaugeMutex.Lock()
+	ret, specificReturn := fake.gaugeReturnsOnCall[len(fake.gaugeArgsForCall)]
 	fake.gaugeArgsForCall = append(fake.gaugeArgsForCall, struct {
 		name string
 	}{name})
@@ -76,6 +102,9 @@ func (fake *FakeEmitter) Gauge(name string) metrics.Gauge {
 	fake.gaugeMutex.Unlock()
 	if fake.GaugeStub != nil {
 		return fake.GaugeStub(name)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.gaugeReturns.result1
 }
@@ -99,8 +128,21 @@ func (fake *FakeEmitter) GaugeReturns(result1 metrics.Gauge) {
 	}{result1}
 }
 
+func (fake *FakeEmitter) GaugeReturnsOnCall(i int, result1 metrics.Gauge) {
+	fake.GaugeStub = nil
+	if fake.gaugeReturnsOnCall == nil {
+		fake.gaugeReturnsOnCall = make(map[int]struct {
+			result1 metrics.Gauge
+		})
+	}
+	fake.gaugeReturnsOnCall[i] = struct {
+		result1 metrics.Gauge
+	}{result1}
+}
+
 func (fake *FakeEmitter) Timer(name string) metrics.Timer {
 	fake.timerMutex.Lock()
+	ret, specificReturn := fake.timerReturnsOnCall[len(fake.timerArgsForCall)]
 	fake.timerArgsForCall = append(fake.timerArgsForCall, struct {
 		name string
 	}{name})
@@ -108,6 +150,9 @@ func (fake *FakeEmitter) Timer(name string) metrics.Timer {
 	fake.timerMutex.Unlock()
 	if fake.TimerStub != nil {
 		return fake.TimerStub(name)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.timerReturns.result1
 }
@@ -127,6 +172,18 @@ func (fake *FakeEmitter) TimerArgsForCall(i int) string {
 func (fake *FakeEmitter) TimerReturns(result1 metrics.Timer) {
 	fake.TimerStub = nil
 	fake.timerReturns = struct {
+		result1 metrics.Timer
+	}{result1}
+}
+
+func (fake *FakeEmitter) TimerReturnsOnCall(i int, result1 metrics.Timer) {
+	fake.TimerStub = nil
+	if fake.timerReturnsOnCall == nil {
+		fake.timerReturnsOnCall = make(map[int]struct {
+			result1 metrics.Timer
+		})
+	}
+	fake.timerReturnsOnCall[i] = struct {
 		result1 metrics.Timer
 	}{result1}
 }

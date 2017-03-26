@@ -15,12 +15,16 @@ type FakePlan struct {
 	taskReturns struct {
 		result1 queue.Task
 	}
+	taskReturnsOnCall map[int]struct {
+		result1 queue.Task
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakePlan) Task(arg1 string) queue.Task {
 	fake.taskMutex.Lock()
+	ret, specificReturn := fake.taskReturnsOnCall[len(fake.taskArgsForCall)]
 	fake.taskArgsForCall = append(fake.taskArgsForCall, struct {
 		arg1 string
 	}{arg1})
@@ -28,6 +32,9 @@ func (fake *FakePlan) Task(arg1 string) queue.Task {
 	fake.taskMutex.Unlock()
 	if fake.TaskStub != nil {
 		return fake.TaskStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.taskReturns.result1
 }
@@ -47,6 +54,18 @@ func (fake *FakePlan) TaskArgsForCall(i int) string {
 func (fake *FakePlan) TaskReturns(result1 queue.Task) {
 	fake.TaskStub = nil
 	fake.taskReturns = struct {
+		result1 queue.Task
+	}{result1}
+}
+
+func (fake *FakePlan) TaskReturnsOnCall(i int, result1 queue.Task) {
+	fake.TaskStub = nil
+	if fake.taskReturnsOnCall == nil {
+		fake.taskReturnsOnCall = make(map[int]struct {
+			result1 queue.Task
+		})
+	}
+	fake.taskReturnsOnCall[i] = struct {
 		result1 queue.Task
 	}{result1}
 }

@@ -18,6 +18,9 @@ type FakeRouter struct {
 	deliverReturns struct {
 		result1 error
 	}
+	deliverReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -29,6 +32,7 @@ func (fake *FakeRouter) Deliver(logger lager.Logger, batch []notifications.Notif
 		copy(batchCopy, batch)
 	}
 	fake.deliverMutex.Lock()
+	ret, specificReturn := fake.deliverReturnsOnCall[len(fake.deliverArgsForCall)]
 	fake.deliverArgsForCall = append(fake.deliverArgsForCall, struct {
 		logger lager.Logger
 		batch  []notifications.Notification
@@ -37,6 +41,9 @@ func (fake *FakeRouter) Deliver(logger lager.Logger, batch []notifications.Notif
 	fake.deliverMutex.Unlock()
 	if fake.DeliverStub != nil {
 		return fake.DeliverStub(logger, batch)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.deliverReturns.result1
 }
@@ -56,6 +63,18 @@ func (fake *FakeRouter) DeliverArgsForCall(i int) (lager.Logger, []notifications
 func (fake *FakeRouter) DeliverReturns(result1 error) {
 	fake.DeliverStub = nil
 	fake.deliverReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRouter) DeliverReturnsOnCall(i int, result1 error) {
+	fake.DeliverStub = nil
+	if fake.deliverReturnsOnCall == nil {
+		fake.deliverReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deliverReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

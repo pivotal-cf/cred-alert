@@ -23,6 +23,9 @@ type FakeScanRepository struct {
 	startReturns struct {
 		result1 db.ActiveScan
 	}
+	startReturnsOnCall map[int]struct {
+		result1 db.ActiveScan
+	}
 	ScansNotYetRunWithVersionStub        func(lager.Logger, int) ([]db.PriorScan, error)
 	scansNotYetRunWithVersionMutex       sync.RWMutex
 	scansNotYetRunWithVersionArgsForCall []struct {
@@ -33,12 +36,17 @@ type FakeScanRepository struct {
 		result1 []db.PriorScan
 		result2 error
 	}
+	scansNotYetRunWithVersionReturnsOnCall map[int]struct {
+		result1 []db.PriorScan
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeScanRepository) Start(arg1 lager.Logger, arg2 string, arg3 string, arg4 string, arg5 string, arg6 *db.Repository, arg7 *db.Fetch) db.ActiveScan {
 	fake.startMutex.Lock()
+	ret, specificReturn := fake.startReturnsOnCall[len(fake.startArgsForCall)]
 	fake.startArgsForCall = append(fake.startArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
@@ -52,6 +60,9 @@ func (fake *FakeScanRepository) Start(arg1 lager.Logger, arg2 string, arg3 strin
 	fake.startMutex.Unlock()
 	if fake.StartStub != nil {
 		return fake.StartStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.startReturns.result1
 }
@@ -75,8 +86,21 @@ func (fake *FakeScanRepository) StartReturns(result1 db.ActiveScan) {
 	}{result1}
 }
 
+func (fake *FakeScanRepository) StartReturnsOnCall(i int, result1 db.ActiveScan) {
+	fake.StartStub = nil
+	if fake.startReturnsOnCall == nil {
+		fake.startReturnsOnCall = make(map[int]struct {
+			result1 db.ActiveScan
+		})
+	}
+	fake.startReturnsOnCall[i] = struct {
+		result1 db.ActiveScan
+	}{result1}
+}
+
 func (fake *FakeScanRepository) ScansNotYetRunWithVersion(arg1 lager.Logger, arg2 int) ([]db.PriorScan, error) {
 	fake.scansNotYetRunWithVersionMutex.Lock()
+	ret, specificReturn := fake.scansNotYetRunWithVersionReturnsOnCall[len(fake.scansNotYetRunWithVersionArgsForCall)]
 	fake.scansNotYetRunWithVersionArgsForCall = append(fake.scansNotYetRunWithVersionArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 int
@@ -85,6 +109,9 @@ func (fake *FakeScanRepository) ScansNotYetRunWithVersion(arg1 lager.Logger, arg
 	fake.scansNotYetRunWithVersionMutex.Unlock()
 	if fake.ScansNotYetRunWithVersionStub != nil {
 		return fake.ScansNotYetRunWithVersionStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.scansNotYetRunWithVersionReturns.result1, fake.scansNotYetRunWithVersionReturns.result2
 }
@@ -104,6 +131,20 @@ func (fake *FakeScanRepository) ScansNotYetRunWithVersionArgsForCall(i int) (lag
 func (fake *FakeScanRepository) ScansNotYetRunWithVersionReturns(result1 []db.PriorScan, result2 error) {
 	fake.ScansNotYetRunWithVersionStub = nil
 	fake.scansNotYetRunWithVersionReturns = struct {
+		result1 []db.PriorScan
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeScanRepository) ScansNotYetRunWithVersionReturnsOnCall(i int, result1 []db.PriorScan, result2 error) {
+	fake.ScansNotYetRunWithVersionStub = nil
+	if fake.scansNotYetRunWithVersionReturnsOnCall == nil {
+		fake.scansNotYetRunWithVersionReturnsOnCall = make(map[int]struct {
+			result1 []db.PriorScan
+			result2 error
+		})
+	}
+	fake.scansNotYetRunWithVersionReturnsOnCall[i] = struct {
 		result1 []db.PriorScan
 		result2 error
 	}{result1, result2}

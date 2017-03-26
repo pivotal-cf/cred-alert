@@ -16,6 +16,10 @@ type FakeBranchRepository struct {
 		result1 []db.Branch
 		result2 error
 	}
+	getBranchesReturnsOnCall map[int]struct {
+		result1 []db.Branch
+		result2 error
+	}
 	UpdateBranchesStub        func(repository db.Repository, branches []db.Branch) error
 	updateBranchesMutex       sync.RWMutex
 	updateBranchesArgsForCall []struct {
@@ -25,10 +29,17 @@ type FakeBranchRepository struct {
 	updateBranchesReturns struct {
 		result1 error
 	}
+	updateBranchesReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GetCredentialCountByOwnerStub        func() ([]db.OwnerCredentialCount, error)
 	getCredentialCountByOwnerMutex       sync.RWMutex
 	getCredentialCountByOwnerArgsForCall []struct{}
 	getCredentialCountByOwnerReturns     struct {
+		result1 []db.OwnerCredentialCount
+		result2 error
+	}
+	getCredentialCountByOwnerReturnsOnCall map[int]struct {
 		result1 []db.OwnerCredentialCount
 		result2 error
 	}
@@ -38,6 +49,10 @@ type FakeBranchRepository struct {
 		owner string
 	}
 	getCredentialCountForOwnerReturns struct {
+		result1 []db.RepositoryCredentialCount
+		result2 error
+	}
+	getCredentialCountForOwnerReturnsOnCall map[int]struct {
 		result1 []db.RepositoryCredentialCount
 		result2 error
 	}
@@ -51,12 +66,17 @@ type FakeBranchRepository struct {
 		result1 []db.BranchCredentialCount
 		result2 error
 	}
+	getCredentialCountForRepoReturnsOnCall map[int]struct {
+		result1 []db.BranchCredentialCount
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeBranchRepository) GetBranches(repository db.Repository) ([]db.Branch, error) {
 	fake.getBranchesMutex.Lock()
+	ret, specificReturn := fake.getBranchesReturnsOnCall[len(fake.getBranchesArgsForCall)]
 	fake.getBranchesArgsForCall = append(fake.getBranchesArgsForCall, struct {
 		repository db.Repository
 	}{repository})
@@ -64,6 +84,9 @@ func (fake *FakeBranchRepository) GetBranches(repository db.Repository) ([]db.Br
 	fake.getBranchesMutex.Unlock()
 	if fake.GetBranchesStub != nil {
 		return fake.GetBranchesStub(repository)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.getBranchesReturns.result1, fake.getBranchesReturns.result2
 }
@@ -88,6 +111,20 @@ func (fake *FakeBranchRepository) GetBranchesReturns(result1 []db.Branch, result
 	}{result1, result2}
 }
 
+func (fake *FakeBranchRepository) GetBranchesReturnsOnCall(i int, result1 []db.Branch, result2 error) {
+	fake.GetBranchesStub = nil
+	if fake.getBranchesReturnsOnCall == nil {
+		fake.getBranchesReturnsOnCall = make(map[int]struct {
+			result1 []db.Branch
+			result2 error
+		})
+	}
+	fake.getBranchesReturnsOnCall[i] = struct {
+		result1 []db.Branch
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeBranchRepository) UpdateBranches(repository db.Repository, branches []db.Branch) error {
 	var branchesCopy []db.Branch
 	if branches != nil {
@@ -95,6 +132,7 @@ func (fake *FakeBranchRepository) UpdateBranches(repository db.Repository, branc
 		copy(branchesCopy, branches)
 	}
 	fake.updateBranchesMutex.Lock()
+	ret, specificReturn := fake.updateBranchesReturnsOnCall[len(fake.updateBranchesArgsForCall)]
 	fake.updateBranchesArgsForCall = append(fake.updateBranchesArgsForCall, struct {
 		repository db.Repository
 		branches   []db.Branch
@@ -103,6 +141,9 @@ func (fake *FakeBranchRepository) UpdateBranches(repository db.Repository, branc
 	fake.updateBranchesMutex.Unlock()
 	if fake.UpdateBranchesStub != nil {
 		return fake.UpdateBranchesStub(repository, branches)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.updateBranchesReturns.result1
 }
@@ -126,13 +167,29 @@ func (fake *FakeBranchRepository) UpdateBranchesReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeBranchRepository) UpdateBranchesReturnsOnCall(i int, result1 error) {
+	fake.UpdateBranchesStub = nil
+	if fake.updateBranchesReturnsOnCall == nil {
+		fake.updateBranchesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateBranchesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeBranchRepository) GetCredentialCountByOwner() ([]db.OwnerCredentialCount, error) {
 	fake.getCredentialCountByOwnerMutex.Lock()
+	ret, specificReturn := fake.getCredentialCountByOwnerReturnsOnCall[len(fake.getCredentialCountByOwnerArgsForCall)]
 	fake.getCredentialCountByOwnerArgsForCall = append(fake.getCredentialCountByOwnerArgsForCall, struct{}{})
 	fake.recordInvocation("GetCredentialCountByOwner", []interface{}{})
 	fake.getCredentialCountByOwnerMutex.Unlock()
 	if fake.GetCredentialCountByOwnerStub != nil {
 		return fake.GetCredentialCountByOwnerStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.getCredentialCountByOwnerReturns.result1, fake.getCredentialCountByOwnerReturns.result2
 }
@@ -151,8 +208,23 @@ func (fake *FakeBranchRepository) GetCredentialCountByOwnerReturns(result1 []db.
 	}{result1, result2}
 }
 
+func (fake *FakeBranchRepository) GetCredentialCountByOwnerReturnsOnCall(i int, result1 []db.OwnerCredentialCount, result2 error) {
+	fake.GetCredentialCountByOwnerStub = nil
+	if fake.getCredentialCountByOwnerReturnsOnCall == nil {
+		fake.getCredentialCountByOwnerReturnsOnCall = make(map[int]struct {
+			result1 []db.OwnerCredentialCount
+			result2 error
+		})
+	}
+	fake.getCredentialCountByOwnerReturnsOnCall[i] = struct {
+		result1 []db.OwnerCredentialCount
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeBranchRepository) GetCredentialCountForOwner(owner string) ([]db.RepositoryCredentialCount, error) {
 	fake.getCredentialCountForOwnerMutex.Lock()
+	ret, specificReturn := fake.getCredentialCountForOwnerReturnsOnCall[len(fake.getCredentialCountForOwnerArgsForCall)]
 	fake.getCredentialCountForOwnerArgsForCall = append(fake.getCredentialCountForOwnerArgsForCall, struct {
 		owner string
 	}{owner})
@@ -160,6 +232,9 @@ func (fake *FakeBranchRepository) GetCredentialCountForOwner(owner string) ([]db
 	fake.getCredentialCountForOwnerMutex.Unlock()
 	if fake.GetCredentialCountForOwnerStub != nil {
 		return fake.GetCredentialCountForOwnerStub(owner)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.getCredentialCountForOwnerReturns.result1, fake.getCredentialCountForOwnerReturns.result2
 }
@@ -184,8 +259,23 @@ func (fake *FakeBranchRepository) GetCredentialCountForOwnerReturns(result1 []db
 	}{result1, result2}
 }
 
+func (fake *FakeBranchRepository) GetCredentialCountForOwnerReturnsOnCall(i int, result1 []db.RepositoryCredentialCount, result2 error) {
+	fake.GetCredentialCountForOwnerStub = nil
+	if fake.getCredentialCountForOwnerReturnsOnCall == nil {
+		fake.getCredentialCountForOwnerReturnsOnCall = make(map[int]struct {
+			result1 []db.RepositoryCredentialCount
+			result2 error
+		})
+	}
+	fake.getCredentialCountForOwnerReturnsOnCall[i] = struct {
+		result1 []db.RepositoryCredentialCount
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeBranchRepository) GetCredentialCountForRepo(owner string, repo string) ([]db.BranchCredentialCount, error) {
 	fake.getCredentialCountForRepoMutex.Lock()
+	ret, specificReturn := fake.getCredentialCountForRepoReturnsOnCall[len(fake.getCredentialCountForRepoArgsForCall)]
 	fake.getCredentialCountForRepoArgsForCall = append(fake.getCredentialCountForRepoArgsForCall, struct {
 		owner string
 		repo  string
@@ -194,6 +284,9 @@ func (fake *FakeBranchRepository) GetCredentialCountForRepo(owner string, repo s
 	fake.getCredentialCountForRepoMutex.Unlock()
 	if fake.GetCredentialCountForRepoStub != nil {
 		return fake.GetCredentialCountForRepoStub(owner, repo)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.getCredentialCountForRepoReturns.result1, fake.getCredentialCountForRepoReturns.result2
 }
@@ -213,6 +306,20 @@ func (fake *FakeBranchRepository) GetCredentialCountForRepoArgsForCall(i int) (s
 func (fake *FakeBranchRepository) GetCredentialCountForRepoReturns(result1 []db.BranchCredentialCount, result2 error) {
 	fake.GetCredentialCountForRepoStub = nil
 	fake.getCredentialCountForRepoReturns = struct {
+		result1 []db.BranchCredentialCount
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeBranchRepository) GetCredentialCountForRepoReturnsOnCall(i int, result1 []db.BranchCredentialCount, result2 error) {
+	fake.GetCredentialCountForRepoStub = nil
+	if fake.getCredentialCountForRepoReturnsOnCall == nil {
+		fake.getCredentialCountForRepoReturnsOnCall = make(map[int]struct {
+			result1 []db.BranchCredentialCount
+			result2 error
+		})
+	}
+	fake.getCredentialCountForRepoReturnsOnCall[i] = struct {
 		result1 []db.BranchCredentialCount
 		result2 error
 	}{result1, result2}

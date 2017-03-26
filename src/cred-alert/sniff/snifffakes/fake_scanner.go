@@ -18,6 +18,9 @@ type FakeScanner struct {
 	scanReturns struct {
 		result1 bool
 	}
+	scanReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	LineStub        func(lager.Logger) *scanners.Line
 	lineMutex       sync.RWMutex
 	lineArgsForCall []struct {
@@ -26,12 +29,16 @@ type FakeScanner struct {
 	lineReturns struct {
 		result1 *scanners.Line
 	}
+	lineReturnsOnCall map[int]struct {
+		result1 *scanners.Line
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeScanner) Scan(arg1 lager.Logger) bool {
 	fake.scanMutex.Lock()
+	ret, specificReturn := fake.scanReturnsOnCall[len(fake.scanArgsForCall)]
 	fake.scanArgsForCall = append(fake.scanArgsForCall, struct {
 		arg1 lager.Logger
 	}{arg1})
@@ -39,6 +46,9 @@ func (fake *FakeScanner) Scan(arg1 lager.Logger) bool {
 	fake.scanMutex.Unlock()
 	if fake.ScanStub != nil {
 		return fake.ScanStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.scanReturns.result1
 }
@@ -62,8 +72,21 @@ func (fake *FakeScanner) ScanReturns(result1 bool) {
 	}{result1}
 }
 
+func (fake *FakeScanner) ScanReturnsOnCall(i int, result1 bool) {
+	fake.ScanStub = nil
+	if fake.scanReturnsOnCall == nil {
+		fake.scanReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.scanReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *FakeScanner) Line(arg1 lager.Logger) *scanners.Line {
 	fake.lineMutex.Lock()
+	ret, specificReturn := fake.lineReturnsOnCall[len(fake.lineArgsForCall)]
 	fake.lineArgsForCall = append(fake.lineArgsForCall, struct {
 		arg1 lager.Logger
 	}{arg1})
@@ -71,6 +94,9 @@ func (fake *FakeScanner) Line(arg1 lager.Logger) *scanners.Line {
 	fake.lineMutex.Unlock()
 	if fake.LineStub != nil {
 		return fake.LineStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.lineReturns.result1
 }
@@ -90,6 +116,18 @@ func (fake *FakeScanner) LineArgsForCall(i int) lager.Logger {
 func (fake *FakeScanner) LineReturns(result1 *scanners.Line) {
 	fake.LineStub = nil
 	fake.lineReturns = struct {
+		result1 *scanners.Line
+	}{result1}
+}
+
+func (fake *FakeScanner) LineReturnsOnCall(i int, result1 *scanners.Line) {
+	fake.LineStub = nil
+	if fake.lineReturnsOnCall == nil {
+		fake.lineReturnsOnCall = make(map[int]struct {
+			result1 *scanners.Line
+		})
+	}
+	fake.lineReturnsOnCall[i] = struct {
 		result1 *scanners.Line
 	}{result1}
 }

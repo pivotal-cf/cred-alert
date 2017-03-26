@@ -16,12 +16,17 @@ type FakeGithubService struct {
 		result1 int
 		result2 error
 	}
+	statusReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeGithubService) Status(arg1 string) (int, error) {
 	fake.statusMutex.Lock()
+	ret, specificReturn := fake.statusReturnsOnCall[len(fake.statusArgsForCall)]
 	fake.statusArgsForCall = append(fake.statusArgsForCall, struct {
 		arg1 string
 	}{arg1})
@@ -29,6 +34,9 @@ func (fake *FakeGithubService) Status(arg1 string) (int, error) {
 	fake.statusMutex.Unlock()
 	if fake.StatusStub != nil {
 		return fake.StatusStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.statusReturns.result1, fake.statusReturns.result2
 }
@@ -48,6 +56,20 @@ func (fake *FakeGithubService) StatusArgsForCall(i int) string {
 func (fake *FakeGithubService) StatusReturns(result1 int, result2 error) {
 	fake.StatusStub = nil
 	fake.statusReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeGithubService) StatusReturnsOnCall(i int, result1 int, result2 error) {
+	fake.StatusStub = nil
+	if fake.statusReturnsOnCall == nil {
+		fake.statusReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.statusReturnsOnCall[i] = struct {
 		result1 int
 		result2 error
 	}{result1, result2}

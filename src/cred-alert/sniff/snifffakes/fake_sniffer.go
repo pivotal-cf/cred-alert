@@ -19,12 +19,16 @@ type FakeSniffer struct {
 	sniffReturns struct {
 		result1 error
 	}
+	sniffReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeSniffer) Sniff(arg1 lager.Logger, arg2 sniff.Scanner, arg3 sniff.ViolationHandlerFunc) error {
 	fake.sniffMutex.Lock()
+	ret, specificReturn := fake.sniffReturnsOnCall[len(fake.sniffArgsForCall)]
 	fake.sniffArgsForCall = append(fake.sniffArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 sniff.Scanner
@@ -34,6 +38,9 @@ func (fake *FakeSniffer) Sniff(arg1 lager.Logger, arg2 sniff.Scanner, arg3 sniff
 	fake.sniffMutex.Unlock()
 	if fake.SniffStub != nil {
 		return fake.SniffStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.sniffReturns.result1
 }
@@ -53,6 +60,18 @@ func (fake *FakeSniffer) SniffArgsForCall(i int) (lager.Logger, sniff.Scanner, s
 func (fake *FakeSniffer) SniffReturns(result1 error) {
 	fake.SniffStub = nil
 	fake.sniffReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSniffer) SniffReturnsOnCall(i int, result1 error) {
+	fake.SniffStub = nil
+	if fake.sniffReturnsOnCall == nil {
+		fake.sniffReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sniffReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

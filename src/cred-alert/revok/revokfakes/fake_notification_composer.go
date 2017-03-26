@@ -23,12 +23,16 @@ type FakeNotificationComposer struct {
 	scanAndNotifyReturns struct {
 		result1 error
 	}
+	scanAndNotifyReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeNotificationComposer) ScanAndNotify(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[string]struct{}, arg5 string, arg6 string, arg7 string) error {
 	fake.scanAndNotifyMutex.Lock()
+	ret, specificReturn := fake.scanAndNotifyReturnsOnCall[len(fake.scanAndNotifyArgsForCall)]
 	fake.scanAndNotifyArgsForCall = append(fake.scanAndNotifyArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
@@ -42,6 +46,9 @@ func (fake *FakeNotificationComposer) ScanAndNotify(arg1 lager.Logger, arg2 stri
 	fake.scanAndNotifyMutex.Unlock()
 	if fake.ScanAndNotifyStub != nil {
 		return fake.ScanAndNotifyStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.scanAndNotifyReturns.result1
 }
@@ -61,6 +68,18 @@ func (fake *FakeNotificationComposer) ScanAndNotifyArgsForCall(i int) (lager.Log
 func (fake *FakeNotificationComposer) ScanAndNotifyReturns(result1 error) {
 	fake.ScanAndNotifyStub = nil
 	fake.scanAndNotifyReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeNotificationComposer) ScanAndNotifyReturnsOnCall(i int, result1 error) {
+	fake.ScanAndNotifyStub = nil
+	if fake.scanAndNotifyReturnsOnCall == nil {
+		fake.scanAndNotifyReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.scanAndNotifyReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

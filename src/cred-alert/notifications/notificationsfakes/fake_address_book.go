@@ -19,12 +19,16 @@ type FakeAddressBook struct {
 	addressForRepoReturns struct {
 		result1 []notifications.Address
 	}
+	addressForRepoReturnsOnCall map[int]struct {
+		result1 []notifications.Address
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeAddressBook) AddressForRepo(logger lager.Logger, owner string, name string) []notifications.Address {
 	fake.addressForRepoMutex.Lock()
+	ret, specificReturn := fake.addressForRepoReturnsOnCall[len(fake.addressForRepoArgsForCall)]
 	fake.addressForRepoArgsForCall = append(fake.addressForRepoArgsForCall, struct {
 		logger lager.Logger
 		owner  string
@@ -34,6 +38,9 @@ func (fake *FakeAddressBook) AddressForRepo(logger lager.Logger, owner string, n
 	fake.addressForRepoMutex.Unlock()
 	if fake.AddressForRepoStub != nil {
 		return fake.AddressForRepoStub(logger, owner, name)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.addressForRepoReturns.result1
 }
@@ -53,6 +60,18 @@ func (fake *FakeAddressBook) AddressForRepoArgsForCall(i int) (lager.Logger, str
 func (fake *FakeAddressBook) AddressForRepoReturns(result1 []notifications.Address) {
 	fake.AddressForRepoStub = nil
 	fake.addressForRepoReturns = struct {
+		result1 []notifications.Address
+	}{result1}
+}
+
+func (fake *FakeAddressBook) AddressForRepoReturnsOnCall(i int, result1 []notifications.Address) {
+	fake.AddressForRepoStub = nil
+	if fake.addressForRepoReturnsOnCall == nil {
+		fake.addressForRepoReturnsOnCall = make(map[int]struct {
+			result1 []notifications.Address
+		})
+	}
+	fake.addressForRepoReturnsOnCall[i] = struct {
 		result1 []notifications.Address
 	}{result1}
 }

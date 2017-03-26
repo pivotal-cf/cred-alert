@@ -15,12 +15,16 @@ type FakeEnqueuer struct {
 	enqueueReturns struct {
 		result1 error
 	}
+	enqueueReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeEnqueuer) Enqueue(arg1 queue.Task) error {
 	fake.enqueueMutex.Lock()
+	ret, specificReturn := fake.enqueueReturnsOnCall[len(fake.enqueueArgsForCall)]
 	fake.enqueueArgsForCall = append(fake.enqueueArgsForCall, struct {
 		arg1 queue.Task
 	}{arg1})
@@ -28,6 +32,9 @@ func (fake *FakeEnqueuer) Enqueue(arg1 queue.Task) error {
 	fake.enqueueMutex.Unlock()
 	if fake.EnqueueStub != nil {
 		return fake.EnqueueStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.enqueueReturns.result1
 }
@@ -47,6 +54,18 @@ func (fake *FakeEnqueuer) EnqueueArgsForCall(i int) queue.Task {
 func (fake *FakeEnqueuer) EnqueueReturns(result1 error) {
 	fake.EnqueueStub = nil
 	fake.enqueueReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEnqueuer) EnqueueReturnsOnCall(i int, result1 error) {
+	fake.EnqueueStub = nil
+	if fake.enqueueReturnsOnCall == nil {
+		fake.enqueueReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.enqueueReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

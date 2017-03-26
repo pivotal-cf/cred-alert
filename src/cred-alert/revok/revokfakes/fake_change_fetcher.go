@@ -20,12 +20,16 @@ type FakeChangeFetcher struct {
 	fetchReturns struct {
 		result1 error
 	}
+	fetchReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeChangeFetcher) Fetch(logger lager.Logger, owner string, name string, reenable bool) error {
 	fake.fetchMutex.Lock()
+	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
 		logger   lager.Logger
 		owner    string
@@ -36,6 +40,9 @@ func (fake *FakeChangeFetcher) Fetch(logger lager.Logger, owner string, name str
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
 		return fake.FetchStub(logger, owner, name, reenable)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.fetchReturns.result1
 }
@@ -55,6 +62,18 @@ func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (lager.Logger, string, st
 func (fake *FakeChangeFetcher) FetchReturns(result1 error) {
 	fake.FetchStub = nil
 	fake.fetchReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeChangeFetcher) FetchReturnsOnCall(i int, result1 error) {
+	fake.FetchStub = nil
+	if fake.fetchReturnsOnCall == nil {
+		fake.fetchReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.fetchReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

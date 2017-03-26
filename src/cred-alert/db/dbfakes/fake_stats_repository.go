@@ -14,10 +14,18 @@ type FakeStatsRepository struct {
 		result1 int
 		result2 error
 	}
+	repositoryCountReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	DisabledRepositoryCountStub        func() (int, error)
 	disabledRepositoryCountMutex       sync.RWMutex
 	disabledRepositoryCountArgsForCall []struct{}
 	disabledRepositoryCountReturns     struct {
+		result1 int
+		result2 error
+	}
+	disabledRepositoryCountReturnsOnCall map[int]struct {
 		result1 int
 		result2 error
 	}
@@ -28,10 +36,18 @@ type FakeStatsRepository struct {
 		result1 int
 		result2 error
 	}
+	unclonedRepositoryCountReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	CredentialCountStub        func() (int, error)
 	credentialCountMutex       sync.RWMutex
 	credentialCountArgsForCall []struct{}
 	credentialCountReturns     struct {
+		result1 int
+		result2 error
+	}
+	credentialCountReturnsOnCall map[int]struct {
 		result1 int
 		result2 error
 	}
@@ -42,17 +58,25 @@ type FakeStatsRepository struct {
 		result1 int
 		result2 error
 	}
+	fetchCountReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeStatsRepository) RepositoryCount() (int, error) {
 	fake.repositoryCountMutex.Lock()
+	ret, specificReturn := fake.repositoryCountReturnsOnCall[len(fake.repositoryCountArgsForCall)]
 	fake.repositoryCountArgsForCall = append(fake.repositoryCountArgsForCall, struct{}{})
 	fake.recordInvocation("RepositoryCount", []interface{}{})
 	fake.repositoryCountMutex.Unlock()
 	if fake.RepositoryCountStub != nil {
 		return fake.RepositoryCountStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.repositoryCountReturns.result1, fake.repositoryCountReturns.result2
 }
@@ -71,13 +95,31 @@ func (fake *FakeStatsRepository) RepositoryCountReturns(result1 int, result2 err
 	}{result1, result2}
 }
 
+func (fake *FakeStatsRepository) RepositoryCountReturnsOnCall(i int, result1 int, result2 error) {
+	fake.RepositoryCountStub = nil
+	if fake.repositoryCountReturnsOnCall == nil {
+		fake.repositoryCountReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.repositoryCountReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStatsRepository) DisabledRepositoryCount() (int, error) {
 	fake.disabledRepositoryCountMutex.Lock()
+	ret, specificReturn := fake.disabledRepositoryCountReturnsOnCall[len(fake.disabledRepositoryCountArgsForCall)]
 	fake.disabledRepositoryCountArgsForCall = append(fake.disabledRepositoryCountArgsForCall, struct{}{})
 	fake.recordInvocation("DisabledRepositoryCount", []interface{}{})
 	fake.disabledRepositoryCountMutex.Unlock()
 	if fake.DisabledRepositoryCountStub != nil {
 		return fake.DisabledRepositoryCountStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.disabledRepositoryCountReturns.result1, fake.disabledRepositoryCountReturns.result2
 }
@@ -96,13 +138,31 @@ func (fake *FakeStatsRepository) DisabledRepositoryCountReturns(result1 int, res
 	}{result1, result2}
 }
 
+func (fake *FakeStatsRepository) DisabledRepositoryCountReturnsOnCall(i int, result1 int, result2 error) {
+	fake.DisabledRepositoryCountStub = nil
+	if fake.disabledRepositoryCountReturnsOnCall == nil {
+		fake.disabledRepositoryCountReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.disabledRepositoryCountReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStatsRepository) UnclonedRepositoryCount() (int, error) {
 	fake.unclonedRepositoryCountMutex.Lock()
+	ret, specificReturn := fake.unclonedRepositoryCountReturnsOnCall[len(fake.unclonedRepositoryCountArgsForCall)]
 	fake.unclonedRepositoryCountArgsForCall = append(fake.unclonedRepositoryCountArgsForCall, struct{}{})
 	fake.recordInvocation("UnclonedRepositoryCount", []interface{}{})
 	fake.unclonedRepositoryCountMutex.Unlock()
 	if fake.UnclonedRepositoryCountStub != nil {
 		return fake.UnclonedRepositoryCountStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.unclonedRepositoryCountReturns.result1, fake.unclonedRepositoryCountReturns.result2
 }
@@ -121,13 +181,31 @@ func (fake *FakeStatsRepository) UnclonedRepositoryCountReturns(result1 int, res
 	}{result1, result2}
 }
 
+func (fake *FakeStatsRepository) UnclonedRepositoryCountReturnsOnCall(i int, result1 int, result2 error) {
+	fake.UnclonedRepositoryCountStub = nil
+	if fake.unclonedRepositoryCountReturnsOnCall == nil {
+		fake.unclonedRepositoryCountReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.unclonedRepositoryCountReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStatsRepository) CredentialCount() (int, error) {
 	fake.credentialCountMutex.Lock()
+	ret, specificReturn := fake.credentialCountReturnsOnCall[len(fake.credentialCountArgsForCall)]
 	fake.credentialCountArgsForCall = append(fake.credentialCountArgsForCall, struct{}{})
 	fake.recordInvocation("CredentialCount", []interface{}{})
 	fake.credentialCountMutex.Unlock()
 	if fake.CredentialCountStub != nil {
 		return fake.CredentialCountStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.credentialCountReturns.result1, fake.credentialCountReturns.result2
 }
@@ -146,13 +224,31 @@ func (fake *FakeStatsRepository) CredentialCountReturns(result1 int, result2 err
 	}{result1, result2}
 }
 
+func (fake *FakeStatsRepository) CredentialCountReturnsOnCall(i int, result1 int, result2 error) {
+	fake.CredentialCountStub = nil
+	if fake.credentialCountReturnsOnCall == nil {
+		fake.credentialCountReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.credentialCountReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStatsRepository) FetchCount() (int, error) {
 	fake.fetchCountMutex.Lock()
+	ret, specificReturn := fake.fetchCountReturnsOnCall[len(fake.fetchCountArgsForCall)]
 	fake.fetchCountArgsForCall = append(fake.fetchCountArgsForCall, struct{}{})
 	fake.recordInvocation("FetchCount", []interface{}{})
 	fake.fetchCountMutex.Unlock()
 	if fake.FetchCountStub != nil {
 		return fake.FetchCountStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.fetchCountReturns.result1, fake.fetchCountReturns.result2
 }
@@ -166,6 +262,20 @@ func (fake *FakeStatsRepository) FetchCountCallCount() int {
 func (fake *FakeStatsRepository) FetchCountReturns(result1 int, result2 error) {
 	fake.FetchCountStub = nil
 	fake.fetchCountReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStatsRepository) FetchCountReturnsOnCall(i int, result1 int, result2 error) {
+	fake.FetchCountStub = nil
+	if fake.fetchCountReturnsOnCall == nil {
+		fake.fetchCountReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.fetchCountReturnsOnCall[i] = struct {
 		result1 int
 		result2 error
 	}{result1, result2}

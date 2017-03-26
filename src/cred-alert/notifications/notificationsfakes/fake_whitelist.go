@@ -16,12 +16,16 @@ type FakeWhitelist struct {
 	shouldSkipNotificationReturns struct {
 		result1 bool
 	}
+	shouldSkipNotificationReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeWhitelist) ShouldSkipNotification(arg1 bool, arg2 string) bool {
 	fake.shouldSkipNotificationMutex.Lock()
+	ret, specificReturn := fake.shouldSkipNotificationReturnsOnCall[len(fake.shouldSkipNotificationArgsForCall)]
 	fake.shouldSkipNotificationArgsForCall = append(fake.shouldSkipNotificationArgsForCall, struct {
 		arg1 bool
 		arg2 string
@@ -30,6 +34,9 @@ func (fake *FakeWhitelist) ShouldSkipNotification(arg1 bool, arg2 string) bool {
 	fake.shouldSkipNotificationMutex.Unlock()
 	if fake.ShouldSkipNotificationStub != nil {
 		return fake.ShouldSkipNotificationStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.shouldSkipNotificationReturns.result1
 }
@@ -49,6 +56,18 @@ func (fake *FakeWhitelist) ShouldSkipNotificationArgsForCall(i int) (bool, strin
 func (fake *FakeWhitelist) ShouldSkipNotificationReturns(result1 bool) {
 	fake.ShouldSkipNotificationStub = nil
 	fake.shouldSkipNotificationReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeWhitelist) ShouldSkipNotificationReturnsOnCall(i int, result1 bool) {
+	fake.ShouldSkipNotificationStub = nil
+	if fake.shouldSkipNotificationReturnsOnCall == nil {
+		fake.shouldSkipNotificationReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.shouldSkipNotificationReturnsOnCall[i] = struct {
 		result1 bool
 	}{result1}
 }

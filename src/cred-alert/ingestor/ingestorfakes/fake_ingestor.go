@@ -19,12 +19,16 @@ type FakeIngestor struct {
 	ingestPushScanReturns struct {
 		result1 error
 	}
+	ingestPushScanReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeIngestor) IngestPushScan(arg1 lager.Logger, arg2 ingestor.PushScan, arg3 string) error {
 	fake.ingestPushScanMutex.Lock()
+	ret, specificReturn := fake.ingestPushScanReturnsOnCall[len(fake.ingestPushScanArgsForCall)]
 	fake.ingestPushScanArgsForCall = append(fake.ingestPushScanArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 ingestor.PushScan
@@ -34,6 +38,9 @@ func (fake *FakeIngestor) IngestPushScan(arg1 lager.Logger, arg2 ingestor.PushSc
 	fake.ingestPushScanMutex.Unlock()
 	if fake.IngestPushScanStub != nil {
 		return fake.IngestPushScanStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.ingestPushScanReturns.result1
 }
@@ -53,6 +60,18 @@ func (fake *FakeIngestor) IngestPushScanArgsForCall(i int) (lager.Logger, ingest
 func (fake *FakeIngestor) IngestPushScanReturns(result1 error) {
 	fake.IngestPushScanStub = nil
 	fake.ingestPushScanReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeIngestor) IngestPushScanReturnsOnCall(i int, result1 error) {
+	fake.IngestPushScanStub = nil
+	if fake.ingestPushScanReturnsOnCall == nil {
+		fake.ingestPushScanReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.ingestPushScanReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

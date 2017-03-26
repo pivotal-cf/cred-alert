@@ -13,10 +13,16 @@ type FakeResults struct {
 	cReturns     struct {
 		result1 <-chan search.Result
 	}
+	cReturnsOnCall map[int]struct {
+		result1 <-chan search.Result
+	}
 	ErrStub        func() error
 	errMutex       sync.RWMutex
 	errArgsForCall []struct{}
 	errReturns     struct {
+		result1 error
+	}
+	errReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -25,11 +31,15 @@ type FakeResults struct {
 
 func (fake *FakeResults) C() <-chan search.Result {
 	fake.cMutex.Lock()
+	ret, specificReturn := fake.cReturnsOnCall[len(fake.cArgsForCall)]
 	fake.cArgsForCall = append(fake.cArgsForCall, struct{}{})
 	fake.recordInvocation("C", []interface{}{})
 	fake.cMutex.Unlock()
 	if fake.CStub != nil {
 		return fake.CStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.cReturns.result1
 }
@@ -47,13 +57,29 @@ func (fake *FakeResults) CReturns(result1 <-chan search.Result) {
 	}{result1}
 }
 
+func (fake *FakeResults) CReturnsOnCall(i int, result1 <-chan search.Result) {
+	fake.CStub = nil
+	if fake.cReturnsOnCall == nil {
+		fake.cReturnsOnCall = make(map[int]struct {
+			result1 <-chan search.Result
+		})
+	}
+	fake.cReturnsOnCall[i] = struct {
+		result1 <-chan search.Result
+	}{result1}
+}
+
 func (fake *FakeResults) Err() error {
 	fake.errMutex.Lock()
+	ret, specificReturn := fake.errReturnsOnCall[len(fake.errArgsForCall)]
 	fake.errArgsForCall = append(fake.errArgsForCall, struct{}{})
 	fake.recordInvocation("Err", []interface{}{})
 	fake.errMutex.Unlock()
 	if fake.ErrStub != nil {
 		return fake.ErrStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.errReturns.result1
 }
@@ -67,6 +93,18 @@ func (fake *FakeResults) ErrCallCount() int {
 func (fake *FakeResults) ErrReturns(result1 error) {
 	fake.ErrStub = nil
 	fake.errReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeResults) ErrReturnsOnCall(i int, result1 error) {
+	fake.ErrStub = nil
+	if fake.errReturnsOnCall == nil {
+		fake.errReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.errReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

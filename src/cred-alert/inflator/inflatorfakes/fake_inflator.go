@@ -20,10 +20,16 @@ type FakeInflator struct {
 	inflateReturns struct {
 		result1 error
 	}
+	inflateReturnsOnCall map[int]struct {
+		result1 error
+	}
 	LogPathStub        func() string
 	logPathMutex       sync.RWMutex
 	logPathArgsForCall []struct{}
 	logPathReturns     struct {
+		result1 string
+	}
+	logPathReturnsOnCall map[int]struct {
 		result1 string
 	}
 	CloseStub        func() error
@@ -32,12 +38,16 @@ type FakeInflator struct {
 	closeReturns     struct {
 		result1 error
 	}
+	closeReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeInflator) Inflate(arg1 lager.Logger, arg2 string, arg3 string, arg4 string) error {
 	fake.inflateMutex.Lock()
+	ret, specificReturn := fake.inflateReturnsOnCall[len(fake.inflateArgsForCall)]
 	fake.inflateArgsForCall = append(fake.inflateArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
@@ -48,6 +58,9 @@ func (fake *FakeInflator) Inflate(arg1 lager.Logger, arg2 string, arg3 string, a
 	fake.inflateMutex.Unlock()
 	if fake.InflateStub != nil {
 		return fake.InflateStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.inflateReturns.result1
 }
@@ -71,13 +84,29 @@ func (fake *FakeInflator) InflateReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeInflator) InflateReturnsOnCall(i int, result1 error) {
+	fake.InflateStub = nil
+	if fake.inflateReturnsOnCall == nil {
+		fake.inflateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.inflateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeInflator) LogPath() string {
 	fake.logPathMutex.Lock()
+	ret, specificReturn := fake.logPathReturnsOnCall[len(fake.logPathArgsForCall)]
 	fake.logPathArgsForCall = append(fake.logPathArgsForCall, struct{}{})
 	fake.recordInvocation("LogPath", []interface{}{})
 	fake.logPathMutex.Unlock()
 	if fake.LogPathStub != nil {
 		return fake.LogPathStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.logPathReturns.result1
 }
@@ -95,13 +124,29 @@ func (fake *FakeInflator) LogPathReturns(result1 string) {
 	}{result1}
 }
 
+func (fake *FakeInflator) LogPathReturnsOnCall(i int, result1 string) {
+	fake.LogPathStub = nil
+	if fake.logPathReturnsOnCall == nil {
+		fake.logPathReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.logPathReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
 func (fake *FakeInflator) Close() error {
 	fake.closeMutex.Lock()
+	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct{}{})
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
 		return fake.CloseStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.closeReturns.result1
 }
@@ -115,6 +160,18 @@ func (fake *FakeInflator) CloseCallCount() int {
 func (fake *FakeInflator) CloseReturns(result1 error) {
 	fake.CloseStub = nil
 	fake.closeReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeInflator) CloseReturnsOnCall(i int, result1 error) {
+	fake.CloseStub = nil
+	if fake.closeReturnsOnCall == nil {
+		fake.closeReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.closeReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

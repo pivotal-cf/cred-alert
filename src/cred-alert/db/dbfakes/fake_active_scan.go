@@ -18,6 +18,9 @@ type FakeActiveScan struct {
 	finishReturns     struct {
 		result1 error
 	}
+	finishReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -48,11 +51,15 @@ func (fake *FakeActiveScan) RecordCredentialArgsForCall(i int) db.Credential {
 
 func (fake *FakeActiveScan) Finish() error {
 	fake.finishMutex.Lock()
+	ret, specificReturn := fake.finishReturnsOnCall[len(fake.finishArgsForCall)]
 	fake.finishArgsForCall = append(fake.finishArgsForCall, struct{}{})
 	fake.recordInvocation("Finish", []interface{}{})
 	fake.finishMutex.Unlock()
 	if fake.FinishStub != nil {
 		return fake.FinishStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.finishReturns.result1
 }
@@ -66,6 +73,18 @@ func (fake *FakeActiveScan) FinishCallCount() int {
 func (fake *FakeActiveScan) FinishReturns(result1 error) {
 	fake.FinishStub = nil
 	fake.finishReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeActiveScan) FinishReturnsOnCall(i int, result1 error) {
+	fake.FinishStub = nil
+	if fake.finishReturnsOnCall == nil {
+		fake.finishReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.finishReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

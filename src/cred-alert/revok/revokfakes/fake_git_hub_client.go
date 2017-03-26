@@ -19,6 +19,10 @@ type FakeGitHubClient struct {
 		result1 []revok.GitHubRepository
 		result2 error
 	}
+	listRepositoriesByOrgReturnsOnCall map[int]struct {
+		result1 []revok.GitHubRepository
+		result2 error
+	}
 	ListOrganizationsStub        func(lager.Logger) ([]revok.GitHubOrganization, error)
 	listOrganizationsMutex       sync.RWMutex
 	listOrganizationsArgsForCall []struct {
@@ -28,12 +32,17 @@ type FakeGitHubClient struct {
 		result1 []revok.GitHubOrganization
 		result2 error
 	}
+	listOrganizationsReturnsOnCall map[int]struct {
+		result1 []revok.GitHubOrganization
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeGitHubClient) ListRepositoriesByOrg(arg1 lager.Logger, arg2 string) ([]revok.GitHubRepository, error) {
 	fake.listRepositoriesByOrgMutex.Lock()
+	ret, specificReturn := fake.listRepositoriesByOrgReturnsOnCall[len(fake.listRepositoriesByOrgArgsForCall)]
 	fake.listRepositoriesByOrgArgsForCall = append(fake.listRepositoriesByOrgArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
@@ -42,6 +51,9 @@ func (fake *FakeGitHubClient) ListRepositoriesByOrg(arg1 lager.Logger, arg2 stri
 	fake.listRepositoriesByOrgMutex.Unlock()
 	if fake.ListRepositoriesByOrgStub != nil {
 		return fake.ListRepositoriesByOrgStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.listRepositoriesByOrgReturns.result1, fake.listRepositoriesByOrgReturns.result2
 }
@@ -66,8 +78,23 @@ func (fake *FakeGitHubClient) ListRepositoriesByOrgReturns(result1 []revok.GitHu
 	}{result1, result2}
 }
 
+func (fake *FakeGitHubClient) ListRepositoriesByOrgReturnsOnCall(i int, result1 []revok.GitHubRepository, result2 error) {
+	fake.ListRepositoriesByOrgStub = nil
+	if fake.listRepositoriesByOrgReturnsOnCall == nil {
+		fake.listRepositoriesByOrgReturnsOnCall = make(map[int]struct {
+			result1 []revok.GitHubRepository
+			result2 error
+		})
+	}
+	fake.listRepositoriesByOrgReturnsOnCall[i] = struct {
+		result1 []revok.GitHubRepository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeGitHubClient) ListOrganizations(arg1 lager.Logger) ([]revok.GitHubOrganization, error) {
 	fake.listOrganizationsMutex.Lock()
+	ret, specificReturn := fake.listOrganizationsReturnsOnCall[len(fake.listOrganizationsArgsForCall)]
 	fake.listOrganizationsArgsForCall = append(fake.listOrganizationsArgsForCall, struct {
 		arg1 lager.Logger
 	}{arg1})
@@ -75,6 +102,9 @@ func (fake *FakeGitHubClient) ListOrganizations(arg1 lager.Logger) ([]revok.GitH
 	fake.listOrganizationsMutex.Unlock()
 	if fake.ListOrganizationsStub != nil {
 		return fake.ListOrganizationsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.listOrganizationsReturns.result1, fake.listOrganizationsReturns.result2
 }
@@ -94,6 +124,20 @@ func (fake *FakeGitHubClient) ListOrganizationsArgsForCall(i int) lager.Logger {
 func (fake *FakeGitHubClient) ListOrganizationsReturns(result1 []revok.GitHubOrganization, result2 error) {
 	fake.ListOrganizationsStub = nil
 	fake.listOrganizationsReturns = struct {
+		result1 []revok.GitHubOrganization
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeGitHubClient) ListOrganizationsReturnsOnCall(i int, result1 []revok.GitHubOrganization, result2 error) {
+	fake.ListOrganizationsStub = nil
+	if fake.listOrganizationsReturnsOnCall == nil {
+		fake.listOrganizationsReturnsOnCall = make(map[int]struct {
+			result1 []revok.GitHubOrganization
+			result2 error
+		})
+	}
+	fake.listOrganizationsReturnsOnCall[i] = struct {
 		result1 []revok.GitHubOrganization
 		result2 error
 	}{result1, result2}

@@ -17,6 +17,9 @@ type FakeRepositoryRepository struct {
 	createReturns struct {
 		result1 error
 	}
+	createReturnsOnCall map[int]struct {
+		result1 error
+	}
 	FindStub        func(owner string, name string) (db.Repository, bool, error)
 	findMutex       sync.RWMutex
 	findArgsForCall []struct {
@@ -24,6 +27,11 @@ type FakeRepositoryRepository struct {
 		name  string
 	}
 	findReturns struct {
+		result1 db.Repository
+		result2 bool
+		result3 error
+	}
+	findReturnsOnCall map[int]struct {
 		result1 db.Repository
 		result2 bool
 		result3 error
@@ -38,6 +46,10 @@ type FakeRepositoryRepository struct {
 		result1 db.Repository
 		result2 error
 	}
+	mustFindReturnsOnCall map[int]struct {
+		result1 db.Repository
+		result2 error
+	}
 	AllStub        func() ([]db.Repository, error)
 	allMutex       sync.RWMutex
 	allArgsForCall []struct{}
@@ -45,10 +57,18 @@ type FakeRepositoryRepository struct {
 		result1 []db.Repository
 		result2 error
 	}
+	allReturnsOnCall map[int]struct {
+		result1 []db.Repository
+		result2 error
+	}
 	ActiveStub        func() ([]db.Repository, error)
 	activeMutex       sync.RWMutex
 	activeArgsForCall []struct{}
 	activeReturns     struct {
+		result1 []db.Repository
+		result2 error
+	}
+	activeReturnsOnCall map[int]struct {
 		result1 []db.Repository
 		result2 error
 	}
@@ -61,12 +81,20 @@ type FakeRepositoryRepository struct {
 		result1 []db.Repository
 		result2 error
 	}
+	allForOrganizationReturnsOnCall map[int]struct {
+		result1 []db.Repository
+		result2 error
+	}
 	NotScannedWithVersionStub        func(int) ([]db.Repository, error)
 	notScannedWithVersionMutex       sync.RWMutex
 	notScannedWithVersionArgsForCall []struct {
 		arg1 int
 	}
 	notScannedWithVersionReturns struct {
+		result1 []db.Repository
+		result2 error
+	}
+	notScannedWithVersionReturnsOnCall map[int]struct {
 		result1 []db.Repository
 		result2 error
 	}
@@ -80,6 +108,9 @@ type FakeRepositoryRepository struct {
 	markAsClonedReturns struct {
 		result1 error
 	}
+	markAsClonedReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ReenableStub        func(string, string) error
 	reenableMutex       sync.RWMutex
 	reenableArgsForCall []struct {
@@ -87,6 +118,9 @@ type FakeRepositoryRepository struct {
 		arg2 string
 	}
 	reenableReturns struct {
+		result1 error
+	}
+	reenableReturnsOnCall map[int]struct {
 		result1 error
 	}
 	RegisterFailedFetchStub        func(lager.Logger, *db.Repository) error
@@ -98,12 +132,16 @@ type FakeRepositoryRepository struct {
 	registerFailedFetchReturns struct {
 		result1 error
 	}
+	registerFailedFetchReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeRepositoryRepository) Create(arg1 *db.Repository) error {
 	fake.createMutex.Lock()
+	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
 		arg1 *db.Repository
 	}{arg1})
@@ -111,6 +149,9 @@ func (fake *FakeRepositoryRepository) Create(arg1 *db.Repository) error {
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
 		return fake.CreateStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.createReturns.result1
 }
@@ -134,8 +175,21 @@ func (fake *FakeRepositoryRepository) CreateReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeRepositoryRepository) CreateReturnsOnCall(i int, result1 error) {
+	fake.CreateStub = nil
+	if fake.createReturnsOnCall == nil {
+		fake.createReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeRepositoryRepository) Find(owner string, name string) (db.Repository, bool, error) {
 	fake.findMutex.Lock()
+	ret, specificReturn := fake.findReturnsOnCall[len(fake.findArgsForCall)]
 	fake.findArgsForCall = append(fake.findArgsForCall, struct {
 		owner string
 		name  string
@@ -144,6 +198,9 @@ func (fake *FakeRepositoryRepository) Find(owner string, name string) (db.Reposi
 	fake.findMutex.Unlock()
 	if fake.FindStub != nil {
 		return fake.FindStub(owner, name)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
 	}
 	return fake.findReturns.result1, fake.findReturns.result2, fake.findReturns.result3
 }
@@ -169,8 +226,25 @@ func (fake *FakeRepositoryRepository) FindReturns(result1 db.Repository, result2
 	}{result1, result2, result3}
 }
 
+func (fake *FakeRepositoryRepository) FindReturnsOnCall(i int, result1 db.Repository, result2 bool, result3 error) {
+	fake.FindStub = nil
+	if fake.findReturnsOnCall == nil {
+		fake.findReturnsOnCall = make(map[int]struct {
+			result1 db.Repository
+			result2 bool
+			result3 error
+		})
+	}
+	fake.findReturnsOnCall[i] = struct {
+		result1 db.Repository
+		result2 bool
+		result3 error
+	}{result1, result2, result3}
+}
+
 func (fake *FakeRepositoryRepository) MustFind(owner string, name string) (db.Repository, error) {
 	fake.mustFindMutex.Lock()
+	ret, specificReturn := fake.mustFindReturnsOnCall[len(fake.mustFindArgsForCall)]
 	fake.mustFindArgsForCall = append(fake.mustFindArgsForCall, struct {
 		owner string
 		name  string
@@ -179,6 +253,9 @@ func (fake *FakeRepositoryRepository) MustFind(owner string, name string) (db.Re
 	fake.mustFindMutex.Unlock()
 	if fake.MustFindStub != nil {
 		return fake.MustFindStub(owner, name)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.mustFindReturns.result1, fake.mustFindReturns.result2
 }
@@ -203,13 +280,31 @@ func (fake *FakeRepositoryRepository) MustFindReturns(result1 db.Repository, res
 	}{result1, result2}
 }
 
+func (fake *FakeRepositoryRepository) MustFindReturnsOnCall(i int, result1 db.Repository, result2 error) {
+	fake.MustFindStub = nil
+	if fake.mustFindReturnsOnCall == nil {
+		fake.mustFindReturnsOnCall = make(map[int]struct {
+			result1 db.Repository
+			result2 error
+		})
+	}
+	fake.mustFindReturnsOnCall[i] = struct {
+		result1 db.Repository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepositoryRepository) All() ([]db.Repository, error) {
 	fake.allMutex.Lock()
+	ret, specificReturn := fake.allReturnsOnCall[len(fake.allArgsForCall)]
 	fake.allArgsForCall = append(fake.allArgsForCall, struct{}{})
 	fake.recordInvocation("All", []interface{}{})
 	fake.allMutex.Unlock()
 	if fake.AllStub != nil {
 		return fake.AllStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.allReturns.result1, fake.allReturns.result2
 }
@@ -228,13 +323,31 @@ func (fake *FakeRepositoryRepository) AllReturns(result1 []db.Repository, result
 	}{result1, result2}
 }
 
+func (fake *FakeRepositoryRepository) AllReturnsOnCall(i int, result1 []db.Repository, result2 error) {
+	fake.AllStub = nil
+	if fake.allReturnsOnCall == nil {
+		fake.allReturnsOnCall = make(map[int]struct {
+			result1 []db.Repository
+			result2 error
+		})
+	}
+	fake.allReturnsOnCall[i] = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepositoryRepository) Active() ([]db.Repository, error) {
 	fake.activeMutex.Lock()
+	ret, specificReturn := fake.activeReturnsOnCall[len(fake.activeArgsForCall)]
 	fake.activeArgsForCall = append(fake.activeArgsForCall, struct{}{})
 	fake.recordInvocation("Active", []interface{}{})
 	fake.activeMutex.Unlock()
 	if fake.ActiveStub != nil {
 		return fake.ActiveStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.activeReturns.result1, fake.activeReturns.result2
 }
@@ -253,8 +366,23 @@ func (fake *FakeRepositoryRepository) ActiveReturns(result1 []db.Repository, res
 	}{result1, result2}
 }
 
+func (fake *FakeRepositoryRepository) ActiveReturnsOnCall(i int, result1 []db.Repository, result2 error) {
+	fake.ActiveStub = nil
+	if fake.activeReturnsOnCall == nil {
+		fake.activeReturnsOnCall = make(map[int]struct {
+			result1 []db.Repository
+			result2 error
+		})
+	}
+	fake.activeReturnsOnCall[i] = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepositoryRepository) AllForOrganization(arg1 string) ([]db.Repository, error) {
 	fake.allForOrganizationMutex.Lock()
+	ret, specificReturn := fake.allForOrganizationReturnsOnCall[len(fake.allForOrganizationArgsForCall)]
 	fake.allForOrganizationArgsForCall = append(fake.allForOrganizationArgsForCall, struct {
 		arg1 string
 	}{arg1})
@@ -262,6 +390,9 @@ func (fake *FakeRepositoryRepository) AllForOrganization(arg1 string) ([]db.Repo
 	fake.allForOrganizationMutex.Unlock()
 	if fake.AllForOrganizationStub != nil {
 		return fake.AllForOrganizationStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.allForOrganizationReturns.result1, fake.allForOrganizationReturns.result2
 }
@@ -286,8 +417,23 @@ func (fake *FakeRepositoryRepository) AllForOrganizationReturns(result1 []db.Rep
 	}{result1, result2}
 }
 
+func (fake *FakeRepositoryRepository) AllForOrganizationReturnsOnCall(i int, result1 []db.Repository, result2 error) {
+	fake.AllForOrganizationStub = nil
+	if fake.allForOrganizationReturnsOnCall == nil {
+		fake.allForOrganizationReturnsOnCall = make(map[int]struct {
+			result1 []db.Repository
+			result2 error
+		})
+	}
+	fake.allForOrganizationReturnsOnCall[i] = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepositoryRepository) NotScannedWithVersion(arg1 int) ([]db.Repository, error) {
 	fake.notScannedWithVersionMutex.Lock()
+	ret, specificReturn := fake.notScannedWithVersionReturnsOnCall[len(fake.notScannedWithVersionArgsForCall)]
 	fake.notScannedWithVersionArgsForCall = append(fake.notScannedWithVersionArgsForCall, struct {
 		arg1 int
 	}{arg1})
@@ -295,6 +441,9 @@ func (fake *FakeRepositoryRepository) NotScannedWithVersion(arg1 int) ([]db.Repo
 	fake.notScannedWithVersionMutex.Unlock()
 	if fake.NotScannedWithVersionStub != nil {
 		return fake.NotScannedWithVersionStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.notScannedWithVersionReturns.result1, fake.notScannedWithVersionReturns.result2
 }
@@ -319,8 +468,23 @@ func (fake *FakeRepositoryRepository) NotScannedWithVersionReturns(result1 []db.
 	}{result1, result2}
 }
 
+func (fake *FakeRepositoryRepository) NotScannedWithVersionReturnsOnCall(i int, result1 []db.Repository, result2 error) {
+	fake.NotScannedWithVersionStub = nil
+	if fake.notScannedWithVersionReturnsOnCall == nil {
+		fake.notScannedWithVersionReturnsOnCall = make(map[int]struct {
+			result1 []db.Repository
+			result2 error
+		})
+	}
+	fake.notScannedWithVersionReturnsOnCall[i] = struct {
+		result1 []db.Repository
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRepositoryRepository) MarkAsCloned(arg1 string, arg2 string, arg3 string) error {
 	fake.markAsClonedMutex.Lock()
+	ret, specificReturn := fake.markAsClonedReturnsOnCall[len(fake.markAsClonedArgsForCall)]
 	fake.markAsClonedArgsForCall = append(fake.markAsClonedArgsForCall, struct {
 		arg1 string
 		arg2 string
@@ -330,6 +494,9 @@ func (fake *FakeRepositoryRepository) MarkAsCloned(arg1 string, arg2 string, arg
 	fake.markAsClonedMutex.Unlock()
 	if fake.MarkAsClonedStub != nil {
 		return fake.MarkAsClonedStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.markAsClonedReturns.result1
 }
@@ -353,8 +520,21 @@ func (fake *FakeRepositoryRepository) MarkAsClonedReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeRepositoryRepository) MarkAsClonedReturnsOnCall(i int, result1 error) {
+	fake.MarkAsClonedStub = nil
+	if fake.markAsClonedReturnsOnCall == nil {
+		fake.markAsClonedReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.markAsClonedReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeRepositoryRepository) Reenable(arg1 string, arg2 string) error {
 	fake.reenableMutex.Lock()
+	ret, specificReturn := fake.reenableReturnsOnCall[len(fake.reenableArgsForCall)]
 	fake.reenableArgsForCall = append(fake.reenableArgsForCall, struct {
 		arg1 string
 		arg2 string
@@ -363,6 +543,9 @@ func (fake *FakeRepositoryRepository) Reenable(arg1 string, arg2 string) error {
 	fake.reenableMutex.Unlock()
 	if fake.ReenableStub != nil {
 		return fake.ReenableStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.reenableReturns.result1
 }
@@ -386,8 +569,21 @@ func (fake *FakeRepositoryRepository) ReenableReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeRepositoryRepository) ReenableReturnsOnCall(i int, result1 error) {
+	fake.ReenableStub = nil
+	if fake.reenableReturnsOnCall == nil {
+		fake.reenableReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.reenableReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeRepositoryRepository) RegisterFailedFetch(arg1 lager.Logger, arg2 *db.Repository) error {
 	fake.registerFailedFetchMutex.Lock()
+	ret, specificReturn := fake.registerFailedFetchReturnsOnCall[len(fake.registerFailedFetchArgsForCall)]
 	fake.registerFailedFetchArgsForCall = append(fake.registerFailedFetchArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 *db.Repository
@@ -396,6 +592,9 @@ func (fake *FakeRepositoryRepository) RegisterFailedFetch(arg1 lager.Logger, arg
 	fake.registerFailedFetchMutex.Unlock()
 	if fake.RegisterFailedFetchStub != nil {
 		return fake.RegisterFailedFetchStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.registerFailedFetchReturns.result1
 }
@@ -415,6 +614,18 @@ func (fake *FakeRepositoryRepository) RegisterFailedFetchArgsForCall(i int) (lag
 func (fake *FakeRepositoryRepository) RegisterFailedFetchReturns(result1 error) {
 	fake.RegisterFailedFetchStub = nil
 	fake.registerFailedFetchReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepositoryRepository) RegisterFailedFetchReturnsOnCall(i int, result1 error) {
+	fake.RegisterFailedFetchStub = nil
+	if fake.registerFailedFetchReturnsOnCall == nil {
+		fake.registerFailedFetchReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.registerFailedFetchReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

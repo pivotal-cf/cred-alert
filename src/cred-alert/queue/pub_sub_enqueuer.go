@@ -12,7 +12,7 @@ import (
 //go:generate counterfeiter . Topic
 
 type Topic interface {
-	Publish(context.Context, ...*pubsub.Message) ([]string, error)
+	Publish(context.Context, *pubsub.Message) *pubsub.PublishResult
 }
 
 type pubSubEnqueuer struct {
@@ -48,15 +48,18 @@ func (p *pubSubEnqueuer) Enqueue(task Task) error {
 		Data: payload,
 	}
 
-	_, err = p.topic.Publish(context.TODO(), message)
+	ctx := context.TODO()
+	res := p.topic.Publish(ctx, message)
+	id, err := res.Get(ctx)
 	if err != nil {
 		p.logger.Error("failed-to-publish", err)
 		return err
 	}
 
 	p.logger.Info("successfully-published", lager.Data{
-		"id":   task.ID(),
-		"type": task.Type(),
+		"id":        task.ID(),
+		"pubsub-id": id,
+		"type":      task.Type(),
 	})
 
 	return nil

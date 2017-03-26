@@ -16,12 +16,16 @@ type FakeLooper struct {
 	scanCurrentStateReturns struct {
 		result1 error
 	}
+	scanCurrentStateReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeLooper) ScanCurrentState(repositoryPath string, callback gitclient.ScanCallback) error {
 	fake.scanCurrentStateMutex.Lock()
+	ret, specificReturn := fake.scanCurrentStateReturnsOnCall[len(fake.scanCurrentStateArgsForCall)]
 	fake.scanCurrentStateArgsForCall = append(fake.scanCurrentStateArgsForCall, struct {
 		repositoryPath string
 		callback       gitclient.ScanCallback
@@ -30,6 +34,9 @@ func (fake *FakeLooper) ScanCurrentState(repositoryPath string, callback gitclie
 	fake.scanCurrentStateMutex.Unlock()
 	if fake.ScanCurrentStateStub != nil {
 		return fake.ScanCurrentStateStub(repositoryPath, callback)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.scanCurrentStateReturns.result1
 }
@@ -49,6 +56,18 @@ func (fake *FakeLooper) ScanCurrentStateArgsForCall(i int) (string, gitclient.Sc
 func (fake *FakeLooper) ScanCurrentStateReturns(result1 error) {
 	fake.ScanCurrentStateStub = nil
 	fake.scanCurrentStateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeLooper) ScanCurrentStateReturnsOnCall(i int, result1 error) {
+	fake.ScanCurrentStateStub = nil
+	if fake.scanCurrentStateReturnsOnCall == nil {
+		fake.scanCurrentStateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.scanCurrentStateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

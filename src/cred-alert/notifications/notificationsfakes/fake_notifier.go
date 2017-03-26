@@ -18,12 +18,16 @@ type FakeNotifier struct {
 	sendReturns struct {
 		result1 error
 	}
+	sendReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeNotifier) Send(arg1 lager.Logger, arg2 notifications.Envelope) error {
 	fake.sendMutex.Lock()
+	ret, specificReturn := fake.sendReturnsOnCall[len(fake.sendArgsForCall)]
 	fake.sendArgsForCall = append(fake.sendArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 notifications.Envelope
@@ -32,6 +36,9 @@ func (fake *FakeNotifier) Send(arg1 lager.Logger, arg2 notifications.Envelope) e
 	fake.sendMutex.Unlock()
 	if fake.SendStub != nil {
 		return fake.SendStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.sendReturns.result1
 }
@@ -51,6 +58,18 @@ func (fake *FakeNotifier) SendArgsForCall(i int) (lager.Logger, notifications.En
 func (fake *FakeNotifier) SendReturns(result1 error) {
 	fake.SendStub = nil
 	fake.sendReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeNotifier) SendReturnsOnCall(i int, result1 error) {
+	fake.SendStub = nil
+	if fake.sendReturnsOnCall == nil {
+		fake.sendReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }

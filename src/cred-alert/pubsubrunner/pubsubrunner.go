@@ -2,7 +2,6 @@ package pubsubrunner
 
 import (
 	"context"
-	"cred-alert/queue"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -97,25 +96,6 @@ func (runner *Runner) CreateSubscription(tid, sid string) {
 
 func (runner *Runner) Client() *pubsub.Client {
 	return runner.client
-}
-
-func (runner *Runner) LastMessage(subID string) queue.Task {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	it, err := runner.client.Subscription(subID).Pull(ctx, pubsub.MaxPrefetch(1))
-	Expect(err).NotTo(HaveOccurred())
-	defer it.Stop()
-
-	message, err := it.Next()
-	Expect(err).NotTo(HaveOccurred())
-	message.Done(true)
-
-	return basicTask{
-		id:      message.Attributes["id"],
-		typee:   message.Attributes["type"],
-		payload: string(message.Data),
-	}
 }
 
 type basicTask struct {

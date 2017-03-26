@@ -10,32 +10,38 @@ import (
 )
 
 type FakeTopic struct {
-	PublishStub        func(context.Context, ...*pubsub.Message) ([]string, error)
+	PublishStub        func(context.Context, *pubsub.Message) *pubsub.PublishResult
 	publishMutex       sync.RWMutex
 	publishArgsForCall []struct {
 		arg1 context.Context
-		arg2 []*pubsub.Message
+		arg2 *pubsub.Message
 	}
 	publishReturns struct {
-		result1 []string
-		result2 error
+		result1 *pubsub.PublishResult
+	}
+	publishReturnsOnCall map[int]struct {
+		result1 *pubsub.PublishResult
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTopic) Publish(arg1 context.Context, arg2 ...*pubsub.Message) ([]string, error) {
+func (fake *FakeTopic) Publish(arg1 context.Context, arg2 *pubsub.Message) *pubsub.PublishResult {
 	fake.publishMutex.Lock()
+	ret, specificReturn := fake.publishReturnsOnCall[len(fake.publishArgsForCall)]
 	fake.publishArgsForCall = append(fake.publishArgsForCall, struct {
 		arg1 context.Context
-		arg2 []*pubsub.Message
+		arg2 *pubsub.Message
 	}{arg1, arg2})
 	fake.recordInvocation("Publish", []interface{}{arg1, arg2})
 	fake.publishMutex.Unlock()
 	if fake.PublishStub != nil {
-		return fake.PublishStub(arg1, arg2...)
+		return fake.PublishStub(arg1, arg2)
 	}
-	return fake.publishReturns.result1, fake.publishReturns.result2
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.publishReturns.result1
 }
 
 func (fake *FakeTopic) PublishCallCount() int {
@@ -44,18 +50,29 @@ func (fake *FakeTopic) PublishCallCount() int {
 	return len(fake.publishArgsForCall)
 }
 
-func (fake *FakeTopic) PublishArgsForCall(i int) (context.Context, []*pubsub.Message) {
+func (fake *FakeTopic) PublishArgsForCall(i int) (context.Context, *pubsub.Message) {
 	fake.publishMutex.RLock()
 	defer fake.publishMutex.RUnlock()
 	return fake.publishArgsForCall[i].arg1, fake.publishArgsForCall[i].arg2
 }
 
-func (fake *FakeTopic) PublishReturns(result1 []string, result2 error) {
+func (fake *FakeTopic) PublishReturns(result1 *pubsub.PublishResult) {
 	fake.PublishStub = nil
 	fake.publishReturns = struct {
-		result1 []string
-		result2 error
-	}{result1, result2}
+		result1 *pubsub.PublishResult
+	}{result1}
+}
+
+func (fake *FakeTopic) PublishReturnsOnCall(i int, result1 *pubsub.PublishResult) {
+	fake.PublishStub = nil
+	if fake.publishReturnsOnCall == nil {
+		fake.publishReturnsOnCall = make(map[int]struct {
+			result1 *pubsub.PublishResult
+		})
+	}
+	fake.publishReturnsOnCall[i] = struct {
+		result1 *pubsub.PublishResult
+	}{result1}
 }
 
 func (fake *FakeTopic) Invocations() map[string][][]interface{} {

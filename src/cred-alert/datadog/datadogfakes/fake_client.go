@@ -26,6 +26,9 @@ type FakeClient struct {
 	buildMetricReturns struct {
 		result1 datadog.Metric
 	}
+	buildMetricReturnsOnCall map[int]struct {
+		result1 datadog.Metric
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -57,6 +60,7 @@ func (fake *FakeClient) PublishSeriesArgsForCall(i int) (lager.Logger, datadog.S
 
 func (fake *FakeClient) BuildMetric(metricType string, metricName string, count float32, tags ...string) datadog.Metric {
 	fake.buildMetricMutex.Lock()
+	ret, specificReturn := fake.buildMetricReturnsOnCall[len(fake.buildMetricArgsForCall)]
 	fake.buildMetricArgsForCall = append(fake.buildMetricArgsForCall, struct {
 		metricType string
 		metricName string
@@ -67,6 +71,9 @@ func (fake *FakeClient) BuildMetric(metricType string, metricName string, count 
 	fake.buildMetricMutex.Unlock()
 	if fake.BuildMetricStub != nil {
 		return fake.BuildMetricStub(metricType, metricName, count, tags...)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.buildMetricReturns.result1
 }
@@ -86,6 +93,18 @@ func (fake *FakeClient) BuildMetricArgsForCall(i int) (string, string, float32, 
 func (fake *FakeClient) BuildMetricReturns(result1 datadog.Metric) {
 	fake.BuildMetricStub = nil
 	fake.buildMetricReturns = struct {
+		result1 datadog.Metric
+	}{result1}
+}
+
+func (fake *FakeClient) BuildMetricReturnsOnCall(i int, result1 datadog.Metric) {
+	fake.BuildMetricStub = nil
+	if fake.buildMetricReturnsOnCall == nil {
+		fake.buildMetricReturnsOnCall = make(map[int]struct {
+			result1 datadog.Metric
+		})
+	}
+	fake.buildMetricReturnsOnCall[i] = struct {
 		result1 datadog.Metric
 	}{result1}
 }

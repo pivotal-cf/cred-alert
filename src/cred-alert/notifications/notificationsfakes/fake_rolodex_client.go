@@ -22,12 +22,17 @@ type FakeRolodexClient struct {
 		result1 *rolodexpb.GetOwnersResponse
 		result2 error
 	}
+	getOwnersReturnsOnCall map[int]struct {
+		result1 *rolodexpb.GetOwnersResponse
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeRolodexClient) GetOwners(ctx context.Context, in *rolodexpb.GetOwnersRequest, opts ...grpc.CallOption) (*rolodexpb.GetOwnersResponse, error) {
 	fake.getOwnersMutex.Lock()
+	ret, specificReturn := fake.getOwnersReturnsOnCall[len(fake.getOwnersArgsForCall)]
 	fake.getOwnersArgsForCall = append(fake.getOwnersArgsForCall, struct {
 		ctx  context.Context
 		in   *rolodexpb.GetOwnersRequest
@@ -37,6 +42,9 @@ func (fake *FakeRolodexClient) GetOwners(ctx context.Context, in *rolodexpb.GetO
 	fake.getOwnersMutex.Unlock()
 	if fake.GetOwnersStub != nil {
 		return fake.GetOwnersStub(ctx, in, opts...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.getOwnersReturns.result1, fake.getOwnersReturns.result2
 }
@@ -56,6 +64,20 @@ func (fake *FakeRolodexClient) GetOwnersArgsForCall(i int) (context.Context, *ro
 func (fake *FakeRolodexClient) GetOwnersReturns(result1 *rolodexpb.GetOwnersResponse, result2 error) {
 	fake.GetOwnersStub = nil
 	fake.getOwnersReturns = struct {
+		result1 *rolodexpb.GetOwnersResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRolodexClient) GetOwnersReturnsOnCall(i int, result1 *rolodexpb.GetOwnersResponse, result2 error) {
+	fake.GetOwnersStub = nil
+	if fake.getOwnersReturnsOnCall == nil {
+		fake.getOwnersReturnsOnCall = make(map[int]struct {
+			result1 *rolodexpb.GetOwnersResponse
+			result2 error
+		})
+	}
+	fake.getOwnersReturnsOnCall[i] = struct {
 		result1 *rolodexpb.GetOwnersResponse
 		result2 error
 	}{result1, result2}

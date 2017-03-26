@@ -18,6 +18,9 @@ type FakeCommitRepository struct {
 	registerCommitReturns struct {
 		result1 error
 	}
+	registerCommitReturnsOnCall map[int]struct {
+		result1 error
+	}
 	IsCommitRegisteredStub        func(logger lager.Logger, sha string) (bool, error)
 	isCommitRegisteredMutex       sync.RWMutex
 	isCommitRegisteredArgsForCall []struct {
@@ -25,6 +28,10 @@ type FakeCommitRepository struct {
 		sha    string
 	}
 	isCommitRegisteredReturns struct {
+		result1 bool
+		result2 error
+	}
+	isCommitRegisteredReturnsOnCall map[int]struct {
 		result1 bool
 		result2 error
 	}
@@ -39,12 +46,17 @@ type FakeCommitRepository struct {
 		result1 bool
 		result2 error
 	}
+	isRepoRegisteredReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeCommitRepository) RegisterCommit(logger lager.Logger, commit *db.Commit) error {
 	fake.registerCommitMutex.Lock()
+	ret, specificReturn := fake.registerCommitReturnsOnCall[len(fake.registerCommitArgsForCall)]
 	fake.registerCommitArgsForCall = append(fake.registerCommitArgsForCall, struct {
 		logger lager.Logger
 		commit *db.Commit
@@ -53,6 +65,9 @@ func (fake *FakeCommitRepository) RegisterCommit(logger lager.Logger, commit *db
 	fake.registerCommitMutex.Unlock()
 	if fake.RegisterCommitStub != nil {
 		return fake.RegisterCommitStub(logger, commit)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.registerCommitReturns.result1
 }
@@ -76,8 +91,21 @@ func (fake *FakeCommitRepository) RegisterCommitReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeCommitRepository) RegisterCommitReturnsOnCall(i int, result1 error) {
+	fake.RegisterCommitStub = nil
+	if fake.registerCommitReturnsOnCall == nil {
+		fake.registerCommitReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.registerCommitReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeCommitRepository) IsCommitRegistered(logger lager.Logger, sha string) (bool, error) {
 	fake.isCommitRegisteredMutex.Lock()
+	ret, specificReturn := fake.isCommitRegisteredReturnsOnCall[len(fake.isCommitRegisteredArgsForCall)]
 	fake.isCommitRegisteredArgsForCall = append(fake.isCommitRegisteredArgsForCall, struct {
 		logger lager.Logger
 		sha    string
@@ -86,6 +114,9 @@ func (fake *FakeCommitRepository) IsCommitRegistered(logger lager.Logger, sha st
 	fake.isCommitRegisteredMutex.Unlock()
 	if fake.IsCommitRegisteredStub != nil {
 		return fake.IsCommitRegisteredStub(logger, sha)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.isCommitRegisteredReturns.result1, fake.isCommitRegisteredReturns.result2
 }
@@ -110,8 +141,23 @@ func (fake *FakeCommitRepository) IsCommitRegisteredReturns(result1 bool, result
 	}{result1, result2}
 }
 
+func (fake *FakeCommitRepository) IsCommitRegisteredReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.IsCommitRegisteredStub = nil
+	if fake.isCommitRegisteredReturnsOnCall == nil {
+		fake.isCommitRegisteredReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.isCommitRegisteredReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCommitRepository) IsRepoRegistered(logger lager.Logger, owner string, repo string) (bool, error) {
 	fake.isRepoRegisteredMutex.Lock()
+	ret, specificReturn := fake.isRepoRegisteredReturnsOnCall[len(fake.isRepoRegisteredArgsForCall)]
 	fake.isRepoRegisteredArgsForCall = append(fake.isRepoRegisteredArgsForCall, struct {
 		logger lager.Logger
 		owner  string
@@ -121,6 +167,9 @@ func (fake *FakeCommitRepository) IsRepoRegistered(logger lager.Logger, owner st
 	fake.isRepoRegisteredMutex.Unlock()
 	if fake.IsRepoRegisteredStub != nil {
 		return fake.IsRepoRegisteredStub(logger, owner, repo)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
 	}
 	return fake.isRepoRegisteredReturns.result1, fake.isRepoRegisteredReturns.result2
 }
@@ -140,6 +189,20 @@ func (fake *FakeCommitRepository) IsRepoRegisteredArgsForCall(i int) (lager.Logg
 func (fake *FakeCommitRepository) IsRepoRegisteredReturns(result1 bool, result2 error) {
 	fake.IsRepoRegisteredStub = nil
 	fake.isRepoRegisteredReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCommitRepository) IsRepoRegisteredReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.IsRepoRegisteredStub = nil
+	if fake.isRepoRegisteredReturnsOnCall == nil {
+		fake.isRepoRegisteredReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.isRepoRegisteredReturnsOnCall[i] = struct {
 		result1 bool
 		result2 error
 	}{result1, result2}

@@ -80,6 +80,11 @@ files:
   - golang.org/x/oauth2/internal/*.{go,c} # gosub
   - golang.org/x/oauth2/jws/*.{go,c} # gosub
   - golang.org/x/oauth2/jwt/*.{go,c} # gosub
+  - golang.org/x/sync/semaphore/*.{go,c} # gosub
+  - golang.org/x/text/secure/bidirule/*.{go,c} # gosub
+  - golang.org/x/text/transform/*.{go,c} # gosub
+  - golang.org/x/text/unicode/bidi/*.{go,c} # gosub
+  - golang.org/x/text/unicode/norm/*.{go,c} # gosub
   - google.golang.org/api/googleapi/transport/*.{go,c} # gosub
   - google.golang.org/api/internal/*.{go,c} # gosub
   - google.golang.org/api/iterator/*.{go,c} # gosub
@@ -89,6 +94,7 @@ files:
   - google.golang.org/genproto/googleapis/api/annotations/*.{go,c} # gosub
   - google.golang.org/genproto/googleapis/iam/v1/*.{go,c} # gosub
   - google.golang.org/genproto/googleapis/pubsub/v1/*.{go,c} # gosub
+  - google.golang.org/genproto/protobuf/field_mask/*.{go,c} # gosub
   - google.golang.org/grpc/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub

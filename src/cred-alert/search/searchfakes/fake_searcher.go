@@ -21,12 +21,16 @@ type FakeSearcher struct {
 	searchCurrentReturns struct {
 		result1 search.Results
 	}
+	searchCurrentReturnsOnCall map[int]struct {
+		result1 search.Results
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeSearcher) SearchCurrent(ctx context.Context, logger lager.Logger, matcher matchers.Matcher) search.Results {
 	fake.searchCurrentMutex.Lock()
+	ret, specificReturn := fake.searchCurrentReturnsOnCall[len(fake.searchCurrentArgsForCall)]
 	fake.searchCurrentArgsForCall = append(fake.searchCurrentArgsForCall, struct {
 		ctx     context.Context
 		logger  lager.Logger
@@ -36,6 +40,9 @@ func (fake *FakeSearcher) SearchCurrent(ctx context.Context, logger lager.Logger
 	fake.searchCurrentMutex.Unlock()
 	if fake.SearchCurrentStub != nil {
 		return fake.SearchCurrentStub(ctx, logger, matcher)
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.searchCurrentReturns.result1
 }
@@ -55,6 +62,18 @@ func (fake *FakeSearcher) SearchCurrentArgsForCall(i int) (context.Context, lage
 func (fake *FakeSearcher) SearchCurrentReturns(result1 search.Results) {
 	fake.SearchCurrentStub = nil
 	fake.searchCurrentReturns = struct {
+		result1 search.Results
+	}{result1}
+}
+
+func (fake *FakeSearcher) SearchCurrentReturnsOnCall(i int, result1 search.Results) {
+	fake.SearchCurrentStub = nil
+	if fake.searchCurrentReturnsOnCall == nil {
+		fake.searchCurrentReturnsOnCall = make(map[int]struct {
+			result1 search.Results
+		})
+	}
+	fake.searchCurrentReturnsOnCall[i] = struct {
 		result1 search.Results
 	}{result1}
 }

@@ -13,10 +13,16 @@ type FakeTask struct {
 	iDReturns     struct {
 		result1 string
 	}
+	iDReturnsOnCall map[int]struct {
+		result1 string
+	}
 	TypeStub        func() string
 	typeMutex       sync.RWMutex
 	typeArgsForCall []struct{}
 	typeReturns     struct {
+		result1 string
+	}
+	typeReturnsOnCall map[int]struct {
 		result1 string
 	}
 	PayloadStub        func() string
@@ -25,17 +31,24 @@ type FakeTask struct {
 	payloadReturns     struct {
 		result1 string
 	}
+	payloadReturnsOnCall map[int]struct {
+		result1 string
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
 func (fake *FakeTask) ID() string {
 	fake.iDMutex.Lock()
+	ret, specificReturn := fake.iDReturnsOnCall[len(fake.iDArgsForCall)]
 	fake.iDArgsForCall = append(fake.iDArgsForCall, struct{}{})
 	fake.recordInvocation("ID", []interface{}{})
 	fake.iDMutex.Unlock()
 	if fake.IDStub != nil {
 		return fake.IDStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.iDReturns.result1
 }
@@ -53,13 +66,29 @@ func (fake *FakeTask) IDReturns(result1 string) {
 	}{result1}
 }
 
+func (fake *FakeTask) IDReturnsOnCall(i int, result1 string) {
+	fake.IDStub = nil
+	if fake.iDReturnsOnCall == nil {
+		fake.iDReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.iDReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
 func (fake *FakeTask) Type() string {
 	fake.typeMutex.Lock()
+	ret, specificReturn := fake.typeReturnsOnCall[len(fake.typeArgsForCall)]
 	fake.typeArgsForCall = append(fake.typeArgsForCall, struct{}{})
 	fake.recordInvocation("Type", []interface{}{})
 	fake.typeMutex.Unlock()
 	if fake.TypeStub != nil {
 		return fake.TypeStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.typeReturns.result1
 }
@@ -77,13 +106,29 @@ func (fake *FakeTask) TypeReturns(result1 string) {
 	}{result1}
 }
 
+func (fake *FakeTask) TypeReturnsOnCall(i int, result1 string) {
+	fake.TypeStub = nil
+	if fake.typeReturnsOnCall == nil {
+		fake.typeReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.typeReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
 func (fake *FakeTask) Payload() string {
 	fake.payloadMutex.Lock()
+	ret, specificReturn := fake.payloadReturnsOnCall[len(fake.payloadArgsForCall)]
 	fake.payloadArgsForCall = append(fake.payloadArgsForCall, struct{}{})
 	fake.recordInvocation("Payload", []interface{}{})
 	fake.payloadMutex.Unlock()
 	if fake.PayloadStub != nil {
 		return fake.PayloadStub()
+	}
+	if specificReturn {
+		return ret.result1
 	}
 	return fake.payloadReturns.result1
 }
@@ -97,6 +142,18 @@ func (fake *FakeTask) PayloadCallCount() int {
 func (fake *FakeTask) PayloadReturns(result1 string) {
 	fake.PayloadStub = nil
 	fake.payloadReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeTask) PayloadReturnsOnCall(i int, result1 string) {
+	fake.PayloadStub = nil
+	if fake.payloadReturnsOnCall == nil {
+		fake.payloadReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.payloadReturnsOnCall[i] = struct {
 		result1 string
 	}{result1}
 }

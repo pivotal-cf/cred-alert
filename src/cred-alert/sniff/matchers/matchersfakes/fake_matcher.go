@@ -17,6 +17,11 @@ type FakeMatcher struct {
 		result2 int
 		result3 int
 	}
+	matchReturnsOnCall map[int]struct {
+		result1 bool
+		result2 int
+		result3 int
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -28,6 +33,7 @@ func (fake *FakeMatcher) Match(arg1 []byte) (bool, int, int) {
 		copy(arg1Copy, arg1)
 	}
 	fake.matchMutex.Lock()
+	ret, specificReturn := fake.matchReturnsOnCall[len(fake.matchArgsForCall)]
 	fake.matchArgsForCall = append(fake.matchArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
@@ -35,6 +41,9 @@ func (fake *FakeMatcher) Match(arg1 []byte) (bool, int, int) {
 	fake.matchMutex.Unlock()
 	if fake.MatchStub != nil {
 		return fake.MatchStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
 	}
 	return fake.matchReturns.result1, fake.matchReturns.result2, fake.matchReturns.result3
 }
@@ -54,6 +63,22 @@ func (fake *FakeMatcher) MatchArgsForCall(i int) []byte {
 func (fake *FakeMatcher) MatchReturns(result1 bool, result2 int, result3 int) {
 	fake.MatchStub = nil
 	fake.matchReturns = struct {
+		result1 bool
+		result2 int
+		result3 int
+	}{result1, result2, result3}
+}
+
+func (fake *FakeMatcher) MatchReturnsOnCall(i int, result1 bool, result2 int, result3 int) {
+	fake.MatchStub = nil
+	if fake.matchReturnsOnCall == nil {
+		fake.matchReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 int
+			result3 int
+		})
+	}
+	fake.matchReturnsOnCall[i] = struct {
 		result1 bool
 		result2 int
 		result3 int
