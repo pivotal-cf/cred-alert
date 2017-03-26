@@ -41,6 +41,9 @@ files:
   - github.com/jessevdk/go-flags/*.{go,c} # gosub
   - github.com/jinzhu/gorm/*.{go,c} # gosub
   - github.com/jinzhu/inflection/*.{go,c} # gosub
+  - github.com/pivotal-cf/paraphernalia/operate/admin/*.{go,c} # gosub
+  - github.com/pivotal-cf/paraphernalia/secure/tlsconfig/*.{go,c} # gosub
+  - github.com/pivotal-cf/paraphernalia/serve/grpcrunner/*.{go,c} # gosub
   - github.com/robfig/cron/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/grouper/*.{go,c} # gosub
@@ -72,7 +75,6 @@ files:
   - gopkg.in/libgit2/git2go.v24/*.{go,c} # gosub
   - gopkg.in/yaml.v2/*.{go,c} # gosub
   - red/redpb/*.{go,c} # gosub
-  - red/redrunner/*.{go,c} # gosub
   - rolodex/*.{go,c} # gosub
   - rolodex/cmd/rolodexd/*.{go,c} # gosub
   - rolodex/rolodexpb/*.{go,c} # gosub

@@ -152,6 +152,8 @@
 [submodule "src/golang.org/x/sync"]
 	path = src/golang.org/x/sync
 	url = https://go.googlesource.com/sync
+	branch = master
 [submodule "src/golang.org/x/text"]
 	path = src/golang.org/x/text
 	url = https://go.googlesource.com/text
+	branch = master
