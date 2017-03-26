@@ -122,14 +122,13 @@ var _ = Describe("Webhook", func() {
 			handler.ServeHTTP(recorder, fakeRequest)
 
 			Eventually(in.IngestPushScanCallCount).Should(Equal(1))
-			_, actualScan, actualGitHubID := in.IngestPushScanArgsForCall(0)
+			_, actualScan := in.IngestPushScanArgsForCall(0)
 
 			Expect(actualScan).To(Equal(ingestor.PushScan{
 				Owner:      "repository-owner",
 				Repository: "repository-name",
 				PushTime:   now,
 			}))
-			Expect(actualGitHubID).To(Equal("delivery-id"))
 		})
 
 		It("emits the webhook delay", func() {

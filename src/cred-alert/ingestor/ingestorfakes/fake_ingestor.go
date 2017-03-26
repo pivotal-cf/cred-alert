@@ -9,12 +9,11 @@ import (
 )
 
 type FakeIngestor struct {
-	IngestPushScanStub        func(lager.Logger, ingestor.PushScan, string) error
+	IngestPushScanStub        func(lager.Logger, ingestor.PushScan) error
 	ingestPushScanMutex       sync.RWMutex
 	ingestPushScanArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 ingestor.PushScan
-		arg3 string
 	}
 	ingestPushScanReturns struct {
 		result1 error
@@ -26,18 +25,17 @@ type FakeIngestor struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeIngestor) IngestPushScan(arg1 lager.Logger, arg2 ingestor.PushScan, arg3 string) error {
+func (fake *FakeIngestor) IngestPushScan(arg1 lager.Logger, arg2 ingestor.PushScan) error {
 	fake.ingestPushScanMutex.Lock()
 	ret, specificReturn := fake.ingestPushScanReturnsOnCall[len(fake.ingestPushScanArgsForCall)]
 	fake.ingestPushScanArgsForCall = append(fake.ingestPushScanArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 ingestor.PushScan
-		arg3 string
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("IngestPushScan", []interface{}{arg1, arg2, arg3})
+	}{arg1, arg2})
+	fake.recordInvocation("IngestPushScan", []interface{}{arg1, arg2})
 	fake.ingestPushScanMutex.Unlock()
 	if fake.IngestPushScanStub != nil {
-		return fake.IngestPushScanStub(arg1, arg2, arg3)
+		return fake.IngestPushScanStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -51,10 +49,10 @@ func (fake *FakeIngestor) IngestPushScanCallCount() int {
 	return len(fake.ingestPushScanArgsForCall)
 }
 
-func (fake *FakeIngestor) IngestPushScanArgsForCall(i int) (lager.Logger, ingestor.PushScan, string) {
+func (fake *FakeIngestor) IngestPushScanArgsForCall(i int) (lager.Logger, ingestor.PushScan) {
 	fake.ingestPushScanMutex.RLock()
 	defer fake.ingestPushScanMutex.RUnlock()
-	return fake.ingestPushScanArgsForCall[i].arg1, fake.ingestPushScanArgsForCall[i].arg2, fake.ingestPushScanArgsForCall[i].arg3
+	return fake.ingestPushScanArgsForCall[i].arg1, fake.ingestPushScanArgsForCall[i].arg2
 }
 
 func (fake *FakeIngestor) IngestPushScanReturns(result1 error) {

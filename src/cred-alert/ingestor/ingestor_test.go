@@ -49,7 +49,7 @@ var _ = Describe("Ingestor", func() {
 	})
 
 	It("queues up the message", func() {
-		err := subject.IngestPushScan(logger, pushScan, "githubId")
+		err := subject.IngestPushScan(logger, pushScan)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(fakeQueue.EnqueueCallCount()).To(Equal(1))
@@ -69,7 +69,7 @@ var _ = Describe("Ingestor", func() {
 	It("errors when queueing the message fails", func() {
 		fakeQueue.EnqueueReturns(errors.New("Oh No!"))
 
-		err := subject.IngestPushScan(logger, pushScan, "githubId")
+		err := subject.IngestPushScan(logger, pushScan)
 		Expect(err).To(HaveOccurred())
 	})
 })

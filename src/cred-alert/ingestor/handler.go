@@ -76,11 +76,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.webhookDelayGauge.Update(h.logger, float32(delay))
 
 	h.logger.Info("handling-webhook-payload", lager.Data{
-		"before":  *event.Before,
-		"after":   *event.After,
-		"owner":   *event.Repo.Owner.Name,
-		"repo":    *event.Repo.Name,
-		"private": *event.Repo.Private,
+		"before":    *event.Before,
+		"after":     *event.After,
+		"owner":     *event.Repo.Owner.Name,
+		"repo":      *event.Repo.Name,
+		"private":   *event.Repo.Private,
+		"github-id": r.Header.Get("X-GitHub-Delivery"),
 	})
 
 	scan := PushScan{
@@ -89,7 +90,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		PushTime:   now,
 	}
 
-	err = h.ingestor.IngestPushScan(h.logger, scan, r.Header.Get("X-GitHub-Delivery"))
+	err = h.ingestor.IngestPushScan(h.logger, scan)
 	if err != nil {
 		h.logger.Error("ingest-push-scan-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)

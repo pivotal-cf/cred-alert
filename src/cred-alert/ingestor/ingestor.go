@@ -10,7 +10,7 @@ import (
 //go:generate counterfeiter . Ingestor
 
 type Ingestor interface {
-	IngestPushScan(lager.Logger, PushScan, string) error
+	IngestPushScan(lager.Logger, PushScan) error
 }
 
 type ingestor struct {
@@ -25,7 +25,7 @@ func NewIngestor(
 	emitter metrics.Emitter,
 	metricPrefix string,
 	generator queue.UUIDGenerator,
-) *ingestor {
+) Ingestor {
 	requestCounter := emitter.Counter(metricPrefix + ".ingestor_requests")
 
 	handler := &ingestor{
@@ -37,7 +37,7 @@ func NewIngestor(
 	return handler
 }
 
-func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID string) error {
+func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 	logger = logger.Session("ingest-push-scan")
 	logger.Debug("starting")
 
@@ -52,8 +52,7 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan, githubID s
 	}.Task(id)
 
 	logger = logger.Session("enqueuing-task", lager.Data{
-		"task-id":   id,
-		"github-id": githubID,
+		"task-id": id,
 	})
 
 	err := s.enqueuer.Enqueue(task)
