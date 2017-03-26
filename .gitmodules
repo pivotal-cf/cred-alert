@@ -157,3 +157,7 @@
 	path = src/golang.org/x/text
 	url = https://go.googlesource.com/text
 	branch = master
+[submodule "src/github.com/pivotal-cf/paraphernalia"]
+	path = src/github.com/pivotal-cf/paraphernalia
+	url = https://github.com/pivotal-cf/paraphernalia
+	branch = master

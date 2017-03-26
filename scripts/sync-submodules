@@ -9,4 +9,5 @@ gosub list \
   -a cred-alert/cmd/credential-count-publisher \
   -t rats \
   -a teamstr/cmd/teamstr \
+  -a rolodex/cmd/rolodexd \
   | xargs gosub sync
