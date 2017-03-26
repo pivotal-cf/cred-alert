@@ -61,7 +61,6 @@ func main() {
 	}
 
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
-	generator := queue.NewGenerator()
 
 	pubSubClient, err := pubsub.NewClient(context.Background(), cfg.PubSub.ProjectName)
 	if err != nil {
@@ -78,7 +77,7 @@ func main() {
 	}
 	signer := crypto.NewRSASigner(privateKey)
 	enqueuer := queue.NewPubSubEnqueuer(logger, topic, signer)
-	in := ingestor.NewIngestor(enqueuer, emitter, "revok", generator)
+	in := ingestor.NewIngestor(enqueuer, emitter, "revok")
 
 	clk := clock.NewClock()
 

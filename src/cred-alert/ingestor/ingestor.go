@@ -4,6 +4,8 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/queue"
 
+	"github.com/pivotal-cf/paraphernalia/serve/requestid"
+
 	"code.cloudfoundry.org/lager"
 )
 
@@ -14,8 +16,7 @@ type Ingestor interface {
 }
 
 type ingestor struct {
-	enqueuer  queue.Enqueuer
-	generator queue.UUIDGenerator
+	enqueuer queue.Enqueuer
 
 	requestCounter metrics.Counter
 }
@@ -24,13 +25,11 @@ func NewIngestor(
 	enqueuer queue.Enqueuer,
 	emitter metrics.Emitter,
 	metricPrefix string,
-	generator queue.UUIDGenerator,
 ) Ingestor {
 	requestCounter := emitter.Counter(metricPrefix + ".ingestor_requests")
 
 	handler := &ingestor{
 		enqueuer:       enqueuer,
-		generator:      generator,
 		requestCounter: requestCounter,
 	}
 
@@ -43,16 +42,14 @@ func (s *ingestor) IngestPushScan(logger lager.Logger, scan PushScan) error {
 
 	s.requestCounter.Inc(logger)
 
-	id := s.generator.Generate()
-
 	task := queue.PushEventPlan{
 		Owner:      scan.Owner,
 		Repository: scan.Repository,
 		PushTime:   scan.PushTime,
-	}.Task(id)
+	}.Task(requestid.Generate())
 
 	logger = logger.Session("enqueuing-task", lager.Data{
-		"task-id": id,
+		"task-id": task.ID(),
 	})
 
 	err := s.enqueuer.Enqueue(task)

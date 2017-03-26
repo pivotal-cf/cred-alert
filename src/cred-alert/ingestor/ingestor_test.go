@@ -25,9 +25,6 @@ var _ = Describe("Ingestor", func() {
 	BeforeEach(func() {
 		fakeQueue = &queuefakes.FakeEnqueuer{}
 
-		uuidGenerator := &queuefakes.FakeUUIDGenerator{}
-		uuidGenerator.GenerateReturns("my-special-uuid")
-
 		emitter := &metricsfakes.FakeEmitter{}
 		emitter.CounterReturns(&metricsfakes.FakeCounter{})
 
@@ -37,7 +34,6 @@ var _ = Describe("Ingestor", func() {
 			fakeQueue,
 			emitter,
 			"metricPrefix",
-			uuidGenerator,
 		)
 
 		t := time.Date(2017, 2, 27, 15, 20, 42, 0, time.UTC)
@@ -61,9 +57,23 @@ var _ = Describe("Ingestor", func() {
 		}`
 
 		task := fakeQueue.EnqueueArgsForCall(0)
-		Expect(task.ID()).To(Equal("my-special-uuid"))
 		Expect(task.Type()).To(Equal("push-event"))
 		Expect(task.Payload()).To(MatchJSON(expectedJSON))
+	})
+
+	It("gives each message a different ID", func() {
+		err := subject.IngestPushScan(logger, pushScan)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = subject.IngestPushScan(logger, pushScan)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(fakeQueue.EnqueueCallCount()).To(Equal(2))
+
+		firstID := fakeQueue.EnqueueArgsForCall(0).ID()
+		secondID := fakeQueue.EnqueueArgsForCall(1).ID()
+
+		Expect(firstID).ToNot(Equal(secondID))
 	})
 
 	It("errors when queueing the message fails", func() {

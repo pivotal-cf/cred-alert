@@ -161,3 +161,7 @@
 	path = src/github.com/pivotal-cf/paraphernalia
 	url = https://github.com/pivotal-cf/paraphernalia
 	branch = master
+[submodule "src/github.com/oklog/ulid"]
+	path = src/github.com/oklog/ulid
+	url = https://github.com/oklog/ulid
+	branch = master

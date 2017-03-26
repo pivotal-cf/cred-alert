@@ -61,6 +61,8 @@ files:
   - github.com/jessevdk/go-flags/*.{go,c} # gosub
   - github.com/jinzhu/gorm/*.{go,c} # gosub
   - github.com/jinzhu/inflection/*.{go,c} # gosub
+  - github.com/oklog/ulid/*.{go,c} # gosub
+  - github.com/pivotal-cf/paraphernalia/serve/requestid/*.{go,c} # gosub
   - github.com/robfig/cron/*.{go,c} # gosub
   - github.com/satori/go.uuid/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/*.{go,c} # gosub
