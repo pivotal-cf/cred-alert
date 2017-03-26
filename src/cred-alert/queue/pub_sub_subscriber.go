@@ -46,19 +46,13 @@ func NewPubSubSubscriber(
 func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	p.logger.Info("starting")
 
-	done := make(chan struct{})
 	errs := make(chan error)
 	cctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
-		err := p.subscription.Receive(cctx, func(ctx context.Context, message *pubsub.Message) {
+		errs <- p.subscription.Receive(cctx, func(ctx context.Context, message *pubsub.Message) {
 			p.processMessage(ctx, message)
 		})
-		if err != nil {
-			errs <- err
-		}
-
-		close(done)
 	}()
 
 	p.logger.Info("started")
@@ -68,14 +62,14 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	select {
 	case <-signals:
 		p.logger.Info("signalled")
-		cancel()
 	case err := <-errs:
-		p.logger.Error("failed", err)
-		cancel()
-		return err
+		if err != nil {
+			p.logger.Error("failed", err)
+			return err
+		}
 	}
 
-	<-done
+	cancel()
 
 	p.logger.Info("done")
 
