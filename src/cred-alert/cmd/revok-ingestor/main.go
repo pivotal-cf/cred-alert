@@ -77,7 +77,7 @@ func main() {
 	}
 	signer := crypto.NewRSASigner(privateKey)
 	enqueuer := queue.NewPubSubEnqueuer(logger, topic, signer)
-	in := ingestor.NewIngestor(enqueuer, emitter, "revok")
+	in := ingestor.NewIngestor(enqueuer, emitter)
 
 	clk := clock.NewClock()
 

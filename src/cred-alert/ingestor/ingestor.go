@@ -24,9 +24,8 @@ type ingestor struct {
 func NewIngestor(
 	enqueuer queue.Enqueuer,
 	emitter metrics.Emitter,
-	metricPrefix string,
 ) Ingestor {
-	requestCounter := emitter.Counter(metricPrefix + ".ingestor_requests")
+	requestCounter := emitter.Counter("revok.ingestor_requests")
 
 	handler := &ingestor{
 		enqueuer:       enqueuer,

@@ -33,7 +33,6 @@ var _ = Describe("Ingestor", func() {
 		subject = ingestor.NewIngestor(
 			fakeQueue,
 			emitter,
-			"metricPrefix",
 		)
 
 		t := time.Date(2017, 2, 27, 15, 20, 42, 0, time.UTC)
