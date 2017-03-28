@@ -1,0 +1,70 @@
+name: revok
+version: 66.0.0
+commit_hash: 9f975bc
+uncommitted_changes: false
+jobs:
+- name: ingestor
+  version: 67fe4399ddabd443e0d1dda06d073d360994a0d9
+  fingerprint: 67fe4399ddabd443e0d1dda06d073d360994a0d9
+  sha1: c4219c87cacb8bcefbd8ec120317f784943707ad
+- name: revok
+  version: 3b68bbd98054b55db9b80f397b41b904d59b8c91
+  fingerprint: 3b68bbd98054b55db9b80f397b41b904d59b8c91
+  sha1: 585f8b49f74c7a04006f272faf0a2543d1b76d32
+- name: rolodex
+  version: c1b42479d9dbf167bef4212d50c982cfdee02ae5
+  fingerprint: c1b42479d9dbf167bef4212d50c982cfdee02ae5
+  sha1: 8fce42de37b03568881703a03c1ea6f7ed8c709c
+packages:
+- name: cred-alert
+  version: 87c3f31176edb8b55d3f6d85300d7ce7473d1c52
+  fingerprint: 87c3f31176edb8b55d3f6d85300d7ce7473d1c52
+  sha1: 9f45e46596d858abe31925e942472c3fabeb5763
+  dependencies:
+  - golang
+  - libgit2
+  - libssh2
+- name: git
+  version: 4284bf1a12f8ad5b1e0a3bfccd9733643980bfd1
+  fingerprint: 4284bf1a12f8ad5b1e0a3bfccd9733643980bfd1
+  sha1: 71c40d2aeef2d764c48f856ae6f0a951bbc878e0
+  dependencies:
+  - zlib
+- name: golang
+  version: d751ef2c9b15023cff75e86713f9188bd74c3dac
+  fingerprint: d751ef2c9b15023cff75e86713f9188bd74c3dac
+  sha1: 0e619575594a611f5911c8ded9a28754668e66b0
+  dependencies: []
+- name: libgit2
+  version: 48a251461e4bd503d04a5c7207884a1586a09860
+  fingerprint: 48a251461e4bd503d04a5c7207884a1586a09860
+  sha1: 3a345cc469de149f3855b51b0c2e08fc660c6c8d
+  dependencies:
+  - libssh2
+- name: libssh2
+  version: 0efae677b1c8c70d2a7f92e2d9ab42a7273356c3
+  fingerprint: 0efae677b1c8c70d2a7f92e2d9ab42a7273356c3
+  sha1: 6f8b180bb92f421ec8ad8e1cb68c3fb21ae39bb1
+  dependencies: []
+- name: pid_utils_revok
+  version: 6ed91575de99d14cb28d2e1345a10b1e735c9bd2
+  fingerprint: 6ed91575de99d14cb28d2e1345a10b1e735c9bd2
+  sha1: 8aa3272e5eafbd9918f17c405e2405fe619003c5
+  dependencies: []
+- name: rolodex
+  version: e14a94b4a9907b7e442aaf6ba0200c4d9e839909
+  fingerprint: e14a94b4a9907b7e442aaf6ba0200c4d9e839909
+  sha1: 1a3bac8cd667efc3057edad780b7ee15cc9317ad
+  dependencies:
+  - golang
+  - libgit2
+  - libssh2
+- name: zlib
+  version: aab39cfd7ecaf91a361e3807ba90be4800b1c4ca
+  fingerprint: aab39cfd7ecaf91a361e3807ba90be4800b1c4ca
+  sha1: 14d2d4a6f14af6b0e4c5551a7421fdc27064c797
+  dependencies: []
+license:
+  version: 41d021291c22dfa0243860bc14dff745c1993cd9
+  fingerprint: 41d021291c22dfa0243860bc14dff745c1993cd9
+  sha1: 9e81557ea26725a1521aad40fb38a568e767898b
