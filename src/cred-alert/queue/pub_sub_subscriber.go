@@ -49,6 +49,8 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	errs := make(chan error)
 	cctx, cancel := context.WithCancel(context.Background())
 
+	p.subscription.MaxOutstandingMessages = 4
+
 	go func() {
 		errs <- p.subscription.Receive(cctx, func(ctx context.Context, message *pubsub.Message) {
 			p.processMessage(ctx, message)
