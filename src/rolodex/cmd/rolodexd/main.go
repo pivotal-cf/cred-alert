@@ -65,7 +65,7 @@ func main() {
 		tlsconfig.WithIdentity(certificate),
 	).Server(tlsconfig.WithClientAuthentication(clientCertPool))
 
-	grpcServer := grpcrunner.NewGRPCServer(
+	grpcServer := grpcrunner.New(
 		logger,
 		fmt.Sprintf("%s:%d", cfg.RPC.BindIP, cfg.RPC.BindPort),
 		func(server *grpc.Server) {
@@ -79,7 +79,11 @@ func main() {
 		Description: "A service providing information about internal teams.",
 		Team:        "PCF Security Enablement",
 	}
-	debug := admin.Runner("6060", admin.WithInfo(info))
+	debug := admin.Runner(
+		"6060",
+		admin.WithInfo(info),
+		admin.WithUptime(),
+	)
 
 	members := []grouper.Member{
 		{"api", grpcServer},

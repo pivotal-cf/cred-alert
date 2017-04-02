@@ -45,7 +45,7 @@ var _ = Describe("Handler", func() {
 		handler := rolodex.NewHandler(logger, teamRepo, emitter)
 
 		addr = fmt.Sprintf("127.0.0.1:%d", 38000+GinkgoParallelNode())
-		grpcRunner := grpcrunner.NewGRPCServer(
+		grpcRunner := grpcrunner.New(
 			logger,
 			addr,
 			func(s *grpc.Server) {
