@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	cloudtrace "cloud.google.com/go/trace"
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"github.com/google/go-github/github"
@@ -147,10 +148,16 @@ func main() {
 		RootCAs:      caCertPool,
 	})
 
+	traceClient, err := cloudtrace.NewClient(context.Background(), "cf-security-enablement")
+	if err != nil {
+		logger.Error("failed-to-create-trace-client", err)
+	}
+
 	conn, err := grpc.Dial(
 		rolodexServerAddr,
 		grpc.WithDialer(keepAliveDial),
 		grpc.WithTransportCredentials(transportCreds),
+		grpc.WithUnaryInterceptor(cloudtrace.GRPCClientInterceptor()),
 	)
 
 	rolodexClient := rolodexpb.NewRolodexClient(conn)
@@ -162,6 +169,7 @@ func main() {
 	)
 
 	addressBook := notifications.NewRolodex(
+		traceClient,
 		rolodexClient,
 		teamURLs,
 	)

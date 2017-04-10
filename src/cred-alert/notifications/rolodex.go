@@ -3,12 +3,14 @@ package notifications
 import (
 	"time"
 
+	cloudtrace "cloud.google.com/go/trace"
 	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	"red/redpb"
 	"rolodex/rolodexpb"
+	"trace"
 )
 
 //go:generate counterfeiter . RolodexClient
@@ -63,14 +65,16 @@ type AddressBook interface {
 }
 
 type rolodex struct {
-	client   RolodexClient
-	teamURLs TeamURLs
+	traceClient trace.Client
+	client      RolodexClient
+	teamURLs    TeamURLs
 }
 
-func NewRolodex(client RolodexClient, teamURLs TeamURLs) AddressBook {
+func NewRolodex(traceClient trace.Client, client RolodexClient, teamURLs TeamURLs) AddressBook {
 	return &rolodex{
-		client:   client,
-		teamURLs: teamURLs,
+		traceClient: traceClient,
+		client:      client,
+		teamURLs:    teamURLs,
 	}
 }
 
@@ -80,7 +84,12 @@ func (r *rolodex) AddressForRepo(logger lager.Logger, owner, name string) []Addr
 		"repository": name,
 	})
 
-	ctx, cancel := context.WithTimeout(context.TODO(), 100*time.Millisecond)
+	span := r.traceClient.NewSpan("/address-for-repo")
+	defer span.Finish()
+
+	ctx := cloudtrace.NewContext(context.TODO(), span)
+
+	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cancel()
 
 	response, err := r.client.GetOwners(ctx, &rolodexpb.GetOwnersRequest{

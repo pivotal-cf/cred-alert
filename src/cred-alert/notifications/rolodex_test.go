@@ -12,12 +12,14 @@ import (
 
 	"cred-alert/notifications"
 	"cred-alert/notifications/notificationsfakes"
+	"trace/tracefakes"
 )
 
 var _ = Describe("Rolodex", func() {
 	var (
-		client  *notificationsfakes.FakeRolodexClient
-		mapping map[string]string
+		client      *notificationsfakes.FakeRolodexClient
+		traceClient *tracefakes.FakeClient
+		mapping     map[string]string
 
 		logger *lagertest.TestLogger
 
@@ -27,11 +29,12 @@ var _ = Describe("Rolodex", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("rolodex")
 		client = &notificationsfakes.FakeRolodexClient{}
+		traceClient = &tracefakes.FakeClient{}
 	})
 
 	JustBeforeEach(func() {
 		urls := notifications.NewTeamURLs("default.slack.example.com/webhook", "default", mapping)
-		rolodex = notifications.NewRolodex(client, urls)
+		rolodex = notifications.NewRolodex(traceClient, client, urls)
 	})
 
 	Describe("finding the URL and channel for a repository notification", func() {

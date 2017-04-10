@@ -165,3 +165,7 @@
 	path = src/github.com/oklog/ulid
 	url = https://github.com/oklog/ulid
 	branch = master
+[submodule "src/golang.org/x/time"]
+	path = src/golang.org/x/time
+	url = https://go.googlesource.com/time
+	branch = master
