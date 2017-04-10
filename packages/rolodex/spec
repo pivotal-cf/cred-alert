@@ -33,6 +33,7 @@ files:
   - github.com/getsentry/raven-go/*.{go,c} # gosub
   - github.com/go-sql-driver/mysql/*.{go,c} # gosub
   - github.com/golang/protobuf/proto/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/any/*.{go,c} # gosub
   - github.com/golang/protobuf/ptypes/empty/*.{go,c} # gosub
   - github.com/google/go-github/github/*.{go,c} # gosub
   - github.com/google/go-querystring/query/*.{go,c} # gosub
@@ -60,6 +61,7 @@ files:
   - golang.org/x/text/transform/*.{go,c} # gosub
   - golang.org/x/text/unicode/bidi/*.{go,c} # gosub
   - golang.org/x/text/unicode/norm/*.{go,c} # gosub
+  - google.golang.org/genproto/googleapis/rpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
@@ -70,6 +72,7 @@ files:
   - google.golang.org/grpc/naming/*.{go,c} # gosub
   - google.golang.org/grpc/peer/*.{go,c} # gosub
   - google.golang.org/grpc/stats/*.{go,c} # gosub
+  - google.golang.org/grpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/tap/*.{go,c} # gosub
   - google.golang.org/grpc/transport/*.{go,c} # gosub
   - gopkg.in/libgit2/git2go.v24/*.{go,c} # gosub
