@@ -101,3 +101,4 @@ files:
   - rolodex/*.{go,c} # gosub
   - rolodex/cmd/rolodexd/*.{go,c} # gosub
   - rolodex/rolodexpb/*.{go,c} # gosub
+  - trace/*.{go,c} # gosub
