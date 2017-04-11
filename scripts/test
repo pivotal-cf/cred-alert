@@ -3,8 +3,8 @@
 set -e -u
 
 for unit in src/cred-alert src/rolodex src/red src/teamstr; do
-  pushd $unit
+  pushd $unit > /dev/null
     ginkgo -r -p "$@"
-  popd
+  popd > /dev/null
 done
 
