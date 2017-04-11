@@ -280,7 +280,7 @@ var _ = Describe("Rescanner", func() {
 
 		It("sends a notification for the new credentials", func() {
 			Eventually(router.DeliverCallCount).Should(Equal(1))
-			_, batch := router.DeliverArgsForCall(0)
+			_, _, batch := router.DeliverArgsForCall(0)
 			Expect(batch).To(Equal([]notifications.Notification{
 				{
 					Owner:      "some-owner",

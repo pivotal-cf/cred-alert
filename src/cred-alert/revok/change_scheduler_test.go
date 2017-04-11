@@ -55,7 +55,7 @@ var _ = Describe("Change Scheduler", func() {
 			submittedWork()
 
 			Expect(fetcher.FetchCallCount()).To(Equal(1))
-			_, passedOwner, passedName, passedReenable := fetcher.FetchArgsForCall(0)
+			_, _, passedOwner, passedName, passedReenable := fetcher.FetchArgsForCall(0)
 			Expect(passedOwner).To(Equal(repo.Owner))
 			Expect(passedName).To(Equal(repo.Name))
 			Expect(passedReenable).To(BeFalse())
@@ -100,7 +100,7 @@ var _ = Describe("Change Scheduler", func() {
 				firstJob()
 
 				Expect(fetcher.FetchCallCount()).To(Equal(1))
-				_, passedOwner, passedName, passedReenable := fetcher.FetchArgsForCall(0)
+				_, _, passedOwner, passedName, passedReenable := fetcher.FetchArgsForCall(0)
 				Expect(passedOwner).To(Equal(repo1.Owner))
 				Expect(passedName).To(Equal(repo1.Name))
 				Expect(passedReenable).To(BeFalse())
@@ -108,7 +108,7 @@ var _ = Describe("Change Scheduler", func() {
 				secondJob()
 
 				Expect(fetcher.FetchCallCount()).To(Equal(2))
-				_, passedOwner, passedName, passedReenable = fetcher.FetchArgsForCall(1)
+				_, _, passedOwner, passedName, passedReenable = fetcher.FetchArgsForCall(1)
 				Expect(passedOwner).To(Equal(repo2.Owner))
 				Expect(passedName).To(Equal(repo2.Name))
 				Expect(passedReenable).To(BeFalse())

@@ -171,7 +171,7 @@ var _ = Describe("Cloner", func() {
 				var branches []string
 				var actualScannedOids []map[string]struct{}
 				for i := 0; i < notificationComposer.ScanAndNotifyCallCount(); i++ {
-					_, owner, repository, scannedOids, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
+					_, _, owner, repository, scannedOids, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
 					Expect(owner).To(Equal("some-owner"))
 					Expect(repository).To(Equal("some-repo"))
 					Expect(stopSHA).To(Equal(""))

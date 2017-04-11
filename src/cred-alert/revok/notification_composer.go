@@ -3,6 +3,7 @@ package revok
 import (
 	"code.cloudfoundry.org/lager"
 
+	"context"
 	"cred-alert/db"
 	"cred-alert/notifications"
 )
@@ -10,7 +11,7 @@ import (
 //go:generate counterfeiter . NotificationComposer
 
 type NotificationComposer interface {
-	ScanAndNotify(lager.Logger, string, string, map[string]struct{}, string, string, string) error
+	ScanAndNotify(context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) error
 }
 
 type notificationComposer struct {
@@ -32,6 +33,7 @@ func NewNotificationComposer(
 }
 
 func (n *notificationComposer) ScanAndNotify(
+	ctx context.Context,
 	logger lager.Logger,
 	owner string,
 	repository string,
@@ -66,7 +68,7 @@ func (n *notificationComposer) ScanAndNotify(
 	}
 
 	if len(batch) > 0 {
-		err = n.router.Deliver(logger, batch)
+		err = n.router.Deliver(ctx, logger, batch)
 		if err != nil {
 			logger.Error("failed", err)
 			return err

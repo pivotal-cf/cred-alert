@@ -10,16 +10,15 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	"context"
 	"cred-alert/notifications"
 	"cred-alert/notifications/notificationsfakes"
-	"trace/tracefakes"
 )
 
 var _ = Describe("Rolodex", func() {
 	var (
-		client      *notificationsfakes.FakeRolodexClient
-		traceClient *tracefakes.FakeClient
-		mapping     map[string]string
+		client  *notificationsfakes.FakeRolodexClient
+		mapping map[string]string
 
 		logger *lagertest.TestLogger
 
@@ -29,12 +28,11 @@ var _ = Describe("Rolodex", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("rolodex")
 		client = &notificationsfakes.FakeRolodexClient{}
-		traceClient = &tracefakes.FakeClient{}
 	})
 
 	JustBeforeEach(func() {
 		urls := notifications.NewTeamURLs("default.slack.example.com/webhook", "default", mapping)
-		rolodex = notifications.NewRolodex(traceClient, client, urls)
+		rolodex = notifications.NewRolodex(client, urls)
 	})
 
 	Describe("finding the URL and channel for a repository notification", func() {
@@ -69,7 +67,7 @@ var _ = Describe("Rolodex", func() {
 				})
 
 				It("asks for the correct repository", func() {
-					_ = rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
+					_ = rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
 					Expect(client.GetOwnersCallCount()).To(Equal(1))
 
 					ctx, clientRequest, _ := client.GetOwnersArgsForCall(0)
@@ -81,7 +79,7 @@ var _ = Describe("Rolodex", func() {
 				})
 
 				It("returns the addresses of the notification channel", func() {
-					addresses := rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
+					addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
 
 					Expect(addresses).To(HaveLen(2))
 
@@ -103,7 +101,7 @@ var _ = Describe("Rolodex", func() {
 				})
 
 				It("asks for the correct repository", func() {
-					_ = rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
+					_ = rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
 					Expect(client.GetOwnersCallCount()).To(Equal(1))
 
 					ctx, clientRequest, _ := client.GetOwnersArgsForCall(0)
@@ -115,7 +113,7 @@ var _ = Describe("Rolodex", func() {
 				})
 
 				It("returns the default address", func() {
-					addresses := rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
+					addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
 
 					Expect(addresses).To(HaveLen(2))
 
@@ -141,7 +139,7 @@ var _ = Describe("Rolodex", func() {
 			})
 
 			It("returns the default channel", func() {
-				addresses := rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
+				addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
 
 				Expect(addresses).To(HaveLen(1))
 
@@ -160,12 +158,12 @@ var _ = Describe("Rolodex", func() {
 			})
 
 			It("logs the error", func() {
-				_ = rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
+				_ = rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
 				Expect(logger).To(gbytes.Say("error"))
 			})
 
 			It("returns the default channel even if the mapping existed", func() {
-				addresses := rolodex.AddressForRepo(logger, "pivotal-cf", "cred-alert")
+				addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
 
 				Expect(addresses).To(HaveLen(1))
 

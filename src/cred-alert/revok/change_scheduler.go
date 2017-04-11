@@ -1,6 +1,7 @@
 package revok
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
 	"os"
@@ -50,7 +51,7 @@ func (s *ChangeScheduler) ScheduleRepo(logger lager.Logger, repo db.Repository) 
 	schedule := scheduleForRepo(repo)
 
 	s.scheduler.ScheduleWork(schedule, func() {
-		_ = s.fetcher.Fetch(s.logger, repo.Owner, repo.Name, false)
+		_ = s.fetcher.Fetch(context.TODO(), s.logger, repo.Owner, repo.Name, false)
 	})
 
 	logger.Debug("finished-scheduling")

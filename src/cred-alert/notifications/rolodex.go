@@ -1,22 +1,22 @@
 package notifications
 
 import (
+	"context"
 	"time"
 
-	cloudtrace "cloud.google.com/go/trace"
 	"code.cloudfoundry.org/lager"
-	"golang.org/x/net/context"
+	netcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	"cloud.google.com/go/trace"
 	"red/redpb"
 	"rolodex/rolodexpb"
-	"trace"
 )
 
 //go:generate counterfeiter . RolodexClient
 
 type RolodexClient interface {
-	GetOwners(ctx context.Context, in *rolodexpb.GetOwnersRequest, opts ...grpc.CallOption) (*rolodexpb.GetOwnersResponse, error)
+	GetOwners(ctx netcontext.Context, in *rolodexpb.GetOwnersRequest, opts ...grpc.CallOption) (*rolodexpb.GetOwnersResponse, error)
 }
 
 type Address struct {
@@ -61,36 +61,32 @@ func (t TeamURLs) Lookup(logger lager.Logger, teamName string, channelName strin
 //go:generate counterfeiter . AddressBook
 
 type AddressBook interface {
-	AddressForRepo(logger lager.Logger, owner, name string) []Address
+	AddressForRepo(ctx context.Context, logger lager.Logger, owner, name string) []Address
 }
 
 type rolodex struct {
-	traceClient trace.Client
-	client      RolodexClient
-	teamURLs    TeamURLs
+	client   RolodexClient
+	teamURLs TeamURLs
 }
 
-func NewRolodex(traceClient trace.Client, client RolodexClient, teamURLs TeamURLs) AddressBook {
+func NewRolodex(client RolodexClient, teamURLs TeamURLs) AddressBook {
 	return &rolodex{
-		traceClient: traceClient,
-		client:      client,
-		teamURLs:    teamURLs,
+		client:   client,
+		teamURLs: teamURLs,
 	}
 }
 
-func (r *rolodex) AddressForRepo(logger lager.Logger, owner, name string) []Address {
+func (r *rolodex) AddressForRepo(ctx context.Context, logger lager.Logger, owner, name string) []Address {
 	logger = logger.Session("rolodex", lager.Data{
 		"owner":      owner,
 		"repository": name,
 	})
 
-	span := r.traceClient.NewSpan("/address-for-repo")
-	defer span.Finish()
-
-	ctx := cloudtrace.NewContext(context.TODO(), span)
-
 	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cancel()
+
+	span := trace.FromContext(ctx).NewChild("/rolodex")
+	defer span.Finish()
 
 	response, err := r.client.GetOwners(ctx, &rolodexpb.GetOwnersRequest{
 		Repository: &redpb.Repository{

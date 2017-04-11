@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/tedsuo/ifrit"
 
+	"context"
 	"cred-alert/db"
 	"cred-alert/metrics"
 	"cred-alert/notifications"
@@ -122,7 +123,7 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 	}
 
 	if len(batch) > 0 {
-		err = r.router.Deliver(logger, batch)
+		err = r.router.Deliver(context.TODO(), logger, batch)
 		if err != nil {
 			logger.Error("failed-to-notify", err)
 		}

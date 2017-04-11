@@ -148,7 +148,7 @@ func main() {
 		RootCAs:      caCertPool,
 	})
 
-	traceClient, err := cloudtrace.NewClient(context.Background(), "cf-security-enablement")
+	traceClient, err := cloudtrace.NewClient(context.Background(), cfg.Trace.ProjectName)
 	if err != nil {
 		logger.Error("failed-to-create-trace-client", err)
 	}
@@ -169,7 +169,6 @@ func main() {
 	)
 
 	addressBook := notifications.NewRolodex(
-		traceClient,
 		rolodexClient,
 		teamURLs,
 	)
@@ -303,7 +302,7 @@ func main() {
 
 	members = append(members, grouper.Member{
 		Name:   "github-hint-handler",
-		Runner: queue.NewPubSubSubscriber(logger, subscription, pushEventProcessor, emitter),
+		Runner: queue.NewPubSubSubscriber(logger, subscription, pushEventProcessor, emitter, traceClient),
 	})
 
 	if cfg.GitHub.AccessToken != "" {

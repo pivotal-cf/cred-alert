@@ -7,6 +7,7 @@ import (
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 	"os"
+	"trace/tracefakes"
 
 	"cloud.google.com/go/pubsub"
 
@@ -21,14 +22,15 @@ import (
 
 var _ = Describe("PubSubSubscriber", func() {
 	var (
-		logger        *lagertest.TestLogger
-		firstMessage  *pubsub.Message
-		secondMessage *pubsub.Message
-		processor     *queuefakes.FakePubSubProcessor
-		subscription  *pubsub.Subscription
-		topic         *pubsub.Topic
-		client        *pubsub.Client
-		emitter       *metricsfakes.FakeEmitter
+		fakeTraceClient *tracefakes.FakeClient
+		logger          *lagertest.TestLogger
+		firstMessage    *pubsub.Message
+		secondMessage   *pubsub.Message
+		processor       *queuefakes.FakePubSubProcessor
+		subscription    *pubsub.Subscription
+		topic           *pubsub.Topic
+		client          *pubsub.Client
+		emitter         *metricsfakes.FakeEmitter
 
 		psRunner *pubsubrunner.Runner
 		runner   ifrit.Runner
@@ -36,6 +38,8 @@ var _ = Describe("PubSubSubscriber", func() {
 	)
 
 	BeforeEach(func() {
+		fakeTraceClient = new(tracefakes.FakeClient)
+
 		psRunner = &pubsubrunner.Runner{}
 		psRunner.Setup()
 
@@ -91,7 +95,7 @@ var _ = Describe("PubSubSubscriber", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter)
+		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter, fakeTraceClient)
 		process = ginkgomon.Invoke(runner)
 	})
 
@@ -116,8 +120,8 @@ var _ = Describe("PubSubSubscriber", func() {
 	It("tries to process the messages", func() {
 		Eventually(processor.ProcessCallCount).Should(Equal(2))
 
-		_, message1 := processor.ProcessArgsForCall(0)
-		_, message2 := processor.ProcessArgsForCall(1)
+		_, _, message1 := processor.ProcessArgsForCall(0)
+		_, _, message2 := processor.ProcessArgsForCall(1)
 
 		attributes := []map[string]string{
 			message1.Attributes,

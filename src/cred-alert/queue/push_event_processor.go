@@ -2,9 +2,7 @@ package queue
 
 import (
 	"bytes"
-	"cred-alert/crypto"
-	"cred-alert/metrics"
-	"cred-alert/revok"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -12,6 +10,10 @@ import (
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
+
+	"cred-alert/crypto"
+	"cred-alert/metrics"
+	"cred-alert/revok"
 )
 
 type pushEventProcessor struct {
@@ -38,7 +40,7 @@ func NewPushEventProcessor(
 	}
 }
 
-func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Message) (bool, error) {
+func (h *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
 	logger = logger.Session("processing-push-event")
 
 	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
@@ -78,7 +80,7 @@ func (h *pushEventProcessor) Process(logger lager.Logger, message *pubsub.Messag
 		"owner":      p.Owner,
 	})
 
-	err = h.changeFetcher.Fetch(logger, p.Owner, p.Repository, true)
+	err = h.changeFetcher.Fetch(ctx, logger, p.Owner, p.Repository, true)
 	if err != nil {
 		return true, err
 	}

@@ -1,6 +1,7 @@
 package revok
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -125,6 +126,7 @@ func (c *Cloner) work(logger lager.Logger, msg CloneMsg) {
 
 	for branchName, target := range branches {
 		err = c.notificationComposer.ScanAndNotify(
+			context.TODO(),
 			workLogger,
 			msg.Owner,
 			msg.Repository,

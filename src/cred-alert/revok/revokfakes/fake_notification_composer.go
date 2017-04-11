@@ -2,6 +2,7 @@
 package revokfakes
 
 import (
+	"context"
 	"cred-alert/revok"
 	"sync"
 
@@ -9,16 +10,17 @@ import (
 )
 
 type FakeNotificationComposer struct {
-	ScanAndNotifyStub        func(lager.Logger, string, string, map[string]struct{}, string, string, string) error
+	ScanAndNotifyStub        func(context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) error
 	scanAndNotifyMutex       sync.RWMutex
 	scanAndNotifyArgsForCall []struct {
-		arg1 lager.Logger
-		arg2 string
+		arg1 context.Context
+		arg2 lager.Logger
 		arg3 string
-		arg4 map[string]struct{}
-		arg5 string
+		arg4 string
+		arg5 map[string]struct{}
 		arg6 string
 		arg7 string
+		arg8 string
 	}
 	scanAndNotifyReturns struct {
 		result1 error
@@ -30,22 +32,23 @@ type FakeNotificationComposer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotify(arg1 lager.Logger, arg2 string, arg3 string, arg4 map[string]struct{}, arg5 string, arg6 string, arg7 string) error {
+func (fake *FakeNotificationComposer) ScanAndNotify(arg1 context.Context, arg2 lager.Logger, arg3 string, arg4 string, arg5 map[string]struct{}, arg6 string, arg7 string, arg8 string) error {
 	fake.scanAndNotifyMutex.Lock()
 	ret, specificReturn := fake.scanAndNotifyReturnsOnCall[len(fake.scanAndNotifyArgsForCall)]
 	fake.scanAndNotifyArgsForCall = append(fake.scanAndNotifyArgsForCall, struct {
-		arg1 lager.Logger
-		arg2 string
+		arg1 context.Context
+		arg2 lager.Logger
 		arg3 string
-		arg4 map[string]struct{}
-		arg5 string
+		arg4 string
+		arg5 map[string]struct{}
 		arg6 string
 		arg7 string
-	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
-	fake.recordInvocation("ScanAndNotify", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
+		arg8 string
+	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8})
+	fake.recordInvocation("ScanAndNotify", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8})
 	fake.scanAndNotifyMutex.Unlock()
 	if fake.ScanAndNotifyStub != nil {
-		return fake.ScanAndNotifyStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+		return fake.ScanAndNotifyStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 	}
 	if specificReturn {
 		return ret.result1
@@ -59,10 +62,10 @@ func (fake *FakeNotificationComposer) ScanAndNotifyCallCount() int {
 	return len(fake.scanAndNotifyArgsForCall)
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotifyArgsForCall(i int) (lager.Logger, string, string, map[string]struct{}, string, string, string) {
+func (fake *FakeNotificationComposer) ScanAndNotifyArgsForCall(i int) (context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) {
 	fake.scanAndNotifyMutex.RLock()
 	defer fake.scanAndNotifyMutex.RUnlock()
-	return fake.scanAndNotifyArgsForCall[i].arg1, fake.scanAndNotifyArgsForCall[i].arg2, fake.scanAndNotifyArgsForCall[i].arg3, fake.scanAndNotifyArgsForCall[i].arg4, fake.scanAndNotifyArgsForCall[i].arg5, fake.scanAndNotifyArgsForCall[i].arg6, fake.scanAndNotifyArgsForCall[i].arg7
+	return fake.scanAndNotifyArgsForCall[i].arg1, fake.scanAndNotifyArgsForCall[i].arg2, fake.scanAndNotifyArgsForCall[i].arg3, fake.scanAndNotifyArgsForCall[i].arg4, fake.scanAndNotifyArgsForCall[i].arg5, fake.scanAndNotifyArgsForCall[i].arg6, fake.scanAndNotifyArgsForCall[i].arg7, fake.scanAndNotifyArgsForCall[i].arg8
 }
 
 func (fake *FakeNotificationComposer) ScanAndNotifyReturns(result1 error) {

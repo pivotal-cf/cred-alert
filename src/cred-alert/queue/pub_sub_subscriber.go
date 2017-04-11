@@ -4,14 +4,14 @@ import (
 	"os"
 
 	"cloud.google.com/go/pubsub"
+	cloudtrace "cloud.google.com/go/trace"
 	"code.cloudfoundry.org/lager"
 	"github.com/tedsuo/ifrit"
 	"golang.org/x/net/context"
 
 	"cred-alert/metrics"
+	"trace"
 )
-
-const SubscriberCount = 2
 
 type pubSubSubscriber struct {
 	logger       lager.Logger
@@ -22,6 +22,8 @@ type pubSubSubscriber struct {
 	processSuccessCounter metrics.Counter
 	processFailureCounter metrics.Counter
 	processRetryCounter   metrics.Counter
+
+	traceClient trace.Client
 }
 
 func NewPubSubSubscriber(
@@ -29,13 +31,17 @@ func NewPubSubSubscriber(
 	subscription *pubsub.Subscription,
 	processor PubSubProcessor,
 	emitter metrics.Emitter,
+	traceClient trace.Client,
 ) ifrit.Runner {
 	return &pubSubSubscriber{
 		logger: logger.Session("message-processor", lager.Data{
 			"subscription": subscription.ID(),
 		}),
-		subscription:          subscription,
-		processor:             processor,
+
+		subscription: subscription,
+		processor:    processor,
+		traceClient:  traceClient,
+
 		processTimer:          emitter.Timer("revok.pub_sub_subscriber.process.time"),
 		processSuccessCounter: emitter.Counter("revok.pub_sub_subscriber.process.success"),
 		processFailureCounter: emitter.Counter("revok.pub_sub_subscriber.process.failure"),
@@ -53,6 +59,11 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 
 	go func() {
 		errs <- p.subscription.Receive(cctx, func(ctx context.Context, message *pubsub.Message) {
+			span := p.traceClient.NewSpan("/pubsub-receive")
+			defer span.Finish()
+
+			ctx = cloudtrace.NewContext(ctx, span)
+
 			p.processMessage(ctx, message)
 		})
 	}()
@@ -90,7 +101,7 @@ func (p *pubSubSubscriber) processMessage(ctx context.Context, message *pubsub.M
 	})
 
 	p.processTimer.Time(logger, func() {
-		retryable, err = p.processor.Process(logger, message)
+		retryable, err = p.processor.Process(ctx, logger, message)
 	})
 
 	if err != nil {

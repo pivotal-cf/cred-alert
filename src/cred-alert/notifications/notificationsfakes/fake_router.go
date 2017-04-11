@@ -2,6 +2,7 @@
 package notificationsfakes
 
 import (
+	"context"
 	"cred-alert/notifications"
 	"sync"
 
@@ -9,9 +10,10 @@ import (
 )
 
 type FakeRouter struct {
-	DeliverStub        func(logger lager.Logger, batch []notifications.Notification) error
+	DeliverStub        func(ctx context.Context, logger lager.Logger, batch []notifications.Notification) error
 	deliverMutex       sync.RWMutex
 	deliverArgsForCall []struct {
+		ctx    context.Context
 		logger lager.Logger
 		batch  []notifications.Notification
 	}
@@ -25,7 +27,7 @@ type FakeRouter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRouter) Deliver(logger lager.Logger, batch []notifications.Notification) error {
+func (fake *FakeRouter) Deliver(ctx context.Context, logger lager.Logger, batch []notifications.Notification) error {
 	var batchCopy []notifications.Notification
 	if batch != nil {
 		batchCopy = make([]notifications.Notification, len(batch))
@@ -34,13 +36,14 @@ func (fake *FakeRouter) Deliver(logger lager.Logger, batch []notifications.Notif
 	fake.deliverMutex.Lock()
 	ret, specificReturn := fake.deliverReturnsOnCall[len(fake.deliverArgsForCall)]
 	fake.deliverArgsForCall = append(fake.deliverArgsForCall, struct {
+		ctx    context.Context
 		logger lager.Logger
 		batch  []notifications.Notification
-	}{logger, batchCopy})
-	fake.recordInvocation("Deliver", []interface{}{logger, batchCopy})
+	}{ctx, logger, batchCopy})
+	fake.recordInvocation("Deliver", []interface{}{ctx, logger, batchCopy})
 	fake.deliverMutex.Unlock()
 	if fake.DeliverStub != nil {
-		return fake.DeliverStub(logger, batch)
+		return fake.DeliverStub(ctx, logger, batch)
 	}
 	if specificReturn {
 		return ret.result1
@@ -54,10 +57,10 @@ func (fake *FakeRouter) DeliverCallCount() int {
 	return len(fake.deliverArgsForCall)
 }
 
-func (fake *FakeRouter) DeliverArgsForCall(i int) (lager.Logger, []notifications.Notification) {
+func (fake *FakeRouter) DeliverArgsForCall(i int) (context.Context, lager.Logger, []notifications.Notification) {
 	fake.deliverMutex.RLock()
 	defer fake.deliverMutex.RUnlock()
-	return fake.deliverArgsForCall[i].logger, fake.deliverArgsForCall[i].batch
+	return fake.deliverArgsForCall[i].ctx, fake.deliverArgsForCall[i].logger, fake.deliverArgsForCall[i].batch
 }
 
 func (fake *FakeRouter) DeliverReturns(result1 error) {

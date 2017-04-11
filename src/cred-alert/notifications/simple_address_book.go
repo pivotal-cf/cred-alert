@@ -1,6 +1,10 @@
 package notifications
 
-import "code.cloudfoundry.org/lager"
+import (
+	"context"
+
+	"code.cloudfoundry.org/lager"
+)
 
 type simpleAddressBook struct {
 	url     string
@@ -14,7 +18,7 @@ func NewSimpleAddressBook(url, channel string) AddressBook {
 	}
 }
 
-func (s *simpleAddressBook) AddressForRepo(logger lager.Logger, owner, name string) []Address {
+func (s *simpleAddressBook) AddressForRepo(ctx context.Context, logger lager.Logger, owner, name string) []Address {
 	return []Address{{
 		URL:     s.url,
 		Channel: s.channel,

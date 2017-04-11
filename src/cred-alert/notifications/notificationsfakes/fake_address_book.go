@@ -2,6 +2,7 @@
 package notificationsfakes
 
 import (
+	"context"
 	"cred-alert/notifications"
 	"sync"
 
@@ -9,9 +10,10 @@ import (
 )
 
 type FakeAddressBook struct {
-	AddressForRepoStub        func(logger lager.Logger, owner, name string) []notifications.Address
+	AddressForRepoStub        func(ctx context.Context, logger lager.Logger, owner, name string) []notifications.Address
 	addressForRepoMutex       sync.RWMutex
 	addressForRepoArgsForCall []struct {
+		ctx    context.Context
 		logger lager.Logger
 		owner  string
 		name   string
@@ -26,18 +28,19 @@ type FakeAddressBook struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeAddressBook) AddressForRepo(logger lager.Logger, owner string, name string) []notifications.Address {
+func (fake *FakeAddressBook) AddressForRepo(ctx context.Context, logger lager.Logger, owner string, name string) []notifications.Address {
 	fake.addressForRepoMutex.Lock()
 	ret, specificReturn := fake.addressForRepoReturnsOnCall[len(fake.addressForRepoArgsForCall)]
 	fake.addressForRepoArgsForCall = append(fake.addressForRepoArgsForCall, struct {
+		ctx    context.Context
 		logger lager.Logger
 		owner  string
 		name   string
-	}{logger, owner, name})
-	fake.recordInvocation("AddressForRepo", []interface{}{logger, owner, name})
+	}{ctx, logger, owner, name})
+	fake.recordInvocation("AddressForRepo", []interface{}{ctx, logger, owner, name})
 	fake.addressForRepoMutex.Unlock()
 	if fake.AddressForRepoStub != nil {
-		return fake.AddressForRepoStub(logger, owner, name)
+		return fake.AddressForRepoStub(ctx, logger, owner, name)
 	}
 	if specificReturn {
 		return ret.result1
@@ -51,10 +54,10 @@ func (fake *FakeAddressBook) AddressForRepoCallCount() int {
 	return len(fake.addressForRepoArgsForCall)
 }
 
-func (fake *FakeAddressBook) AddressForRepoArgsForCall(i int) (lager.Logger, string, string) {
+func (fake *FakeAddressBook) AddressForRepoArgsForCall(i int) (context.Context, lager.Logger, string, string) {
 	fake.addressForRepoMutex.RLock()
 	defer fake.addressForRepoMutex.RUnlock()
-	return fake.addressForRepoArgsForCall[i].logger, fake.addressForRepoArgsForCall[i].owner, fake.addressForRepoArgsForCall[i].name
+	return fake.addressForRepoArgsForCall[i].ctx, fake.addressForRepoArgsForCall[i].logger, fake.addressForRepoArgsForCall[i].owner, fake.addressForRepoArgsForCall[i].name
 }
 
 func (fake *FakeAddressBook) AddressForRepoReturns(result1 []notifications.Address) {

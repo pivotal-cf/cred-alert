@@ -8,6 +8,8 @@ import (
 	"cred-alert/revok/revokfakes"
 	"errors"
 
+	"golang.org/x/net/context"
+
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager/lagertest"
 
@@ -70,7 +72,7 @@ var _ = Describe("PushEventProcessor", func() {
 			Data: []byte("some-message"),
 		}
 
-		pushEventProcessor.Process(logger, message)
+		pushEventProcessor.Process(context.Background(), logger, message)
 
 		Expect(verifier.VerifyCallCount()).To(Equal(1))
 		message, signature := verifier.VerifyArgsForCall(0)
@@ -88,7 +90,7 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("returns an error", func() {
-			retriable, err := pushEventProcessor.Process(logger, message)
+			retriable, err := pushEventProcessor.Process(context.Background(), logger, message)
 
 			Expect(retriable).To(BeFalse())
 			Expect(err).To(HaveOccurred())
@@ -112,13 +114,13 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("returns an error", func() {
-			retriable, err := pushEventProcessor.Process(logger, message)
+			retriable, err := pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(retriable).To(BeFalse())
 			Expect(err).To(Equal(err))
 		})
 
 		It("increments the error counter", func() {
-			pushEventProcessor.Process(logger, message)
+			pushEventProcessor.Process(context.Background(), logger, message)
 
 			Expect(verifyFailedCounter.IncCallCount()).To(Equal(1))
 		})
@@ -142,14 +144,14 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not increment the verifyFailedCounter", func() {
-			pushEventProcessor.Process(logger, message)
+			pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(verifyFailedCounter.IncCallCount()).To(Equal(0))
 		})
 
 		It("tries to do a fetch", func() {
-			pushEventProcessor.Process(logger, message)
+			pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(changeFetcher.FetchCallCount()).To(Equal(1))
-			_, actualOwner, actualName, actualReenable := changeFetcher.FetchArgsForCall(0)
+			_, _, actualOwner, actualName, actualReenable := changeFetcher.FetchArgsForCall(0)
 			Expect(actualOwner).To(Equal("some-owner"))
 			Expect(actualName).To(Equal("some-repo"))
 			Expect(actualReenable).To(BeTrue())
@@ -161,13 +163,13 @@ var _ = Describe("PushEventProcessor", func() {
 			})
 
 			It("does not retry or return an error", func() {
-				retry, err := pushEventProcessor.Process(logger, message)
+				retry, err := pushEventProcessor.Process(context.Background(), logger, message)
 				Expect(retry).To(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("emits the total processing time", func() {
-				_, err := pushEventProcessor.Process(logger, message)
+				_, err := pushEventProcessor.Process(context.Background(), logger, message)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(endToEndGauge.UpdateCallCount()).To(Equal(1))
@@ -184,13 +186,13 @@ var _ = Describe("PushEventProcessor", func() {
 			})
 
 			It("returns an error that can be retried", func() {
-				retry, err := pushEventProcessor.Process(logger, message)
+				retry, err := pushEventProcessor.Process(context.Background(), logger, message)
 				Expect(retry).To(BeTrue())
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("does not emit the processing time", func() {
-				_, err := pushEventProcessor.Process(logger, message)
+				_, err := pushEventProcessor.Process(context.Background(), logger, message)
 				Expect(err).To(HaveOccurred())
 
 				Expect(endToEndGauge.UpdateCallCount()).To(BeZero())
@@ -212,12 +214,12 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(logger, message)
+			pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an error that cannot be retried", func() {
-			retry, err := pushEventProcessor.Process(logger, message)
+			retry, err := pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})
@@ -239,12 +241,12 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(logger, message)
+			pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {
-			retry, err := pushEventProcessor.Process(logger, message)
+			retry, err := pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})
@@ -266,12 +268,12 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(logger, message)
+			pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {
-			retry, err := pushEventProcessor.Process(logger, message)
+			retry, err := pushEventProcessor.Process(context.Background(), logger, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})

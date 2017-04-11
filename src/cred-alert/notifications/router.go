@@ -1,11 +1,15 @@
 package notifications
 
-import "code.cloudfoundry.org/lager"
+import (
+	"context"
+
+	"code.cloudfoundry.org/lager"
+)
 
 //go:generate counterfeiter . Router
 
 type Router interface {
-	Deliver(logger lager.Logger, batch []Notification) error
+	Deliver(ctx context.Context, logger lager.Logger, batch []Notification) error
 }
 
 type router struct {
@@ -22,10 +26,10 @@ func NewRouter(notifier Notifier, addressBook AddressBook, whitelist Whitelist) 
 	}
 }
 
-func (r *router) Deliver(logger lager.Logger, batch []Notification) error {
+func (r *router) Deliver(ctx context.Context, logger lager.Logger, batch []Notification) error {
 	logger = logger.Session("deliver")
 
-	envelopes := r.filterAndGroupByDestination(logger, batch)
+	envelopes := r.filterAndGroupByDestination(ctx, logger, batch)
 
 	logger.Debug("sending", lager.Data{
 		"envelope-count":     len(envelopes),
@@ -44,7 +48,7 @@ func (r *router) Deliver(logger lager.Logger, batch []Notification) error {
 	return nil
 }
 
-func (r *router) filterAndGroupByDestination(logger lager.Logger, batch []Notification) []*Envelope {
+func (r *router) filterAndGroupByDestination(ctx context.Context, logger lager.Logger, batch []Notification) []*Envelope {
 	bag := mailbag{}
 
 	for _, notification := range batch {
@@ -52,7 +56,7 @@ func (r *router) filterAndGroupByDestination(logger lager.Logger, batch []Notifi
 			continue
 		}
 
-		addresses := r.addressBook.AddressForRepo(logger, notification.Owner, notification.Repository)
+		addresses := r.addressBook.AddressForRepo(ctx, logger, notification.Owner, notification.Repository)
 
 		for _, address := range addresses {
 			bag.envelopeToAddress(notification, address)

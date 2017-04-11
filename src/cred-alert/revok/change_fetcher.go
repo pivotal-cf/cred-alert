@@ -1,8 +1,10 @@
 package revok
 
 import (
+	"context"
 	"encoding/json"
 
+	"cloud.google.com/go/trace"
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/db"
@@ -13,7 +15,7 @@ import (
 //go:generate counterfeiter . ChangeFetcher
 
 type ChangeFetcher interface {
-	Fetch(logger lager.Logger, owner, name string, reenable bool) error
+	Fetch(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
 }
 
 type changeFetcher struct {
@@ -54,6 +56,7 @@ func NewChangeFetcher(
 }
 
 func (c *changeFetcher) Fetch(
+	ctx context.Context,
 	logger lager.Logger,
 	owner string,
 	name string,
@@ -63,6 +66,9 @@ func (c *changeFetcher) Fetch(
 		"owner":      owner,
 		"repository": name,
 	})
+
+	span := trace.FromContext(ctx).NewChild("/fetch")
+	defer span.Finish()
 
 	repo, found, err := c.repositoryRepository.Find(owner, name)
 	if err != nil {
@@ -93,7 +99,7 @@ func (c *changeFetcher) Fetch(
 		return err
 	}
 
-	return c.scanFetch(repoLogger, repo, changes)
+	return c.scanFetch(ctx, repoLogger, repo, changes)
 }
 
 func (c *changeFetcher) shouldFetch(repoLogger lager.Logger, repo db.Repository, found bool, reenable bool) (bool, error) {
@@ -163,6 +169,7 @@ func (c *changeFetcher) registerFetchResult(
 }
 
 func (c *changeFetcher) scanFetch(
+	ctx context.Context,
 	logger lager.Logger,
 	repo db.Repository,
 	changes map[string][]string,
@@ -171,6 +178,7 @@ func (c *changeFetcher) scanFetch(
 
 	for branch, oids := range changes {
 		err := c.notificationComposer.ScanAndNotify(
+			ctx,
 			logger,
 			repo.Owner,
 			repo.Name,

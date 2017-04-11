@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"context"
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/notifications"
@@ -58,6 +59,7 @@ var _ = Describe("NotificationComposer", func() {
 
 	var scanAndNotify = func() error {
 		return notificationComposer.ScanAndNotify(
+			context.Background(),
 			logger,
 			"some-owner",
 			"some-repo",
@@ -131,7 +133,7 @@ var _ = Describe("NotificationComposer", func() {
 					},
 				}
 
-				passedLogger, batch := router.DeliverArgsForCall(0)
+				_, passedLogger, batch := router.DeliverArgsForCall(0)
 				Expect(passedLogger).To(Equal(logger))
 				Expect(batch).To(Equal(expectedBatch))
 			})

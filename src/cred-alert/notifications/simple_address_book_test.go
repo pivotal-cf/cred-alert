@@ -3,6 +3,8 @@ package notifications_test
 import (
 	"cred-alert/notifications"
 
+	"golang.org/x/net/context"
+
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -25,8 +27,8 @@ var _ = Describe("Simple Address Book", func() {
 	})
 
 	It("returns the same address for every repo", func() {
-		addresses1 := addressBook.AddressForRepo(logger, "some-owner", "some-repo")
-		addresses2 := addressBook.AddressForRepo(logger, "other-owner", "other-repo")
+		addresses1 := addressBook.AddressForRepo(context.Background(), logger, "some-owner", "some-repo")
+		addresses2 := addressBook.AddressForRepo(context.Background(), logger, "other-owner", "other-repo")
 
 		Expect(addresses1).To(Equal(addresses2))
 

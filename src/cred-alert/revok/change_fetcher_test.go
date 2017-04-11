@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 
+	"context"
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
@@ -141,7 +142,7 @@ var _ = Describe("ChangeFetcher", func() {
 			emitter,
 		)
 
-		fetchErr = fetcher.Fetch(logger, repo.Owner, repo.Name, reenable)
+		fetchErr = fetcher.Fetch(context.Background(), logger, repo.Owner, repo.Name, reenable)
 	}
 
 	AfterEach(func() {
@@ -347,7 +348,7 @@ var _ = Describe("ChangeFetcher", func() {
 
 			var branches []string
 			for i := 0; i < notificationComposer.ScanAndNotifyCallCount(); i++ {
-				_, owner, name, _, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
+				_, _, owner, name, _, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
 				Expect(owner).To(Equal("some-owner"))
 				Expect(name).To(Equal("some-repo"))
 
@@ -418,7 +419,7 @@ var _ = Describe("ChangeFetcher", func() {
 
 		Context("when there is an error scanning a change", func() {
 			BeforeEach(func() {
-				notificationComposer.ScanAndNotifyStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) error {
+				notificationComposer.ScanAndNotifyStub = func(context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) error {
 					if notificationComposer.ScanAndNotifyCallCount() == 1 {
 						return nil
 					}

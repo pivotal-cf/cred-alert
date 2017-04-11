@@ -2,6 +2,7 @@
 package revokfakes
 
 import (
+	"context"
 	"cred-alert/revok"
 	"sync"
 
@@ -9,9 +10,10 @@ import (
 )
 
 type FakeChangeFetcher struct {
-	FetchStub        func(logger lager.Logger, owner, name string, reenable bool) error
+	FetchStub        func(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
+		ctx      context.Context
 		logger   lager.Logger
 		owner    string
 		name     string
@@ -27,19 +29,20 @@ type FakeChangeFetcher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeChangeFetcher) Fetch(logger lager.Logger, owner string, name string, reenable bool) error {
+func (fake *FakeChangeFetcher) Fetch(ctx context.Context, logger lager.Logger, owner string, name string, reenable bool) error {
 	fake.fetchMutex.Lock()
 	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
+		ctx      context.Context
 		logger   lager.Logger
 		owner    string
 		name     string
 		reenable bool
-	}{logger, owner, name, reenable})
-	fake.recordInvocation("Fetch", []interface{}{logger, owner, name, reenable})
+	}{ctx, logger, owner, name, reenable})
+	fake.recordInvocation("Fetch", []interface{}{ctx, logger, owner, name, reenable})
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
-		return fake.FetchStub(logger, owner, name, reenable)
+		return fake.FetchStub(ctx, logger, owner, name, reenable)
 	}
 	if specificReturn {
 		return ret.result1
@@ -53,10 +56,10 @@ func (fake *FakeChangeFetcher) FetchCallCount() int {
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (lager.Logger, string, string, bool) {
+func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (context.Context, lager.Logger, string, string, bool) {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
-	return fake.fetchArgsForCall[i].logger, fake.fetchArgsForCall[i].owner, fake.fetchArgsForCall[i].name, fake.fetchArgsForCall[i].reenable
+	return fake.fetchArgsForCall[i].ctx, fake.fetchArgsForCall[i].logger, fake.fetchArgsForCall[i].owner, fake.fetchArgsForCall[i].name, fake.fetchArgsForCall[i].reenable
 }
 
 func (fake *FakeChangeFetcher) FetchReturns(result1 error) {

@@ -3,6 +3,8 @@ package notifications_test
 import (
 	"fmt"
 
+	"context"
+
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 
@@ -35,7 +37,7 @@ var _ = Describe("Router", func() {
 
 	Describe("Deliver", func() {
 		It("groups notifications into envelopes and sends them", func() {
-			addressBook.AddressForRepoStub = func(_ lager.Logger, owner, name string) []notifications.Address {
+			addressBook.AddressForRepoStub = func(_ context.Context, _ lager.Logger, owner, name string) []notifications.Address {
 				repo := fmt.Sprintf("%s/%s", owner, name)
 
 				switch repo {
@@ -83,7 +85,7 @@ var _ = Describe("Router", func() {
 				Path:       "some/path/3",
 			}
 
-			router.Deliver(logger, []notifications.Notification{note1, note2, note3})
+			router.Deliver(context.Background(), logger, []notifications.Notification{note1, note2, note3})
 
 			Expect(notifier.SendCallCount()).To(Equal(3))
 
@@ -127,7 +129,7 @@ var _ = Describe("Router", func() {
 				Path:       "some/path/2",
 			}
 
-			router.Deliver(logger, []notifications.Notification{note1, note2})
+			router.Deliver(context.Background(), logger, []notifications.Notification{note1, note2})
 
 			Expect(notifier.SendCallCount()).To(Equal(1))
 

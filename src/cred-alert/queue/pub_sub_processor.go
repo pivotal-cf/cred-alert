@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"context"
+
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager"
 )
@@ -8,5 +10,5 @@ import (
 //go:generate counterfeiter . PubSubProcessor
 
 type PubSubProcessor interface {
-	Process(lager.Logger, *pubsub.Message) (bool, error)
+	Process(context.Context, lager.Logger, *pubsub.Message) (bool, error)
 }

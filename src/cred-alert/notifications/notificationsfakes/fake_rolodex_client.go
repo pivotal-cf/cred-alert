@@ -6,15 +6,15 @@ import (
 	"rolodex/rolodexpb"
 	"sync"
 
-	"golang.org/x/net/context"
+	netcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 type FakeRolodexClient struct {
-	GetOwnersStub        func(ctx context.Context, in *rolodexpb.GetOwnersRequest, opts ...grpc.CallOption) (*rolodexpb.GetOwnersResponse, error)
+	GetOwnersStub        func(ctx netcontext.Context, in *rolodexpb.GetOwnersRequest, opts ...grpc.CallOption) (*rolodexpb.GetOwnersResponse, error)
 	getOwnersMutex       sync.RWMutex
 	getOwnersArgsForCall []struct {
-		ctx  context.Context
+		ctx  netcontext.Context
 		in   *rolodexpb.GetOwnersRequest
 		opts []grpc.CallOption
 	}
@@ -30,11 +30,11 @@ type FakeRolodexClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRolodexClient) GetOwners(ctx context.Context, in *rolodexpb.GetOwnersRequest, opts ...grpc.CallOption) (*rolodexpb.GetOwnersResponse, error) {
+func (fake *FakeRolodexClient) GetOwners(ctx netcontext.Context, in *rolodexpb.GetOwnersRequest, opts ...grpc.CallOption) (*rolodexpb.GetOwnersResponse, error) {
 	fake.getOwnersMutex.Lock()
 	ret, specificReturn := fake.getOwnersReturnsOnCall[len(fake.getOwnersArgsForCall)]
 	fake.getOwnersArgsForCall = append(fake.getOwnersArgsForCall, struct {
-		ctx  context.Context
+		ctx  netcontext.Context
 		in   *rolodexpb.GetOwnersRequest
 		opts []grpc.CallOption
 	}{ctx, in, opts})
@@ -55,7 +55,7 @@ func (fake *FakeRolodexClient) GetOwnersCallCount() int {
 	return len(fake.getOwnersArgsForCall)
 }
 
-func (fake *FakeRolodexClient) GetOwnersArgsForCall(i int) (context.Context, *rolodexpb.GetOwnersRequest, []grpc.CallOption) {
+func (fake *FakeRolodexClient) GetOwnersArgsForCall(i int) (netcontext.Context, *rolodexpb.GetOwnersRequest, []grpc.CallOption) {
 	fake.getOwnersMutex.RLock()
 	defer fake.getOwnersMutex.RUnlock()
 	return fake.getOwnersArgsForCall[i].ctx, fake.getOwnersArgsForCall[i].in, fake.getOwnersArgsForCall[i].opts

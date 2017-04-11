@@ -43,6 +43,10 @@ type WorkerConfig struct {
 		} `yaml:"fetch_hint"`
 	} `yaml:"pubsub"`
 
+	Trace struct {
+		ProjectName string `yaml:"project_name"`
+	} `yaml:"trace"`
+
 	Metrics struct {
 		SentryDSN     string `yaml:"sentry_dsn"`
 		DatadogAPIKey string `yaml:"datadog_api_key"`
