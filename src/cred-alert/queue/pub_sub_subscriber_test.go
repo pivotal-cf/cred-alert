@@ -15,7 +15,6 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
-	"cloud.google.com/go/trace"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -92,9 +91,7 @@ var _ = Describe("PubSubSubscriber", func() {
 	})
 
 	JustBeforeEach(func() {
-		traceClient, err := trace.NewClient(context.Background(), "my fake project")
-		Expect(err).NotTo(HaveOccurred())
-		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter, traceClient)
+		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter, nil)
 		process = ginkgomon.Invoke(runner)
 	})
 
