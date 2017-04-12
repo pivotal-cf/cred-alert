@@ -3,10 +3,10 @@ package revok
 import (
 	"code.cloudfoundry.org/lager"
 
+	"cloud.google.com/go/trace"
 	"context"
 	"cred-alert/db"
 	"cred-alert/notifications"
-	"cloud.google.com/go/trace"
 )
 
 //go:generate counterfeiter . NotificationComposer

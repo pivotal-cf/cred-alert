@@ -11,10 +11,10 @@ import (
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 
+	"cloud.google.com/go/trace"
 	"cred-alert/crypto"
 	"cred-alert/metrics"
 	"cred-alert/revok"
-	"cloud.google.com/go/trace"
 )
 
 type pushEventProcessor struct {

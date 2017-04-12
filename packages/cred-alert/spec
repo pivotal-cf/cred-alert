@@ -122,4 +122,3 @@ files:
   - red/redpb/*.{go,c} # gosub
   - red/redrunner/*.{go,c} # gosub
   - rolodex/rolodexpb/*.{go,c} # gosub
-  - trace/*.{go,c} # gosub

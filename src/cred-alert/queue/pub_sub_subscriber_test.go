@@ -15,21 +15,21 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
+	"cloud.google.com/go/trace"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"cloud.google.com/go/trace"
 )
 
 var _ = Describe("PubSubSubscriber", func() {
 	var (
-		logger          *lagertest.TestLogger
-		firstMessage    *pubsub.Message
-		secondMessage   *pubsub.Message
-		processor       *queuefakes.FakePubSubProcessor
-		subscription    *pubsub.Subscription
-		topic           *pubsub.Topic
-		client          *pubsub.Client
-		emitter         *metricsfakes.FakeEmitter
+		logger        *lagertest.TestLogger
+		firstMessage  *pubsub.Message
+		secondMessage *pubsub.Message
+		processor     *queuefakes.FakePubSubProcessor
+		subscription  *pubsub.Subscription
+		topic         *pubsub.Topic
+		client        *pubsub.Client
+		emitter       *metricsfakes.FakeEmitter
 
 		psRunner *pubsubrunner.Runner
 		runner   ifrit.Runner
