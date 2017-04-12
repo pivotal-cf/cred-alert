@@ -44,6 +44,10 @@ properties:
     description: |
       PEM-encoded, unencrypted RSA public key used to sign messages
 
+  revok.trace.project_name:
+    description: |
+      The name of the project trace information will be written to.
+
   revok.repository_discovery_interval:
     description: |
       The interval, in Go duration format (e.g. 1m = 1 minute), on which to
