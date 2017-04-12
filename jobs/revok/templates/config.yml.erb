@@ -22,6 +22,10 @@ pubsub:
     subscription: <%= subscription %>
 <% end %>
 
+
+trace:
+  project_name: <%= p("revok.trace.project_name") %>
+
 metrics:
 <% if_p("revok.metrics.datadog_api_key") do |datadog_api_key| %>
   datadog_api_key: <%= datadog_api_key %>
