@@ -6,6 +6,7 @@ import (
 	"context"
 	"cred-alert/db"
 	"cred-alert/notifications"
+	"cloud.google.com/go/trace"
 )
 
 //go:generate counterfeiter . NotificationComposer
@@ -42,6 +43,11 @@ func (n *notificationComposer) ScanAndNotify(
 	startSHA string,
 	stopSHA string,
 ) error {
+	span := trace.FromContext(ctx).NewChild("Scan and Notify")
+	span.SetLabel("Repository", repository)
+	span.SetLabel("Branch", branch)
+	defer span.Finish()
+
 	dbRepository, err := n.repositoryRepository.MustFind(owner, repository)
 	if err != nil {
 		logger.Error("failed-to-find-db-repo", err)

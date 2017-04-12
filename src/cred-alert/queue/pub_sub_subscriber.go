@@ -4,13 +4,12 @@ import (
 	"os"
 
 	"cloud.google.com/go/pubsub"
-	cloudtrace "cloud.google.com/go/trace"
+	"cloud.google.com/go/trace"
 	"code.cloudfoundry.org/lager"
 	"github.com/tedsuo/ifrit"
 	"golang.org/x/net/context"
 
 	"cred-alert/metrics"
-	"trace"
 )
 
 type pubSubSubscriber struct {
@@ -23,7 +22,7 @@ type pubSubSubscriber struct {
 	processFailureCounter metrics.Counter
 	processRetryCounter   metrics.Counter
 
-	traceClient trace.Client
+	traceClient *trace.Client
 }
 
 func NewPubSubSubscriber(
@@ -31,7 +30,7 @@ func NewPubSubSubscriber(
 	subscription *pubsub.Subscription,
 	processor PubSubProcessor,
 	emitter metrics.Emitter,
-	traceClient trace.Client,
+	traceClient *trace.Client,
 ) ifrit.Runner {
 	return &pubSubSubscriber{
 		logger: logger.Session("message-processor", lager.Data{
@@ -59,10 +58,11 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 
 	go func() {
 		errs <- p.subscription.Receive(cctx, func(ctx context.Context, message *pubsub.Message) {
-			span := p.traceClient.NewSpan("/pubsub-receive")
+			span := p.traceClient.NewSpan("Pubsub Receive")
+			span.SetLabel("Message", string(message.Data))
 			defer span.Finish()
 
-			ctx = cloudtrace.NewContext(ctx, span)
+			ctx = trace.NewContext(ctx, span)
 
 			p.processMessage(ctx, message)
 		})

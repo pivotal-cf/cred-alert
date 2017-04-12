@@ -7,7 +7,6 @@ import (
 	"cred-alert/queue"
 	"cred-alert/queue/queuefakes"
 	"os"
-	"trace/tracefakes"
 
 	"cloud.google.com/go/pubsub"
 
@@ -18,11 +17,11 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"cloud.google.com/go/trace"
 )
 
 var _ = Describe("PubSubSubscriber", func() {
 	var (
-		fakeTraceClient *tracefakes.FakeClient
 		logger          *lagertest.TestLogger
 		firstMessage    *pubsub.Message
 		secondMessage   *pubsub.Message
@@ -38,8 +37,6 @@ var _ = Describe("PubSubSubscriber", func() {
 	)
 
 	BeforeEach(func() {
-		fakeTraceClient = new(tracefakes.FakeClient)
-
 		psRunner = &pubsubrunner.Runner{}
 		psRunner.Setup()
 
@@ -95,7 +92,9 @@ var _ = Describe("PubSubSubscriber", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter, fakeTraceClient)
+		traceClient, err := trace.NewClient(context.Background(), "my fake project")
+		Expect(err).NotTo(HaveOccurred())
+		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter, traceClient)
 		process = ginkgomon.Invoke(runner)
 	})
 

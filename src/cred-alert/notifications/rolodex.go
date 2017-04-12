@@ -8,7 +8,6 @@ import (
 	netcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	"cloud.google.com/go/trace"
 	"red/redpb"
 	"rolodex/rolodexpb"
 )
@@ -84,9 +83,6 @@ func (r *rolodex) AddressForRepo(ctx context.Context, logger lager.Logger, owner
 
 	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cancel()
-
-	span := trace.FromContext(ctx).NewChild("/rolodex")
-	defer span.Finish()
 
 	response, err := r.client.GetOwners(ctx, &rolodexpb.GetOwnersRequest{
 		Repository: &redpb.Repository{

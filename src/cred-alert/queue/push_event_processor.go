@@ -14,6 +14,7 @@ import (
 	"cred-alert/crypto"
 	"cred-alert/metrics"
 	"cred-alert/revok"
+	"cloud.google.com/go/trace"
 )
 
 type pushEventProcessor struct {
@@ -42,6 +43,10 @@ func NewPushEventProcessor(
 
 func (h *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
 	logger = logger.Session("processing-push-event")
+
+	span := trace.FromContext(ctx).NewChild("Process Message")
+	span.SetLabel("Message", string(message.Data))
+	defer span.Finish()
 
 	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
 	if err != nil {
