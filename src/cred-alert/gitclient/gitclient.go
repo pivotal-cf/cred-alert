@@ -264,11 +264,9 @@ func (c *client) BranchCredentialCounts(
 	var target *git.Oid
 	var commit *git.Commit
 	var tree *git.Tree
-	var branchName string
 	var blob *git.Blob
 
-	entryCounts := make(map[git.Oid]uint)
-	branchCounts := make(map[string]uint)
+	branchCounter := newBranchCounter(logger, repo, sniffer)
 
 	for {
 		branch, _, err = it.Next()
@@ -291,45 +289,12 @@ func (c *client) BranchCredentialCounts(
 			return nil, err
 		}
 
-		branchName, err = branch.Name()
+		branchName, err := branch.Name()
 		if err != nil {
 			return nil, err
 		}
 
-		err = tree.Walk(func(root string, entry *git.TreeEntry) int {
-			if entry.Type == git.ObjectBlob {
-				if count, ok := entryCounts[*entry.Id]; ok {
-					if count > 0 {
-						branchCounts[branchName] += count
-					}
-					return 0
-				}
-
-				blob, err = repo.LookupBlob(entry.Id)
-				if err != nil {
-					return -1
-				}
-
-				var count uint
-				r := bufio.NewReader(bytes.NewReader(blob.Contents()))
-				mime := mimetype.Mimetype(logger, r)
-				if mime == "" || strings.HasPrefix(mime, "text") {
-					sniffer.Sniff(
-						logger,
-						filescanner.New(r, entry.Name),
-						func(lager.Logger, scanners.Violation) error {
-							count++
-							return nil
-						},
-					)
-				}
-
-				entryCounts[*entry.Id] = count
-				branchCounts[branchName] += count
-			}
-
-			return 0
-		})
+		err = tree.Walk(branchCounter.forBranch(branchName))
 
 		if err != nil {
 			return nil, err
@@ -352,7 +317,7 @@ func (c *client) BranchCredentialCounts(
 		branch.Free()
 	}
 
-	return branchCounts, nil
+	return branchCounter.branchCounts, nil
 }
 
 func objectToTree(repo *git.Repository, sha string) (*git.Tree, error) {
@@ -406,5 +371,62 @@ func newFetchOptions(privateKeyPath, publicKeyPath string) *git.FetchOptions {
 			CredentialsCallback:      credentialsCallback,
 			CertificateCheckCallback: certificateCheckCallback,
 		},
+	}
+}
+
+type branchCounter struct {
+	entryCounts  map[git.Oid]uint
+	branchCounts map[string]uint
+
+	logger  lager.Logger
+	repo    *git.Repository
+	sniffer sniff.Sniffer
+}
+
+func newBranchCounter(logger lager.Logger, repo *git.Repository, sniffer sniff.Sniffer) *branchCounter {
+	return &branchCounter{
+		entryCounts:  make(map[git.Oid]uint),
+		branchCounts: make(map[string]uint),
+
+		logger:  logger,
+		repo:    repo,
+		sniffer: sniffer,
+	}
+}
+
+func (b *branchCounter) forBranch(branchName string) git.TreeWalkCallback {
+	return func(root string, entry *git.TreeEntry) int {
+		if entry.Type == git.ObjectBlob {
+			if count, ok := b.entryCounts[*entry.Id]; ok {
+				if count > 0 {
+					b.branchCounts[branchName] += count
+				}
+				return 0
+			}
+
+			blob, err := b.repo.LookupBlob(entry.Id)
+			if err != nil {
+				return -1
+			}
+
+			var count uint
+			r := bufio.NewReader(bytes.NewReader(blob.Contents()))
+			mime := mimetype.Mimetype(b.logger, r)
+			if mime == "" || strings.HasPrefix(mime, "text") {
+				b.sniffer.Sniff(
+					b.logger,
+					filescanner.New(r, entry.Name),
+					func(lager.Logger, scanners.Violation) error {
+						count++
+						return nil
+					},
+				)
+			}
+
+			b.entryCounts[*entry.Id] = count
+			b.branchCounts[branchName] += count
+		}
+
+		return 0
 	}
 }
