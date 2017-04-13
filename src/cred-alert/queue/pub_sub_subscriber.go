@@ -58,7 +58,7 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 
 	go func() {
 		errs <- p.subscription.Receive(cctx, func(ctx context.Context, message *pubsub.Message) {
-			span := p.traceClient.NewSpan("Pubsub Receive")
+			span := p.traceClient.NewSpan("PubsubReceive")
 			span.SetLabel("Message", string(message.Data))
 			defer span.Finish()
 

@@ -67,10 +67,11 @@ func (c *changeFetcher) Fetch(
 		"repository": name,
 	})
 
-	span := trace.FromContext(ctx).NewChild("Fetch")
+	span := trace.FromContext(ctx).NewChild("changeFetcher.Fetch")
+	defer span.Finish()
+
 	span.SetLabel("Owner", owner)
 	span.SetLabel("Name", name)
-	defer span.Finish()
 
 	repo, found, err := c.repositoryRepository.Find(owner, name)
 	if err != nil {

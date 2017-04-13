@@ -30,7 +30,7 @@ func NewRouter(notifier Notifier, addressBook AddressBook, whitelist Whitelist) 
 func (r *router) Deliver(ctx context.Context, logger lager.Logger, batch []Notification) error {
 	logger = logger.Session("deliver")
 
-	span := trace.FromContext(ctx).NewChild("Deliver")
+	span := trace.FromContext(ctx).NewChild("router.Deliver")
 	defer span.Finish()
 
 	envelopes := r.filterAndGroupByDestination(ctx, logger, batch)

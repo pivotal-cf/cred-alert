@@ -44,9 +44,10 @@ func NewPushEventProcessor(
 func (h *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
 	logger = logger.Session("processing-push-event")
 
-	span := trace.FromContext(ctx).NewChild("Process Message")
-	span.SetLabel("Message", string(message.Data))
+	span := trace.FromContext(ctx).NewChild("pushEventProcessor.Process")
 	defer span.Finish()
+
+	span.SetLabel("Message", string(message.Data))
 
 	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
 	if err != nil {
