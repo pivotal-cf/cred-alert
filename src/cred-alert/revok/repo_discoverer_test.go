@@ -181,7 +181,7 @@ var _ = Describe("RepoDiscoverer", func() {
 		Expect(repo.Name).To(Equal("org-2-repo-1"))
 		Expect(repo.Path).To(Equal(""))
 		Expect(repo.SSHURL).To(Equal("org-2-repo-1-ssh-url"))
-		Expect(repo.Private).To(BeTrue())
+		Expect(repo.Private).To(BeFalse())
 		Expect(repo.DefaultBranch).To(Equal("org-2-repo-1-branch"))
 
 		repo = repositoryRepository.CreateArgsForCall(2)
@@ -205,5 +205,25 @@ var _ = Describe("RepoDiscoverer", func() {
 		Expect(repo.SSHURL).To(Equal("org-1-repo-2-ssh-url"))
 		Expect(repo.Private).To(BeTrue())
 		Expect(repo.DefaultBranch).To(Equal("org-1-repo-2-branch"))
+	})
+
+	It("updates known repositories", func() {
+		Eventually(repositoryRepository.UpdateCallCount).Should(Equal(0))
+		clock.Increment(interval)
+		Eventually(repositoryRepository.UpdateCallCount).Should(Equal(3))
+
+		repo := repositoryRepository.UpdateArgsForCall(0)
+		Expect(repo.Owner).To(Equal("some-org"))
+		Expect(repo.Name).To(Equal("org-1-repo-1"))
+		Expect(repo.Private).To(BeTrue())
+		Expect(repo.DefaultBranch).To(Equal("org-1-repo-1-branch"))
+		Expect(repo.SSHURL).To(Equal("org-1-repo-1-ssh-url"))
+
+		repo = repositoryRepository.UpdateArgsForCall(1)
+		Expect(repo.Owner).To(Equal("some-other-org"))
+		Expect(repo.Name).To(Equal("org-2-repo-1"))
+		Expect(repo.Private).To(BeFalse())
+		Expect(repo.DefaultBranch).To(Equal("org-2-repo-1-branch"))
+		Expect(repo.SSHURL).To(Equal("org-2-repo-1-ssh-url"))
 	})
 })

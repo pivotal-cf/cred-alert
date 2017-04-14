@@ -113,22 +113,30 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 			cancel()
 			return
 		default:
-			if knownRepos.Contains(repo) {
-				continue
-			}
-
-			err = r.repositoryRepository.Create(&db.Repository{
+			dbRepo := &db.Repository{
 				Owner:         repo.Owner,
 				Name:          repo.Name,
 				SSHURL:        repo.SSHURL,
 				Private:       repo.Private,
 				DefaultBranch: repo.DefaultBranch,
+			}
+
+			repoLogger := logger.WithData(lager.Data{
+				"owner":      repo.Owner,
+				"repository": repo.Name,
 			})
+
+			if knownRepos.Contains(repo) {
+				err = r.repositoryRepository.Update(dbRepo)
+				if err != nil {
+					repoLogger.Error("failed-to-update-repository", err)
+				}
+				continue
+			}
+
+			err = r.repositoryRepository.Create(dbRepo)
 			if err != nil {
-				logger.Error("failed-to-create-repository", err, lager.Data{
-					"owner":      repo.Owner,
-					"repository": repo.Name,
-				})
+				repoLogger.Error("failed-to-create-repository", err)
 				continue
 			}
 

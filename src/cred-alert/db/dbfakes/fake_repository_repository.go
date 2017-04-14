@@ -20,7 +20,18 @@ type FakeRepositoryRepository struct {
 	createReturnsOnCall map[int]struct {
 		result1 error
 	}
-	FindStub        func(owner string, name string) (db.Repository, bool, error)
+	UpdateStub        func(*db.Repository) error
+	updateMutex       sync.RWMutex
+	updateArgsForCall []struct {
+		arg1 *db.Repository
+	}
+	updateReturns struct {
+		result1 error
+	}
+	updateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	FindStub        func(owner, name string) (db.Repository, bool, error)
 	findMutex       sync.RWMutex
 	findArgsForCall []struct {
 		owner string
@@ -36,7 +47,7 @@ type FakeRepositoryRepository struct {
 		result2 bool
 		result3 error
 	}
-	MustFindStub        func(owner string, name string) (db.Repository, error)
+	MustFindStub        func(owner, name string) (db.Repository, error)
 	mustFindMutex       sync.RWMutex
 	mustFindArgsForCall []struct {
 		owner string
@@ -98,12 +109,12 @@ type FakeRepositoryRepository struct {
 		result1 []db.Repository
 		result2 error
 	}
-	MarkAsClonedStub        func(string, string, string) error
+	MarkAsClonedStub        func(owner, name, path string) error
 	markAsClonedMutex       sync.RWMutex
 	markAsClonedArgsForCall []struct {
-		arg1 string
-		arg2 string
-		arg3 string
+		owner string
+		name  string
+		path  string
 	}
 	markAsClonedReturns struct {
 		result1 error
@@ -111,11 +122,11 @@ type FakeRepositoryRepository struct {
 	markAsClonedReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ReenableStub        func(string, string) error
+	ReenableStub        func(owner, name string) error
 	reenableMutex       sync.RWMutex
 	reenableArgsForCall []struct {
-		arg1 string
-		arg2 string
+		owner string
+		name  string
 	}
 	reenableReturns struct {
 		result1 error
@@ -183,6 +194,54 @@ func (fake *FakeRepositoryRepository) CreateReturnsOnCall(i int, result1 error) 
 		})
 	}
 	fake.createReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepositoryRepository) Update(arg1 *db.Repository) error {
+	fake.updateMutex.Lock()
+	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
+	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
+		arg1 *db.Repository
+	}{arg1})
+	fake.recordInvocation("Update", []interface{}{arg1})
+	fake.updateMutex.Unlock()
+	if fake.UpdateStub != nil {
+		return fake.UpdateStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.updateReturns.result1
+}
+
+func (fake *FakeRepositoryRepository) UpdateCallCount() int {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return len(fake.updateArgsForCall)
+}
+
+func (fake *FakeRepositoryRepository) UpdateArgsForCall(i int) *db.Repository {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return fake.updateArgsForCall[i].arg1
+}
+
+func (fake *FakeRepositoryRepository) UpdateReturns(result1 error) {
+	fake.UpdateStub = nil
+	fake.updateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepositoryRepository) UpdateReturnsOnCall(i int, result1 error) {
+	fake.UpdateStub = nil
+	if fake.updateReturnsOnCall == nil {
+		fake.updateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -482,18 +541,18 @@ func (fake *FakeRepositoryRepository) NotScannedWithVersionReturnsOnCall(i int, 
 	}{result1, result2}
 }
 
-func (fake *FakeRepositoryRepository) MarkAsCloned(arg1 string, arg2 string, arg3 string) error {
+func (fake *FakeRepositoryRepository) MarkAsCloned(owner string, name string, path string) error {
 	fake.markAsClonedMutex.Lock()
 	ret, specificReturn := fake.markAsClonedReturnsOnCall[len(fake.markAsClonedArgsForCall)]
 	fake.markAsClonedArgsForCall = append(fake.markAsClonedArgsForCall, struct {
-		arg1 string
-		arg2 string
-		arg3 string
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("MarkAsCloned", []interface{}{arg1, arg2, arg3})
+		owner string
+		name  string
+		path  string
+	}{owner, name, path})
+	fake.recordInvocation("MarkAsCloned", []interface{}{owner, name, path})
 	fake.markAsClonedMutex.Unlock()
 	if fake.MarkAsClonedStub != nil {
-		return fake.MarkAsClonedStub(arg1, arg2, arg3)
+		return fake.MarkAsClonedStub(owner, name, path)
 	}
 	if specificReturn {
 		return ret.result1
@@ -510,7 +569,7 @@ func (fake *FakeRepositoryRepository) MarkAsClonedCallCount() int {
 func (fake *FakeRepositoryRepository) MarkAsClonedArgsForCall(i int) (string, string, string) {
 	fake.markAsClonedMutex.RLock()
 	defer fake.markAsClonedMutex.RUnlock()
-	return fake.markAsClonedArgsForCall[i].arg1, fake.markAsClonedArgsForCall[i].arg2, fake.markAsClonedArgsForCall[i].arg3
+	return fake.markAsClonedArgsForCall[i].owner, fake.markAsClonedArgsForCall[i].name, fake.markAsClonedArgsForCall[i].path
 }
 
 func (fake *FakeRepositoryRepository) MarkAsClonedReturns(result1 error) {
@@ -532,17 +591,17 @@ func (fake *FakeRepositoryRepository) MarkAsClonedReturnsOnCall(i int, result1 e
 	}{result1}
 }
 
-func (fake *FakeRepositoryRepository) Reenable(arg1 string, arg2 string) error {
+func (fake *FakeRepositoryRepository) Reenable(owner string, name string) error {
 	fake.reenableMutex.Lock()
 	ret, specificReturn := fake.reenableReturnsOnCall[len(fake.reenableArgsForCall)]
 	fake.reenableArgsForCall = append(fake.reenableArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("Reenable", []interface{}{arg1, arg2})
+		owner string
+		name  string
+	}{owner, name})
+	fake.recordInvocation("Reenable", []interface{}{owner, name})
 	fake.reenableMutex.Unlock()
 	if fake.ReenableStub != nil {
-		return fake.ReenableStub(arg1, arg2)
+		return fake.ReenableStub(owner, name)
 	}
 	if specificReturn {
 		return ret.result1
@@ -559,7 +618,7 @@ func (fake *FakeRepositoryRepository) ReenableCallCount() int {
 func (fake *FakeRepositoryRepository) ReenableArgsForCall(i int) (string, string) {
 	fake.reenableMutex.RLock()
 	defer fake.reenableMutex.RUnlock()
-	return fake.reenableArgsForCall[i].arg1, fake.reenableArgsForCall[i].arg2
+	return fake.reenableArgsForCall[i].owner, fake.reenableArgsForCall[i].name
 }
 
 func (fake *FakeRepositoryRepository) ReenableReturns(result1 error) {
@@ -635,6 +694,8 @@ func (fake *FakeRepositoryRepository) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
 	fake.findMutex.RLock()
 	defer fake.findMutex.RUnlock()
 	fake.mustFindMutex.RLock()

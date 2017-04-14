@@ -16,16 +16,18 @@ const FailedFetchThreshold = 3
 type RepositoryRepository interface {
 	Create(*Repository) error
 
-	Find(owner string, name string) (Repository, bool, error)
-	MustFind(owner string, name string) (Repository, error)
+	Update(*Repository) error
+
+	Find(owner, name string) (Repository, bool, error)
+	MustFind(owner, name string) (Repository, error)
 
 	All() ([]Repository, error)
 	Active() ([]Repository, error)
 	AllForOrganization(string) ([]Repository, error)
 	NotScannedWithVersion(int) ([]Repository, error)
 
-	MarkAsCloned(string, string, string) error
-	Reenable(string, string) error
+	MarkAsCloned(owner, name, path string) error
+	Reenable(owner, name string) error
 	RegisterFailedFetch(lager.Logger, *Repository) error
 }
 
@@ -64,6 +66,18 @@ func (r *repositoryRepository) MustFind(owner string, name string) (Repository, 
 
 func (r *repositoryRepository) Create(repository *Repository) error {
 	return r.db.Create(repository).Error
+}
+
+func (r *repositoryRepository) Update(repository *Repository) error {
+	return r.db.Model(&Repository{}).Where(
+		Repository{Name: repository.Name, Owner: repository.Owner},
+	).Updates(
+		map[string]interface{}{
+			"ssh_url":        repository.SSHURL,
+			"default_branch": repository.DefaultBranch,
+			"private":        repository.Private,
+		},
+	).Error
 }
 
 func (r *repositoryRepository) All() ([]Repository, error) {

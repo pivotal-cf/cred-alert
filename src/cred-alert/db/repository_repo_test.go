@@ -371,4 +371,39 @@ var _ = Describe("RepositoryRepo", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
+
+	Describe("Update", func() {
+		BeforeEach(func() {
+			repository := &db.Repository{
+				Name:          "repo-name",
+				Owner:         "owner-name",
+				SSHURL:        "repo-ssh-url",
+				Private:       true,
+				DefaultBranch: "master",
+			}
+
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("updates a repository", func() {
+			repository := &db.Repository{
+				Name:          "repo-name",
+				Owner:         "owner-name",
+				SSHURL:        "new-ssh-url",
+				Private:       false,
+				DefaultBranch: "some-branch",
+			}
+
+			err := repo.Update(repository)
+			Expect(err).NotTo(HaveOccurred())
+
+			updatedRepo, err := repo.MustFind("owner-name", "repo-name")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(updatedRepo.SSHURL).To(Equal(repository.SSHURL))
+			Expect(updatedRepo.Private).To(Equal(repository.Private))
+			Expect(updatedRepo.DefaultBranch).To(Equal(repository.DefaultBranch))
+		})
+	})
 })

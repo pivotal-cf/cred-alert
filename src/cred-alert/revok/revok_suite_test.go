@@ -181,7 +181,7 @@ var org2Repo1 = revok.GitHubRepository{
 	Owner:         "some-other-org",
 	Name:          "org-2-repo-1",
 	SSHURL:        "org-2-repo-1-ssh-url",
-	Private:       true,
+	Private:       false,
 	DefaultBranch: "org-2-repo-1-branch",
 	RawJSON:       []byte(`{"some-key":"some-value"}`),
 }
