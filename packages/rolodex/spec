@@ -85,6 +85,7 @@ files:
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/oauth/*.{go,c} # gosub
+  - google.golang.org/grpc/grpclb/grpc_lb_v1/*.{go,c} # gosub
   - google.golang.org/grpc/grpclog/*.{go,c} # gosub
   - google.golang.org/grpc/internal/*.{go,c} # gosub
   - google.golang.org/grpc/keepalive/*.{go,c} # gosub
