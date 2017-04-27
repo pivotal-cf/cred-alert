@@ -48,11 +48,16 @@ properties:
     description: |
       The name of the project trace information will be written to.
 
-  revok.repository_discovery_interval:
+  revok.repository_discovery.interval:
     description: |
       The interval, in Go duration format (e.g. 1m = 1 minute), on which to
       query GitHub for repositories.
     default: 10m
+
+  revok.repository_discovery.owners:
+    description: |
+      A list of GitHub organizations and/or users to passively scan.
+    default: []
 
   revok.credential_counter_interval:
     description: |

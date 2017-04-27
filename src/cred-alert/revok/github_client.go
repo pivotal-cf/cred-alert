@@ -25,7 +25,6 @@ type GitHubOrganization struct {
 
 type GitHubClient interface {
 	ListRepositoriesByOrg(lager.Logger, string) ([]GitHubRepository, error)
-	ListOrganizations(lager.Logger) ([]GitHubOrganization, error)
 }
 
 type client struct {
@@ -83,36 +82,4 @@ func (c *client) ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]G
 	}
 
 	return repos, nil
-}
-
-func (c *client) ListOrganizations(logger lager.Logger) ([]GitHubOrganization, error) {
-	logger = logger.Session("list-organizations")
-
-	var orgs []GitHubOrganization
-
-	listOptions := &github.ListOptions{PerPage: 30}
-
-	for {
-		os, resp, err := c.ghClient.Organizations.List(context.TODO(), "", listOptions)
-		if err != nil {
-			logger.Error("failed", err, lager.Data{
-				"fetching-page": listOptions.Page,
-			})
-			return nil, err
-		}
-
-		for _, org := range os {
-			orgs = append(orgs, GitHubOrganization{
-				Name: *org.Login,
-			})
-		}
-
-		if resp.NextPage == 0 {
-			break
-		}
-
-		listOptions.Page = resp.NextPage
-	}
-
-	return orgs, nil
 }

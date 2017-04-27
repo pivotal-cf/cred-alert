@@ -19,6 +19,7 @@ type RepoDiscoverer struct {
 	ghClient             GitHubClient
 	clock                clock.Clock
 	interval             time.Duration
+	orgs                 []string
 	repositoryRepository db.RepositoryRepository
 }
 
@@ -29,6 +30,7 @@ func NewRepoDiscoverer(
 	ghClient GitHubClient,
 	clock clock.Clock,
 	interval time.Duration,
+	orgs []string,
 	repositoryRepository db.RepositoryRepository,
 ) ifrit.Runner {
 	return &RepoDiscoverer{
@@ -38,6 +40,7 @@ func NewRepoDiscoverer(
 		ghClient:             ghClient,
 		clock:                clock,
 		interval:             interval,
+		orgs:                 orgs,
 		repositoryRepository: repositoryRepository,
 	}
 }
@@ -81,15 +84,10 @@ func (r *RepoDiscoverer) work(logger lager.Logger, signals <-chan os.Signal, can
 	logger = logger.Session("work")
 	defer logger.Info("done")
 
-	orgs, err := r.ghClient.ListOrganizations(logger)
-	if err != nil {
-		logger.Error("failed-to-get-github-orgs", err)
-		return
-	}
-
 	var repos []GitHubRepository
-	for _, o := range orgs {
-		rs, err := r.ghClient.ListRepositoriesByOrg(logger, o.Name)
+
+	for _, org := range r.orgs {
+		rs, err := r.ghClient.ListRepositoriesByOrg(logger, org)
 		if err != nil {
 			logger.Error("failed-to-get-github-repositories-by-org", err)
 			return

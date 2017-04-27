@@ -23,19 +23,6 @@ type FakeGitHubClient struct {
 		result1 []revok.GitHubRepository
 		result2 error
 	}
-	ListOrganizationsStub        func(lager.Logger) ([]revok.GitHubOrganization, error)
-	listOrganizationsMutex       sync.RWMutex
-	listOrganizationsArgsForCall []struct {
-		arg1 lager.Logger
-	}
-	listOrganizationsReturns struct {
-		result1 []revok.GitHubOrganization
-		result2 error
-	}
-	listOrganizationsReturnsOnCall map[int]struct {
-		result1 []revok.GitHubOrganization
-		result2 error
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -92,64 +79,11 @@ func (fake *FakeGitHubClient) ListRepositoriesByOrgReturnsOnCall(i int, result1 
 	}{result1, result2}
 }
 
-func (fake *FakeGitHubClient) ListOrganizations(arg1 lager.Logger) ([]revok.GitHubOrganization, error) {
-	fake.listOrganizationsMutex.Lock()
-	ret, specificReturn := fake.listOrganizationsReturnsOnCall[len(fake.listOrganizationsArgsForCall)]
-	fake.listOrganizationsArgsForCall = append(fake.listOrganizationsArgsForCall, struct {
-		arg1 lager.Logger
-	}{arg1})
-	fake.recordInvocation("ListOrganizations", []interface{}{arg1})
-	fake.listOrganizationsMutex.Unlock()
-	if fake.ListOrganizationsStub != nil {
-		return fake.ListOrganizationsStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.listOrganizationsReturns.result1, fake.listOrganizationsReturns.result2
-}
-
-func (fake *FakeGitHubClient) ListOrganizationsCallCount() int {
-	fake.listOrganizationsMutex.RLock()
-	defer fake.listOrganizationsMutex.RUnlock()
-	return len(fake.listOrganizationsArgsForCall)
-}
-
-func (fake *FakeGitHubClient) ListOrganizationsArgsForCall(i int) lager.Logger {
-	fake.listOrganizationsMutex.RLock()
-	defer fake.listOrganizationsMutex.RUnlock()
-	return fake.listOrganizationsArgsForCall[i].arg1
-}
-
-func (fake *FakeGitHubClient) ListOrganizationsReturns(result1 []revok.GitHubOrganization, result2 error) {
-	fake.ListOrganizationsStub = nil
-	fake.listOrganizationsReturns = struct {
-		result1 []revok.GitHubOrganization
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeGitHubClient) ListOrganizationsReturnsOnCall(i int, result1 []revok.GitHubOrganization, result2 error) {
-	fake.ListOrganizationsStub = nil
-	if fake.listOrganizationsReturnsOnCall == nil {
-		fake.listOrganizationsReturnsOnCall = make(map[int]struct {
-			result1 []revok.GitHubOrganization
-			result2 error
-		})
-	}
-	fake.listOrganizationsReturnsOnCall[i] = struct {
-		result1 []revok.GitHubOrganization
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeGitHubClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.listRepositoriesByOrgMutex.RLock()
 	defer fake.listRepositoriesByOrgMutex.RUnlock()
-	fake.listOrganizationsMutex.RLock()
-	defer fake.listOrganizationsMutex.RUnlock()
 	return fake.invocations
 }
 

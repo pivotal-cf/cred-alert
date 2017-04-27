@@ -23,9 +23,8 @@ type WorkerOpts struct {
 }
 
 type WorkerConfig struct {
-	WorkDir                     string        `yaml:"work_dir"`
-	RepositoryDiscoveryInterval time.Duration `yaml:"repository_discovery_interval"`
-	CredentialCounterInterval   time.Duration `yaml:"credential_counter_interval"`
+	WorkDir                   string        `yaml:"work_dir"`
+	CredentialCounterInterval time.Duration `yaml:"credential_counter_interval"`
 
 	Whitelist []string `yaml:"whitelist"`
 
@@ -34,6 +33,11 @@ type WorkerConfig struct {
 		PrivateKeyPath string `yaml:"private_key_path"`
 		PublicKeyPath  string `yaml:"public_key_path"`
 	} `yaml:"github"`
+
+	RepositoryDiscovery struct {
+		Interval time.Duration `yaml:"interval"`
+		Owners   []string      `yaml:"owners"`
+	} `yaml:"repository_discovery"`
 
 	PubSub struct {
 		ProjectName   string `yaml:"project_name"`

@@ -29,6 +29,7 @@ var _ = Describe("RepoDiscoverer", func() {
 		workdir              string
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		currentRepositoryID  uint
+		orgs                 []string
 
 		runner  ifrit.Runner
 		process ifrit.Process
@@ -38,6 +39,7 @@ var _ = Describe("RepoDiscoverer", func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
 		clock = fakeclock.NewFakeClock(time.Now())
 		interval = 1 * time.Hour
+		orgs = []string{"some-org", "some-other-org"}
 
 		cloneMsgCh = make(chan revok.CloneMsg, 10)
 
@@ -46,33 +48,16 @@ var _ = Describe("RepoDiscoverer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		ghClient = &revokfakes.FakeGitHubClient{}
-		ghClient.ListOrganizationsStub = func(lager.Logger) ([]revok.GitHubOrganization, error) {
-			return []revok.GitHubOrganization{
-				{
-					Name: "some-org",
-				},
-				{
-					Name: "some-other-org",
-				},
-			}, nil
-		}
-
 		ghClient.ListRepositoriesByOrgStub = func(l lager.Logger, orgName string) ([]revok.GitHubRepository, error) {
-			switch ghClient.ListOrganizationsCallCount() {
+			switch ghClient.ListRepositoriesByOrgCallCount() {
 			case 1:
-				switch orgName {
-				case "some-org":
-					return []revok.GitHubRepository{org1Repo1}, nil
-				case "some-other-org":
-					return []revok.GitHubRepository{org2Repo1, org2Repo2}, nil
-				}
+				return []revok.GitHubRepository{org1Repo1}, nil
 			case 2:
-				switch orgName {
-				case "some-org":
-					return []revok.GitHubRepository{org1Repo1, org1Repo2}, nil
-				case "some-other-org":
-					return []revok.GitHubRepository{org2Repo1, org2Repo2}, nil
-				}
+				return []revok.GitHubRepository{org2Repo1, org2Repo2}, nil
+			case 3:
+				return []revok.GitHubRepository{org1Repo1, org1Repo2}, nil
+			case 4:
+				return []revok.GitHubRepository{org2Repo1, org2Repo2}, nil
 			}
 
 			panic("need more stubs")
@@ -119,6 +104,7 @@ var _ = Describe("RepoDiscoverer", func() {
 			ghClient,
 			clock,
 			interval,
+			orgs,
 			repositoryRepository,
 		)
 		process = ginkgomon.Invoke(runner)
@@ -129,16 +115,12 @@ var _ = Describe("RepoDiscoverer", func() {
 		os.RemoveAll(workdir)
 	})
 
-	It("does work immediately on start", func() {
-		Eventually(ghClient.ListOrganizationsCallCount).Should(Equal(1))
-	})
-
 	It("does work once per interval", func() {
-		Eventually(ghClient.ListOrganizationsCallCount).Should(Equal(1))
-		Consistently(ghClient.ListOrganizationsCallCount).Should(Equal(1))
+		Eventually(ghClient.ListRepositoriesByOrgCallCount).Should(Equal(2))
+		Consistently(ghClient.ListRepositoriesByOrgCallCount).Should(Equal(2))
 		clock.Increment(interval)
-		Eventually(ghClient.ListOrganizationsCallCount).Should(Equal(2))
-		Consistently(ghClient.ListOrganizationsCallCount).Should(Equal(2))
+		Eventually(ghClient.ListRepositoriesByOrgCallCount).Should(Equal(4))
+		Consistently(ghClient.ListRepositoriesByOrgCallCount).Should(Equal(4))
 	})
 
 	It("puts a job on the jobs channel for each new repository", func() {

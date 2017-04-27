@@ -1,11 +1,14 @@
 ---
 work_dir: <%= p("revok.work_dir") %>
-repository_discovery_interval: <%= p("revok.repository_discovery_interval") %>
 credential_counter_interval: <%= p("revok.credential_counter_interval") %>
 
 <% if_p("revok.ignore_patterns") do |ignore_patterns| %>
 whitelist: <%= ignore_patterns %>
 <% end %>
+
+repository_discovery:
+  interval: <%= p("revok.repository_discovery.interval") %>
+  owners: <%= p("revok.repository_discovery.owners") %>
 
 <% if_p("revok.github.access_token", "revok.github.private_key", "revok.github.public_key") do |access_token, _, _| %>
 github:

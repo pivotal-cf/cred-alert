@@ -326,7 +326,8 @@ func main() {
 			cloneMsgCh,
 			ghClient,
 			clk,
-			cfg.RepositoryDiscoveryInterval,
+			cfg.RepositoryDiscovery.Interval,
+			cfg.RepositoryDiscovery.Owners,
 			repositoryRepository,
 		)
 
