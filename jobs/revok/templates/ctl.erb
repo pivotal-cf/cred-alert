@@ -30,6 +30,8 @@ case $1 in
 
     echo $$ > $PIDFILE
 
+    ulimit -n 65536
+
     exec chpst -u vcap:vcap /var/vcap/packages/cred-alert/bin/revok-worker \
         --config-file /var/vcap/jobs/revok/config/config.yml \
         1>>$LOG_DIR/revok.stdout.log \
