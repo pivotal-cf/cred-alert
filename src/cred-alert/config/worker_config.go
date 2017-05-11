@@ -35,8 +35,9 @@ type WorkerConfig struct {
 	} `yaml:"github"`
 
 	RepositoryDiscovery struct {
-		Interval time.Duration `yaml:"interval"`
-		Owners   []string      `yaml:"owners"`
+		Interval      time.Duration `yaml:"interval"`
+		Organizations []string      `yaml:"organizations"`
+		Users         []string      `yaml:"users"`
 	} `yaml:"repository_discovery"`
 
 	PubSub struct {

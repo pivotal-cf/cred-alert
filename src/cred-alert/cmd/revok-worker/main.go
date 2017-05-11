@@ -327,7 +327,8 @@ func main() {
 			ghClient,
 			clk,
 			cfg.RepositoryDiscovery.Interval,
-			cfg.RepositoryDiscovery.Owners,
+			cfg.RepositoryDiscovery.Organizations,
+			cfg.RepositoryDiscovery.Users,
 			repositoryRepository,
 		)
 

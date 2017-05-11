@@ -54,9 +54,14 @@ properties:
       query GitHub for repositories.
     default: 10m
 
-  revok.repository_discovery.owners:
+  revok.repository_discovery.organizations:
     description: |
-      A list of GitHub organizations and/or users to passively scan.
+      A list of GitHub organizations to passively scan.
+    default: []
+
+  revok.repository_discovery.users:
+    description: |
+      A list of GitHub users to passively scan.
     default: []
 
   revok.credential_counter_interval:

@@ -25,6 +25,7 @@ type GitHubOrganization struct {
 
 type GitHubClient interface {
 	ListRepositoriesByOrg(lager.Logger, string) ([]GitHubRepository, error)
+	ListRepositoriesByUser(lager.Logger, string) ([]GitHubRepository, error)
 }
 
 type client struct {
@@ -50,6 +51,51 @@ func (c *client) ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]G
 
 	for {
 		rs, resp, err := c.ghClient.Repositories.ListByOrg(context.TODO(), orgName, opts)
+		if err != nil {
+			logger.Error("failed", err, lager.Data{
+				"fetching-page": opts.ListOptions.Page,
+			})
+			return nil, err
+		}
+
+		for _, repo := range rs {
+			rawJSONBytes, err := json.Marshal(repo)
+			if err != nil {
+				logger.Error("failed-to-marshal-json", err)
+				return nil, err
+			}
+
+			repos = append(repos, GitHubRepository{
+				Name:          *repo.Name,
+				Owner:         *repo.Owner.Login,
+				SSHURL:        *repo.SSHURL,
+				Private:       *repo.Private,
+				DefaultBranch: *repo.DefaultBranch,
+				RawJSON:       rawJSONBytes,
+			})
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opts.ListOptions.Page = resp.NextPage
+	}
+
+	return repos, nil
+}
+
+func (c *client) ListRepositoriesByUser(logger lager.Logger, userName string) ([]GitHubRepository, error) {
+	logger = logger.Session("list-repositories-by-user")
+
+	opts := &github.RepositoryListOptions{
+		ListOptions: github.ListOptions{PerPage: 30},
+	}
+
+	var repos []GitHubRepository
+
+	for {
+		rs, resp, err := c.ghClient.Repositories.List(context.TODO(), userName, opts)
 		if err != nil {
 			logger.Error("failed", err, lager.Data{
 				"fetching-page": opts.ListOptions.Page,

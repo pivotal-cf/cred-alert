@@ -8,7 +8,8 @@ whitelist: <%= ignore_patterns %>
 
 repository_discovery:
   interval: <%= p("revok.repository_discovery.interval") %>
-  owners: <%= p("revok.repository_discovery.owners") %>
+  organizations: <%= p("revok.repository_discovery.organizations") %>
+  users: <%= p("revok.repository_discovery.users") %>
 
 <% if_p("revok.github.access_token", "revok.github.private_key", "revok.github.public_key") do |access_token, _, _| %>
 github:

@@ -194,3 +194,12 @@ var org2Repo2 = revok.GitHubRepository{
 	DefaultBranch: "org-2-repo-2-branch",
 	RawJSON:       []byte(`{"some-key":"some-value"}`),
 }
+
+var userRepo = revok.GitHubRepository{
+	Owner:         "a-user",
+	Name:          "a-user-repo",
+	SSHURL:        "a-user-repo-ssh-url",
+	Private:       false,
+	DefaultBranch: "a-user-repo-branch",
+	RawJSON:       []byte(`{"some-key":"some-value"}`),
+}
