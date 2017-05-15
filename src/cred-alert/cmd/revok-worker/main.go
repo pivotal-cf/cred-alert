@@ -19,9 +19,11 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/google/go-github/github"
 	flags "github.com/jessevdk/go-flags"
+	"github.com/pivotal-cf/paraphernalia/operate/admin"
+	"github.com/pivotal-cf/paraphernalia/secure/tlsconfig"
+	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
-	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
 	"golang.org/x/net/trace"
 	"golang.org/x/oauth2"
@@ -41,9 +43,14 @@ import (
 	"cred-alert/revokpb"
 	"cred-alert/search"
 	"cred-alert/sniff"
-	"red/redrunner"
 	"rolodex/rolodexpb"
 )
+
+var info = admin.ServiceInfo{
+	Name:        "revok",
+	Description: "A service which fetches new Git commits and scans them for credentials.",
+	Team:        "PCF Security Enablement",
+}
 
 func main() {
 	var cfg *config.WorkerConfig
@@ -143,10 +150,12 @@ func main() {
 
 	rolodexServerAddr := fmt.Sprintf("%s:%d", cfg.Rolodex.ServerAddress, cfg.Rolodex.ServerPort)
 
-	transportCreds := credentials.NewTLS(&tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		RootCAs:      caCertPool,
-	})
+	tlsConfig := tlsconfig.Build(
+		tlsconfig.WithPivotalDefaults(),
+		tlsconfig.WithIdentity(certificate),
+	)
+
+	transportCreds := credentials.NewTLS(tlsConfig.Client(tlsconfig.WithAuthority(caCertPool)))
 
 	traceClient, err := cloudtrace.NewClient(context.Background(), cfg.Trace.ProjectName)
 	if err != nil {
@@ -250,29 +259,34 @@ func main() {
 		sniffer,
 	)
 
+	debug := admin.Runner(
+		"6060",
+		admin.WithInfo(info),
+		admin.WithUptime(),
+	)
+
 	members := []grouper.Member{
 		{"cloner", cloner},
 		{"dirscan-updater", dirscanUpdater},
 		{"stats-reporter", statsReporter},
 		{"head-credential-counter", headCredentialCounter},
 		{"change-schedule-runner", changeScheduleRunner},
-		{"debug", http_server.New("127.0.0.1:6060", debugHandler())},
+		{"debug", debug},
 	}
 
 	looper := gitclient.NewLooper()
 	searcher := search.NewSearcher(repositoryRepository, looper)
+	handler := revok.NewServer(logger, searcher, repositoryRepository, branchRepository)
 
-	grpcServer := redrunner.NewGRPCServer(
+	serverTls := tlsConfig.Server(tlsconfig.WithClientAuthentication(caCertPool))
+
+	grpcServer := grpcrunner.New(
 		logger,
 		fmt.Sprintf("%s:%d", cfg.API.BindIP, cfg.API.BindPort),
-		&tls.Config{
-			ClientAuth:   tls.RequireAndVerifyClientCert,
-			Certificates: []tls.Certificate{certificate},
-			ClientCAs:    caCertPool,
-		},
 		func(server *grpc.Server) {
-			revokpb.RegisterRevokServer(server, revok.NewServer(logger, searcher, repositoryRepository, branchRepository))
+			revokpb.RegisterRevokServer(server, handler)
 		},
+		grpc.Creds(credentials.NewTLS(serverTls)),
 	)
 
 	members = append(members, grouper.Member{
