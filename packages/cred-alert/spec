@@ -62,6 +62,9 @@ files:
   - github.com/jinzhu/gorm/*.{go,c} # gosub
   - github.com/jinzhu/inflection/*.{go,c} # gosub
   - github.com/oklog/ulid/*.{go,c} # gosub
+  - github.com/pivotal-cf/paraphernalia/operate/admin/*.{go,c} # gosub
+  - github.com/pivotal-cf/paraphernalia/secure/tlsconfig/*.{go,c} # gosub
+  - github.com/pivotal-cf/paraphernalia/serve/grpcrunner/*.{go,c} # gosub
   - github.com/pivotal-cf/paraphernalia/serve/requestid/*.{go,c} # gosub
   - github.com/robfig/cron/*.{go,c} # gosub
   - github.com/satori/go.uuid/*.{go,c} # gosub
@@ -121,5 +124,4 @@ files:
   - gopkg.in/libgit2/git2go.v24/*.{go,c} # gosub
   - gopkg.in/yaml.v2/*.{go,c} # gosub
   - red/redpb/*.{go,c} # gosub
-  - red/redrunner/*.{go,c} # gosub
   - rolodex/rolodexpb/*.{go,c} # gosub
