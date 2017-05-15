@@ -62,24 +62,15 @@ func (c *changeFetcher) Fetch(
 	name string,
 	reenable bool,
 ) error {
-	repoLogger := logger.WithData(lager.Data{
-		"owner":      owner,
-		"repository": name,
-	})
-
-	span := trace.FromContext(ctx).NewChild("changeFetcher.Fetch")
-	defer span.Finish()
-
-	span.SetLabel("Owner", owner)
-	span.SetLabel("Name", name)
+	logger = logger.Session("fetch-changes")
 
 	repo, found, err := c.repositoryRepository.Find(owner, name)
 	if err != nil {
-		repoLogger.Error("failed-to-find-repository", err)
+		logger.Error("failed-to-find-repository", err)
 		return err
 	}
 
-	shouldFetch, err := c.shouldFetch(repoLogger, repo, found, reenable)
+	shouldFetch, err := c.shouldFetch(logger, repo, found, reenable)
 	if err != nil {
 		return err
 	}
@@ -88,26 +79,28 @@ func (c *changeFetcher) Fetch(
 		return nil
 	}
 
-	repoLogger = repoLogger.WithData(lager.Data{
+	logger = logger.WithData(lager.Data{
 		"path": repo.Path,
 	})
 
 	var changes map[string][]string
 	var fetchErr error
-	c.fetchTimer.Time(repoLogger, func() {
+	span := trace.FromContext(ctx).NewChild("fetch-changes")
+	c.fetchTimer.Time(logger, func() {
 		changes, fetchErr = c.gitClient.Fetch(repo.Path)
 	})
+	span.Finish()
 
-	if err := c.registerFetchResult(repoLogger, repo, fetchErr, changes); err != nil {
+	if err := c.registerFetchResult(logger, repo, fetchErr, changes); err != nil {
 		return err
 	}
 
-	return c.scanFetch(ctx, repoLogger, repo, changes)
+	return c.scanFetch(ctx, logger, repo, changes)
 }
 
-func (c *changeFetcher) shouldFetch(repoLogger lager.Logger, repo db.Repository, found bool, reenable bool) (bool, error) {
+func (c *changeFetcher) shouldFetch(logger lager.Logger, repo db.Repository, found bool, reenable bool) (bool, error) {
 	if !found {
-		repoLogger.Info("skipping-fetch-of-unknown-repo")
+		logger.Info("skipping-fetch-of-unknown-repo")
 		return false, nil
 	}
 
@@ -117,13 +110,13 @@ func (c *changeFetcher) shouldFetch(repoLogger lager.Logger, repo db.Repository,
 				return false, err
 			}
 		} else {
-			repoLogger.Info("skipping-fetch-of-disabled-repo")
+			logger.Info("skipping-fetch-of-disabled-repo")
 			return false, nil
 		}
 	}
 
 	if !repo.Cloned {
-		repoLogger.Info("skipping-fetch-of-uncloned-repo")
+		logger.Info("skipping-fetch-of-uncloned-repo")
 		return false, nil
 	}
 

@@ -310,11 +310,12 @@ func main() {
 		crypto.NewRSAVerifier(publicKey),
 		emitter,
 		clk,
+		traceClient,
 	)
 
 	members = append(members, grouper.Member{
 		Name:   "github-hint-handler",
-		Runner: queue.NewPubSubSubscriber(logger, subscription, pushEventProcessor, emitter, traceClient),
+		Runner: queue.NewPubSubSubscriber(logger, subscription, pushEventProcessor, emitter),
 	})
 
 	if cfg.GitHub.AccessToken != "" {

@@ -61,7 +61,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 		fakeClock = fakeclock.NewFakeClock(now)
 
-		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, verifier, emitter, fakeClock)
+		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, verifier, emitter, fakeClock, nil)
 	})
 
 	It("verifies the signature", func() {

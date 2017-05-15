@@ -91,7 +91,7 @@ var _ = Describe("PubSubSubscriber", func() {
 	})
 
 	JustBeforeEach(func() {
-		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter, nil)
+		runner = queue.NewPubSubSubscriber(logger, subscription, processor, emitter)
 		process = ginkgomon.Invoke(runner)
 	})
 

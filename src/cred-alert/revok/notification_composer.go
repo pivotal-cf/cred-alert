@@ -1,10 +1,11 @@
 package revok
 
 import (
-	"code.cloudfoundry.org/lager"
+	"context"
 
 	"cloud.google.com/go/trace"
-	"context"
+	"code.cloudfoundry.org/lager"
+
 	"cred-alert/db"
 	"cred-alert/notifications"
 )
@@ -43,11 +44,6 @@ func (n *notificationComposer) ScanAndNotify(
 	startSHA string,
 	stopSHA string,
 ) error {
-	span := trace.FromContext(ctx).NewChild("notificationComposer.ScanAndNotify")
-	defer span.Finish()
-
-	span.SetLabel("Repository", repository)
-	span.SetLabel("Branch", branch)
 
 	dbRepository, err := n.repositoryRepository.MustFind(owner, repository)
 	if err != nil {
@@ -55,10 +51,13 @@ func (n *notificationComposer) ScanAndNotify(
 		return err
 	}
 
+	scanSpan := trace.FromContext(ctx).NewChild("scanning")
+	scanSpan.SetLabel("branch", branch)
 	credentials, err := n.scanner.Scan(logger, owner, repository, scannedOids, branch, startSHA, stopSHA)
 	if err != nil {
 		return err
 	}
+	scanSpan.Finish()
 
 	var batch []notifications.Notification
 

@@ -8,10 +8,10 @@ import (
 	"errors"
 
 	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/trace"
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 
-	"cloud.google.com/go/trace"
 	"cred-alert/crypto"
 	"cred-alert/metrics"
 	"cred-alert/revok"
@@ -21,6 +21,7 @@ type pushEventProcessor struct {
 	changeFetcher revok.ChangeFetcher
 	verifier      crypto.Verifier
 	clock         clock.Clock
+	traceClient   *trace.Client
 
 	verifyFailedCounter metrics.Counter
 	endToEndGauge       metrics.Gauge
@@ -31,11 +32,14 @@ func NewPushEventProcessor(
 	verifier crypto.Verifier,
 	emitter metrics.Emitter,
 	clock clock.Clock,
+	traceClient *trace.Client,
 ) *pushEventProcessor {
 	return &pushEventProcessor{
-		changeFetcher:       changeFetcher,
-		verifier:            verifier,
-		clock:               clock,
+		changeFetcher: changeFetcher,
+		verifier:      verifier,
+		clock:         clock,
+		traceClient:   traceClient,
+
 		verifyFailedCounter: emitter.Counter("queue.push_event_processor.verify.failed"),
 		endToEndGauge:       emitter.Gauge("queue.end-to-end.duration"),
 	}
@@ -44,10 +48,9 @@ func NewPushEventProcessor(
 func (h *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
 	logger = logger.Session("processing-push-event")
 
-	span := trace.FromContext(ctx).NewChild("pushEventProcessor.Process")
+	span := h.traceClient.NewSpan("io.pivotal.red.revok/CodePush")
 	defer span.Finish()
-
-	span.SetLabel("Message", string(message.Data))
+	ctx = trace.NewContext(ctx, span)
 
 	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
 	if err != nil {
@@ -82,9 +85,11 @@ func (h *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, m
 	}
 
 	logger = logger.WithData(lager.Data{
-		"repository": p.Repository,
 		"owner":      p.Owner,
+		"repository": p.Repository,
 	})
+	span.SetLabel("owner", p.Owner)
+	span.SetLabel("repository", p.Repository)
 
 	err = h.changeFetcher.Fetch(ctx, logger, p.Owner, p.Repository, true)
 	if err != nil {
