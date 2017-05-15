@@ -2,6 +2,7 @@ package notifications_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -76,7 +77,12 @@ var _ = Describe("Slack Notifier", func() {
 	Describe("sending a notification", func() {
 		var (
 			envelope notifications.Envelope
+			ctx      context.Context
 		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+		})
 
 		Context("when no notifications are given", func() {
 			BeforeEach(func() {
@@ -84,12 +90,12 @@ var _ = Describe("Slack Notifier", func() {
 			})
 
 			It("does not return an error", func() {
-				sendErr := notifier.Send(logger, envelope)
+				sendErr := notifier.Send(ctx, logger, envelope)
 				Expect(sendErr).NotTo(HaveOccurred())
 			})
 
 			It("doesn't send anything to the server", func() {
-				notifier.Send(logger, envelope)
+				notifier.Send(ctx, logger, envelope)
 				Expect(server.ReceivedRequests()).Should(HaveLen(0))
 			})
 		})
@@ -115,12 +121,12 @@ var _ = Describe("Slack Notifier", func() {
 			})
 
 			It("does not return an error", func() {
-				sendErr := notifier.Send(logger, envelope)
+				sendErr := notifier.Send(ctx, logger, envelope)
 				Expect(sendErr).NotTo(HaveOccurred())
 			})
 
 			It("sends a message to slack", func() {
-				notifier.Send(logger, envelope)
+				notifier.Send(ctx, logger, envelope)
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 		})
@@ -152,12 +158,12 @@ var _ = Describe("Slack Notifier", func() {
 			})
 
 			It("does not return an error", func() {
-				sendErr := notifier.Send(logger, envelope)
+				sendErr := notifier.Send(ctx, logger, envelope)
 				Expect(sendErr).NotTo(HaveOccurred())
 			})
 
 			It("sends a message to slack", func() {
-				notifier.Send(logger, envelope)
+				notifier.Send(ctx, logger, envelope)
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
 			})
 		})
@@ -182,7 +188,7 @@ var _ = Describe("Slack Notifier", func() {
 					LineNumber: 123,
 				}
 
-				err := notifier.Send(logger, envelop(notification))
+				err := notifier.Send(ctx, logger, envelop(notification))
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(server.ReceivedRequests()).Should(HaveLen(1))
@@ -223,7 +229,7 @@ var _ = Describe("Slack Notifier", func() {
 						LineNumber: 123,
 					}
 
-					err := notifier.Send(logger, envelop(notification))
+					err := notifier.Send(ctx, logger, envelop(notification))
 					Expect(err).NotTo(HaveOccurred())
 
 					close(done)
@@ -283,7 +289,7 @@ var _ = Describe("Slack Notifier", func() {
 						LineNumber: 123,
 					}
 
-					err := notifier.Send(logger, envelop(notification))
+					err := notifier.Send(ctx, logger, envelop(notification))
 					Expect(err).To(MatchError(ContainSubstring("slack applied back pressure")))
 
 					close(done)
@@ -325,12 +331,12 @@ var _ = Describe("Slack Notifier", func() {
 			})
 
 			It("returns an error", func() {
-				sendErr := notifier.Send(logger, envelope)
+				sendErr := notifier.Send(ctx, logger, envelope)
 				Expect(sendErr).To(MatchError(ContainSubstring("temporary disaster")))
 			})
 
 			It("retries up to 3 times", func() {
-				notifier.Send(logger, envelope)
+				notifier.Send(ctx, logger, envelope)
 				Expect(fakeHTTPClient.DoCallCount()).To(Equal(3))
 			})
 		})
@@ -365,12 +371,12 @@ var _ = Describe("Slack Notifier", func() {
 			})
 
 			It("returns no error", func() {
-				sendErr := notifier.Send(logger, envelope)
+				sendErr := notifier.Send(ctx, logger, envelope)
 				Expect(sendErr).ToNot(HaveOccurred())
 			})
 
 			It("retries up to 3 times", func() {
-				notifier.Send(logger, envelope)
+				notifier.Send(ctx, logger, envelope)
 				Expect(fakeHTTPClient.DoCallCount()).To(Equal(3))
 			})
 		})
@@ -396,12 +402,12 @@ var _ = Describe("Slack Notifier", func() {
 			})
 
 			It("returns an error", func() {
-				sendErr := notifier.Send(logger, envelope)
+				sendErr := notifier.Send(ctx, logger, envelope)
 				Expect(sendErr).To(MatchError(ContainSubstring("fatal disaster")))
 			})
 
 			It("does not retry", func() {
-				notifier.Send(logger, envelope)
+				notifier.Send(ctx, logger, envelope)
 				Expect(fakeHTTPClient.DoCallCount()).To(Equal(1))
 			})
 		})

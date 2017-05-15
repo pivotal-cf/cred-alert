@@ -89,17 +89,17 @@ var _ = Describe("Router", func() {
 
 			Expect(notifier.SendCallCount()).To(Equal(3))
 
-			_, envelope := notifier.SendArgsForCall(0)
+			_, _, envelope := notifier.SendArgsForCall(0)
 			Expect(envelope.Address.URL).To(Equal("https://a.example.com"))
 			Expect(envelope.Address.Channel).To(Equal("channel-a"))
 			Expect(envelope.Contents).To(ConsistOf(note1))
 
-			_, envelope = notifier.SendArgsForCall(1)
+			_, _, envelope = notifier.SendArgsForCall(1)
 			Expect(envelope.Address.URL).To(Equal("https://a.example.com"))
 			Expect(envelope.Address.Channel).To(Equal("channel-b"))
 			Expect(envelope.Contents).To(ConsistOf(note1, note2))
 
-			_, envelope = notifier.SendArgsForCall(2)
+			_, _, envelope = notifier.SendArgsForCall(2)
 			Expect(envelope.Address.URL).To(Equal("https://b.example.com"))
 			Expect(envelope.Address.Channel).To(Equal("channel-a"))
 			Expect(envelope.Contents).To(ConsistOf(note3))
@@ -133,7 +133,7 @@ var _ = Describe("Router", func() {
 
 			Expect(notifier.SendCallCount()).To(Equal(1))
 
-			_, envelope := notifier.SendArgsForCall(0)
+			_, _, envelope := notifier.SendArgsForCall(0)
 			Expect(envelope.Contents).To(ConsistOf(note1))
 
 			Expect(whitelist.ShouldSkipNotificationCallCount()).To(Equal(2))

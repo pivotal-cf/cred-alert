@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/lager"
@@ -9,7 +10,7 @@ import (
 //go:generate counterfeiter . Notifier
 
 type Notifier interface {
-	Send(lager.Logger, Envelope) error
+	Send(context.Context, lager.Logger, Envelope) error
 }
 
 type Envelope struct {

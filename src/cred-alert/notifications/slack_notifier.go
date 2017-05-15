@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,7 +49,7 @@ func NewSlackNotifier(clock clock.Clock, client HTTPClient, formatter SlackNotif
 
 const maxAttempts = 3
 
-func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
+func (n *slackNotifier) Send(ctx context.Context, logger lager.Logger, envelope Envelope) error {
 	logger = logger.Session("send-notification", lager.Data{
 		"channel": envelope.Address.Channel,
 	})
@@ -67,7 +68,7 @@ func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
 			return err
 		}
 
-		err = n.send(logger, envelope.Address.URL, body)
+		err = n.send(ctx, logger, envelope.Address.URL, body)
 		if err != nil {
 			return err
 		}
@@ -78,11 +79,11 @@ func (n *slackNotifier) Send(logger lager.Logger, envelope Envelope) error {
 	return nil
 }
 
-func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error {
+func (n *slackNotifier) send(ctx context.Context, logger lager.Logger, url string, body []byte) error {
 	var sendErr error
 
 	for attempts := 0; attempts < maxAttempts; attempts++ {
-		retry, err := n.makeSingleAttempt(logger, attempts, url, body)
+		retry, err := n.makeSingleAttempt(ctx, logger, attempts, url, body)
 		if err == nil {
 			return nil
 		}
@@ -100,13 +101,14 @@ func (n *slackNotifier) send(logger lager.Logger, url string, body []byte) error
 	return err
 }
 
-func (n *slackNotifier) makeSingleAttempt(logger lager.Logger, currentAttempt int, url string, body []byte) (bool, error) {
+func (n *slackNotifier) makeSingleAttempt(ctx context.Context, logger lager.Logger, currentAttempt int, url string, body []byte) (bool, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		logger.Error("request-creation-failed", err)
 		return false, err
 	}
 	req.Header.Set("Content-type", "application/json")
+	req = req.WithContext(ctx)
 
 	resp, err := n.client.Do(req)
 	if err != nil {

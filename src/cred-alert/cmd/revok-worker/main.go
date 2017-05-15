@@ -134,9 +134,14 @@ func main() {
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
 	formatter := notifications.NewSlackNotificationFormatter()
 
-	slackHTTPClient := &http.Client{
-		Timeout: 3 * time.Second,
+	traceClient, err := cloudtrace.NewClient(context.Background(), cfg.Trace.ProjectName)
+	if err != nil {
+		logger.Error("failed-to-create-trace-client", err)
 	}
+
+	slackHTTPClient := traceClient.NewHTTPClient(&http.Client{
+		Timeout: 3 * time.Second,
+	})
 	notifier := notifications.NewSlackNotifier(clk, slackHTTPClient, formatter)
 
 	certificate, caCertPool := loadCerts(
@@ -154,11 +159,6 @@ func main() {
 	)
 
 	transportCreds := credentials.NewTLS(tlsConfig.Client(tlsconfig.WithAuthority(caCertPool)))
-
-	traceClient, err := cloudtrace.NewClient(context.Background(), cfg.Trace.ProjectName)
-	if err != nil {
-		logger.Error("failed-to-create-trace-client", err)
-	}
 
 	conn, err := grpc.Dial(
 		rolodexServerAddr,

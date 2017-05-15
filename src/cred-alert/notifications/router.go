@@ -41,7 +41,7 @@ func (r *router) Deliver(ctx context.Context, logger lager.Logger, batch []Notif
 	})
 
 	for _, envelope := range envelopes {
-		err := r.notifier.Send(logger, *envelope)
+		err := r.notifier.Send(ctx, logger, *envelope)
 		if err != nil {
 			return err
 		}

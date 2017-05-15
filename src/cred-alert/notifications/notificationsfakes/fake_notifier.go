@@ -2,6 +2,7 @@
 package notificationsfakes
 
 import (
+	"context"
 	"cred-alert/notifications"
 	"sync"
 
@@ -9,11 +10,12 @@ import (
 )
 
 type FakeNotifier struct {
-	SendStub        func(lager.Logger, notifications.Envelope) error
+	SendStub        func(context.Context, lager.Logger, notifications.Envelope) error
 	sendMutex       sync.RWMutex
 	sendArgsForCall []struct {
-		arg1 lager.Logger
-		arg2 notifications.Envelope
+		arg1 context.Context
+		arg2 lager.Logger
+		arg3 notifications.Envelope
 	}
 	sendReturns struct {
 		result1 error
@@ -25,17 +27,18 @@ type FakeNotifier struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeNotifier) Send(arg1 lager.Logger, arg2 notifications.Envelope) error {
+func (fake *FakeNotifier) Send(arg1 context.Context, arg2 lager.Logger, arg3 notifications.Envelope) error {
 	fake.sendMutex.Lock()
 	ret, specificReturn := fake.sendReturnsOnCall[len(fake.sendArgsForCall)]
 	fake.sendArgsForCall = append(fake.sendArgsForCall, struct {
-		arg1 lager.Logger
-		arg2 notifications.Envelope
-	}{arg1, arg2})
-	fake.recordInvocation("Send", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 lager.Logger
+		arg3 notifications.Envelope
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Send", []interface{}{arg1, arg2, arg3})
 	fake.sendMutex.Unlock()
 	if fake.SendStub != nil {
-		return fake.SendStub(arg1, arg2)
+		return fake.SendStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -49,10 +52,10 @@ func (fake *FakeNotifier) SendCallCount() int {
 	return len(fake.sendArgsForCall)
 }
 
-func (fake *FakeNotifier) SendArgsForCall(i int) (lager.Logger, notifications.Envelope) {
+func (fake *FakeNotifier) SendArgsForCall(i int) (context.Context, lager.Logger, notifications.Envelope) {
 	fake.sendMutex.RLock()
 	defer fake.sendMutex.RUnlock()
-	return fake.sendArgsForCall[i].arg1, fake.sendArgsForCall[i].arg2
+	return fake.sendArgsForCall[i].arg1, fake.sendArgsForCall[i].arg2, fake.sendArgsForCall[i].arg3
 }
 
 func (fake *FakeNotifier) SendReturns(result1 error) {
