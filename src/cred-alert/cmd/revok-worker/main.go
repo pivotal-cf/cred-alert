@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/pprof"
 	"os"
 	"time"
 
@@ -25,7 +24,6 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/sigmon"
-	"golang.org/x/net/trace"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -402,35 +400,4 @@ func keepAliveDial(addr string, timeout time.Duration) (net.Conn, error) {
 		KeepAlive: 60 * time.Second,
 	}
 	return d.Dial("tcp", addr)
-}
-
-func debugHandler() http.Handler {
-	debugRouter := http.NewServeMux()
-	debugRouter.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-	debugRouter.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	debugRouter.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	debugRouter.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-	debugRouter.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
-	debugRouter.HandleFunc("/debug/requests", func(w http.ResponseWriter, req *http.Request) {
-		any, sensitive := trace.AuthRequest(req)
-		if !any {
-			http.Error(w, "not allowed", http.StatusUnauthorized)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		trace.Render(w, req, sensitive)
-	})
-
-	debugRouter.HandleFunc("/debug/events", func(w http.ResponseWriter, req *http.Request) {
-		any, sensitive := trace.AuthRequest(req)
-		if !any {
-			http.Error(w, "not allowed", http.StatusUnauthorized)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		trace.RenderEvents(w, req, sensitive)
-	})
-
-	return debugRouter
 }
