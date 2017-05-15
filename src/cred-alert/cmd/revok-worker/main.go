@@ -264,12 +264,12 @@ func main() {
 	)
 
 	members := []grouper.Member{
-		{"cloner", cloner},
-		{"dirscan-updater", dirscanUpdater},
-		{"stats-reporter", statsReporter},
-		{"head-credential-counter", headCredentialCounter},
-		{"change-schedule-runner", changeScheduleRunner},
-		{"debug", debug},
+		{Name: "cloner", Runner: cloner},
+		{Name: "dirscan-updater", Runner: dirscanUpdater},
+		{Name: "stats-reporter", Runner: statsReporter},
+		{Name: "head-credential-counter", Runner: headCredentialCounter},
+		{Name: "change-schedule-runner", Runner: changeScheduleRunner},
+		{Name: "debug", Runner: debug},
 	}
 
 	looper := gitclient.NewLooper()
