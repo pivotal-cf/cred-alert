@@ -108,7 +108,6 @@ func (n *slackNotifier) makeSingleAttempt(ctx context.Context, logger lager.Logg
 		return false, err
 	}
 	req.Header.Set("Content-type", "application/json")
-	req = req.WithContext(ctx)
 
 	resp, err := n.client.Do(req)
 	if err != nil {
