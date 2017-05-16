@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"cloud.google.com/go/trace"
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
@@ -109,6 +110,11 @@ func (n *slackNotifier) makeSingleAttempt(ctx context.Context, logger lager.Logg
 	}
 	req.Header.Set("Content-type", "application/json")
 
+	// We manually trace this to avoid the URL leaking in the built in HTTP
+	// tracing.
+	span := trace.FromContext(ctx).NewChild("slack-request")
+	span.SetLabel("attempt", strconv.Itoa(currentAttempt))
+
 	resp, err := n.client.Do(req)
 	if err != nil {
 		if isTemporary(err) {
@@ -119,6 +125,7 @@ func (n *slackNotifier) makeSingleAttempt(ctx context.Context, logger lager.Logg
 		return false, err
 	}
 
+	span.Finish()
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {

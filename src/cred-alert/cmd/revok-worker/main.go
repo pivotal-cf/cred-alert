@@ -139,9 +139,9 @@ func main() {
 		logger.Error("failed-to-create-trace-client", err)
 	}
 
-	slackHTTPClient := traceClient.NewHTTPClient(&http.Client{
+	slackHTTPClient := &http.Client{
 		Timeout: 3 * time.Second,
-	})
+	}
 	notifier := notifications.NewSlackNotifier(clk, slackHTTPClient, formatter)
 
 	certificate, caCertPool := loadCerts(
