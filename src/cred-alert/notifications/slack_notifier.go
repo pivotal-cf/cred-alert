@@ -112,8 +112,7 @@ func (n *slackNotifier) makeSingleAttempt(ctx context.Context, logger lager.Logg
 
 	// We manually trace this to avoid the URL leaking in the built in HTTP
 	// tracing.
-	span := trace.FromContext(ctx).NewChild("slack-request")
-	span.SetLabel("attempt", strconv.Itoa(currentAttempt+1))
+	span := trace.FromContext(ctx).NewChild(fmt.Sprintf("slack-request-attempt-%d", currentAttempt+1))
 
 	resp, err := n.client.Do(req)
 	if err != nil {
