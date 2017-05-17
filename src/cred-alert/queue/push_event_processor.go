@@ -3,7 +3,6 @@ package queue
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 
@@ -23,25 +22,21 @@ type pushEventProcessor struct {
 	clock         clock.Clock
 	traceClient   *trace.Client
 
-	verifyFailedCounter metrics.Counter
-	endToEndGauge       metrics.Gauge
+	endToEndGauge metrics.Gauge
 }
 
 func NewPushEventProcessor(
 	changeFetcher revok.ChangeFetcher,
-	verifier crypto.Verifier,
 	emitter metrics.Emitter,
 	clock clock.Clock,
 	traceClient *trace.Client,
 ) *pushEventProcessor {
 	return &pushEventProcessor{
 		changeFetcher: changeFetcher,
-		verifier:      verifier,
 		clock:         clock,
 		traceClient:   traceClient,
 
-		verifyFailedCounter: emitter.Counter("queue.push_event_processor.verify.failed"),
-		endToEndGauge:       emitter.Gauge("queue.end-to-end.duration"),
+		endToEndGauge: emitter.Gauge("queue.end-to-end.duration"),
 	}
 }
 
@@ -51,10 +46,6 @@ func (proc *pushEventProcessor) Process(ctx context.Context, logger lager.Logger
 	span := proc.traceClient.NewSpan("io.pivotal.red.revok/CodePush")
 	defer span.Finish()
 	ctx = trace.NewContext(ctx, span)
-
-	if err := proc.checkSignature(ctx, logger, message); err != nil {
-		return false, err
-	}
 
 	p, err := proc.decodeMessage(ctx, logger, message)
 	if err != nil {
@@ -77,27 +68,6 @@ func (proc *pushEventProcessor) Process(ctx context.Context, logger lager.Logger
 	proc.endToEndGauge.Update(logger, float32(duration))
 
 	return false, nil
-}
-
-func (proc *pushEventProcessor) checkSignature(ctx context.Context, logger lager.Logger, message *pubsub.Message) error {
-	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
-	if err != nil {
-		logger.Error("signature-malformed", err, lager.Data{
-			"signature": message.Attributes["signature"],
-		})
-		return err
-	}
-
-	err = proc.verifier.Verify(message.Data, decodedSignature)
-	if err != nil {
-		logger.Error("signature-invalid", err, lager.Data{
-			"signature": message.Attributes["signature"],
-		})
-		proc.verifyFailedCounter.Inc(logger)
-		return err
-	}
-
-	return nil
 }
 
 func (proc *pushEventProcessor) decodeMessage(ctx context.Context, logger lager.Logger, message *pubsub.Message) (PushEventPlan, error) {

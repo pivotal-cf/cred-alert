@@ -305,17 +305,19 @@ func main() {
 		logger.Fatal("failed", err)
 		os.Exit(1)
 	}
+
 	pushEventProcessor := queue.NewPushEventProcessor(
 		changeFetcher,
-		crypto.NewRSAVerifier(publicKey),
 		emitter,
 		clk,
 		traceClient,
 	)
 
+	signatureChecker := queue.NewSignatureCheck(crypto.NewRSAVerifier(publicKey), emitter, pushEventProcessor)
+
 	members = append(members, grouper.Member{
 		Name:   "github-hint-handler",
-		Runner: queue.NewPubSubSubscriber(logger, subscription, pushEventProcessor, emitter),
+		Runner: queue.NewPubSubSubscriber(logger, subscription, signatureChecker, emitter),
 	})
 
 	if cfg.GitHub.AccessToken != "" {

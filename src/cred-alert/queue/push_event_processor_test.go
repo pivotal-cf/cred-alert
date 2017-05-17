@@ -1,54 +1,42 @@
 package queue_test
 
 import (
-	"cred-alert/crypto/cryptofakes"
+	"errors"
+	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	"cloud.google.com/go/pubsub"
+	"code.cloudfoundry.org/clock/fakeclock"
+	"code.cloudfoundry.org/lager/lagertest"
+	"golang.org/x/net/context"
+
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
 	"cred-alert/revok/revokfakes"
-	"errors"
-
-	"golang.org/x/net/context"
-
-	"cloud.google.com/go/pubsub"
-	"code.cloudfoundry.org/lager/lagertest"
-
-	"time"
-
-	"code.cloudfoundry.org/clock/fakeclock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("PushEventProcessor", func() {
 	var (
-		logger              *lagertest.TestLogger
-		pushEventProcessor  queue.PubSubProcessor
-		changeFetcher       *revokfakes.FakeChangeFetcher
-		verifier            *cryptofakes.FakeVerifier
-		message             *pubsub.Message
-		emitter             *metricsfakes.FakeEmitter
-		verifyFailedCounter *metricsfakes.FakeCounter
-		endToEndGauge       *metricsfakes.FakeGauge
-		fakeClock           *fakeclock.FakeClock
+		logger        *lagertest.TestLogger
+		fakeClock     *fakeclock.FakeClock
+		changeFetcher *revokfakes.FakeChangeFetcher
+		message       *pubsub.Message
+
+		emitter       *metricsfakes.FakeEmitter
+		endToEndGauge *metricsfakes.FakeGauge
+
+		pushEventProcessor queue.PubSubProcessor
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("ingestor")
 		changeFetcher = &revokfakes.FakeChangeFetcher{}
-		verifier = &cryptofakes.FakeVerifier{}
-		verifyFailedCounter = &metricsfakes.FakeCounter{}
 		endToEndGauge = &metricsfakes.FakeGauge{}
 
 		emitter = &metricsfakes.FakeEmitter{}
-		emitter.CounterStub = func(name string) metrics.Counter {
-			switch name {
-			case "queue.push_event_processor.verify.failed":
-				return verifyFailedCounter
-			}
-			return nil
-		}
-
 		emitter.GaugeStub = func(name string) metrics.Gauge {
 			switch name {
 			case "queue.end-to-end.duration":
@@ -61,69 +49,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 		fakeClock = fakeclock.NewFakeClock(now)
 
-		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, verifier, emitter, fakeClock, nil)
-	})
-
-	It("verifies the signature", func() {
-		message = &pubsub.Message{
-			Attributes: map[string]string{
-				"signature": "c29tZS1zaWduYXR1cmU=",
-			},
-			Data: []byte("some-message"),
-		}
-
-		pushEventProcessor.Process(context.Background(), logger, message)
-
-		Expect(verifier.VerifyCallCount()).To(Equal(1))
-		message, signature := verifier.VerifyArgsForCall(0)
-		Expect(message).To(Equal([]byte("some-message")))
-		Expect(signature).To(Equal([]byte("some-signature")))
-	})
-
-	Context("when the signature fails to decode", func() {
-		BeforeEach(func() {
-			message = &pubsub.Message{
-				Attributes: map[string]string{
-					"signature": "Undecodable Signature",
-				},
-			}
-		})
-
-		It("returns an error", func() {
-			retriable, err := pushEventProcessor.Process(context.Background(), logger, message)
-
-			Expect(retriable).To(BeFalse())
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("base64"))
-		})
-	})
-
-	Context("when the signature is invalid", func() {
-		var err error
-
-		BeforeEach(func() {
-			message = &pubsub.Message{
-				Attributes: map[string]string{
-					"signature": "InvalidSignature",
-				},
-			}
-
-			err = errors.New("invalid signature")
-
-			verifier.VerifyReturns(err)
-		})
-
-		It("returns an error", func() {
-			retriable, err := pushEventProcessor.Process(context.Background(), logger, message)
-			Expect(retriable).To(BeFalse())
-			Expect(err).To(Equal(err))
-		})
-
-		It("increments the error counter", func() {
-			pushEventProcessor.Process(context.Background(), logger, message)
-
-			Expect(verifyFailedCounter.IncCallCount()).To(Equal(1))
-		})
+		pushEventProcessor = queue.NewPushEventProcessor(changeFetcher, emitter, fakeClock, nil)
 	})
 
 	Context("when the payload is a valid JSON PushEventPlan", func() {
@@ -141,11 +67,6 @@ var _ = Describe("PushEventProcessor", func() {
 				},
 				Data: []byte(task.Payload()),
 			}
-		})
-
-		It("does not increment the verifyFailedCounter", func() {
-			pushEventProcessor.Process(context.Background(), logger, message)
-			Expect(verifyFailedCounter.IncCallCount()).To(Equal(0))
 		})
 
 		It("tries to do a fetch", func() {
