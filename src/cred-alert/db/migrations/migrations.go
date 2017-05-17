@@ -25,4 +25,5 @@ var Migrations = []migration.Migrator{
 	AddBranches,
 	MigrateCredentialCounts,
 	RemoveCredentialCountsAndRawJson,
+	AddIndexToRepositories,
 }
