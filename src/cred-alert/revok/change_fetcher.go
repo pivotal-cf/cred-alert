@@ -25,11 +25,11 @@ type changeFetcher struct {
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
 
-	fetchTimer          metrics.Timer
-	fetchSuccessCounter metrics.Counter
-	fetchFailedCounter  metrics.Counter
-	scanSuccessCounter  metrics.Counter
-	scanFailedCounter   metrics.Counter
+	fetchTimer     metrics.Timer
+	fetchSuccesses metrics.Counter
+	fetchFailures  metrics.Counter
+	scanSuccesses  metrics.Counter
+	scanFailures   metrics.Counter
 }
 
 func NewChangeFetcher(
@@ -47,11 +47,11 @@ func NewChangeFetcher(
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
 
-		fetchTimer:          emitter.Timer("revok.change_discoverer.fetch_time"),
-		fetchSuccessCounter: emitter.Counter("revok.change_discoverer.fetch.success"),
-		fetchFailedCounter:  emitter.Counter("revok.change_discoverer.fetch.failed"),
-		scanSuccessCounter:  emitter.Counter("revok.change_discoverer.scan.success"),
-		scanFailedCounter:   emitter.Counter("revok.change_discoverer.scan.failed"),
+		fetchTimer:     emitter.Timer("revok.change_discoverer.fetch_time"),
+		fetchSuccesses: emitter.Counter("revok.change_discoverer.fetch.success"),
+		fetchFailures:  emitter.Counter("revok.change_discoverer.fetch.failed"),
+		scanSuccesses:  emitter.Counter("revok.change_discoverer.scan.success"),
+		scanFailures:   emitter.Counter("revok.change_discoverer.scan.failed"),
 	}
 }
 
@@ -131,7 +131,7 @@ func (c *changeFetcher) registerFetchResult(
 ) error {
 	if fetchErr != nil {
 		logger.Error("fetch-failed", fetchErr)
-		c.fetchFailedCounter.Inc(logger)
+		c.fetchFailures.Inc(logger)
 
 		registerErr := c.repositoryRepository.RegisterFailedFetch(logger, &repo)
 		if registerErr != nil {
@@ -141,7 +141,7 @@ func (c *changeFetcher) registerFetchResult(
 		return fetchErr
 	}
 
-	c.fetchSuccessCounter.Inc(logger)
+	c.fetchSuccesses.Inc(logger)
 
 	bs, err := json.Marshal(changes)
 	if err != nil {
@@ -184,9 +184,9 @@ func (c *changeFetcher) scanFetch(
 			oids[0],
 		)
 		if err != nil {
-			c.scanFailedCounter.Inc(logger)
+			c.scanFailures.Inc(logger)
 		} else {
-			c.scanSuccessCounter.Inc(logger)
+			c.scanSuccesses.Inc(logger)
 		}
 	}
 
