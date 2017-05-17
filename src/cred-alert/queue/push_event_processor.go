@@ -45,42 +45,19 @@ func NewPushEventProcessor(
 	}
 }
 
-func (h *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
+func (proc *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
 	logger = logger.Session("processing-push-event")
 
-	span := h.traceClient.NewSpan("io.pivotal.red.revok/CodePush")
+	span := proc.traceClient.NewSpan("io.pivotal.red.revok/CodePush")
 	defer span.Finish()
 	ctx = trace.NewContext(ctx, span)
 
-	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
-	if err != nil {
-		logger.Error("signature-malformed", err, lager.Data{
-			"signature": message.Attributes["signature"],
-		})
+	if err := proc.checkSignature(ctx, logger, message); err != nil {
 		return false, err
 	}
 
-	err = h.verifier.Verify(message.Data, decodedSignature)
+	p, err := proc.decodeMessage(ctx, logger, message)
 	if err != nil {
-		logger.Error("signature-invalid", err, lager.Data{
-			"signature": message.Attributes["signature"],
-		})
-		h.verifyFailedCounter.Inc(logger)
-		return false, err
-	}
-
-	decoder := json.NewDecoder(bytes.NewBuffer(message.Data))
-
-	var p PushEventPlan
-	err = decoder.Decode(&p)
-	if err != nil {
-		logger.Error("payload-malformed", err)
-		return false, err
-	}
-
-	if p.Owner == "" || p.Repository == "" {
-		err := errors.New("invalid payload: missing owner or repository")
-		logger.Error("payload-incomplete", err)
 		return false, err
 	}
 
@@ -91,13 +68,52 @@ func (h *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, m
 	span.SetLabel("owner", p.Owner)
 	span.SetLabel("repository", p.Repository)
 
-	err = h.changeFetcher.Fetch(ctx, logger, p.Owner, p.Repository, true)
+	err = proc.changeFetcher.Fetch(ctx, logger, p.Owner, p.Repository, true)
 	if err != nil {
 		return true, err
 	}
 
-	duration := h.clock.Since(p.PushTime).Seconds()
-	h.endToEndGauge.Update(logger, float32(duration))
+	duration := proc.clock.Since(p.PushTime).Seconds()
+	proc.endToEndGauge.Update(logger, float32(duration))
 
 	return false, nil
+}
+
+func (proc *pushEventProcessor) checkSignature(ctx context.Context, logger lager.Logger, message *pubsub.Message) error {
+	decodedSignature, err := base64.StdEncoding.DecodeString(message.Attributes["signature"])
+	if err != nil {
+		logger.Error("signature-malformed", err, lager.Data{
+			"signature": message.Attributes["signature"],
+		})
+		return err
+	}
+
+	err = proc.verifier.Verify(message.Data, decodedSignature)
+	if err != nil {
+		logger.Error("signature-invalid", err, lager.Data{
+			"signature": message.Attributes["signature"],
+		})
+		proc.verifyFailedCounter.Inc(logger)
+		return err
+	}
+
+	return nil
+}
+
+func (proc *pushEventProcessor) decodeMessage(ctx context.Context, logger lager.Logger, message *pubsub.Message) (PushEventPlan, error) {
+	buffer := bytes.NewBuffer(message.Data)
+
+	var p PushEventPlan
+	if err := json.NewDecoder(buffer).Decode(&p); err != nil {
+		logger.Error("payload-malformed", err)
+		return p, err
+	}
+
+	if p.Owner == "" || p.Repository == "" {
+		err := errors.New("invalid payload: missing owner or repository")
+		logger.Error("payload-incomplete", err)
+		return p, err
+	}
+
+	return p, nil
 }
