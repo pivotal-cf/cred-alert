@@ -48,6 +48,7 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 
 	errs := make(chan error)
 	cctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	p.subscription.ReceiveSettings.MaxOutstandingMessages = 4
 
@@ -70,8 +71,6 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 			return err
 		}
 	}
-
-	cancel()
 
 	p.logger.Info("done")
 
