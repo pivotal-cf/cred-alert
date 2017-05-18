@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/crypto"
+	"cred-alert/lgctx"
 	"cred-alert/metrics"
 	"cred-alert/revok"
 )
@@ -40,14 +41,14 @@ func NewPushEventProcessor(
 	}
 }
 
-func (proc *pushEventProcessor) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
-	logger = logger.Session("processing-push-event")
+func (proc *pushEventProcessor) Process(ctx context.Context, message *pubsub.Message) (bool, error) {
+	logger := lgctx.WithSession(ctx, "processing-push-event")
 
 	span := proc.traceClient.NewSpan("io.pivotal.red.revok/CodePush")
 	defer span.Finish()
 	ctx = trace.NewContext(ctx, span)
 
-	p, err := proc.decodeMessage(ctx, logger, message)
+	p, err := proc.decodeMessage(logger, message)
 	if err != nil {
 		return false, err
 	}
@@ -70,7 +71,7 @@ func (proc *pushEventProcessor) Process(ctx context.Context, logger lager.Logger
 	return false, nil
 }
 
-func (proc *pushEventProcessor) decodeMessage(ctx context.Context, logger lager.Logger, message *pubsub.Message) (PushEventPlan, error) {
+func (proc *pushEventProcessor) decodeMessage(logger lager.Logger, message *pubsub.Message) (PushEventPlan, error) {
 	buffer := bytes.NewBuffer(message.Data)
 
 	var p PushEventPlan

@@ -1,6 +1,7 @@
 package queue_test
 
 import (
+	"context"
 	"errors"
 
 	. "github.com/onsi/ginkgo"
@@ -8,9 +9,9 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager/lagertest"
-	"golang.org/x/net/context"
 
 	"cred-alert/crypto/cryptofakes"
+	"cred-alert/lgctx"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
@@ -19,7 +20,7 @@ import (
 
 var _ = Describe("Signature Checker", func() {
 	var (
-		logger   *lagertest.TestLogger
+		ctx      context.Context
 		child    *queuefakes.FakePubSubProcessor
 		verifier *cryptofakes.FakeVerifier
 		message  *pubsub.Message
@@ -31,7 +32,7 @@ var _ = Describe("Signature Checker", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("signature-check")
+		ctx = lgctx.NewContext(context.Background(), lagertest.NewTestLogger("signature-check"))
 		verifier = &cryptofakes.FakeVerifier{}
 		child = &queuefakes.FakePubSubProcessor{}
 		verifyFailedCounter = &metricsfakes.FakeCounter{}
@@ -58,7 +59,7 @@ var _ = Describe("Signature Checker", func() {
 				Data: []byte("some-message"),
 			}
 
-			_, err := checker.Process(context.Background(), logger, message)
+			_, err := checker.Process(ctx, message)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(child.ProcessCallCount()).To(Equal(1))
@@ -75,7 +76,7 @@ var _ = Describe("Signature Checker", func() {
 		})
 
 		It("returns an error and does not call the child", func() {
-			retry, err := checker.Process(context.Background(), logger, message)
+			retry, err := checker.Process(ctx, message)
 			Expect(err).To(MatchError(ContainSubstring("base64")))
 			Expect(retry).To(BeFalse())
 
@@ -83,7 +84,7 @@ var _ = Describe("Signature Checker", func() {
 		})
 
 		It("increments the failure counter", func() {
-			_, err := checker.Process(context.Background(), logger, message)
+			_, err := checker.Process(ctx, message)
 			Expect(err).To(HaveOccurred())
 
 			Expect(verifyFailedCounter.IncCallCount()).To(Equal(1))
@@ -102,7 +103,7 @@ var _ = Describe("Signature Checker", func() {
 		})
 
 		It("returns an error and does not call the child", func() {
-			retry, err := checker.Process(context.Background(), logger, message)
+			retry, err := checker.Process(ctx, message)
 			Expect(err).To(HaveOccurred())
 			Expect(retry).To(BeFalse())
 
@@ -110,7 +111,7 @@ var _ = Describe("Signature Checker", func() {
 		})
 
 		It("increments the failure counter", func() {
-			_, err := checker.Process(context.Background(), logger, message)
+			_, err := checker.Process(ctx, message)
 			Expect(err).To(HaveOccurred())
 
 			Expect(verifyFailedCounter.IncCallCount()).To(Equal(1))

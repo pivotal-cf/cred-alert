@@ -7,16 +7,14 @@ import (
 	"sync"
 
 	"cloud.google.com/go/pubsub"
-	"code.cloudfoundry.org/lager"
 )
 
 type FakePubSubProcessor struct {
-	ProcessStub        func(context.Context, lager.Logger, *pubsub.Message) (bool, error)
+	ProcessStub        func(context.Context, *pubsub.Message) (bool, error)
 	processMutex       sync.RWMutex
 	processArgsForCall []struct {
 		arg1 context.Context
-		arg2 lager.Logger
-		arg3 *pubsub.Message
+		arg2 *pubsub.Message
 	}
 	processReturns struct {
 		result1 bool
@@ -30,18 +28,17 @@ type FakePubSubProcessor struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePubSubProcessor) Process(arg1 context.Context, arg2 lager.Logger, arg3 *pubsub.Message) (bool, error) {
+func (fake *FakePubSubProcessor) Process(arg1 context.Context, arg2 *pubsub.Message) (bool, error) {
 	fake.processMutex.Lock()
 	ret, specificReturn := fake.processReturnsOnCall[len(fake.processArgsForCall)]
 	fake.processArgsForCall = append(fake.processArgsForCall, struct {
 		arg1 context.Context
-		arg2 lager.Logger
-		arg3 *pubsub.Message
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("Process", []interface{}{arg1, arg2, arg3})
+		arg2 *pubsub.Message
+	}{arg1, arg2})
+	fake.recordInvocation("Process", []interface{}{arg1, arg2})
 	fake.processMutex.Unlock()
 	if fake.ProcessStub != nil {
-		return fake.ProcessStub(arg1, arg2, arg3)
+		return fake.ProcessStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -55,10 +52,10 @@ func (fake *FakePubSubProcessor) ProcessCallCount() int {
 	return len(fake.processArgsForCall)
 }
 
-func (fake *FakePubSubProcessor) ProcessArgsForCall(i int) (context.Context, lager.Logger, *pubsub.Message) {
+func (fake *FakePubSubProcessor) ProcessArgsForCall(i int) (context.Context, *pubsub.Message) {
 	fake.processMutex.RLock()
 	defer fake.processMutex.RUnlock()
-	return fake.processArgsForCall[i].arg1, fake.processArgsForCall[i].arg2, fake.processArgsForCall[i].arg3
+	return fake.processArgsForCall[i].arg1, fake.processArgsForCall[i].arg2
 }
 
 func (fake *FakePubSubProcessor) ProcessReturns(result1 bool, result2 error) {

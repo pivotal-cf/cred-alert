@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/crypto"
+	"cred-alert/lgctx"
 	"cred-alert/metrics"
 )
 
@@ -27,27 +28,27 @@ func NewSignatureCheck(verify crypto.Verifier, emitter metrics.Emitter, processo
 	}
 }
 
-func (s *sigCheck) Process(ctx context.Context, logger lager.Logger, message *pubsub.Message) (bool, error) {
+func (s *sigCheck) Process(ctx context.Context, message *pubsub.Message) (bool, error) {
 	signature := message.Attributes["signature"]
-	sigLog := logger.WithData(lager.Data{
+	logger := lgctx.WithData(ctx, lager.Data{
 		"signature": signature,
 	})
 
 	decodedSignature, err := base64.StdEncoding.DecodeString(signature)
 	if err != nil {
-		sigLog.Error("signature-malformed", err)
-		s.failures.Inc(sigLog)
+		logger.Error("signature-malformed", err)
+		s.failures.Inc(logger)
 
 		return false, err
 	}
 
 	err = s.verifier.Verify(message.Data, decodedSignature)
 	if err != nil {
-		sigLog.Error("signature-invalid", err)
-		s.failures.Inc(sigLog)
+		logger.Error("signature-invalid", err)
+		s.failures.Inc(logger)
 
 		return false, err
 	}
 
-	return s.child.Process(ctx, logger, message)
+	return s.child.Process(ctx, message)
 }

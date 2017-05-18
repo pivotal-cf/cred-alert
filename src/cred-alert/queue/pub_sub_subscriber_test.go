@@ -116,8 +116,8 @@ var _ = Describe("PubSubSubscriber", func() {
 	It("tries to process the messages", func() {
 		Eventually(processor.ProcessCallCount).Should(Equal(2))
 
-		_, _, message1 := processor.ProcessArgsForCall(0)
-		_, _, message2 := processor.ProcessArgsForCall(1)
+		_, message1 := processor.ProcessArgsForCall(0)
+		_, message2 := processor.ProcessArgsForCall(1)
 
 		attributes := []map[string]string{
 			message1.Attributes,

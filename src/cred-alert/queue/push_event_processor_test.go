@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	"golang.org/x/net/context"
 
+	"cred-alert/lgctx"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
@@ -20,7 +21,7 @@ import (
 
 var _ = Describe("PushEventProcessor", func() {
 	var (
-		logger        *lagertest.TestLogger
+		ctx           context.Context
 		fakeClock     *fakeclock.FakeClock
 		changeFetcher *revokfakes.FakeChangeFetcher
 		message       *pubsub.Message
@@ -32,7 +33,7 @@ var _ = Describe("PushEventProcessor", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("ingestor")
+		ctx = lgctx.NewContext(context.Background(), lagertest.NewTestLogger("ingestor"))
 		changeFetcher = &revokfakes.FakeChangeFetcher{}
 		endToEndGauge = &metricsfakes.FakeGauge{}
 
@@ -70,7 +71,7 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("tries to do a fetch", func() {
-			pushEventProcessor.Process(context.Background(), logger, message)
+			pushEventProcessor.Process(ctx, message)
 			Expect(changeFetcher.FetchCallCount()).To(Equal(1))
 			_, _, actualOwner, actualName, actualReenable := changeFetcher.FetchArgsForCall(0)
 			Expect(actualOwner).To(Equal("some-owner"))
@@ -84,13 +85,13 @@ var _ = Describe("PushEventProcessor", func() {
 			})
 
 			It("does not retry or return an error", func() {
-				retry, err := pushEventProcessor.Process(context.Background(), logger, message)
+				retry, err := pushEventProcessor.Process(ctx, message)
 				Expect(retry).To(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("emits the total processing time", func() {
-				_, err := pushEventProcessor.Process(context.Background(), logger, message)
+				_, err := pushEventProcessor.Process(ctx, message)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(endToEndGauge.UpdateCallCount()).To(Equal(1))
@@ -107,13 +108,13 @@ var _ = Describe("PushEventProcessor", func() {
 			})
 
 			It("returns an error that can be retried", func() {
-				retry, err := pushEventProcessor.Process(context.Background(), logger, message)
+				retry, err := pushEventProcessor.Process(ctx, message)
 				Expect(retry).To(BeTrue())
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("does not emit the processing time", func() {
-				_, err := pushEventProcessor.Process(context.Background(), logger, message)
+				_, err := pushEventProcessor.Process(ctx, message)
 				Expect(err).To(HaveOccurred())
 
 				Expect(endToEndGauge.UpdateCallCount()).To(BeZero())
@@ -135,12 +136,12 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(context.Background(), logger, message)
+			pushEventProcessor.Process(ctx, message)
 			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an error that cannot be retried", func() {
-			retry, err := pushEventProcessor.Process(context.Background(), logger, message)
+			retry, err := pushEventProcessor.Process(ctx, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})
@@ -162,12 +163,12 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(context.Background(), logger, message)
+			pushEventProcessor.Process(ctx, message)
 			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {
-			retry, err := pushEventProcessor.Process(context.Background(), logger, message)
+			retry, err := pushEventProcessor.Process(ctx, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})
@@ -189,12 +190,12 @@ var _ = Describe("PushEventProcessor", func() {
 		})
 
 		It("does not try to do a fetch", func() {
-			pushEventProcessor.Process(context.Background(), logger, message)
+			pushEventProcessor.Process(ctx, message)
 			Expect(changeFetcher.FetchCallCount()).To(BeZero())
 		})
 
 		It("returns an unretryable error", func() {
-			retry, err := pushEventProcessor.Process(context.Background(), logger, message)
+			retry, err := pushEventProcessor.Process(ctx, message)
 			Expect(retry).To(BeFalse())
 			Expect(err).To(HaveOccurred())
 		})

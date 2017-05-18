@@ -8,6 +8,7 @@ import (
 	"github.com/tedsuo/ifrit"
 	"golang.org/x/net/context"
 
+	"cred-alert/lgctx"
 	"cred-alert/metrics"
 )
 
@@ -87,9 +88,10 @@ func (p *pubSubSubscriber) processMessage(ctx context.Context, message *pubsub.M
 		"pubsub-message":      message.ID,
 		"pubsub-publish-time": message.PublishTime.String(),
 	})
+	lctx := lgctx.NewContext(ctx, logger)
 
 	p.processTimer.Time(logger, func() {
-		retryable, err = p.processor.Process(ctx, logger, message)
+		retryable, err = p.processor.Process(lctx, message)
 	})
 
 	if err != nil {
