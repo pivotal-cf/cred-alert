@@ -104,6 +104,7 @@ var _ = Describe("PubSubSubscriber", func() {
 		It("does not process any more messages", func() {
 			Eventually(processor.ProcessCallCount).Should(Equal(2))
 			process.Signal(os.Interrupt)
+			Eventually(process.Wait()).Should(Receive())
 
 			res := topic.Publish(context.Background(), firstMessage)
 			_, err := res.Get(context.Background())
