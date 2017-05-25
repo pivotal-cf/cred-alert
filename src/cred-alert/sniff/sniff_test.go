@@ -2,6 +2,7 @@ package sniff_test
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -179,6 +180,28 @@ var _ = Describe("Sniffer", func() {
 			}
 
 			Expect(actuals).To(HaveLen(len(expectations)))
+		})
+
+		Context("false positives", func() {
+			It("should not match strings that contain the lowercase amazon key prefix", func() {
+				testString := "XakiaXXXXXXXXXXXXXXXXX"
+				scanner.ScanStub = func(logger lager.Logger) bool {
+					if scanner.ScanCallCount() == 1 {
+						return true
+					}
+					return false
+				}
+
+				scanner.LineStub = func(logger lager.Logger) *scanners.Line {
+					return &scanners.Line{Content: []byte(testString)}
+				}
+
+				err := sniffer.Sniff(logger, scanner, func(logger lager.Logger, violation scanners.Violation) error {
+					Fail(fmt.Sprintf("%s should not be a violation", testString))
+					return nil
+				})
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
 	})
 })

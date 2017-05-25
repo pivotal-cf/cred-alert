@@ -14,7 +14,7 @@ const changePattern = `CHANGE`
 const replacePattern = `REPLACE`
 const examplePattern = `EXAMPLE`
 
-const awsAccessKeyIDPattern = `AKIA[A-Z0-9]{16}`
+const awsAccessKeyIDPattern = `(^|[^A-Z0-9])AKIA[A-Z0-9]{16}`
 const awsSecretAccessKeyPattern = `KEY["']?\s*(?::|=>|=)\s*["']?[A-Z0-9/\+=]{40}["']?`
 const cryptMD5Pattern = `\$1\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{22}`
 const cryptSHA256Pattern = `\$5\$[A-Z0-9./]{1,16}\$[A-Z0-9./]{43}`

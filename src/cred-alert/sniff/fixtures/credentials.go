@@ -10,6 +10,17 @@ var Credentials = `
 aws_access_key_id: AKIAIOSFODNN7DSOTPWI # should_match
 aws_secret_access_key: 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 # should_match
 
+## Access Key Variations
+
+akiaxxxxxxxxxxxxxxxxx # should_match
+  akiaxxxxxxxxxxxxxxxxx # should_match
+foo  akiaxxxxxxxxxxxxxxxxx # should_match
+foo=akiaxxxxxxxxxxxxxxxxx # should_match
+foo:akiaxxxxxxxxxxxxxxxxx # should_match
+foo:"akiaxxxxxxxxxxxxxxxxx # should_match
+word,akiaxxxxxxxxxxxxxxxxx # should_match
+
+
 # UNIX passwords
 
 $6$0./3456789abcdef$1./45678901234567890123456789012345678901234567890123456789012345678900123456789abcdef # should_match
