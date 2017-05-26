@@ -2,16 +2,13 @@ package commands
 
 import "fmt"
 
-type VersionCommand struct {
-}
+type VersionCommand struct{}
 
-var (
-  // overridden in CI
-  version = "dev"
-)
+// overridden in CI
+var version = "dev"
 
 func (command *VersionCommand) Execute(args []string) error {
-  fmt.Println(version)
+	fmt.Println(version)
 
-  return nil
+	return nil
 }
