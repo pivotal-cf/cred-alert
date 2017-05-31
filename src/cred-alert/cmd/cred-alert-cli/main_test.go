@@ -22,6 +22,7 @@ import (
 var _ = Describe("Main", func() {
 	var (
 		cmdArgs       []string
+		fakeTempDir   string
 		stdin         string
 		session       *gexec.Session
 		offendingText = `
@@ -40,6 +41,13 @@ index 940393e..fa5a232 100644
  ## Suspicious Variable Names
 `
 	)
+
+	var politeText = `
+		words
+		NotACredential
+		words
+	`
+
 	BeforeEach(func() {
 		stdin = ""
 		cmdArgs = []string{}
@@ -49,13 +57,34 @@ index 940393e..fa5a232 100644
 		JustBeforeEach(func() {
 			finalArgs := append([]string{"scan"}, cmdArgs...)
 			cmd := exec.Command(cliPath, finalArgs...)
+
+			var err error
+			fakeTempDir, err = ioutil.TempDir("", "MAIN_TEST.GO-TMPDIR-")
+			Expect(err).NotTo(HaveOccurred())
+
+			envs := os.Environ()
+			index := -1
+			for i, env := range envs {
+				if strings.HasPrefix(env, "TMPDIR") {
+					index = i
+					break
+				}
+			}
+			Expect(index).ToNot(Equal(-1))
+			envs[index] = "TMPDIR=" + fakeTempDir
+
+			cmd.Env = envs
+
 			if stdin != "" {
 				cmd.Stdin = strings.NewReader(stdin)
 			}
 
-			var err error
 			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			Expect(os.RemoveAll(fakeTempDir)).To(Succeed())
 		})
 
 		ItTellsPeopleHowToRemoveTheirCredentials := func() {
@@ -145,6 +174,18 @@ index 940393e..fa5a232 100644
 
 				ItShowsTheCredentialInTheOutput("AKIAJDHEYSPVNSHFKSMS")
 				ItTellsPeopleHowToRemoveTheirCredentials()
+			})
+
+			Context("when no credentials are found", func() {
+
+				BeforeEach(func() {
+					cmdArgs = []string{}
+					stdin = politeText
+				})
+
+				It("exits with status 0", func() {
+					Eventually(session).Should(gexec.Exit(0))
+				})
 			})
 		})
 
@@ -307,13 +348,13 @@ index 940393e..fa5a232 100644
 				Context("when given a folder", func() {
 					BeforeEach(func() {
 						var err error
-						inDir, err = ioutil.TempDir("", "folder-in")
+						outDir, err = ioutil.TempDir("", "folder-in")
 						Expect(err).NotTo(HaveOccurred())
 
-						err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte(offendingText), 0644)
+						err = ioutil.WriteFile(path.Join(outDir, "file1"), []byte(offendingText), 0644)
 						Expect(err).NotTo(HaveOccurred())
 
-						cmdArgs = []string{"-f", inDir}
+						cmdArgs = []string{"-f", outDir}
 					})
 
 					It("scans each text file in the folder", func() {
@@ -322,6 +363,36 @@ index 940393e..fa5a232 100644
 
 					ItTellsPeopleHowToRemoveTheirCredentials()
 					ItTellsPeopleToUpdateIfTheBinaryIsOld()
+
+					Context("and there is an archive in the folder", func() {
+						BeforeEach(func() {
+							Expect(os.RemoveAll(filepath.Join(outDir, "file1"))).To(Succeed())
+
+							var err error
+							inDir, err = ioutil.TempDir("", "tar-in")
+							Expect(err).NotTo(HaveOccurred())
+
+							err = ioutil.WriteFile(path.Join(inDir, "file1"), []byte(offendingText), 0664)
+							Expect(err).NotTo(HaveOccurred())
+
+							tarFilePath := path.Join(outDir, "out.tar")
+							tarFile, err := os.Create(tarFilePath)
+							Expect(err).NotTo(HaveOccurred())
+							defer tarFile.Close()
+
+							err = compressor.WriteTar(inDir, tarFile)
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						It("leaves a temporary violations directory with the content of the violation", func() {
+							Eventually(session).Should(gexec.Exit(3))
+
+							files, err := ioutil.ReadDir(fakeTempDir)
+							Expect(err).NotTo(HaveOccurred())
+
+							Expect(len(files)).To(Equal(1))
+						})
+					})
 				})
 			})
 
@@ -349,6 +420,35 @@ index 940393e..fa5a232 100644
 				AfterEach(func() {
 					os.RemoveAll(inDir)
 					os.RemoveAll(outDir)
+				})
+
+				Context("and it contains another zip inside it", func() {
+					var DZOutDir string
+
+					BeforeEach(func() {
+						var err error
+						DZOutDir, err = ioutil.TempDir("", "Double-zip-out")
+						Expect(err).NotTo(HaveOccurred())
+
+						zipFilePath = path.Join(DZOutDir, "out.zip")
+						err = zipit(outDir, zipFilePath, "")
+						Expect(err).NotTo(HaveOccurred())
+
+						cmdArgs = []string{"-f", zipFilePath}
+					})
+
+					AfterEach(func() {
+						Expect(os.RemoveAll(DZOutDir)).To(Succeed())
+					})
+
+					It("leaves a temporary violations directory with the content of the violation", func() {
+						Eventually(session).Should(gexec.Exit(3))
+
+						files, err := ioutil.ReadDir(fakeTempDir)
+						Expect(err).NotTo(HaveOccurred())
+
+						Expect(len(files)).To(Equal(1))
+					})
 				})
 
 				Context("when given a zip without prefix bytes", func() {
@@ -440,34 +540,18 @@ index 940393e..fa5a232 100644
 
 				ItShowsHowLongInflationTook()
 			})
-		})
 
-		Context("When no credentials are found", func() {
-			var politeText = `
-			words
-			NotACredential
-			words
-		`
-			var tmpFile *os.File
+			Context("when no credentials are found", func() {
+				var tmpFile *os.File
 
-			Context("when given content on stdin", func() {
-				BeforeEach(func() {
-					cmdArgs = []string{}
-					stdin = politeText
-				})
-				It("exits with status 0", func() {
-					Eventually(session).Should(gexec.Exit(0))
-				})
-			})
-
-			Context("when given a file flag", func() {
 				BeforeEach(func() {
 					var err error
 					tmpFile, err = ioutil.TempFile("", "cli-main-test")
 					Expect(err).NotTo(HaveOccurred())
 					defer tmpFile.Close()
 
-					ioutil.WriteFile(tmpFile.Name(), []byte(politeText), os.ModePerm)
+					err = ioutil.WriteFile(tmpFile.Name(), []byte(politeText), os.ModePerm)
+					Expect(err).NotTo(HaveOccurred())
 
 					cmdArgs = []string{"-f", tmpFile.Name()}
 				})
@@ -478,6 +562,14 @@ index 940393e..fa5a232 100644
 
 				It("exits with status 0", func() {
 					Eventually(session).Should(gexec.Exit(0))
+				})
+
+				It("removes the violations directory", func() {
+					Eventually(session).Should(gexec.Exit(0))
+
+					files, err := ioutil.ReadDir(fakeTempDir)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(files)).To(Equal(0))
 				})
 			})
 		})

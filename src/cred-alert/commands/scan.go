@@ -75,20 +75,19 @@ func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handl
 		return err
 	}
 
-	violationsDir, err := ioutil.TempDir("", "cred-alert-cli-violations")
-	if err != nil {
-		return err
-	}
-
 	inflateDir, err := ioutil.TempDir("", "cred-alert-cli")
 	if err != nil {
 		return err
 	}
+	defer func() {
+		f, err := ioutil.ReadDir(inflateDir)
+		if err == nil && len(f) <= 0 {
+			os.RemoveAll(inflateDir)
+		}
+	}()
 
 	quietLogger := kolsch.NewLogger()
-	archiveHandler := sniff.NewArchiveViolationHandlerFunc(inflateDir, violationsDir, handleFunc)
-	scanner := dirscanner.New(sniffer, handleFunc, archiveHandler, inflateDir)
-
+	scanner := dirscanner.New(sniffer, handleFunc, inflateDir)
 	if fi.IsDir() {
 		return scanner.Scan(quietLogger, c.File)
 	}
@@ -101,10 +100,7 @@ func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handl
 	br := bufio.NewReader(file)
 	if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
 		inflate := inflator.New()
-		cleaner.register(func() {
-			inflate.Close()
-			os.RemoveAll(inflateDir)
-		})
+		defer inflate.Close()
 
 		inflateArchive(quietLogger, inflate, inflateDir, mime, c.File)
 
@@ -113,7 +109,10 @@ func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handl
 			return err
 		}
 	} else {
-		sniffer.Sniff(logger, filescanner.New(br, c.File), handleFunc)
+		err := sniffer.Sniff(logger, filescanner.New(br, c.File), handleFunc)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

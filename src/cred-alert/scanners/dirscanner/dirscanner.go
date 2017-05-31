@@ -20,7 +20,6 @@ type DirScanner struct {
 	handler                    func(lager.Logger, scanners.Violation) error
 	sniffer                    sniff.Sniffer
 	inflateDir                 string
-	archiveHandler             func(lager.Logger, scanners.Violation) error
 	inflator                   inflator.Inflator
 	scannedDirContainsArchives bool
 }
@@ -28,15 +27,13 @@ type DirScanner struct {
 func New(
 	sniffer sniff.Sniffer,
 	handler sniff.ViolationHandlerFunc,
-	archiveHandler sniff.ViolationHandlerFunc,
 	inflateDir string,
 ) *DirScanner {
 	return &DirScanner{
-		sniffer:        sniffer,
-		handler:        handler,
-		archiveHandler: archiveHandler,
-		inflateDir:     inflateDir,
-		inflator:       inflator.New(),
+		sniffer:    sniffer,
+		handler:    handler,
+		inflateDir: inflateDir,
+		inflator:   inflator.New(),
 	}
 }
 
@@ -47,7 +44,7 @@ func (s *DirScanner) Scan(logger lager.Logger, path string) error {
 	}
 
 	if s.scannedDirContainsArchives {
-		err = s.scan(logger, s.inflateDir, s.archiveHandler)
+		err = s.scan(logger, s.inflateDir, s.handler)
 		if err != nil {
 			return err
 		}

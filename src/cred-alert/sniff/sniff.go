@@ -34,6 +34,8 @@ type Sniffer interface {
 	Sniff(lager.Logger, Scanner, ViolationHandlerFunc) error
 }
 
+type ViolationHandlerFunc func(lager.Logger, scanners.Violation) error
+
 type sniffer struct {
 	matcher          matchers.Matcher
 	exclusionMatcher matchers.Matcher

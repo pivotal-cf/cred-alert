@@ -26,7 +26,6 @@ var _ = Describe("DirScanner", func() {
 		credentialCount  int
 		handlerCallCount int
 		handler          sniff.ViolationHandlerFunc
-		archiveHandler   sniff.ViolationHandlerFunc
 		inflateDir       string
 	)
 
@@ -56,7 +55,7 @@ var _ = Describe("DirScanner", func() {
 	})
 
 	JustBeforeEach(func() {
-		scanner = dirscanner.New(sniffer, handler, archiveHandler, inflateDir)
+		scanner = dirscanner.New(sniffer, handler, inflateDir)
 	})
 
 	Describe("Scan", func() {
@@ -111,12 +110,6 @@ var _ = Describe("DirScanner", func() {
 
 				violationDir, err = ioutil.TempDir("", "dirscanner-test-violation-dir")
 				Expect(err).NotTo(HaveOccurred())
-
-				archiveHandler = sniff.NewArchiveViolationHandlerFunc(
-					inflateDir,
-					violationDir,
-					handler,
-				)
 			})
 
 			AfterEach(func() {

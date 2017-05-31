@@ -26,14 +26,7 @@ type inflator struct {
 }
 
 func New() Inflator {
-	f, err := ioutil.TempFile("", "inflator-errors")
-	if err != nil {
-		panic("failed creating temp file: " + err.Error())
-	}
-
-	return &inflator{
-		logfile: f,
-	}
+	return &inflator{}
 }
 
 func (i *inflator) LogPath() string {
@@ -45,7 +38,14 @@ func (i *inflator) Close() error {
 }
 
 func (i *inflator) Inflate(logger lager.Logger, mime, archivePath, destination string) error {
-	err := i.extractFile(logger, mime, archivePath, destination)
+	f, err := ioutil.TempFile("", "inflator-errors")
+	if err != nil {
+		panic("failed creating temp file: " + err.Error())
+	}
+
+	i.logfile = f
+
+	err = i.extractFile(logger, mime, archivePath, destination)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,10 @@ func (i *inflator) extractFile(logger lager.Logger, mime, path, destination stri
 	cmd.Stderr = i.logfile
 	err = cmd.Run()
 	if err != nil {
+		fmt.Println(err)
 		// We've already logged the output to a file. Let's just keep going.
+	} else {
+		os.RemoveAll(i.LogPath())
 	}
 
 	return nil
