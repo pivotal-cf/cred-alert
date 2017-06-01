@@ -59,21 +59,13 @@ index 940393e..fa5a232 100644
 			cmd := exec.Command(cliPath, finalArgs...)
 
 			var err error
-			fakeTempDir, err = ioutil.TempDir("", "MAIN_TEST.GO-TMPDIR-")
+			fakeTempDir, err = ioutil.TempDir("", "cred-alert-main")
 			Expect(err).NotTo(HaveOccurred())
 
-			envs := os.Environ()
-			index := -1
-			for i, env := range envs {
-				if strings.HasPrefix(env, "TMPDIR") {
-					index = i
-					break
-				}
-			}
-			Expect(index).ToNot(Equal(-1))
-			envs[index] = "TMPDIR=" + fakeTempDir
-
-			cmd.Env = envs
+			originalTemp := os.Getenv("TMPDIR")
+			Expect(os.Setenv("TMPDIR", fakeTempDir)).To(Succeed())
+			cmd.Env = os.Environ()
+			Expect(os.Setenv("TMPDIR", originalTemp)).To(Succeed())
 
 			if stdin != "" {
 				cmd.Stdin = strings.NewReader(stdin)
