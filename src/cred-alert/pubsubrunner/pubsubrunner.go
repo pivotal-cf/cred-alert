@@ -90,7 +90,10 @@ func (runner *Runner) CreateSubscription(tid, sid string) {
 	topic, err := runner.client.CreateTopic(ctx, tid)
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = runner.client.CreateSubscription(ctx, sid, topic, 10*time.Second, nil)
+	_, err = runner.client.CreateSubscription(ctx, sid, pubsub.SubscriptionConfig{
+		Topic:       topic,
+		AckDeadline: 10 * time.Second,
+	})
 	Expect(err).NotTo(HaveOccurred())
 }
 
