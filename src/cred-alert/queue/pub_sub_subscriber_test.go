@@ -2,21 +2,21 @@ package queue_test
 
 import (
 	"context"
-	"cred-alert/metrics/metricsfakes"
-	"cred-alert/pubsubrunner"
-	"cred-alert/queue"
-	"cred-alert/queue/queuefakes"
 	"os"
 
-	"cloud.google.com/go/pubsub"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
+	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"cred-alert/metrics/metricsfakes"
+	"cred-alert/pubsubrunner"
+	"cred-alert/queue"
+	"cred-alert/queue/queuefakes"
 )
 
 var _ = Describe("PubSubSubscriber", func() {
@@ -61,7 +61,9 @@ var _ = Describe("PubSubSubscriber", func() {
 		topic, err = client.CreateTopic(ctx, "a-topic-id")
 		Expect(err).NotTo(HaveOccurred())
 
-		subscription, err = client.CreateSubscription(ctx, "a-subscription-id", topic, 0, nil)
+		subscription, err = client.CreateSubscription(ctx, "a-subscription-id", pubsub.SubscriptionConfig{
+			Topic: topic,
+		})
 		Expect(err).NotTo(HaveOccurred())
 
 		res := topic.Publish(ctx, firstMessage)
