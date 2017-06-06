@@ -12,7 +12,7 @@ outputs:
 - name: cred-alert-cli-linux
 
 params:
-  OS: linux
+  GOOS: linux
 
 run:
   path: cred-alert/ci/scripts/compile-cli
