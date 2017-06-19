@@ -135,7 +135,7 @@
 	branch = master
 [submodule "src/gopkg.in/libgit2/git2go.v24"]
 	path = src/gopkg.in/libgit2/git2go.v24
-	url = https://github.com/cbguder/git2go
+	url = https://gopkg.in/libgit2/git2go.v24
 	branch = v24
 [submodule "src/github.com/cenkalti/backoff"]
 	path = src/github.com/cenkalti/backoff
@@ -168,4 +168,8 @@
 [submodule "src/golang.org/x/time"]
 	path = src/golang.org/x/time
 	url = https://go.googlesource.com/time
+	branch = master
+[submodule "src/github.com/mattn/go-isatty"]
+	path = src/github.com/mattn/go-isatty
+	url = https://github.com/mattn/go-isatty
 	branch = master
