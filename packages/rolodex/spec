@@ -9,6 +9,7 @@ dependencies:
 files:
   - bitbucket.org/taruti/mimemagic/*.{go,c} # gosub
   - cloud.google.com/go/compute/metadata/*.{go,c} # gosub
+  - cloud.google.com/go/internal/tracecontext/*.{go,c} # gosub
   - cloud.google.com/go/trace/*.{go,c} # gosub
   - code.cloudfoundry.org/clock/*.{go,c} # gosub
   - code.cloudfoundry.org/lager/*.{go,c} # gosub

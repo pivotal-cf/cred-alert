@@ -10,6 +10,7 @@ files:
   - bitbucket.org/taruti/mimemagic/*.{go,c} # gosub
   - cloud.google.com/go/compute/metadata/*.{go,c} # gosub
   - cloud.google.com/go/iam/*.{go,c} # gosub
+  - cloud.google.com/go/internal/tracecontext/*.{go,c} # gosub
   - cloud.google.com/go/internal/version/*.{go,c} # gosub
   - cloud.google.com/go/pubsub/*.{go,c} # gosub
   - cloud.google.com/go/pubsub/apiv1/*.{go,c} # gosub
