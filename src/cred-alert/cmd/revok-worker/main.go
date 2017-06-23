@@ -13,9 +13,14 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	cloudtrace "cloud.google.com/go/trace"
+	"cloud.google.com/go/trace"
+	"golang.org/x/oauth2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
+
 	"github.com/google/go-github/github"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/paraphernalia/operate/admin"
@@ -24,9 +29,6 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/sigmon"
-	"golang.org/x/oauth2"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 
 	"cred-alert/config"
 	"cred-alert/crypto"
@@ -134,7 +136,7 @@ func main() {
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
 	formatter := notifications.NewSlackNotificationFormatter()
 
-	traceClient, err := cloudtrace.NewClient(context.Background(), cfg.Trace.ProjectName)
+	traceClient, err := trace.NewClient(context.Background(), cfg.Trace.ProjectName)
 	if err != nil {
 		logger.Error("failed-to-create-trace-client", err)
 	}
@@ -164,7 +166,7 @@ func main() {
 		rolodexServerAddr,
 		grpc.WithDialer(keepAliveDial),
 		grpc.WithTransportCredentials(transportCreds),
-		grpc.WithUnaryInterceptor(cloudtrace.GRPCClientInterceptor()),
+		grpc.WithUnaryInterceptor(traceClient.GRPCClientInterceptor()),
 	)
 
 	rolodexClient := rolodexpb.NewRolodexClient(conn)
