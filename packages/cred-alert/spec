@@ -87,6 +87,7 @@ files:
   - golang.org/x/oauth2/internal/*.{go,c} # gosub
   - golang.org/x/oauth2/jws/*.{go,c} # gosub
   - golang.org/x/oauth2/jwt/*.{go,c} # gosub
+  - golang.org/x/sync/errgroup/*.{go,c} # gosub
   - golang.org/x/sync/semaphore/*.{go,c} # gosub
   - golang.org/x/text/secure/bidirule/*.{go,c} # gosub
   - golang.org/x/text/transform/*.{go,c} # gosub
