@@ -9,10 +9,15 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/oauth2"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/cloudfoundry-community/go-cfenv"
+	"github.com/gorilla/context"
+	"github.com/gorilla/sessions"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
@@ -21,6 +26,7 @@ import (
 
 	"cred-alert/config"
 	"cred-alert/revok/api"
+	"cred-alert/revok/api/middleware"
 	"cred-alert/revok/web"
 	"cred-alert/revokpb"
 )
@@ -65,6 +71,7 @@ func init() {
 
 	logger = lager.NewLogger("credential-count-publisher")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
+	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
 }
 
 func main() {
@@ -111,11 +118,37 @@ func main() {
 
 	revokClient := revokpb.NewRevokClient(conn)
 
+	redirectURL := mustGetEnv("REDIRECT_URL")
+	sessionAuthKey := mustGetEnv("SESSION_AUTH_KEY")
+
+	ssoService := getSSOService()
+
+	authDomain := mustGetCredential(ssoService, "auth_domain")
+	clientID := mustGetCredential(ssoService, "client_id")
+	clientSecret := mustGetCredential(ssoService, "client_secret")
+
+	oauthConfig := oauth2.Config{
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  authDomain + "/oauth/authorize",
+			TokenURL: authDomain + "/oauth/token",
+		},
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  redirectURL,
+	}
+
+	sessionStore := sessions.NewCookieStore([]byte(sessionAuthKey))
+
 	handler, err := rata.NewRouter(web.Routes, rata.Handlers{
-		web.Index:        api.NewIndexHandler(logger, indexLayout, revokClient),
-		web.Organization: api.NewOrganizationHandler(logger, organizationLayout, revokClient),
-		web.Repository:   api.NewRepositoryHandler(logger, repositoryLayout, revokClient),
+		web.Login:        api.NewLoginHandler(logger, sessionStore, oauthConfig),
+		web.OAuth:        api.NewOAuthCallbackHandler(logger, sessionStore, oauthConfig, authDomain),
+		web.Index:        middleware.NewAuthenticatedHandler(logger, sessionStore, oauthConfig, authDomain, api.NewIndexHandler(logger, indexLayout, revokClient)),
+		web.Organization: middleware.NewAuthenticatedHandler(logger, sessionStore, oauthConfig, authDomain, api.NewOrganizationHandler(logger, organizationLayout, revokClient)),
+		web.Repository:   middleware.NewAuthenticatedHandler(logger, sessionStore, oauthConfig, authDomain, api.NewRepositoryHandler(logger, repositoryLayout, revokClient)),
 	})
+
+	// Avoid memory leaks according to Gorilla documentation.
+	handler = context.ClearHandler(handler)
 
 	if err != nil {
 		log.Fatalf("failed to create handler: %s", err.Error())
@@ -135,4 +168,46 @@ func keepAliveDial(addr string, timeout time.Duration) (net.Conn, error) {
 		KeepAlive: 60 * time.Second,
 	}
 	return d.Dial("tcp", addr)
+}
+
+func mustGetEnv(key string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		// TODO:
+		err := fmt.Errorf("could not get value for key: %s", key)
+		panic(err)
+	}
+	return val
+}
+
+func mustGetCredential(service cfenv.Service, key string) string {
+	value, ok := service.CredentialString(key)
+	if !ok || value == "" {
+		// TODO:
+		err := fmt.Errorf("could not get value for key: %s", key)
+		panic(err)
+	}
+
+	return value
+}
+
+func getSSOService() cfenv.Service {
+	appEnv, err := cfenv.Current()
+	if err != nil {
+		// TODO:
+		panic(err)
+	}
+
+	services, err := appEnv.Services.WithNameUsingPattern("sso.*")
+	if err != nil {
+		// TODO:
+		panic(err)
+	}
+
+	if len(services) != 1 {
+		// TODO:
+		panic("did not find exactly one sso service")
+	}
+
+	return services[0]
 }
