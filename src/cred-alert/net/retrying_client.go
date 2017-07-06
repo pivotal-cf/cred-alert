@@ -48,14 +48,9 @@ func (c *retryingClient) Do(orgReq *http.Request) (*http.Response, error) {
 		return nil
 	}
 
-	bo := &backoff.ExponentialBackOff{
-		InitialInterval:     backoff.DefaultInitialInterval,
-		RandomizationFactor: backoff.DefaultRandomizationFactor,
-		Multiplier:          backoff.DefaultMultiplier,
-		MaxInterval:         backoff.DefaultMaxInterval,
-		MaxElapsedTime:      time.Minute,
-		Clock:               c.clock,
-	}
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = time.Minute
+	bo.Clock = c.clock
 
 	if err := c.retry(makeRequest, bo); err != nil {
 		return nil, fmt.Errorf("request failed after retry: %s", err.Error())
