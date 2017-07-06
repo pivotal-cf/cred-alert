@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -52,11 +51,11 @@ func (h *oauthCallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	oauthStateString := session.Values["state"]
+	cookieState := session.Values["state"]
 
-	state := r.FormValue("state")
-	if state != oauthStateString {
-		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
+	urlState := r.FormValue("state")
+	if urlState != cookieState {
+		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'\n", cookieState, urlState)
 		h.logger.Error("oauth-callback-state-check", err)
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
@@ -85,12 +84,6 @@ func (h *oauthCallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	defer response.Body.Close()
-	contents, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		h.logger.Error("oauth-callback-user-info-read-response", err)
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
 
 	// fmt.Printf("access token length: %d\n", len(token.AccessToken))
 	// fmt.Printf("access token: '%s'\n", token.AccessToken)
@@ -135,5 +128,5 @@ func (h *oauthCallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fmt.Fprintf(w, "Content: %s\n", contents)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
