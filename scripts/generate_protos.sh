@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -e -u
 
 if ! hash protoc 2>/dev/null; then
   echo "protoc missing, cannot continue"
