@@ -27,8 +27,9 @@ var _ = Describe("Server", func() {
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		branchRepository     *dbfakes.FakeBranchRepository
 
-		searcher *searchfakes.FakeSearcher
-		server   revok.Server
+		blobSearcher *searchfakes.FakeBlobSearcher
+		searcher     *searchfakes.FakeSearcher
+		server       revok.Server
 	)
 
 	BeforeEach(func() {
@@ -37,9 +38,10 @@ var _ = Describe("Server", func() {
 		branchRepository = &dbfakes.FakeBranchRepository{}
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 
+		blobSearcher = &searchfakes.FakeBlobSearcher{}
 		searcher = &searchfakes.FakeSearcher{}
 
-		server = revok.NewServer(logger, searcher, repositoryRepository, branchRepository)
+		server = revok.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
 	})
 
 	Describe("GetCredentialCounts", func() {
@@ -89,7 +91,7 @@ var _ = Describe("Server", func() {
 				branchRepository.GetCredentialCountByOwnerReturns(nil, errors.New("disaster"))
 			})
 
-			It("does not error", func() {
+			It("errors", func() {
 				request := &revokpb.CredentialCountRequest{}
 				_, err = server.GetCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
@@ -149,7 +151,7 @@ var _ = Describe("Server", func() {
 				branchRepository.GetCredentialCountForOwnerReturns(nil, errors.New("disaster"))
 			})
 
-			It("does not error", func() {
+			It("errors", func() {
 				request := &revokpb.OrganizationCredentialCountRequest{}
 				_, err = server.GetOrganizationCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
@@ -209,12 +211,62 @@ var _ = Describe("Server", func() {
 				branchRepository.GetCredentialCountForRepoReturns(nil, errors.New("disaster"))
 			})
 
-			It("does not error", func() {
+			It("errors", func() {
 				request := &revokpb.RepositoryCredentialCountRequest{}
 				_, err = server.GetRepositoryCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
+		})
+	})
 
+	Describe("BoshBlobs", func() {
+		var (
+			response *revokpb.BoshBlobsResponse
+			err      error
+		)
+
+		BeforeEach(func() {
+			blobSearcher.ListBlobsReturns([]search.BlobResult{
+				{
+					Path: "golang/golang.tgz",
+					SHA:  "123abc",
+				},
+			}, nil)
+
+			request := &revokpb.BoshBlobsRequest{
+				Repository: &redpb.Repository{
+					Owner: "owner-name",
+					Name:  "repo-name",
+				},
+			}
+			response, err = server.BoshBlobs(context.Background(), request)
+		})
+
+		It("does not error", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the blobs", func() {
+			blob := &revokpb.BoshBlob{
+				Path: "golang/golang.tgz",
+				Sha:  "123abc",
+			}
+
+			Expect(response).NotTo(BeNil())
+			Expect(response.Blobs).NotTo(BeNil())
+			Expect(response.Blobs).To(Equal([]*revokpb.BoshBlob{blob}))
+		})
+
+		Context("when the database returns an error", func() {
+			BeforeEach(func() {
+				blobSearcher.ListBlobsReturns(nil, errors.New("disaster"))
+			})
+
+			It("errors", func() {
+				request := &revokpb.BoshBlobsRequest{}
+				_, err = server.BoshBlobs(context.Background(), request)
+				Expect(err).To(HaveOccurred())
+			})
 		})
 	})
 

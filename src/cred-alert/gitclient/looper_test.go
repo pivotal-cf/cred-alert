@@ -1,13 +1,9 @@
 package gitclient_test
 
 import (
-	"bytes"
-	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,27 +18,6 @@ var _ = Describe("Looper", func() {
 		upstreamPath string
 		localPath    string
 	)
-
-	var git = func(path string, args ...string) string {
-		stdout := &bytes.Buffer{}
-
-		cmd := exec.Command("git", args...)
-		cmd.Env = append(
-			os.Environ(),
-			"TERM=dumb",
-			"GIT_COMMITTER_NAME=Korben Dallas",
-			"GIT_COMMITTER_EMAIL=korben@git.example.com",
-			"GIT_AUTHOR_NAME=Korben Dallas",
-			"GIT_AUTHOR_EMAIL=korben@git.example.com",
-		)
-		cmd.Dir = path
-		cmd.Stdout = io.MultiWriter(GinkgoWriter, stdout)
-		cmd.Stderr = GinkgoWriter
-		err := cmd.Run()
-		Expect(err).NotTo(HaveOccurred())
-
-		return strings.TrimSpace(stdout.String())
-	}
 
 	var gitUpstream = func(args ...string) string {
 		return git(upstreamPath, args...)
@@ -76,6 +51,9 @@ var _ = Describe("Looper", func() {
 
 	AfterEach(func() {
 		err := os.RemoveAll(upstreamPath)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = os.RemoveAll(localPath)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

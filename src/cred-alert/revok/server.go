@@ -25,8 +25,9 @@ type Server interface {
 }
 
 type server struct {
-	logger   lager.Logger
-	searcher search.Searcher
+	logger       lager.Logger
+	searcher     search.Searcher
+	blobSearcher search.BlobSearcher
 
 	repositoryRepository db.RepositoryRepository
 	branchRepository     db.BranchRepository
@@ -35,12 +36,14 @@ type server struct {
 func NewServer(
 	logger lager.Logger,
 	searcher search.Searcher,
+	blobSearcher search.BlobSearcher,
 	repositoryRepository db.RepositoryRepository,
 	branchRepository db.BranchRepository,
 ) Server {
 	return &server{
 		logger:               logger,
 		searcher:             searcher,
+		blobSearcher:         blobSearcher,
 		repositoryRepository: repositoryRepository,
 		branchRepository:     branchRepository,
 	}
@@ -127,6 +130,27 @@ func (s *server) GetRepositoryCredentialCounts(
 	}
 
 	return response, nil
+}
+
+func (s *server) BoshBlobs(ctx context.Context, request *revokpb.BoshBlobsRequest) (*revokpb.BoshBlobsResponse, error) {
+	logger := s.logger.Session("bosh-blobs-endpoint")
+
+	repository := request.GetRepository()
+	blobs, err := s.blobSearcher.ListBlobs(logger, repository.GetOwner(), repository.GetName())
+	if err != nil {
+		return nil, err
+	}
+
+	response := revokpb.BoshBlobsResponse{}
+
+	for _, blob := range blobs {
+		response.Blobs = append(response.Blobs, &revokpb.BoshBlob{
+			Path: blob.Path,
+			Sha:  blob.SHA,
+		})
+	}
+
+	return &response, nil
 }
 
 func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {

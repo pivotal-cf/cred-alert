@@ -276,7 +276,10 @@ func main() {
 
 	looper := gitclient.NewLooper()
 	searcher := search.NewSearcher(repositoryRepository, looper)
-	handler := revok.NewServer(logger, searcher, repositoryRepository, branchRepository)
+
+	fileLookup := gitclient.NewFileLookup()
+	blobSearcher := search.NewBlobSearcher(repositoryRepository, fileLookup)
+	handler := revok.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
 
 	serverTls := tlsConfig.Server(tlsconfig.WithClientAuthentication(caCertPool))
 
