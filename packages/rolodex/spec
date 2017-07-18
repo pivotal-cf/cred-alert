@@ -80,12 +80,11 @@ files:
   - google.golang.org/api/internal/*.{go,c} # gosub
   - google.golang.org/api/option/*.{go,c} # gosub
   - google.golang.org/api/support/bundler/*.{go,c} # gosub
-  - google.golang.org/api/transport/*.{go,c} # gosub
+  - google.golang.org/api/transport/http/*.{go,c} # gosub
   - google.golang.org/genproto/googleapis/rpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
-  - google.golang.org/grpc/credentials/oauth/*.{go,c} # gosub
   - google.golang.org/grpc/grpclb/grpc_lb_v1/*.{go,c} # gosub
   - google.golang.org/grpc/grpclog/*.{go,c} # gosub
   - google.golang.org/grpc/internal/*.{go,c} # gosub
