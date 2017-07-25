@@ -36,8 +36,11 @@ files:
   - github.com/getsentry/raven-go/*.{go,c} # gosub
   - github.com/go-sql-driver/mysql/*.{go,c} # gosub
   - github.com/golang/protobuf/proto/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/*.{go,c} # gosub
   - github.com/golang/protobuf/ptypes/any/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/duration/*.{go,c} # gosub
   - github.com/golang/protobuf/ptypes/empty/*.{go,c} # gosub
+  - github.com/golang/protobuf/ptypes/timestamp/*.{go,c} # gosub
   - github.com/google/go-github/github/*.{go,c} # gosub
   - github.com/google/go-querystring/query/*.{go,c} # gosub
   - github.com/hashicorp/go-multierror/*.{go,c} # gosub
