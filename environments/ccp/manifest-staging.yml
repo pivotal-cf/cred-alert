@@ -5,4 +5,4 @@ applications:
   disk_quota: 1024M
   buildpack: binary_buildpack
   stack: cflinuxfs2
-  command: ./ccp
+  command: "./ccp --port=$PORT --rpc-server-address=$RPC_SERVER_ADDRESS --rpc-server-port=$RPC_SERVER_PORT --ca-cert-path=<(echo \"$SERVER_CA_CERT\") --client-cert-path=<(echo \"$CLIENT_CERT\") --client-key-path=<(echo \"$CLIENT_KEY\") --client-key-passphrase=$CLIENT_KEY_PASSPHRASE"
