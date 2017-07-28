@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -eux
+
+export GOPATH="${PWD}/cred-alert"
+export PATH="${GOPATH}/bin:${PATH}"
+export GOOS=linux
+
+output="${PWD}/binary"
+
+CGO_ENABLED=0 \
+go build \
+  -x \
+  -v \
+  -o "${output}/ccp" \
+  "cred-alert/cmd/credential-count-publisher"
