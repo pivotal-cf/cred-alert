@@ -87,6 +87,7 @@ files:
   - google.golang.org/genproto/googleapis/rpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
+  - google.golang.org/grpc/connectivity/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
   - google.golang.org/grpc/grpclb/grpc_lb_v1/*.{go,c} # gosub
   - google.golang.org/grpc/grpclog/*.{go,c} # gosub
