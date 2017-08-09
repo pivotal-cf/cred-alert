@@ -238,12 +238,12 @@ var _ = Describe("Slack Notifier", func() {
 				Eventually(server.ReceivedRequests).Should(HaveLen(1))
 				Consistently(done).ShouldNot(BeClosed())
 
-				clock.IncrementBySeconds(4)
+				clock.WaitForWatcherAndIncrement(4 * time.Second)
 
 				Consistently(server.ReceivedRequests).Should(HaveLen(1))
 				Consistently(done).ShouldNot(BeClosed())
 
-				clock.IncrementBySeconds(2) // 6 seconds total
+				clock.WaitForWatcherAndIncrement(2 * time.Second) // 6 seconds total
 
 				Eventually(server.ReceivedRequests).Should(HaveLen(2))
 				Eventually(done).Should(BeClosed())
@@ -298,12 +298,12 @@ var _ = Describe("Slack Notifier", func() {
 				Eventually(server.ReceivedRequests).Should(HaveLen(1))
 				Eventually(done).ShouldNot(BeClosed())
 
-				clock.IncrementBySeconds(6)
+				clock.WaitForWatcherAndIncrement(6 * time.Second)
 
 				Eventually(server.ReceivedRequests).Should(HaveLen(2))
 				Consistently(done).ShouldNot(BeClosed())
 
-				clock.IncrementBySeconds(6)
+				clock.WaitForWatcherAndIncrement(6 * time.Second)
 
 				Eventually(server.ReceivedRequests).Should(HaveLen(3))
 				Eventually(done).Should(BeClosed())
