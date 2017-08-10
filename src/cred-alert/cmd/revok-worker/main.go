@@ -156,7 +156,7 @@ func main() {
 	rolodexServerAddr := fmt.Sprintf("%s:%d", cfg.Rolodex.ServerAddress, cfg.Rolodex.ServerPort)
 
 	tlsConfig := tlsconfig.Build(
-		tlsconfig.WithPivotalDefaults(),
+		tlsconfig.WithInternalServiceDefaults(),
 		tlsconfig.WithIdentity(certificate),
 	)
 

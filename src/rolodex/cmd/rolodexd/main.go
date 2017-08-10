@@ -61,7 +61,7 @@ func main() {
 	syncer := rolodex.NewSyncer(logger, emitter, cfg.RepositoryURL, cfg.RepositoryPath, gitClient, repository)
 
 	tlsConfig := tlsconfig.Build(
-		tlsconfig.WithPivotalDefaults(),
+		tlsconfig.WithInternalServiceDefaults(),
 		tlsconfig.WithIdentity(certificate),
 	).Server(tlsconfig.WithClientAuthentication(clientCertPool))
 
