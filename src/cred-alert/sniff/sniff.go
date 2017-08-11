@@ -3,6 +3,7 @@ package sniff
 import (
 	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
+	"regexp"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/hashicorp/go-multierror"
@@ -80,6 +81,11 @@ func (s *sniffer) Sniff(
 
 	for scanner.Scan(logger) {
 		line := scanner.Line(logger)
+
+		vendorRe := regexp.MustCompile(`\/?vendor/`)
+		if vendorRe.Match([]byte(line.Path)) {
+			continue
+		}
 
 		if s.exclusionMatcher != nil {
 			if match, _, _ := s.exclusionMatcher.Match(line.Content); match {
