@@ -5,7 +5,7 @@ description: |
   Ingestor for receiving GitHub webhooks.
 
 templates:
-  ctl.erb: bin/ctl
+  ingestor.yml.erb: config/bpm/ingestor.yml
   config.yml.erb: config/config.yml
   pubsub_private_key.erb: config/pubsub_private_key
 

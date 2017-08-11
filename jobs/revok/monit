@@ -1,5 +1,5 @@
 check process revok
-  with pidfile /var/vcap/sys/run/revok/revok.pid
-  start program "/var/vcap/jobs/revok/bin/ctl start"
-  stop program "/var/vcap/jobs/revok/bin/ctl stop"
+  with pidfile /var/vcap/sys/run/bpm/revok/revok.pid
+  start program "/var/vcap/packages/bpm/bin/bpm start revok"
+  stop program "/var/vcap/packages/bpm/bin/bpm stop revok"
   group vcap

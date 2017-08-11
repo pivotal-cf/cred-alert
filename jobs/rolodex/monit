@@ -1,5 +1,5 @@
-check process rolodexd
-  with pidfile /var/vcap/sys/run/rolodex/rolodexd.pid
-  start program "/var/vcap/jobs/rolodex/bin/ctl start"
-  stop program "/var/vcap/jobs/rolodex/bin/ctl stop"
+check process rolodex
+  with pidfile /var/vcap/sys/run/bpm/rolodex/rolodex.pid
+  start program "/var/vcap/packages/bpm/bin/bpm start rolodex"
+  stop program "/var/vcap/packages/bpm/bin/bpm stop rolodex"
   group vcap

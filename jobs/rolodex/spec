@@ -5,8 +5,7 @@ description: |
   Rolodex provides a team directory for Pivotal Cloud Foundry.
 
 templates:
-  ctl.erb: bin/ctl
-  pre-start.erb: bin/pre-start
+  rolodex.yml.erb: config/bpm/rolodex.yml
   config.yml.erb: config/config.yml
   github_private_key.erb: config/github_private_key
   github_public_key.erb: config/github_public_key
