@@ -139,6 +139,8 @@ func (c *client) GetParents(repoPath, childSha string) ([]string, error) {
 	return parents, nil
 }
 
+const nullGitObjectID = "0000000000000000000000000000000000000000"
+
 func (c *client) Fetch(repoPath string) (map[string][]string, error) {
 	c.locker.Lock(repoPath)
 	defer c.locker.Unlock(repoPath)
@@ -157,7 +159,10 @@ func (c *client) Fetch(repoPath string) (map[string][]string, error) {
 
 	changes := map[string][]string{}
 	updateTipsCallback := func(refname string, a *git.Oid, b *git.Oid) git.ErrorCode {
-		changes[refname] = []string{a.String(), b.String()}
+		if a.String() != nullGitObjectID && b.String() != nullGitObjectID {
+			changes[refname] = []string{a.String(), b.String()}
+		}
+
 		return 0
 	}
 
