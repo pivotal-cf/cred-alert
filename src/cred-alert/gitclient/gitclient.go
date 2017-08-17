@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/BurntSushi/locker"
+
 	"code.cloudfoundry.org/lager"
 
 	git "gopkg.in/libgit2/git2go.v24"
@@ -23,6 +25,7 @@ var ErrInterrupted = errors.New("interrupted")
 type client struct {
 	privateKeyPath string
 	publicKeyPath  string
+	locker         *locker.Locker
 }
 
 //go:generate counterfeiter . Client
@@ -33,7 +36,7 @@ type Client interface {
 	GetParents(string, string) ([]string, error)
 	Fetch(string) (map[string][]string, error)
 	HardReset(string, string) error
-	Diff(repositoryPath, parent, child string) (string, error)
+	Diff(repoPath, parent, child string) (string, error)
 	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
 }
 
@@ -41,11 +44,15 @@ func New(privateKeyPath, publicKeyPath string) *client {
 	return &client{
 		privateKeyPath: privateKeyPath,
 		publicKeyPath:  publicKeyPath,
+		locker:         locker.NewLocker(),
 	}
 }
 
-func (c *client) BranchTargets(repositoryPath string) (map[string]string, error) {
-	repo, err := git.OpenRepository(repositoryPath)
+func (c *client) BranchTargets(repoPath string) (map[string]string, error) {
+	c.locker.RLock(repoPath)
+	defer c.locker.RUnlock(repoPath)
+
+	repo, err := git.OpenRepository(repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -84,17 +91,23 @@ func (c *client) BranchTargets(repositoryPath string) (map[string]string, error)
 	return branches, nil
 }
 
-func (c *client) Clone(sshURL, dest string) error {
+func (c *client) Clone(sshURL, repoPath string) error {
+	c.locker.Lock(repoPath)
+	defer c.locker.Unlock(repoPath)
+
 	cloneOptions := &git.CloneOptions{
 		FetchOptions: newFetchOptions(c.privateKeyPath, c.publicKeyPath),
 	}
 
-	_, err := git.Clone(sshURL, dest, cloneOptions)
+	_, err := git.Clone(sshURL, repoPath, cloneOptions)
 
 	return err
 }
 
 func (c *client) GetParents(repoPath, childSha string) ([]string, error) {
+	c.locker.RLock(repoPath)
+	defer c.locker.RUnlock(repoPath)
+
 	repo, err := git.OpenRepository(repoPath)
 	if err != nil {
 		return nil, err
@@ -126,8 +139,11 @@ func (c *client) GetParents(repoPath, childSha string) ([]string, error) {
 	return parents, nil
 }
 
-func (c *client) Fetch(repositoryPath string) (map[string][]string, error) {
-	repo, err := git.OpenRepository(repositoryPath)
+func (c *client) Fetch(repoPath string) (map[string][]string, error) {
+	c.locker.Lock(repoPath)
+	defer c.locker.Unlock(repoPath)
+
+	repo, err := git.OpenRepository(repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -157,8 +173,11 @@ func (c *client) Fetch(repositoryPath string) (map[string][]string, error) {
 	return changes, nil
 }
 
-func (c *client) HardReset(repositoryPath, sha string) error {
-	repo, err := git.OpenRepository(repositoryPath)
+func (c *client) HardReset(repoPath, sha string) error {
+	c.locker.Lock(repoPath)
+	defer c.locker.Unlock(repoPath)
+
+	repo, err := git.OpenRepository(repoPath)
 	if err != nil {
 		return err
 	}
@@ -186,8 +205,11 @@ func (c *client) HardReset(repositoryPath, sha string) error {
 	})
 }
 
-func (c *client) Diff(repositoryPath, parent, child string) (string, error) {
-	repo, err := git.OpenRepository(repositoryPath)
+func (c *client) Diff(repoPath, parent, child string) (string, error) {
+	c.locker.RLock(repoPath)
+	defer c.locker.RUnlock(repoPath)
+
+	repo, err := git.OpenRepository(repoPath)
 	if err != nil {
 		return "", err
 	}
@@ -245,10 +267,13 @@ func (c *client) Diff(repositoryPath, parent, child string) (string, error) {
 
 func (c *client) BranchCredentialCounts(
 	logger lager.Logger,
-	repositoryPath string,
+	repoPath string,
 	sniffer sniff.Sniffer,
 ) (map[string]uint, error) {
-	repo, err := git.OpenRepository(repositoryPath)
+	c.locker.RLock(repoPath)
+	defer c.locker.RUnlock(repoPath)
+
+	repo, err := git.OpenRepository(repoPath)
 	if err != nil {
 		return nil, err
 	}

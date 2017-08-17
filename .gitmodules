@@ -173,3 +173,7 @@
 	path = src/github.com/mattn/go-isatty
 	url = https://github.com/mattn/go-isatty
 	branch = master
+[submodule "src/github.com/BurntSushi/locker"]
+	path = src/github.com/BurntSushi/locker
+	url = https://github.com/BurntSushi/locker
+	branch = master
