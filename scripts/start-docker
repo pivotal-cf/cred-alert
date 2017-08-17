@@ -1,0 +1,15 @@
+#!/bin/bash
+
+absolute_path() {
+  (cd "$1" && pwd)
+}
+
+scripts_path=$(absolute_path "$(dirname "$0")" )
+
+sudo docker pull pivotalcf/cred-alert-ci:latest
+
+sudo docker run \
+  -v  ${scripts_path}/..:/cred-alert \
+  -e "GOPATH=/cred-alert" \
+  -it pivotalcf/cred-alert-ci:latest \
+  /bin/bash -c 'export PATH=$PATH:$GOPATH/bin; /bin/bash'

@@ -106,12 +106,14 @@ var _ = Describe("HeadCredentialCounter", func() {
 				Owner:         "some-owner",
 				Path:          "some-path",
 				DefaultBranch: "some-branch",
+				Cloned:        true,
 			}
 			repo2 = db.Repository{
 				Name:          "some-other-repo",
 				Owner:         "some-other-owner",
 				Path:          "some-other-path",
 				DefaultBranch: "some-other-branch",
+				Cloned:        true,
 			}
 
 			repositoryRepository.AllReturns([]db.Repository{repo1, repo2}, nil)
@@ -125,6 +127,20 @@ var _ = Describe("HeadCredentialCounter", func() {
 
 			_, path, _ = gitClient.BranchCredentialCountsArgsForCall(1)
 			Expect(path).To(Equal("some-other-path"))
+		})
+
+		Context("when the repository has not been cloned yet", func() {
+			BeforeEach(func() {
+				repo1.Cloned = false
+				repositoryRepository.AllReturns([]db.Repository{repo1, repo2}, nil)
+			})
+
+			It("does not attempt to count the credentials", func() {
+				Eventually(gitClient.BranchCredentialCountsCallCount).Should(Equal(1))
+
+				_, path, _ := gitClient.BranchCredentialCountsArgsForCall(0)
+				Expect(path).To(Equal("some-other-path"))
+			})
 		})
 
 		Context("when there are credentials for the repository", func() {

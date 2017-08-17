@@ -83,17 +83,21 @@ func (c *headCredentialCounter) work(
 		logger.Error("failed-getting-all-repositories", err)
 	}
 
-	for i := range repositories {
+	for _, repository := range repositories {
 		select {
 		case <-signals:
 			cancel()
 			return
 		default:
-			repository := repositories[i]
 			repoLogger := logger.WithData(lager.Data{
 				"ref":  repository.DefaultBranch,
 				"path": repository.Path,
 			})
+
+			if !repository.Cloned {
+				repoLogger.Debug("skipping-uncloned-repository")
+				continue
+			}
 
 			credentialCounts, err := c.gitClient.BranchCredentialCounts(quietLogger, repository.Path, c.sniffer)
 			if err != nil {
