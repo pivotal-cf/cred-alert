@@ -12,7 +12,7 @@ import (
 //go:generate counterfeiter . ScanRepository
 
 type ScanRepository interface {
-	Start(lager.Logger, string, string, string, string, *Repository, *Fetch) ActiveScan
+	Start(lager.Logger, string, string, string, string, *Repository) ActiveScan
 	ScansNotYetRunWithVersion(lager.Logger, int) ([]PriorScan, error)
 }
 
@@ -35,7 +35,6 @@ func (repo *scanRepository) Start(
 	startSHA string,
 	stopSHA string,
 	repository *Repository,
-	fetch *Fetch,
 ) ActiveScan {
 	logger = logger.Session("start-scan", lager.Data{
 		"type":          scanType,
@@ -50,7 +49,6 @@ func (repo *scanRepository) Start(
 		tx:     repo.db.Begin(),
 
 		repository: repository,
-		fetch:      fetch,
 		typee:      scanType,
 		startTime:  repo.clock.Now(),
 
@@ -75,7 +73,6 @@ type activeScan struct {
 	typee      string
 	startTime  time.Time
 	repository *Repository
-	fetch      *Fetch
 
 	branch   string
 	startSHA string
@@ -103,10 +100,6 @@ func (s *activeScan) Finish() error {
 	// don't update the association on save, but actually save it on the scan
 	if s.repository != nil && s.repository.ID != 0 {
 		scan.RepositoryID = &s.repository.ID
-	}
-
-	if s.fetch != nil && s.fetch.ID != 0 {
-		scan.FetchID = &s.fetch.ID
 	}
 
 	if err := s.tx.Save(&scan).Error; err != nil {

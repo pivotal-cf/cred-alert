@@ -3,7 +3,6 @@ package db_test
 import (
 	"cred-alert/db"
 	"cred-alert/sniff"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -41,7 +40,7 @@ var _ = Describe("Scan Repository", func() {
 		It("works with no credentials", func() {
 			startTime := clock.Now()
 
-			scan := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil, nil)
+			scan := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil)
 
 			clock.Increment(time.Second * 5)
 
@@ -63,7 +62,7 @@ var _ = Describe("Scan Repository", func() {
 		})
 
 		It("can record found credentials for a scan", func() {
-			activeScan := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil, nil)
+			activeScan := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil)
 
 			credential := db.Credential{
 				Owner:      "owner",
@@ -133,12 +132,12 @@ var _ = Describe("Scan Repository", func() {
 			})
 
 			It("returns an error", func() {
-				err := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil, nil).Finish()
+				err := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil).Finish()
 				Expect(err).To(MatchError(saveError))
 			})
 
 			It("does not save any of the credentials from the scan", func() {
-				scan := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil, nil)
+				scan := scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", nil)
 
 				credential := db.Credential{
 					Owner:      "owner",
@@ -162,10 +161,9 @@ var _ = Describe("Scan Repository", func() {
 			})
 		})
 
-		Context("when the scan includes a repository and fetch", func() {
+		Context("when the scan includes a repository", func() {
 			var (
 				repository *db.Repository
-				fetch      *db.Fetch
 				scan       db.ActiveScan
 			)
 
@@ -182,33 +180,17 @@ var _ = Describe("Scan Repository", func() {
 				err := database.FirstOrCreate(repository, *repository).Error
 				Expect(err).NotTo(HaveOccurred())
 
-				changes := map[string][]string{
-					"change": {"from", "to"},
-				}
-
-				bs, err := json.Marshal(changes)
-				Expect(err).NotTo(HaveOccurred())
-
-				fetch = &db.Fetch{
-					RepositoryID: repository.ID,
-					Path:         "path-to-repo-on-disk",
-					Changes:      bs,
-				}
-
-				err = database.Save(fetch).Error
-				Expect(err).NotTo(HaveOccurred())
-
-				scan = scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", repository, fetch)
+				scan = scanRepository.Start(logger, "scan-type", "branch", "start-sha", "stop-sha", repository)
 			})
 
-			It("saves both appropriately on Finish", func() {
+			It("saves the repository appropriately on Finish", func() {
 				scan.Finish()
 
 				savedScan := db.Scan{}
 				database.Last(&savedScan)
 
 				var count uint
-				database.Model(db.Scan{}).Where("repository_id = ? AND fetch_id = ?", repository.ID, fetch.ID).Count(&count)
+				database.Model(db.Scan{}).Where("repository_id = ?", repository.ID).Count(&count)
 				Expect(count).To(Equal(uint(1)))
 			})
 		})
@@ -249,18 +231,18 @@ var _ = Describe("Scan Repository", func() {
 
 			BeforeEach(func() {
 				// two v5 scans
-				err := scanRepository.Start(logger, "scan-type", "branch", "some-start-sha", "some-stop-sha", repository, nil).Finish()
+				err := scanRepository.Start(logger, "scan-type", "branch", "some-start-sha", "some-stop-sha", repository).Finish()
 				Expect(err).NotTo(HaveOccurred())
 				err = database.DB().QueryRow(`SELECT id FROM scans ORDER BY id DESC LIMIT 1`).Scan(&expectedScanID)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = scanRepository.Start(logger, "scan-type", "branch", "some-other-start-sha", "some-other-stop-sha", repository, nil).Finish()
+				err = scanRepository.Start(logger, "scan-type", "branch", "some-other-start-sha", "some-other-stop-sha", repository).Finish()
 				Expect(err).NotTo(HaveOccurred())
 
 				database.DB().Exec(`UPDATE scans SET rules_version = 5`)
 
 				// add another scan, same as the second above, but for v6
-				err = scanRepository.Start(logger, "scan-type", "branch", "some-other-start-sha", "some-other-stop-sha", repository, nil).Finish()
+				err = scanRepository.Start(logger, "scan-type", "branch", "some-other-start-sha", "some-other-stop-sha", repository).Finish()
 				Expect(err).NotTo(HaveOccurred())
 
 				var v6ScanID int

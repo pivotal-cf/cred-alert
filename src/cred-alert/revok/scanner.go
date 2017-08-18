@@ -75,7 +75,7 @@ func (s *scanner) scan(
 	stopSHA string,
 ) ([]db.Credential, error) {
 	quietLogger := kolsch.NewLogger()
-	scan := s.scanRepository.Start(quietLogger, "repo-scan", branch, startSHA, stopSHA, &dbRepository, nil)
+	scan := s.scanRepository.Start(quietLogger, "repo-scan", branch, startSHA, stopSHA, &dbRepository)
 
 	var credentials []db.Credential
 

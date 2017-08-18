@@ -5,7 +5,7 @@ import "github.com/BurntSushi/migration"
 func AddMatchLocation(tx migration.LimitedTx) error {
 	_, err := tx.Exec(`
 		ALTER TABLE credentials
-		ADD COLUMN match_start int DEFAULT 0, 
+		ADD COLUMN match_start int DEFAULT 0,
 		ADD COLUMN match_end int DEFAULT 0
 	`)
 

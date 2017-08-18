@@ -17,8 +17,6 @@ type Scan struct {
 
 	Repository   *Repository
 	RepositoryID *uint
-	Fetch        *Fetch
-	FetchID      *uint
 
 	Credentials []Credential
 }

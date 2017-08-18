@@ -65,7 +65,7 @@ var _ = Describe("Scanner", func() {
 
 		scanRepository = &dbfakes.FakeScanRepository{}
 		firstScan = &dbfakes.FakeActiveScan{}
-		scanRepository.StartStub = func(lager.Logger, string, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
+		scanRepository.StartStub = func(lager.Logger, string, string, string, string, *db.Repository) db.ActiveScan {
 			return firstScan
 		}
 
@@ -131,13 +131,12 @@ var _ = Describe("Scanner", func() {
 		_, err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), "")
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(scanRepository.StartCallCount).Should(Equal(1))
-		_, scanType, branch, startSHA, stopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
+		_, scanType, branch, startSHA, stopSHA, repository := scanRepository.StartArgsForCall(0)
 		Expect(scanType).To(Equal("repo-scan"))
 		Expect(branch).To(Equal("some-branch"))
 		Expect(startSHA).To(Equal(result.To.String()))
 		Expect(stopSHA).To(Equal(""))
 		Expect(repository.ID).To(BeNumerically("==", 42))
-		Expect(fetch).To(BeNil())
 
 		Eventually(firstScan.RecordCredentialCallCount).Should(Equal(1))
 		Eventually(firstScan.FinishCallCount).Should(Equal(1))
@@ -197,13 +196,12 @@ var _ = Describe("Scanner", func() {
 			_, err := scanner.Scan(logger, "some-owner", "some-repository", scannedOids, "some-branch", result.To.String(), stopSHA)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, scanType, branch, actualStartSHA, actualStopSHA, repository, fetch := scanRepository.StartArgsForCall(0)
+			_, scanType, branch, actualStartSHA, actualStopSHA, repository := scanRepository.StartArgsForCall(0)
 			Expect(scanType).To(Equal("repo-scan"))
 			Expect(branch).To(Equal("some-branch"))
 			Expect(actualStartSHA).To(Equal(result.To.String()))
 			Expect(actualStopSHA).To(Equal(stopSHA))
 			Expect(repository.ID).To(BeNumerically("==", 42))
-			Expect(fetch).To(BeNil())
 		})
 	})
 
@@ -253,7 +251,7 @@ var _ = Describe("Scanner", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			scan = &dbfakes.FakeActiveScan{}
-			scanRepository.StartStub = func(lager.Logger, string, string, string, string, *db.Repository, *db.Fetch) db.ActiveScan {
+			scanRepository.StartStub = func(lager.Logger, string, string, string, string, *db.Repository) db.ActiveScan {
 				return scan
 			}
 

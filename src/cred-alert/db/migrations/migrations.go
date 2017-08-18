@@ -26,4 +26,5 @@ var Migrations = []migration.Migrator{
 	MigrateCredentialCounts,
 	RemoveCredentialCountsAndRawJson,
 	AddIndexToRepositories,
+	RemoveFetchIDFromScan,
 }
