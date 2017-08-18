@@ -34,7 +34,7 @@ type Client interface {
 	BranchTargets(string) (map[string]string, error)
 	Clone(string, string) error
 	GetParents(string, string) ([]string, error)
-	Fetch(string) (map[string][]string, error)
+	// Fetch(string) (map[string][]string, error)
 	HardReset(string, string) error
 	Diff(repoPath, parent, child string) (string, error)
 	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)

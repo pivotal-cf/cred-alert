@@ -49,19 +49,6 @@ type FakeClient struct {
 		result1 []string
 		result2 error
 	}
-	FetchStub        func(string) (map[string][]string, error)
-	fetchMutex       sync.RWMutex
-	fetchArgsForCall []struct {
-		arg1 string
-	}
-	fetchReturns struct {
-		result1 map[string][]string
-		result2 error
-	}
-	fetchReturnsOnCall map[int]struct {
-		result1 map[string][]string
-		result2 error
-	}
 	HardResetStub        func(string, string) error
 	hardResetMutex       sync.RWMutex
 	hardResetArgsForCall []struct {
@@ -74,12 +61,12 @@ type FakeClient struct {
 	hardResetReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DiffStub        func(repositoryPath, parent, child string) (string, error)
+	DiffStub        func(repoPath, parent, child string) (string, error)
 	diffMutex       sync.RWMutex
 	diffArgsForCall []struct {
-		repositoryPath string
-		parent         string
-		child          string
+		repoPath string
+		parent   string
+		child    string
 	}
 	diffReturns struct {
 		result1 string
@@ -260,57 +247,6 @@ func (fake *FakeClient) GetParentsReturnsOnCall(i int, result1 []string, result2
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Fetch(arg1 string) (map[string][]string, error) {
-	fake.fetchMutex.Lock()
-	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
-	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("Fetch", []interface{}{arg1})
-	fake.fetchMutex.Unlock()
-	if fake.FetchStub != nil {
-		return fake.FetchStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.fetchReturns.result1, fake.fetchReturns.result2
-}
-
-func (fake *FakeClient) FetchCallCount() int {
-	fake.fetchMutex.RLock()
-	defer fake.fetchMutex.RUnlock()
-	return len(fake.fetchArgsForCall)
-}
-
-func (fake *FakeClient) FetchArgsForCall(i int) string {
-	fake.fetchMutex.RLock()
-	defer fake.fetchMutex.RUnlock()
-	return fake.fetchArgsForCall[i].arg1
-}
-
-func (fake *FakeClient) FetchReturns(result1 map[string][]string, result2 error) {
-	fake.FetchStub = nil
-	fake.fetchReturns = struct {
-		result1 map[string][]string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeClient) FetchReturnsOnCall(i int, result1 map[string][]string, result2 error) {
-	fake.FetchStub = nil
-	if fake.fetchReturnsOnCall == nil {
-		fake.fetchReturnsOnCall = make(map[int]struct {
-			result1 map[string][]string
-			result2 error
-		})
-	}
-	fake.fetchReturnsOnCall[i] = struct {
-		result1 map[string][]string
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeClient) HardReset(arg1 string, arg2 string) error {
 	fake.hardResetMutex.Lock()
 	ret, specificReturn := fake.hardResetReturnsOnCall[len(fake.hardResetArgsForCall)]
@@ -360,18 +296,18 @@ func (fake *FakeClient) HardResetReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeClient) Diff(repositoryPath string, parent string, child string) (string, error) {
+func (fake *FakeClient) Diff(repoPath string, parent string, child string) (string, error) {
 	fake.diffMutex.Lock()
 	ret, specificReturn := fake.diffReturnsOnCall[len(fake.diffArgsForCall)]
 	fake.diffArgsForCall = append(fake.diffArgsForCall, struct {
-		repositoryPath string
-		parent         string
-		child          string
-	}{repositoryPath, parent, child})
-	fake.recordInvocation("Diff", []interface{}{repositoryPath, parent, child})
+		repoPath string
+		parent   string
+		child    string
+	}{repoPath, parent, child})
+	fake.recordInvocation("Diff", []interface{}{repoPath, parent, child})
 	fake.diffMutex.Unlock()
 	if fake.DiffStub != nil {
-		return fake.DiffStub(repositoryPath, parent, child)
+		return fake.DiffStub(repoPath, parent, child)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -388,7 +324,7 @@ func (fake *FakeClient) DiffCallCount() int {
 func (fake *FakeClient) DiffArgsForCall(i int) (string, string, string) {
 	fake.diffMutex.RLock()
 	defer fake.diffMutex.RUnlock()
-	return fake.diffArgsForCall[i].repositoryPath, fake.diffArgsForCall[i].parent, fake.diffArgsForCall[i].child
+	return fake.diffArgsForCall[i].repoPath, fake.diffArgsForCall[i].parent, fake.diffArgsForCall[i].child
 }
 
 func (fake *FakeClient) DiffReturns(result1 string, result2 error) {
@@ -475,8 +411,6 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.cloneMutex.RUnlock()
 	fake.getParentsMutex.RLock()
 	defer fake.getParentsMutex.RUnlock()
-	fake.fetchMutex.RLock()
-	defer fake.fetchMutex.RUnlock()
 	fake.hardResetMutex.RLock()
 	defer fake.hardResetMutex.RUnlock()
 	fake.diffMutex.RLock()
