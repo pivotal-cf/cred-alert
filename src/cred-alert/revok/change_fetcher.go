@@ -8,7 +8,6 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/db"
-	"cred-alert/gitclient"
 	"cred-alert/metrics"
 )
 
@@ -18,9 +17,14 @@ type ChangeFetcher interface {
 	Fetch(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
 }
 
+//go:generate counterfeiter . GitFetcherClient
+type GitFetcherClient interface {
+	Fetch(string) (map[string][]string, error)
+}
+
 type changeFetcher struct {
 	logger               lager.Logger
-	gitClient            gitclient.Client
+	gitClient            GitFetcherClient
 	notificationComposer NotificationComposer
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
@@ -34,7 +38,7 @@ type changeFetcher struct {
 
 func NewChangeFetcher(
 	logger lager.Logger,
-	gitClient gitclient.Client,
+	gitClient GitFetcherClient,
 	notificationComposer NotificationComposer,
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
