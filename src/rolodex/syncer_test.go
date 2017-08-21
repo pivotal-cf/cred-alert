@@ -18,7 +18,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cred-alert/gitclient"
-	"cred-alert/gitclient/gitclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"rolodex"
@@ -209,11 +208,11 @@ var _ = Describe("Syncer", func() {
 
 				Context("when resetting the state fails", func() {
 					var (
-						gitClient *gitclientfakes.FakeClient
+						gitClient *rolodexfakes.FakeGitSyncerClient
 					)
 
 					BeforeEach(func() {
-						gitClient = &gitclientfakes.FakeClient{}
+						gitClient = &rolodexfakes.FakeGitSyncerClient{}
 						syncer = rolodex.NewSyncer(logger, emitter, upstreamPath, localPath, gitClient, teamRepository)
 
 						sha := "4d70bfc4198320f1aa04cd474eb71af2d24cfa48"
