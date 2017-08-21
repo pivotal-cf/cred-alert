@@ -10,7 +10,6 @@ import (
 	"github.com/tedsuo/ifrit"
 
 	"cred-alert/db"
-	"cred-alert/gitclient"
 	"cred-alert/kolsch"
 	"cred-alert/sniff"
 )
@@ -21,8 +20,15 @@ type headCredentialCounter struct {
 	repositoryRepository db.RepositoryRepository
 	clock                clock.Clock
 	interval             time.Duration
-	gitClient            gitclient.Client
+	gitClient            GitBranchCredentialsCounterClient
 	sniffer              sniff.Sniffer
+}
+
+//go:generate counterfeiter . GitBranchCredentialsCounterClient
+
+type GitBranchCredentialsCounterClient interface {
+	BranchTargets(repoPath string) (map[string]string, error)
+	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
 }
 
 func NewHeadCredentialCounter(
@@ -31,7 +37,7 @@ func NewHeadCredentialCounter(
 	repositoryRepository db.RepositoryRepository,
 	clock clock.Clock,
 	interval time.Duration,
-	gitClient gitclient.Client,
+	gitClient GitBranchCredentialsCounterClient,
 	sniffer sniff.Sniffer,
 ) ifrit.Runner {
 	return &headCredentialCounter{

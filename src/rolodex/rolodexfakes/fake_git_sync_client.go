@@ -6,19 +6,7 @@ import (
 	"sync"
 )
 
-type FakeGitSyncerClient struct {
-	CloneStub        func(string, string) error
-	cloneMutex       sync.RWMutex
-	cloneArgsForCall []struct {
-		arg1 string
-		arg2 string
-	}
-	cloneReturns struct {
-		result1 error
-	}
-	cloneReturnsOnCall map[int]struct {
-		result1 error
-	}
+type FakeGitSyncClient struct {
 	FetchStub        func(string) (map[string][]string, error)
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
@@ -31,6 +19,18 @@ type FakeGitSyncerClient struct {
 	fetchReturnsOnCall map[int]struct {
 		result1 map[string][]string
 		result2 error
+	}
+	CloneStub        func(string, string) error
+	cloneMutex       sync.RWMutex
+	cloneArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	cloneReturns struct {
+		result1 error
+	}
+	cloneReturnsOnCall map[int]struct {
+		result1 error
 	}
 	HardResetStub        func(string, string) error
 	hardResetMutex       sync.RWMutex
@@ -48,7 +48,58 @@ type FakeGitSyncerClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeGitSyncerClient) Clone(arg1 string, arg2 string) error {
+func (fake *FakeGitSyncClient) Fetch(arg1 string) (map[string][]string, error) {
+	fake.fetchMutex.Lock()
+	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
+	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("Fetch", []interface{}{arg1})
+	fake.fetchMutex.Unlock()
+	if fake.FetchStub != nil {
+		return fake.FetchStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.fetchReturns.result1, fake.fetchReturns.result2
+}
+
+func (fake *FakeGitSyncClient) FetchCallCount() int {
+	fake.fetchMutex.RLock()
+	defer fake.fetchMutex.RUnlock()
+	return len(fake.fetchArgsForCall)
+}
+
+func (fake *FakeGitSyncClient) FetchArgsForCall(i int) string {
+	fake.fetchMutex.RLock()
+	defer fake.fetchMutex.RUnlock()
+	return fake.fetchArgsForCall[i].arg1
+}
+
+func (fake *FakeGitSyncClient) FetchReturns(result1 map[string][]string, result2 error) {
+	fake.FetchStub = nil
+	fake.fetchReturns = struct {
+		result1 map[string][]string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeGitSyncClient) FetchReturnsOnCall(i int, result1 map[string][]string, result2 error) {
+	fake.FetchStub = nil
+	if fake.fetchReturnsOnCall == nil {
+		fake.fetchReturnsOnCall = make(map[int]struct {
+			result1 map[string][]string
+			result2 error
+		})
+	}
+	fake.fetchReturnsOnCall[i] = struct {
+		result1 map[string][]string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeGitSyncClient) Clone(arg1 string, arg2 string) error {
 	fake.cloneMutex.Lock()
 	ret, specificReturn := fake.cloneReturnsOnCall[len(fake.cloneArgsForCall)]
 	fake.cloneArgsForCall = append(fake.cloneArgsForCall, struct {
@@ -66,26 +117,26 @@ func (fake *FakeGitSyncerClient) Clone(arg1 string, arg2 string) error {
 	return fake.cloneReturns.result1
 }
 
-func (fake *FakeGitSyncerClient) CloneCallCount() int {
+func (fake *FakeGitSyncClient) CloneCallCount() int {
 	fake.cloneMutex.RLock()
 	defer fake.cloneMutex.RUnlock()
 	return len(fake.cloneArgsForCall)
 }
 
-func (fake *FakeGitSyncerClient) CloneArgsForCall(i int) (string, string) {
+func (fake *FakeGitSyncClient) CloneArgsForCall(i int) (string, string) {
 	fake.cloneMutex.RLock()
 	defer fake.cloneMutex.RUnlock()
 	return fake.cloneArgsForCall[i].arg1, fake.cloneArgsForCall[i].arg2
 }
 
-func (fake *FakeGitSyncerClient) CloneReturns(result1 error) {
+func (fake *FakeGitSyncClient) CloneReturns(result1 error) {
 	fake.CloneStub = nil
 	fake.cloneReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeGitSyncerClient) CloneReturnsOnCall(i int, result1 error) {
+func (fake *FakeGitSyncClient) CloneReturnsOnCall(i int, result1 error) {
 	fake.CloneStub = nil
 	if fake.cloneReturnsOnCall == nil {
 		fake.cloneReturnsOnCall = make(map[int]struct {
@@ -97,58 +148,7 @@ func (fake *FakeGitSyncerClient) CloneReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeGitSyncerClient) Fetch(arg1 string) (map[string][]string, error) {
-	fake.fetchMutex.Lock()
-	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
-	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("Fetch", []interface{}{arg1})
-	fake.fetchMutex.Unlock()
-	if fake.FetchStub != nil {
-		return fake.FetchStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.fetchReturns.result1, fake.fetchReturns.result2
-}
-
-func (fake *FakeGitSyncerClient) FetchCallCount() int {
-	fake.fetchMutex.RLock()
-	defer fake.fetchMutex.RUnlock()
-	return len(fake.fetchArgsForCall)
-}
-
-func (fake *FakeGitSyncerClient) FetchArgsForCall(i int) string {
-	fake.fetchMutex.RLock()
-	defer fake.fetchMutex.RUnlock()
-	return fake.fetchArgsForCall[i].arg1
-}
-
-func (fake *FakeGitSyncerClient) FetchReturns(result1 map[string][]string, result2 error) {
-	fake.FetchStub = nil
-	fake.fetchReturns = struct {
-		result1 map[string][]string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeGitSyncerClient) FetchReturnsOnCall(i int, result1 map[string][]string, result2 error) {
-	fake.FetchStub = nil
-	if fake.fetchReturnsOnCall == nil {
-		fake.fetchReturnsOnCall = make(map[int]struct {
-			result1 map[string][]string
-			result2 error
-		})
-	}
-	fake.fetchReturnsOnCall[i] = struct {
-		result1 map[string][]string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeGitSyncerClient) HardReset(arg1 string, arg2 string) error {
+func (fake *FakeGitSyncClient) HardReset(arg1 string, arg2 string) error {
 	fake.hardResetMutex.Lock()
 	ret, specificReturn := fake.hardResetReturnsOnCall[len(fake.hardResetArgsForCall)]
 	fake.hardResetArgsForCall = append(fake.hardResetArgsForCall, struct {
@@ -166,26 +166,26 @@ func (fake *FakeGitSyncerClient) HardReset(arg1 string, arg2 string) error {
 	return fake.hardResetReturns.result1
 }
 
-func (fake *FakeGitSyncerClient) HardResetCallCount() int {
+func (fake *FakeGitSyncClient) HardResetCallCount() int {
 	fake.hardResetMutex.RLock()
 	defer fake.hardResetMutex.RUnlock()
 	return len(fake.hardResetArgsForCall)
 }
 
-func (fake *FakeGitSyncerClient) HardResetArgsForCall(i int) (string, string) {
+func (fake *FakeGitSyncClient) HardResetArgsForCall(i int) (string, string) {
 	fake.hardResetMutex.RLock()
 	defer fake.hardResetMutex.RUnlock()
 	return fake.hardResetArgsForCall[i].arg1, fake.hardResetArgsForCall[i].arg2
 }
 
-func (fake *FakeGitSyncerClient) HardResetReturns(result1 error) {
+func (fake *FakeGitSyncClient) HardResetReturns(result1 error) {
 	fake.HardResetStub = nil
 	fake.hardResetReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeGitSyncerClient) HardResetReturnsOnCall(i int, result1 error) {
+func (fake *FakeGitSyncClient) HardResetReturnsOnCall(i int, result1 error) {
 	fake.HardResetStub = nil
 	if fake.hardResetReturnsOnCall == nil {
 		fake.hardResetReturnsOnCall = make(map[int]struct {
@@ -197,13 +197,13 @@ func (fake *FakeGitSyncerClient) HardResetReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeGitSyncerClient) Invocations() map[string][][]interface{} {
+func (fake *FakeGitSyncClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.cloneMutex.RLock()
-	defer fake.cloneMutex.RUnlock()
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
+	fake.cloneMutex.RLock()
+	defer fake.cloneMutex.RUnlock()
 	fake.hardResetMutex.RLock()
 	defer fake.hardResetMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
@@ -213,7 +213,7 @@ func (fake *FakeGitSyncerClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeGitSyncerClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeGitSyncClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -225,4 +225,4 @@ func (fake *FakeGitSyncerClient) recordInvocation(key string, args []interface{}
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ rolodex.GitSyncerClient = new(FakeGitSyncerClient)
+var _ rolodex.GitSyncClient = new(FakeGitSyncClient)

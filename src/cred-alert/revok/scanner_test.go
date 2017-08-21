@@ -25,7 +25,7 @@ import (
 var _ = Describe("Scanner", func() {
 	var (
 		logger               *lagertest.TestLogger
-		gitClient            gitclient.Client
+		gitClient            revok.GitGetParentsDiffClient
 		sniffer              *snifffakes.FakeSniffer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		scanRepository       *dbfakes.FakeScanRepository

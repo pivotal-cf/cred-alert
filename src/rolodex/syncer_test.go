@@ -208,11 +208,11 @@ var _ = Describe("Syncer", func() {
 
 				Context("when resetting the state fails", func() {
 					var (
-						gitClient *rolodexfakes.FakeGitSyncerClient
+						gitClient *rolodexfakes.FakeGitSyncClient
 					)
 
 					BeforeEach(func() {
-						gitClient = &rolodexfakes.FakeGitSyncerClient{}
+						gitClient = &rolodexfakes.FakeGitSyncClient{}
 						syncer = rolodex.NewSyncer(logger, emitter, upstreamPath, localPath, gitClient, teamRepository)
 
 						sha := "4d70bfc4198320f1aa04cd474eb71af2d24cfa48"

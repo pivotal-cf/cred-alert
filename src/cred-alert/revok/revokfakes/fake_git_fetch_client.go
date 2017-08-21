@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type FakeGitFetcherClient struct {
+type FakeGitFetchClient struct {
 	FetchStub        func(string) (map[string][]string, error)
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
@@ -24,7 +24,7 @@ type FakeGitFetcherClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeGitFetcherClient) Fetch(arg1 string) (map[string][]string, error) {
+func (fake *FakeGitFetchClient) Fetch(arg1 string) (map[string][]string, error) {
 	fake.fetchMutex.Lock()
 	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
@@ -41,19 +41,19 @@ func (fake *FakeGitFetcherClient) Fetch(arg1 string) (map[string][]string, error
 	return fake.fetchReturns.result1, fake.fetchReturns.result2
 }
 
-func (fake *FakeGitFetcherClient) FetchCallCount() int {
+func (fake *FakeGitFetchClient) FetchCallCount() int {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeGitFetcherClient) FetchArgsForCall(i int) string {
+func (fake *FakeGitFetchClient) FetchArgsForCall(i int) string {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	return fake.fetchArgsForCall[i].arg1
 }
 
-func (fake *FakeGitFetcherClient) FetchReturns(result1 map[string][]string, result2 error) {
+func (fake *FakeGitFetchClient) FetchReturns(result1 map[string][]string, result2 error) {
 	fake.FetchStub = nil
 	fake.fetchReturns = struct {
 		result1 map[string][]string
@@ -61,7 +61,7 @@ func (fake *FakeGitFetcherClient) FetchReturns(result1 map[string][]string, resu
 	}{result1, result2}
 }
 
-func (fake *FakeGitFetcherClient) FetchReturnsOnCall(i int, result1 map[string][]string, result2 error) {
+func (fake *FakeGitFetchClient) FetchReturnsOnCall(i int, result1 map[string][]string, result2 error) {
 	fake.FetchStub = nil
 	if fake.fetchReturnsOnCall == nil {
 		fake.fetchReturnsOnCall = make(map[int]struct {
@@ -75,7 +75,7 @@ func (fake *FakeGitFetcherClient) FetchReturnsOnCall(i int, result1 map[string][
 	}{result1, result2}
 }
 
-func (fake *FakeGitFetcherClient) Invocations() map[string][][]interface{} {
+func (fake *FakeGitFetchClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.fetchMutex.RLock()
@@ -87,7 +87,7 @@ func (fake *FakeGitFetcherClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeGitFetcherClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeGitFetchClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -99,4 +99,4 @@ func (fake *FakeGitFetcherClient) recordInvocation(key string, args []interface{
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ revok.GitFetcherClient = new(FakeGitFetcherClient)
+var _ revok.GitFetchClient = new(FakeGitFetchClient)

@@ -27,7 +27,7 @@ import (
 var _ = Describe("ChangeFetcher", func() {
 	var (
 		logger               *lagertest.TestLogger
-		gitFetcherClient     *revokfakes.FakeGitFetcherClient
+		gitFetcherClient     *revokfakes.FakeGitFetchClient
 		notificationComposer *revokfakes.FakeNotificationComposer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		fetchRepository      *dbfakes.FakeFetchRepository
@@ -55,7 +55,7 @@ var _ = Describe("ChangeFetcher", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
-		gitFetcherClient = &revokfakes.FakeGitFetcherClient{}
+		gitFetcherClient = &revokfakes.FakeGitFetchClient{}
 
 		notificationComposer = &revokfakes.FakeNotificationComposer{}
 
@@ -131,11 +131,11 @@ var _ = Describe("ChangeFetcher", func() {
 		repositoryRepository.FindReturns(repo, true, nil)
 	})
 
-	fetch := func(integrationGitFetcherClient revok.GitFetcherClient) {
-		if integrationGitFetcherClient != nil {
+	fetch := func(integrationGitFetchClient revok.GitFetchClient) {
+		if integrationGitFetchClient != nil {
 			fetcher = revok.NewChangeFetcher(
 				logger,
-				integrationGitFetcherClient,
+				integrationGitFetchClient,
 				notificationComposer,
 				repositoryRepository,
 				fetchRepository,

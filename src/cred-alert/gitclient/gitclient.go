@@ -28,17 +28,6 @@ type client struct {
 	locker         *locker.Locker
 }
 
-//go:generate counterfeiter . Client
-
-type Client interface {
-	BranchTargets(string) (map[string]string, error)
-	Clone(string, string) error
-	GetParents(string, string) ([]string, error)
-	HardReset(string, string) error
-	Diff(repoPath, parent, child string) (string, error)
-	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
-}
-
 func New(privateKeyPath, publicKeyPath string) *client {
 	return &client{
 		privateKeyPath: privateKeyPath,

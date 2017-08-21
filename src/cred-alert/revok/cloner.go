@@ -9,7 +9,6 @@ import (
 	"github.com/tedsuo/ifrit"
 
 	"cred-alert/db"
-	"cred-alert/gitclient"
 	"cred-alert/metrics"
 )
 
@@ -19,12 +18,18 @@ type RepoChangeScheduler interface {
 	ScheduleRepo(lager.Logger, db.Repository)
 }
 
+//go:generate counterfeiter . GitBranchCloneClient
+type GitBranchCloneClient interface {
+	Clone(string, string) error
+	BranchTargets(repoPath string) (map[string]string, error)
+}
+
 type Cloner struct {
 	logger lager.Logger
 
 	workdir              string
 	workCh               chan CloneMsg
-	gitClient            gitclient.Client
+	gitClient            GitBranchCloneClient
 	repositoryRepository db.RepositoryRepository
 	notificationComposer NotificationComposer
 	scheduler            RepoChangeScheduler
@@ -39,7 +44,7 @@ func NewCloner(
 	logger lager.Logger,
 	workdir string,
 	workCh chan CloneMsg,
-	gitClient gitclient.Client,
+	gitClient GitBranchCloneClient,
 	repositoryRepository db.RepositoryRepository,
 	notificationComposer NotificationComposer,
 	emitter metrics.Emitter,

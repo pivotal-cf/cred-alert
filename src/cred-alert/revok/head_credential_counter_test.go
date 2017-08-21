@@ -19,8 +19,8 @@ import (
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
-	"cred-alert/gitclient/gitclientfakes"
 	"cred-alert/revok"
+	"cred-alert/revok/revokfakes"
 	"cred-alert/scanners"
 	"cred-alert/sniff"
 	"cred-alert/sniff/snifffakes"
@@ -33,7 +33,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 		branchRepository     *dbfakes.FakeBranchRepository
 		clock                *fakeclock.FakeClock
 		interval             time.Duration
-		gitClient            *gitclientfakes.FakeClient
+		gitClient            *revokfakes.FakeGitBranchCredentialsCounterClient
 		sniffer              *snifffakes.FakeSniffer
 
 		runner  ifrit.Runner
@@ -46,7 +46,7 @@ var _ = Describe("HeadCredentialCounter", func() {
 		branchRepository = &dbfakes.FakeBranchRepository{}
 		clock = fakeclock.NewFakeClock(time.Now())
 		interval = 1 * time.Hour
-		gitClient = &gitclientfakes.FakeClient{}
+		gitClient = &revokfakes.FakeGitBranchCredentialsCounterClient{}
 
 		sniffer = &snifffakes.FakeSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {

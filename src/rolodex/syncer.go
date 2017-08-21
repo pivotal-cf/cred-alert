@@ -7,13 +7,12 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/metrics"
-	"cred-alert/revok"
 )
 
 type syncer struct {
 	repoURL   string
 	repoPath  string
-	gitClient GitSyncerClient
+	gitClient GitSyncClient
 	teamRepo  TeamRepository
 
 	logger         lager.Logger
@@ -27,14 +26,14 @@ type Syncer interface {
 	Sync()
 }
 
-//go:generate counterfeiter . GitSyncerClient
-type GitSyncerClient interface {
-	revok.GitFetcherClient
+//go:generate counterfeiter . GitSyncClient
+type GitSyncClient interface {
+	Fetch(string) (map[string][]string, error)
 	Clone(string, string) error
 	HardReset(string, string) error
 }
 
-func NewSyncer(logger lager.Logger, emitter metrics.Emitter, repoURL, repoPath string, gitClient GitSyncerClient, teamRepo TeamRepository) Syncer {
+func NewSyncer(logger lager.Logger, emitter metrics.Emitter, repoURL, repoPath string, gitClient GitSyncClient, teamRepo TeamRepository) Syncer {
 	syncLogger := logger.Session("syncer", lager.Data{
 		"upstream": repoURL,
 		"local":    repoPath,

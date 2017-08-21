@@ -4,7 +4,6 @@ import (
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
-	"cred-alert/gitclient/gitclientfakes"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/revok"
@@ -29,7 +28,7 @@ var _ = Describe("Cloner", func() {
 		workdir              string
 		workCh               chan revok.CloneMsg
 		logger               *lagertest.TestLogger
-		gitClient            gitclient.Client
+		gitClient            revok.GitBranchCloneClient
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		emitter              *metricsfakes.FakeEmitter
 		notificationComposer *revokfakes.FakeNotificationComposer
@@ -206,7 +205,7 @@ var _ = Describe("Cloner", func() {
 
 			Context("when cloning fails", func() {
 				BeforeEach(func() {
-					fakeGitClient := &gitclientfakes.FakeClient{}
+					fakeGitClient := &revokfakes.FakeGitBranchCloneClient{}
 					fakeGitClient.CloneStub = func(url, dest string) error {
 						err := os.MkdirAll(dest, os.ModePerm)
 						Expect(err).NotTo(HaveOccurred())
@@ -216,7 +215,7 @@ var _ = Describe("Cloner", func() {
 				})
 
 				It("cleans up the failed clone destination, if any", func() {
-					fakeGitClient, ok := gitClient.(*gitclientfakes.FakeClient)
+					fakeGitClient, ok := gitClient.(*revokfakes.FakeGitBranchCloneClient)
 					Expect(ok).To(BeTrue())
 
 					Eventually(fakeGitClient.CloneCallCount).Should(Equal(1))

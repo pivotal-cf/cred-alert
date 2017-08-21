@@ -17,14 +17,14 @@ type ChangeFetcher interface {
 	Fetch(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
 }
 
-//go:generate counterfeiter . GitFetcherClient
-type GitFetcherClient interface {
+//go:generate counterfeiter . GitFetchClient
+type GitFetchClient interface {
 	Fetch(string) (map[string][]string, error)
 }
 
 type changeFetcher struct {
 	logger               lager.Logger
-	gitClient            GitFetcherClient
+	gitClient            GitFetchClient
 	notificationComposer NotificationComposer
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
@@ -38,7 +38,7 @@ type changeFetcher struct {
 
 func NewChangeFetcher(
 	logger lager.Logger,
-	gitClient GitFetcherClient,
+	gitClient GitFetchClient,
 	notificationComposer NotificationComposer,
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,

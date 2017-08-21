@@ -6,7 +6,6 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/db"
-	"cred-alert/gitclient"
 	"cred-alert/kolsch"
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
@@ -19,8 +18,14 @@ type Scanner interface {
 	Scan(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error)
 }
 
+//go:generate counterfeiter . GitGetParentsDiffClient
+type GitGetParentsDiffClient interface {
+	GetParents(string, string) ([]string, error)
+	Diff(repoPath, parent, child string) (string, error)
+}
+
 type scanner struct {
-	gitClient            gitclient.Client
+	gitClient            GitGetParentsDiffClient
 	repositoryRepository db.RepositoryRepository
 	scanRepository       db.ScanRepository
 	credentialRepository db.CredentialRepository
@@ -28,7 +33,7 @@ type scanner struct {
 }
 
 func NewScanner(
-	gitClient gitclient.Client,
+	gitClient GitGetParentsDiffClient,
 	repositoryRepository db.RepositoryRepository,
 	scanRepository db.ScanRepository,
 	credentialRepository db.CredentialRepository,
