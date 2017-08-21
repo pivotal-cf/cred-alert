@@ -17,7 +17,6 @@ import (
 	"context"
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
-	"cred-alert/gitclient"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/revok"
@@ -42,11 +41,10 @@ var _ = Describe("ChangeFetcher", func() {
 		scanSuccessCounter  *metricsfakes.FakeCounter
 		scanFailedCounter   *metricsfakes.FakeCounter
 
+		fetcher revok.ChangeFetcher
+
 		remoteRepoPath  string
 		repoToFetchPath string
-		repoToFetch     *git.Repository
-
-		fetcher revok.ChangeFetcher
 
 		repo     db.Repository
 		reenable bool
@@ -113,10 +111,6 @@ var _ = Describe("ChangeFetcher", func() {
 		repoToFetchPath, err = ioutil.TempDir("", "change-fetcher-repo-to-fetch")
 		Expect(err).NotTo(HaveOccurred())
 
-		repoToFetch, err = git.Clone(remoteRepoPath, repoToFetchPath, &git.CloneOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		defer repoToFetch.Free()
-
 		repo = db.Repository{
 			Model: db.Model{
 				ID: 42,
@@ -131,26 +125,15 @@ var _ = Describe("ChangeFetcher", func() {
 		repositoryRepository.FindReturns(repo, true, nil)
 	})
 
-	fetch := func(integrationGitFetchClient revok.GitFetchClient) {
-		if integrationGitFetchClient != nil {
-			fetcher = revok.NewChangeFetcher(
-				logger,
-				integrationGitFetchClient,
-				notificationComposer,
-				repositoryRepository,
-				fetchRepository,
-				emitter,
-			)
-		} else {
-			fetcher = revok.NewChangeFetcher(
-				logger,
-				gitFetcherClient,
-				notificationComposer,
-				repositoryRepository,
-				fetchRepository,
-				emitter,
-			)
-		}
+	fetch := func() {
+		fetcher = revok.NewChangeFetcher(
+			logger,
+			gitFetcherClient,
+			notificationComposer,
+			repositoryRepository,
+			fetchRepository,
+			emitter,
+		)
 
 		fetchErr = fetcher.Fetch(context.Background(), logger, repo.Owner, repo.Name, reenable)
 	}
@@ -161,12 +144,12 @@ var _ = Describe("ChangeFetcher", func() {
 	})
 
 	It("increments the fetch success metric", func() {
-		fetch(nil)
+		fetch()
 		Expect(fetchSuccessCounter.IncCallCount()).To(Equal(1))
 	})
 
 	It("finds the repo in the database (to make sure it is up to date)", func() {
-		fetch(nil)
+		fetch()
 		Expect(repositoryRepository.FindCallCount()).To(Equal(1))
 
 		foundOwner, foundName := repositoryRepository.FindArgsForCall(0)
@@ -178,7 +161,7 @@ var _ = Describe("ChangeFetcher", func() {
 		BeforeEach(func() {
 			repositoryRepository.FindReturns(db.Repository{}, false, errors.New("disaster"))
 
-			fetch(nil)
+			fetch()
 		})
 
 		It("does not try and fetch it", func() {
@@ -194,7 +177,7 @@ var _ = Describe("ChangeFetcher", func() {
 		BeforeEach(func() {
 			repositoryRepository.FindReturns(db.Repository{}, false, nil)
 
-			fetch(nil)
+			fetch()
 		})
 
 		It("does not try and fetch it", func() {
@@ -214,7 +197,7 @@ var _ = Describe("ChangeFetcher", func() {
 		BeforeEach(func() {
 			gitFetcherClient.FetchReturns(nil, errors.New("an-error"))
 
-			fetch(nil)
+			fetch()
 		})
 
 		It("registers the failed fetch", func() {
@@ -234,13 +217,13 @@ var _ = Describe("ChangeFetcher", func() {
 			})
 
 			It("fetches the repository", func() {
-				fetch(nil)
+				fetch()
 
 				Expect(gitFetcherClient.FetchCallCount()).To(Equal(1))
 			})
 
 			It("reenables the repository", func() {
-				fetch(nil)
+				fetch()
 
 				Expect(repositoryRepository.ReenableCallCount()).To(Equal(1))
 
@@ -250,7 +233,7 @@ var _ = Describe("ChangeFetcher", func() {
 			})
 
 			It("does not return an error", func() {
-				fetch(nil)
+				fetch()
 
 				Expect(fetchErr).NotTo(HaveOccurred())
 			})
@@ -261,13 +244,13 @@ var _ = Describe("ChangeFetcher", func() {
 				})
 
 				It("does not fetch", func() {
-					fetch(nil)
+					fetch()
 
 					Expect(gitFetcherClient.FetchCallCount()).To(BeZero())
 				})
 
 				It("returns an error", func() {
-					fetch(nil)
+					fetch()
 
 					Expect(fetchErr).To(HaveOccurred())
 				})
@@ -276,13 +259,13 @@ var _ = Describe("ChangeFetcher", func() {
 
 		Context("when reenable is false", func() {
 			It("does not try and fetch it", func() {
-				fetch(nil)
+				fetch()
 
 				Expect(gitFetcherClient.FetchCallCount()).To(BeZero())
 			})
 
 			It("does not return an error", func() {
-				fetch(nil)
+				fetch()
 
 				Expect(fetchErr).NotTo(HaveOccurred())
 			})
@@ -294,7 +277,7 @@ var _ = Describe("ChangeFetcher", func() {
 			repo.Cloned = false
 			repositoryRepository.FindReturns(repo, true, nil)
 
-			fetch(nil)
+			fetch()
 		})
 
 		It("does not try and fetch it", func() {
@@ -307,22 +290,25 @@ var _ = Describe("ChangeFetcher", func() {
 	})
 
 	Context("when the remote has changes", func() {
-		var results []createCommitResult
+		var results map[string][]string
 
 		BeforeEach(func() {
-			results = []createCommitResult{}
+			results = make(map[string][]string)
+			results["refs/remotes/origin/master"] = []string{
+				"something",
+				"something else",
+			}
+			results["refs/remotes/origin/topicA"] = []string{
+				"0000000000000000000000000000000000000000",
+				"some-sha",
+			}
 
-			result := createCommit("refs/heads/master", remoteRepoPath, "some-other-file", []byte("credential"), "second commit", nil)
-			results = append(results, result)
-
-			result = createCommit("refs/heads/topicA", remoteRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
-			results = append(results, result)
+			gitFetcherClient.FetchReturns(results, nil)
 
 		})
 
 		JustBeforeEach(func() {
-			integrationGitFetcherClient := gitclient.New("private-key-path", "public-key-path")
-			fetch(integrationGitFetcherClient)
+			fetch()
 		})
 
 		It("is successful", func() {
@@ -339,16 +325,11 @@ var _ = Describe("ChangeFetcher", func() {
 
 			var branches []string
 			for i := 0; i < notificationComposer.ScanAndNotifyCallCount(); i++ {
-				_, _, owner, name, _, branch, startSHA, stopSHA := notificationComposer.ScanAndNotifyArgsForCall(i)
+				_, _, owner, name, _, branch, _, _ := notificationComposer.ScanAndNotifyArgsForCall(i)
 				Expect(owner).To(Equal("some-owner"))
 				Expect(name).To(Equal("some-repo"))
 
 				branches = append(branches, branch)
-				for _, result := range results {
-					if result.To.String() == startSHA {
-						Expect(stopSHA).To(Equal(result.From.String()))
-					}
-				}
 			}
 
 			Expect(branches).To(ConsistOf("refs/remotes/origin/master", "refs/remotes/origin/topicA"))
@@ -360,50 +341,10 @@ var _ = Describe("ChangeFetcher", func() {
 			Expect(fetch.Path).To(Equal(repoToFetchPath))
 			Expect(fetch.Repository.ID).To(BeNumerically(">", 0))
 
-			localRepo, err := git.OpenRepository(repoToFetchPath)
-			Expect(err).NotTo(HaveOccurred())
-			defer localRepo.Free()
-
-			referenceIterator, err := localRepo.NewReferenceIteratorGlob("refs/remotes/origin/*")
-			Expect(err).NotTo(HaveOccurred())
-			defer referenceIterator.Free()
-
-			expectedChanges := map[string][]string{}
-
-			for {
-				ref, err := referenceIterator.Next()
-				if git.IsErrorCode(err, git.ErrIterOver) {
-					break
-				}
-				Expect(err).NotTo(HaveOccurred())
-
-				if ref.Name() == "refs/remotes/origin/topicA" {
-					zeroSha := "0000000000000000000000000000000000000000"
-					Expect(err).NotTo(HaveOccurred())
-
-					expectedChanges[ref.Name()] = []string{
-						zeroSha,
-						ref.Target().String(),
-					}
-				} else {
-					target, err := localRepo.Lookup(ref.Target())
-					Expect(err).NotTo(HaveOccurred())
-					defer target.Free()
-
-					targetCommit, err := target.AsCommit()
-					Expect(err).NotTo(HaveOccurred())
-					defer targetCommit.Free()
-
-					expectedChanges[ref.Name()] = []string{
-						targetCommit.ParentId(0).String(),
-						ref.Target().String(),
-					}
-				}
-			}
-
-			bs, err := json.Marshal(expectedChanges)
+			bs, err := json.Marshal(results)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fetch.Changes).To(Equal(bs))
+			Expect(fetchSuccessCounter.IncCallCount()).To(Equal(1))
 		})
 
 		Context("when there is an error scanning a change", func() {
@@ -418,7 +359,6 @@ var _ = Describe("ChangeFetcher", func() {
 			})
 
 			It("increments the failed scan metric", func() {
-
 				Expect(scanFailedCounter.IncCallCount()).To(Equal(1))
 			})
 		})
@@ -430,7 +370,7 @@ var _ = Describe("ChangeFetcher", func() {
 		})
 
 		It("increments the failed fetch metric", func() {
-			fetch(nil)
+			fetch()
 
 			Expect(fetchFailedCounter.IncCallCount()).To(Equal(1))
 		})
