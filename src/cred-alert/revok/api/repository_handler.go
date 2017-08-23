@@ -2,28 +2,37 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"cred-alert/revokpb"
 	"html/template"
 	"net/http"
+
+	context "golang.org/x/net/context"
+
+	"google.golang.org/grpc"
 
 	"github.com/tedsuo/rata"
 
 	"code.cloudfoundry.org/lager"
 )
 
-type repositoryHandler struct {
+//go:generate counterfeiter . RepositoryRevokClient
+
+type RepositoryRevokClient interface {
+	GetRepositoryCredentialCounts(ctx context.Context, in *revokpb.RepositoryCredentialCountRequest, opts ...grpc.CallOption) (*revokpb.RepositoryCredentialCountResponse, error)
+}
+
+type RepositoryHandler struct {
 	logger   lager.Logger
 	template *template.Template
-	client   revokpb.RevokClient
+	client   RepositoryRevokClient
 }
 
 func NewRepositoryHandler(
 	logger lager.Logger,
 	template *template.Template,
-	client revokpb.RevokClient,
-) http.Handler {
-	return &repositoryHandler{
+	client RepositoryRevokClient,
+) *RepositoryHandler {
+	return &RepositoryHandler{
 		logger:   logger,
 		template: template,
 		client:   client,
@@ -40,7 +49,7 @@ type BranchesRepository struct {
 	Private  bool
 }
 
-func (h *repositoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *RepositoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	request := &revokpb.RepositoryCredentialCountRequest{
 		Owner: rata.Param(r, "organization"),
 		Name:  rata.Param(r, "repository"),
