@@ -7,13 +7,14 @@
   <body>
     <div id="content">
       <h3>Credential Counts By Branch</h3>
+      <h4>Private: {{.Private}}</h4>
       <table class="pure-table pure-table-bordered">
         <thead>
           <th>Branch</th>
           <th>Credential Count</th>
         </thead>
 
-        {{range .}}
+        {{range .Branches}}
         <tr>
           <td>{{.Name}}</td>
           <td>{{.CredentialCount}}</td>

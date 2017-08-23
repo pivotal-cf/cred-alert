@@ -19,8 +19,9 @@ type OwnerCredentialCount struct {
 }
 
 type RepositoryCredentialCount struct {
-	Owner string
-	Name  string
+	Owner   string
+	Name    string
+	Private bool
 
 	CredentialCount int
 }
@@ -105,7 +106,7 @@ func (b *branchRepository) GetCredentialCountByOwner() ([]OwnerCredentialCount, 
 
 func (b *branchRepository) GetCredentialCountForOwner(owner string) ([]RepositoryCredentialCount, error) {
 	rows, err := b.db.DB().Query(`
-		SELECT r.owner, r.name, SUM(b.credential_count)
+		SELECT r.owner, r.name, r.private, SUM(b.credential_count)
 		FROM repositories r
 		JOIN branches b
 		  ON r.id = b.repository_id
@@ -123,7 +124,7 @@ func (b *branchRepository) GetCredentialCountForOwner(owner string) ([]Repositor
 	for rows.Next() {
 		var count RepositoryCredentialCount
 
-		err := rows.Scan(&count.Owner, &count.Name, &count.CredentialCount)
+		err := rows.Scan(&count.Owner, &count.Name, &count.Private, &count.CredentialCount)
 		if err != nil {
 			return nil, err
 		}

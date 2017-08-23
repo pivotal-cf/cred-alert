@@ -1,6 +1,8 @@
 package revok
 
 import (
+	"fmt"
+
 	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -91,9 +93,10 @@ func (s *server) GetOrganizationCredentialCounts(
 
 	for _, report := range credentialsForOwner {
 		rccs = append(rccs, &revokpb.RepositoryCredentialCount{
-			Owner: report.Owner,
-			Name:  report.Name,
-			Count: int64(report.CredentialCount),
+			Owner:   report.Owner,
+			Name:    report.Name,
+			Private: report.Private,
+			Count:   int64(report.CredentialCount),
 		})
 	}
 
@@ -109,6 +112,16 @@ func (s *server) GetRepositoryCredentialCounts(
 	in *revokpb.RepositoryCredentialCountRequest,
 ) (*revokpb.RepositoryCredentialCountResponse, error) {
 	logger := s.logger.Session("get-repository-credential-counts")
+
+	repository, found, err := s.repositoryRepository.Find(in.GetOwner(), in.GetName())
+	if err != nil {
+		logger.Error("failed-to-get-repository", err)
+		return nil, err
+	}
+
+	if !found {
+		return nil, fmt.Errorf("Repository not found: %s", in.GetName())
+	}
 
 	credentialsForOwner, err := s.branchRepository.GetCredentialCountForRepo(in.GetOwner(), in.GetName())
 	if err != nil {
@@ -127,6 +140,7 @@ func (s *server) GetRepositoryCredentialCounts(
 
 	response := &revokpb.RepositoryCredentialCountResponse{
 		CredentialCounts: bccs,
+		Private:          repository.Private,
 	}
 
 	return response, nil

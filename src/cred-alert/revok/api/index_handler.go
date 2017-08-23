@@ -2,26 +2,35 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"cred-alert/revokpb"
 	"html/template"
 	"net/http"
 
+	context "golang.org/x/net/context"
+
+	"google.golang.org/grpc"
+
 	"code.cloudfoundry.org/lager"
 )
 
-type indexHandler struct {
+//go:generate counterfeiter . IndexRevokClient
+
+type IndexRevokClient interface {
+	GetCredentialCounts(ctx context.Context, in *revokpb.CredentialCountRequest, opts ...grpc.CallOption) (*revokpb.CredentialCountResponse, error)
+}
+
+type IndexHandler struct {
 	logger   lager.Logger
 	template *template.Template
-	client   revokpb.RevokClient
+	client   IndexRevokClient
 }
 
 func NewIndexHandler(
 	logger lager.Logger,
 	template *template.Template,
-	client revokpb.RevokClient,
-) http.Handler {
-	return &indexHandler{
+	client IndexRevokClient,
+) *IndexHandler {
+	return &IndexHandler{
 		logger:   logger,
 		template: template,
 		client:   client,
@@ -33,7 +42,7 @@ type Organization struct {
 	CredentialCount int64
 }
 
-func (h *indexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	request := &revokpb.CredentialCountRequest{}
 	response, err := h.client.GetCredentialCounts(context.Background(), request)
 	if err != nil {

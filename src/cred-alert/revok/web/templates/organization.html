@@ -10,12 +10,14 @@
       <table class="pure-table pure-table-bordered">
         <thead>
           <th>Repository</th>
+          <th>Private</th>
           <th>Credential Count</th>
         </thead>
 
         {{range .}}
         <tr>
           <td><a href="/organizations/{{.Owner}}/repositories/{{.Name}}">{{.Name}}</a></td>
+          <td>{{.Private}}</td>
           <td>{{.CredentialCount}}</td>
         </tr>
         {{end}}

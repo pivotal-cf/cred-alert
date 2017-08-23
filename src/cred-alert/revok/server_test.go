@@ -112,11 +112,13 @@ var _ = Describe("Server", func() {
 					Owner:           "some-owner",
 					Name:            "repo-name-1",
 					CredentialCount: 14,
+					Private:         true,
 				},
 				{
 					Owner:           "some-owner",
 					Name:            "repo-name-2",
 					CredentialCount: 2,
+					Private:         false,
 				},
 			}, nil)
 
@@ -128,17 +130,19 @@ var _ = Describe("Server", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns counts for all repositories in owner-alphabetical order", func() {
+		It("returns counts and privacy value for all repositories in owner-alphabetical order", func() {
 			occ1 := &revokpb.RepositoryCredentialCount{
-				Owner: "some-owner",
-				Name:  "repo-name-1",
-				Count: 14,
+				Owner:   "some-owner",
+				Name:    "repo-name-1",
+				Private: true,
+				Count:   14,
 			}
 
 			occ2 := &revokpb.RepositoryCredentialCount{
-				Owner: "some-owner",
-				Name:  "repo-name-2",
-				Count: 2,
+				Owner:   "some-owner",
+				Name:    "repo-name-2",
+				Private: false,
+				Count:   2,
 			}
 
 			Expect(response).NotTo(BeNil())
@@ -161,11 +165,6 @@ var _ = Describe("Server", func() {
 	})
 
 	Describe("GetRepositoryCredentialCounts", func() {
-		var (
-			response *revokpb.RepositoryCredentialCountResponse
-			err      error
-		)
-
 		BeforeEach(func() {
 			branchRepository.GetCredentialCountForRepoReturns([]db.BranchCredentialCount{
 				{
@@ -182,12 +181,15 @@ var _ = Describe("Server", func() {
 				},
 			}, nil)
 
-			request := &revokpb.RepositoryCredentialCountRequest{}
-			response, err = server.GetRepositoryCredentialCounts(context.Background(), request)
-		})
+			repositoryRepository.FindReturns(
+				db.Repository{
+					Name:    "some-repo",
+					Private: true,
+				},
+				true,
+				nil,
+			)
 
-		It("does not error", func() {
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("returns counts for all branches in alphabetical order", func() {
@@ -201,19 +203,50 @@ var _ = Describe("Server", func() {
 				Count: 2,
 			}
 
+			request := &revokpb.RepositoryCredentialCountRequest{}
+			response, err := server.GetRepositoryCredentialCounts(context.Background(), request)
+			Expect(err).NotTo(HaveOccurred())
+
 			Expect(response).NotTo(BeNil())
 			Expect(response.CredentialCounts).NotTo(BeNil())
 			Expect(response.CredentialCounts).To(Equal([]*revokpb.BranchCredentialCount{occ1, occ2}))
 		})
 
-		Context("when the database returns an error", func() {
+		Context("when looking up credential counts returns an error", func() {
 			BeforeEach(func() {
-				branchRepository.GetCredentialCountForRepoReturns(nil, errors.New("disaster"))
+				branchRepository.GetCredentialCountForRepoReturns(
+					nil,
+					errors.New("credential count disaster"),
+				)
 			})
 
 			It("errors", func() {
 				request := &revokpb.RepositoryCredentialCountRequest{}
-				_, err = server.GetRepositoryCredentialCounts(context.Background(), request)
+				_, err := server.GetRepositoryCredentialCounts(context.Background(), request)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when looking up repository returns an error", func() {
+			BeforeEach(func() {
+				repositoryRepository.FindReturns(db.Repository{}, false, errors.New("repository disaster"))
+			})
+
+			It("errors", func() {
+				request := &revokpb.RepositoryCredentialCountRequest{}
+				_, err := server.GetRepositoryCredentialCounts(context.Background(), request)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when repository is not found", func() {
+			BeforeEach(func() {
+				repositoryRepository.FindReturns(db.Repository{}, false, nil)
+			})
+
+			It("errors", func() {
+				request := &revokpb.RepositoryCredentialCountRequest{}
+				_, err := server.GetRepositoryCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
 		})

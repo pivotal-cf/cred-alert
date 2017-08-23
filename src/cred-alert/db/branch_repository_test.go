@@ -179,23 +179,25 @@ var _ = Describe("BranchRepository", func() {
 
 		BeforeEach(func() {
 			otherRepository = db.Repository{
-				Owner: "my-different-owner",
-				Name:  "my-special-name",
+				Owner:   "my-different-owner",
+				Name:    "my-special-name",
+				Private: false,
 			}
 
 			err := repositoryRepository.Create(&otherRepository)
 			Expect(err).NotTo(HaveOccurred())
 
 			yetAnotherRepository = db.Repository{
-				Owner: "my-different-owner",
-				Name:  "my-other-name",
+				Owner:   "my-different-owner",
+				Name:    "my-other-name",
+				Private: true,
 			}
 
 			err = repositoryRepository.Create(&yetAnotherRepository)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("sums up all of the credential counts per repository", func() {
+		It("sums up the credential counts and returns the private values for each repository", func() {
 			err := branchRepository.UpdateBranches(otherRepository, []db.Branch{
 				{
 					Name:            "branch-1",
@@ -227,11 +229,13 @@ var _ = Describe("BranchRepository", func() {
 				{
 					Owner:           "my-different-owner",
 					Name:            "my-other-name",
+					Private:         true,
 					CredentialCount: 42,
 				},
 				{
 					Owner:           "my-different-owner",
 					Name:            "my-special-name",
+					Private:         false,
 					CredentialCount: 98,
 				},
 			}))

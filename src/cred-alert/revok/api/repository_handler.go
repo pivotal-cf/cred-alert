@@ -35,6 +35,11 @@ type Branch struct {
 	CredentialCount int64
 }
 
+type BranchesRepository struct {
+	Branches []*Branch
+	Private  bool
+}
+
 func (h *repositoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	request := &revokpb.RepositoryCredentialCountRequest{
 		Owner: rata.Param(r, "organization"),
@@ -56,8 +61,13 @@ func (h *repositoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	repo := BranchesRepository{
+		Branches: branches,
+		Private:  response.Private,
+	}
+
 	buf := bytes.NewBuffer([]byte{})
-	err = h.template.Execute(buf, branches)
+	err = h.template.Execute(buf, repo)
 	if err != nil {
 		h.logger.Error("failed-to-execute-template", err)
 		w.WriteHeader(http.StatusInternalServerError)

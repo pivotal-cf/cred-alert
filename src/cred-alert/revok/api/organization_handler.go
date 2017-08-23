@@ -33,6 +33,7 @@ func NewOrganizationHandler(
 type Repository struct {
 	Owner           string
 	Name            string
+	Private         bool
 	CredentialCount int64
 }
 
@@ -54,6 +55,7 @@ func (h *organizationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 			Owner:           r.Owner,
 			Name:            r.Name,
 			CredentialCount: r.Count,
+			Private:         r.Private,
 		})
 	}
 

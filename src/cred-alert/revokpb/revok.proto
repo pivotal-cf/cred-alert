@@ -33,6 +33,7 @@ message RepositoryCredentialCount {
   string owner = 1;
   string name = 2;
   int64 count = 3;
+  bool private = 4;
 }
 
 message OrganizationCredentialCountResponse {
@@ -51,6 +52,7 @@ message BranchCredentialCount {
 
 message RepositoryCredentialCountResponse {
   repeated BranchCredentialCount credentialCounts = 1;
+  bool private = 2;
 }
 
 message SearchQuery {
