@@ -23,7 +23,7 @@ var _ = Describe("NotificationComposer", func() {
 
 		logger               *lagertest.TestLogger
 		repositoryRepository *dbfakes.FakeRepositoryRepository
-		scanner              *revokfakes.FakeScanner
+		scanner              *revokfakes.FakeNotificationComposerScanner
 		router               *notificationsfakes.FakeRouter
 
 		scannedShas map[string]struct{}
@@ -32,7 +32,7 @@ var _ = Describe("NotificationComposer", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("revok-scanner")
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
-		scanner = &revokfakes.FakeScanner{}
+		scanner = &revokfakes.FakeNotificationComposerScanner{}
 		repositoryRepository.MustFindReturns(db.Repository{
 			Model: db.Model{
 				ID: 42,

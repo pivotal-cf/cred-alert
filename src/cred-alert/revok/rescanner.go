@@ -12,11 +12,17 @@ import (
 	"cred-alert/sniff"
 )
 
+//go:generate counterfeiter . RescannerScanner
+
+type RescannerScanner interface {
+	Scan(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error)
+}
+
 type Rescanner struct {
 	logger         lager.Logger
 	scanRepo       db.ScanRepository
 	credRepo       db.CredentialRepository
-	scanner        Scanner
+	scanner        RescannerScanner
 	router         notifications.Router
 	successCounter metrics.Counter
 	failedCounter  metrics.Counter
@@ -26,7 +32,7 @@ func NewRescanner(
 	logger lager.Logger,
 	scanRepo db.ScanRepository,
 	credRepo db.CredentialRepository,
-	scanner Scanner,
+	scanner RescannerScanner,
 	router notifications.Router,
 	emitter metrics.Emitter,
 ) *Rescanner {

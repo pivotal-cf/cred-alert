@@ -27,7 +27,7 @@ var _ = Describe("Rescanner", func() {
 		logger               *lagertest.TestLogger
 		scanRepository       *dbfakes.FakeScanRepository
 		credentialRepository *dbfakes.FakeCredentialRepository
-		scanner              *revokfakes.FakeScanner
+		scanner              *revokfakes.FakeRescannerScanner
 		router               *notificationsfakes.FakeRouter
 		emitter              *metricsfakes.FakeEmitter
 
@@ -92,7 +92,7 @@ var _ = Describe("Rescanner", func() {
 			}, nil
 		}
 
-		scanner = &revokfakes.FakeScanner{}
+		scanner = &revokfakes.FakeRescannerScanner{}
 		router = &notificationsfakes.FakeRouter{}
 
 		emitter = &metricsfakes.FakeEmitter{}

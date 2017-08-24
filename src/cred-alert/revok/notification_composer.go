@@ -10,16 +10,22 @@ import (
 	"cred-alert/notifications"
 )
 
+//go:generate counterfeiter . NotificationComposerScanner
+
+type NotificationComposerScanner interface {
+	Scan(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error)
+}
+
 type NotificationComposer struct {
 	repositoryRepository db.RepositoryRepository
 	router               notifications.Router
-	scanner              Scanner
+	scanner              NotificationComposerScanner
 }
 
 func NewNotificationComposer(
 	repositoryRepository db.RepositoryRepository,
 	router notifications.Router,
-	scanner Scanner,
+	scanner NotificationComposerScanner,
 ) *NotificationComposer {
 	return &NotificationComposer{
 		repositoryRepository: repositoryRepository,
