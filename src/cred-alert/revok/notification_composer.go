@@ -10,13 +10,7 @@ import (
 	"cred-alert/notifications"
 )
 
-//go:generate counterfeiter . NotificationComposer
-
-type NotificationComposer interface {
-	ScanAndNotify(context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) error
-}
-
-type notificationComposer struct {
+type NotificationComposer struct {
 	repositoryRepository db.RepositoryRepository
 	router               notifications.Router
 	scanner              Scanner
@@ -26,15 +20,15 @@ func NewNotificationComposer(
 	repositoryRepository db.RepositoryRepository,
 	router notifications.Router,
 	scanner Scanner,
-) NotificationComposer {
-	return &notificationComposer{
+) *NotificationComposer {
+	return &NotificationComposer{
 		repositoryRepository: repositoryRepository,
 		router:               router,
 		scanner:              scanner,
 	}
 }
 
-func (n *notificationComposer) ScanAndNotify(
+func (n *NotificationComposer) ScanAndNotify(
 	ctx context.Context,
 	logger lager.Logger,
 	owner string,

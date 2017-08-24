@@ -19,7 +19,7 @@ import (
 
 var _ = Describe("NotificationComposer", func() {
 	var (
-		notificationComposer revok.NotificationComposer
+		notificationComposer *revok.NotificationComposer
 
 		logger               *lagertest.TestLogger
 		repositoryRepository *dbfakes.FakeRepositoryRepository

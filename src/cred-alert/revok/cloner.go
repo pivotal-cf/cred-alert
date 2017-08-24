@@ -23,6 +23,12 @@ type GitBranchCloneClient interface {
 	BranchTargets(repoPath string) (map[string]string, error)
 }
 
+//go:generate counterfeiter . ClonerNotificationComposer
+
+type ClonerNotificationComposer interface {
+	ScanAndNotify(context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) error
+}
+
 type Cloner struct {
 	logger lager.Logger
 
@@ -30,7 +36,7 @@ type Cloner struct {
 	workCh               chan CloneMsg
 	gitClient            GitBranchCloneClient
 	repositoryRepository db.RepositoryRepository
-	notificationComposer NotificationComposer
+	notificationComposer ClonerNotificationComposer
 	scheduler            RepoChangeScheduler
 
 	cloneSuccessCounter metrics.Counter
@@ -45,7 +51,7 @@ func NewCloner(
 	workCh chan CloneMsg,
 	gitClient GitBranchCloneClient,
 	repositoryRepository db.RepositoryRepository,
-	notificationComposer NotificationComposer,
+	notificationComposer ClonerNotificationComposer,
 	emitter metrics.Emitter,
 	scheduler RepoChangeScheduler,
 ) *Cloner {

@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type FakeNotificationComposer struct {
+type FakeClonerNotificationComposer struct {
 	ScanAndNotifyStub        func(context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) error
 	scanAndNotifyMutex       sync.RWMutex
 	scanAndNotifyArgsForCall []struct {
@@ -32,7 +32,7 @@ type FakeNotificationComposer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotify(arg1 context.Context, arg2 lager.Logger, arg3 string, arg4 string, arg5 map[string]struct{}, arg6 string, arg7 string, arg8 string) error {
+func (fake *FakeClonerNotificationComposer) ScanAndNotify(arg1 context.Context, arg2 lager.Logger, arg3 string, arg4 string, arg5 map[string]struct{}, arg6 string, arg7 string, arg8 string) error {
 	fake.scanAndNotifyMutex.Lock()
 	ret, specificReturn := fake.scanAndNotifyReturnsOnCall[len(fake.scanAndNotifyArgsForCall)]
 	fake.scanAndNotifyArgsForCall = append(fake.scanAndNotifyArgsForCall, struct {
@@ -56,26 +56,26 @@ func (fake *FakeNotificationComposer) ScanAndNotify(arg1 context.Context, arg2 l
 	return fake.scanAndNotifyReturns.result1
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotifyCallCount() int {
+func (fake *FakeClonerNotificationComposer) ScanAndNotifyCallCount() int {
 	fake.scanAndNotifyMutex.RLock()
 	defer fake.scanAndNotifyMutex.RUnlock()
 	return len(fake.scanAndNotifyArgsForCall)
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotifyArgsForCall(i int) (context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) {
+func (fake *FakeClonerNotificationComposer) ScanAndNotifyArgsForCall(i int) (context.Context, lager.Logger, string, string, map[string]struct{}, string, string, string) {
 	fake.scanAndNotifyMutex.RLock()
 	defer fake.scanAndNotifyMutex.RUnlock()
 	return fake.scanAndNotifyArgsForCall[i].arg1, fake.scanAndNotifyArgsForCall[i].arg2, fake.scanAndNotifyArgsForCall[i].arg3, fake.scanAndNotifyArgsForCall[i].arg4, fake.scanAndNotifyArgsForCall[i].arg5, fake.scanAndNotifyArgsForCall[i].arg6, fake.scanAndNotifyArgsForCall[i].arg7, fake.scanAndNotifyArgsForCall[i].arg8
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotifyReturns(result1 error) {
+func (fake *FakeClonerNotificationComposer) ScanAndNotifyReturns(result1 error) {
 	fake.ScanAndNotifyStub = nil
 	fake.scanAndNotifyReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeNotificationComposer) ScanAndNotifyReturnsOnCall(i int, result1 error) {
+func (fake *FakeClonerNotificationComposer) ScanAndNotifyReturnsOnCall(i int, result1 error) {
 	fake.ScanAndNotifyStub = nil
 	if fake.scanAndNotifyReturnsOnCall == nil {
 		fake.scanAndNotifyReturnsOnCall = make(map[int]struct {
@@ -87,7 +87,7 @@ func (fake *FakeNotificationComposer) ScanAndNotifyReturnsOnCall(i int, result1 
 	}{result1}
 }
 
-func (fake *FakeNotificationComposer) Invocations() map[string][][]interface{} {
+func (fake *FakeClonerNotificationComposer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.scanAndNotifyMutex.RLock()
@@ -99,7 +99,7 @@ func (fake *FakeNotificationComposer) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeNotificationComposer) recordInvocation(key string, args []interface{}) {
+func (fake *FakeClonerNotificationComposer) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -111,4 +111,4 @@ func (fake *FakeNotificationComposer) recordInvocation(key string, args []interf
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ revok.NotificationComposer = new(FakeNotificationComposer)
+var _ revok.ClonerNotificationComposer = new(FakeClonerNotificationComposer)
