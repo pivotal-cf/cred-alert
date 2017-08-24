@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/tedsuo/ifrit"
 
 	"cred-alert/db"
 	"cred-alert/metrics"
@@ -49,7 +48,7 @@ func NewCloner(
 	notificationComposer NotificationComposer,
 	emitter metrics.Emitter,
 	scheduler RepoChangeScheduler,
-) ifrit.Runner {
+) *Cloner {
 	return &Cloner{
 		logger:               logger,
 		workdir:              workdir,

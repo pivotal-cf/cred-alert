@@ -44,7 +44,7 @@ var _ = Describe("Cloner", func() {
 		potatoesHeadSHA    string
 		tomatoesHeadSHA    string
 
-		runner  ifrit.Runner
+		runner  *revok.Cloner
 		process ifrit.Process
 	)
 
