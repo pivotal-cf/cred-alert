@@ -58,7 +58,7 @@ var _ = Describe("Revok", func() {
 		sha := makeCommit(githubClient, owner, repo)
 
 		By("checking Slack")
-		Eventually(messageHistory.recentMessages, slackTimeout).Should(ContainAMessageAlertingAboutCredentialsIn(sha))
+		Eventually(messageHistory.recentMessages, slackTimeout, 5*time.Second).Should(ContainAMessageAlertingAboutCredentialsIn(sha))
 	})
 })
 
