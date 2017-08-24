@@ -30,7 +30,7 @@ var _ = Describe("Scanner", func() {
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		scanRepository       *dbfakes.FakeScanRepository
 		credentialRepository *dbfakes.FakeCredentialRepository
-		scanner              revok.Scanner
+		scanner              *revok.Scanner
 
 		firstScan      *dbfakes.FakeActiveScan
 		baseRepoPath   string

@@ -12,19 +12,13 @@ import (
 	"cred-alert/sniff"
 )
 
-//go:generate counterfeiter . Scanner
-
-type Scanner interface {
-	Scan(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error)
-}
-
 //go:generate counterfeiter . GitGetParentsDiffClient
 type GitGetParentsDiffClient interface {
 	GetParents(string, string) ([]string, error)
 	Diff(repoPath, parent, child string) (string, error)
 }
 
-type scanner struct {
+type Scanner struct {
 	gitClient            GitGetParentsDiffClient
 	repositoryRepository db.RepositoryRepository
 	scanRepository       db.ScanRepository
@@ -38,8 +32,8 @@ func NewScanner(
 	scanRepository db.ScanRepository,
 	credentialRepository db.CredentialRepository,
 	sniffer sniff.Sniffer,
-) Scanner {
-	return &scanner{
+) *Scanner {
+	return &Scanner{
 		gitClient:            gitClient,
 		repositoryRepository: repositoryRepository,
 		scanRepository:       scanRepository,
@@ -48,7 +42,7 @@ func NewScanner(
 	}
 }
 
-func (s *scanner) Scan(
+func (s *Scanner) Scan(
 	logger lager.Logger,
 	owner string,
 	repository string,
@@ -71,7 +65,7 @@ func (s *scanner) Scan(
 	return credentials, nil
 }
 
-func (s *scanner) scan(
+func (s *Scanner) scan(
 	logger lager.Logger,
 	dbRepository db.Repository,
 	scannedOids map[string]struct{},
@@ -142,7 +136,7 @@ func (s *scanner) scan(
 	return credentials, nil
 }
 
-func (s *scanner) scanAncestors(
+func (s *Scanner) scanAncestors(
 	repoPath string,
 	scanFunc func(string, string) error,
 	scannedOids map[string]struct{},
