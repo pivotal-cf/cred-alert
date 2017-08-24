@@ -7,12 +7,12 @@ import (
 
 // TODO: Actually test dependencies.
 
-func ObliviousHealthCheck() http.Handler {
-	return &healthCheck{}
+func NewObliviousHealthCheck() *ObliviousHealthCheck {
+	return &ObliviousHealthCheck{}
 }
 
-type healthCheck struct{}
+type ObliviousHealthCheck struct{}
 
-func (hc *healthCheck) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (hc *ObliviousHealthCheck) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ok")
 }
