@@ -11,6 +11,12 @@ import (
 	"cred-alert/db"
 )
 
+//go:generate counterfeiter . SchedulerChangeFetcher
+
+type SchedulerChangeFetcher interface {
+	Fetch(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
+}
+
 //go:generate counterfeiter . Scheduler
 
 type Scheduler interface {
@@ -21,10 +27,10 @@ type ChangeScheduler struct {
 	logger    lager.Logger
 	repoRepo  db.RepositoryRepository
 	scheduler Scheduler
-	fetcher   ChangeFetcher
+	fetcher   SchedulerChangeFetcher
 }
 
-func NewChangeScheduler(logger lager.Logger, repoRepo db.RepositoryRepository, scheduler Scheduler, fetcher ChangeFetcher) *ChangeScheduler {
+func NewChangeScheduler(logger lager.Logger, repoRepo db.RepositoryRepository, scheduler Scheduler, fetcher SchedulerChangeFetcher) *ChangeScheduler {
 	return &ChangeScheduler{
 		logger:    logger.Session("change-scheduler"),
 		repoRepo:  repoRepo,

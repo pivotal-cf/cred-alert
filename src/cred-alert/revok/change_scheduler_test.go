@@ -19,7 +19,7 @@ var _ = Describe("Change Scheduler", func() {
 	var (
 		repositoryRepo *dbfakes.FakeRepositoryRepository
 		scheduler      *revokfakes.FakeScheduler
-		fetcher        *revokfakes.FakeChangeFetcher
+		fetcher        *revokfakes.FakeSchedulerChangeFetcher
 
 		logger *lagertest.TestLogger
 
@@ -28,7 +28,7 @@ var _ = Describe("Change Scheduler", func() {
 
 	BeforeEach(func() {
 		repositoryRepo = &dbfakes.FakeRepositoryRepository{}
-		fetcher = &revokfakes.FakeChangeFetcher{}
+		fetcher = &revokfakes.FakeSchedulerChangeFetcher{}
 		scheduler = &revokfakes.FakeScheduler{}
 		logger = lagertest.NewTestLogger("scheduler")
 	})
