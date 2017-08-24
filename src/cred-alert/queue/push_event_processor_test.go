@@ -16,14 +16,14 @@ import (
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
-	"cred-alert/revok/revokfakes"
+	"cred-alert/queue/queuefakes"
 )
 
 var _ = Describe("PushEventProcessor", func() {
 	var (
 		ctx           context.Context
 		fakeClock     *fakeclock.FakeClock
-		changeFetcher *revokfakes.FakeChangeFetcher
+		changeFetcher *queuefakes.FakeChangeFetcher
 		message       *pubsub.Message
 
 		emitter       *metricsfakes.FakeEmitter
@@ -34,7 +34,7 @@ var _ = Describe("PushEventProcessor", func() {
 
 	BeforeEach(func() {
 		ctx = lgctx.NewContext(context.Background(), lagertest.NewTestLogger("ingestor"))
-		changeFetcher = &revokfakes.FakeChangeFetcher{}
+		changeFetcher = &queuefakes.FakeChangeFetcher{}
 		endToEndGauge = &metricsfakes.FakeGauge{}
 
 		emitter = &metricsfakes.FakeEmitter{}

@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type FakeChangeFetcher struct {
+type FakeSchedulerChangeFetcher struct {
 	FetchStub        func(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
@@ -29,7 +29,7 @@ type FakeChangeFetcher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeChangeFetcher) Fetch(ctx context.Context, logger lager.Logger, owner string, name string, reenable bool) error {
+func (fake *FakeSchedulerChangeFetcher) Fetch(ctx context.Context, logger lager.Logger, owner string, name string, reenable bool) error {
 	fake.fetchMutex.Lock()
 	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
@@ -50,26 +50,26 @@ func (fake *FakeChangeFetcher) Fetch(ctx context.Context, logger lager.Logger, o
 	return fake.fetchReturns.result1
 }
 
-func (fake *FakeChangeFetcher) FetchCallCount() int {
+func (fake *FakeSchedulerChangeFetcher) FetchCallCount() int {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeChangeFetcher) FetchArgsForCall(i int) (context.Context, lager.Logger, string, string, bool) {
+func (fake *FakeSchedulerChangeFetcher) FetchArgsForCall(i int) (context.Context, lager.Logger, string, string, bool) {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	return fake.fetchArgsForCall[i].ctx, fake.fetchArgsForCall[i].logger, fake.fetchArgsForCall[i].owner, fake.fetchArgsForCall[i].name, fake.fetchArgsForCall[i].reenable
 }
 
-func (fake *FakeChangeFetcher) FetchReturns(result1 error) {
+func (fake *FakeSchedulerChangeFetcher) FetchReturns(result1 error) {
 	fake.FetchStub = nil
 	fake.fetchReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeChangeFetcher) FetchReturnsOnCall(i int, result1 error) {
+func (fake *FakeSchedulerChangeFetcher) FetchReturnsOnCall(i int, result1 error) {
 	fake.FetchStub = nil
 	if fake.fetchReturnsOnCall == nil {
 		fake.fetchReturnsOnCall = make(map[int]struct {
@@ -81,7 +81,7 @@ func (fake *FakeChangeFetcher) FetchReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeChangeFetcher) Invocations() map[string][][]interface{} {
+func (fake *FakeSchedulerChangeFetcher) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.fetchMutex.RLock()
@@ -93,7 +93,7 @@ func (fake *FakeChangeFetcher) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeChangeFetcher) recordInvocation(key string, args []interface{}) {
+func (fake *FakeSchedulerChangeFetcher) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -105,4 +105,4 @@ func (fake *FakeChangeFetcher) recordInvocation(key string, args []interface{}) 
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ revok.ChangeFetcher = new(FakeChangeFetcher)
+var _ revok.SchedulerChangeFetcher = new(FakeSchedulerChangeFetcher)

@@ -41,7 +41,7 @@ var _ = Describe("ChangeFetcher", func() {
 		scanSuccessCounter  *metricsfakes.FakeCounter
 		scanFailedCounter   *metricsfakes.FakeCounter
 
-		fetcher revok.ChangeFetcher
+		fetcher *revok.ChangeFetcher
 
 		remoteRepoPath  string
 		repoToFetchPath string

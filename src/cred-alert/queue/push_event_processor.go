@@ -14,11 +14,16 @@ import (
 	"cred-alert/crypto"
 	"cred-alert/lgctx"
 	"cred-alert/metrics"
-	"cred-alert/revok"
 )
 
+//go:generate counterfeiter . ChangeFetcher
+
+type ChangeFetcher interface {
+	Fetch(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
+}
+
 type pushEventProcessor struct {
-	changeFetcher revok.ChangeFetcher
+	changeFetcher ChangeFetcher
 	verifier      crypto.Verifier
 	clock         clock.Clock
 	traceClient   *trace.Client
@@ -27,7 +32,7 @@ type pushEventProcessor struct {
 }
 
 func NewPushEventProcessor(
-	changeFetcher revok.ChangeFetcher,
+	changeFetcher ChangeFetcher,
 	emitter metrics.Emitter,
 	clock clock.Clock,
 	traceClient *trace.Client,

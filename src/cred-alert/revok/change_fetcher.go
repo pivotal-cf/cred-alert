@@ -11,18 +11,13 @@ import (
 	"cred-alert/metrics"
 )
 
-//go:generate counterfeiter . ChangeFetcher
-
-type ChangeFetcher interface {
-	Fetch(ctx context.Context, logger lager.Logger, owner, name string, reenable bool) error
-}
-
 //go:generate counterfeiter . GitFetchClient
+
 type GitFetchClient interface {
 	Fetch(string) (map[string][]string, error)
 }
 
-type changeFetcher struct {
+type ChangeFetcher struct {
 	logger               lager.Logger
 	gitClient            GitFetchClient
 	notificationComposer NotificationComposer
@@ -43,8 +38,8 @@ func NewChangeFetcher(
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
 	emitter metrics.Emitter,
-) ChangeFetcher {
-	return &changeFetcher{
+) *ChangeFetcher {
+	return &ChangeFetcher{
 		logger:               logger,
 		gitClient:            gitClient,
 		notificationComposer: notificationComposer,
@@ -59,7 +54,7 @@ func NewChangeFetcher(
 	}
 }
 
-func (c *changeFetcher) Fetch(
+func (c *ChangeFetcher) Fetch(
 	ctx context.Context,
 	logger lager.Logger,
 	owner string,
@@ -102,7 +97,7 @@ func (c *changeFetcher) Fetch(
 	return c.scanFetch(ctx, logger, repo, changes)
 }
 
-func (c *changeFetcher) shouldFetch(logger lager.Logger, repo db.Repository, found bool, reenable bool) (bool, error) {
+func (c *ChangeFetcher) shouldFetch(logger lager.Logger, repo db.Repository, found bool, reenable bool) (bool, error) {
 	if !found {
 		logger.Info("skipping-fetch-of-unknown-repo")
 		return false, nil
@@ -127,7 +122,7 @@ func (c *changeFetcher) shouldFetch(logger lager.Logger, repo db.Repository, fou
 	return true, nil
 }
 
-func (c *changeFetcher) registerFetchResult(
+func (c *ChangeFetcher) registerFetchResult(
 	logger lager.Logger,
 	repo db.Repository,
 	fetchErr error,
@@ -168,7 +163,7 @@ func (c *changeFetcher) registerFetchResult(
 	return nil
 }
 
-func (c *changeFetcher) scanFetch(
+func (c *ChangeFetcher) scanFetch(
 	ctx context.Context,
 	logger lager.Logger,
 	repo db.Repository,
