@@ -21,26 +21,19 @@ type GitHubOrganization struct {
 	Name string `json:"login"`
 }
 
-//go:generate counterfeiter . GitHubClient
-
-type GitHubClient interface {
-	ListRepositoriesByOrg(lager.Logger, string) ([]GitHubRepository, error)
-	ListRepositoriesByUser(lager.Logger, string) ([]GitHubRepository, error)
-}
-
-type client struct {
+type GitHubClient struct {
 	ghClient *github.Client
 }
 
 func NewGitHubClient(
 	ghClient *github.Client,
-) GitHubClient {
-	return &client{
+) *GitHubClient {
+	return &GitHubClient{
 		ghClient: ghClient,
 	}
 }
 
-func (c *client) ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]GitHubRepository, error) {
+func (c *GitHubClient) ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]GitHubRepository, error) {
 	logger = logger.Session("list-repositories-by-org")
 
 	opts := &github.RepositoryListByOrgOptions{
@@ -85,7 +78,7 @@ func (c *client) ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]G
 	return repos, nil
 }
 
-func (c *client) ListRepositoriesByUser(logger lager.Logger, userName string) ([]GitHubRepository, error) {
+func (c *GitHubClient) ListRepositoriesByUser(logger lager.Logger, userName string) ([]GitHubRepository, error) {
 	logger = logger.Session("list-repositories-by-user")
 
 	opts := &github.RepositoryListOptions{

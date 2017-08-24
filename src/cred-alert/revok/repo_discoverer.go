@@ -9,14 +9,20 @@ import (
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
-	"github.com/tedsuo/ifrit"
 )
+
+//go:generate counterfeiter . RepoDiscovererGitHubClient
+
+type RepoDiscovererGitHubClient interface {
+	ListRepositoriesByOrg(lager.Logger, string) ([]GitHubRepository, error)
+	ListRepositoriesByUser(lager.Logger, string) ([]GitHubRepository, error)
+}
 
 type RepoDiscoverer struct {
 	logger               lager.Logger
 	workdir              string
 	cloneMsgCh           chan CloneMsg
-	ghClient             GitHubClient
+	ghClient             RepoDiscovererGitHubClient
 	clock                clock.Clock
 	interval             time.Duration
 	orgs                 []string
@@ -28,13 +34,13 @@ func NewRepoDiscoverer(
 	logger lager.Logger,
 	workdir string,
 	cloneMsgCh chan CloneMsg,
-	ghClient GitHubClient,
+	ghClient RepoDiscovererGitHubClient,
 	clock clock.Clock,
 	interval time.Duration,
 	orgs []string,
 	users []string,
 	repositoryRepository db.RepositoryRepository,
-) ifrit.Runner {
+) *RepoDiscoverer {
 	return &RepoDiscoverer{
 		logger:               logger,
 		workdir:              workdir,
