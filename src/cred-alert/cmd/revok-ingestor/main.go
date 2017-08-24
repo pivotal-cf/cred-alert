@@ -83,7 +83,7 @@ func main() {
 
 	router := http.NewServeMux()
 	router.Handle("/webhook", ingestor.NewHandler(logger, in, clk, emitter, cfg.GitHub.WebhookSecretTokens))
-	router.Handle("/healthcheck", revok.ObliviousHealthCheck())
+	router.Handle("/healthcheck", revok.NewObliviousHealthCheck())
 
 	certificate, err := config.LoadCertificate(
 		cfg.Identity.CertificatePath,
