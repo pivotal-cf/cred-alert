@@ -31,7 +31,7 @@ var _ = Describe("Cloner", func() {
 		gitClient            revok.GitBranchCloneClient
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		emitter              *metricsfakes.FakeEmitter
-		notificationComposer *revokfakes.FakeNotificationComposer
+		notificationComposer *revokfakes.FakeClonerNotificationComposer
 		scheduler            *revokfakes.FakeRepoChangeScheduler
 
 		scanSuccessMetric  *metricsfakes.FakeCounter
@@ -79,7 +79,7 @@ var _ = Describe("Cloner", func() {
 			return &metricsfakes.FakeCounter{}
 		}
 
-		notificationComposer = &revokfakes.FakeNotificationComposer{}
+		notificationComposer = &revokfakes.FakeClonerNotificationComposer{}
 		scheduler = &revokfakes.FakeRepoChangeScheduler{}
 
 		var err error

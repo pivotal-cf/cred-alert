@@ -27,7 +27,7 @@ var _ = Describe("ChangeFetcher", func() {
 	var (
 		logger               *lagertest.TestLogger
 		gitFetcherClient     *revokfakes.FakeGitFetchClient
-		notificationComposer *revokfakes.FakeNotificationComposer
+		notificationComposer *revokfakes.FakeChangeFetcherNotificationComposer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		fetchRepository      *dbfakes.FakeFetchRepository
 		emitter              *metricsfakes.FakeEmitter
@@ -55,7 +55,7 @@ var _ = Describe("ChangeFetcher", func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
 		gitFetcherClient = &revokfakes.FakeGitFetchClient{}
 
-		notificationComposer = &revokfakes.FakeNotificationComposer{}
+		notificationComposer = &revokfakes.FakeChangeFetcherNotificationComposer{}
 
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 
