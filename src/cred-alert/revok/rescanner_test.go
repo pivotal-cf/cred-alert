@@ -34,7 +34,7 @@ var _ = Describe("Rescanner", func() {
 		successMetric *metricsfakes.FakeCounter
 		failedMetric  *metricsfakes.FakeCounter
 
-		runner  ifrit.Runner
+		runner  *revok.Rescanner
 		process ifrit.Process
 	)
 

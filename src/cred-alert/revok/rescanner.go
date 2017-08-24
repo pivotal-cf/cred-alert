@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/tedsuo/ifrit"
 
 	"context"
 	"cred-alert/db"
@@ -30,7 +29,7 @@ func NewRescanner(
 	scanner Scanner,
 	router notifications.Router,
 	emitter metrics.Emitter,
-) ifrit.Runner {
+) *Rescanner {
 	return &Rescanner{
 		logger:         logger,
 		scanRepo:       scanRepo,
