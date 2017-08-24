@@ -8,7 +8,7 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-type FakeGitHubClient struct {
+type FakeRepoDiscovererGitHubClient struct {
 	ListRepositoriesByOrgStub        func(lager.Logger, string) ([]revok.GitHubRepository, error)
 	listRepositoriesByOrgMutex       sync.RWMutex
 	listRepositoriesByOrgArgsForCall []struct {
@@ -41,7 +41,7 @@ type FakeGitHubClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByOrg(arg1 lager.Logger, arg2 string) ([]revok.GitHubRepository, error) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByOrg(arg1 lager.Logger, arg2 string) ([]revok.GitHubRepository, error) {
 	fake.listRepositoriesByOrgMutex.Lock()
 	ret, specificReturn := fake.listRepositoriesByOrgReturnsOnCall[len(fake.listRepositoriesByOrgArgsForCall)]
 	fake.listRepositoriesByOrgArgsForCall = append(fake.listRepositoriesByOrgArgsForCall, struct {
@@ -59,19 +59,19 @@ func (fake *FakeGitHubClient) ListRepositoriesByOrg(arg1 lager.Logger, arg2 stri
 	return fake.listRepositoriesByOrgReturns.result1, fake.listRepositoriesByOrgReturns.result2
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByOrgCallCount() int {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByOrgCallCount() int {
 	fake.listRepositoriesByOrgMutex.RLock()
 	defer fake.listRepositoriesByOrgMutex.RUnlock()
 	return len(fake.listRepositoriesByOrgArgsForCall)
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByOrgArgsForCall(i int) (lager.Logger, string) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByOrgArgsForCall(i int) (lager.Logger, string) {
 	fake.listRepositoriesByOrgMutex.RLock()
 	defer fake.listRepositoriesByOrgMutex.RUnlock()
 	return fake.listRepositoriesByOrgArgsForCall[i].arg1, fake.listRepositoriesByOrgArgsForCall[i].arg2
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByOrgReturns(result1 []revok.GitHubRepository, result2 error) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByOrgReturns(result1 []revok.GitHubRepository, result2 error) {
 	fake.ListRepositoriesByOrgStub = nil
 	fake.listRepositoriesByOrgReturns = struct {
 		result1 []revok.GitHubRepository
@@ -79,7 +79,7 @@ func (fake *FakeGitHubClient) ListRepositoriesByOrgReturns(result1 []revok.GitHu
 	}{result1, result2}
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByOrgReturnsOnCall(i int, result1 []revok.GitHubRepository, result2 error) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByOrgReturnsOnCall(i int, result1 []revok.GitHubRepository, result2 error) {
 	fake.ListRepositoriesByOrgStub = nil
 	if fake.listRepositoriesByOrgReturnsOnCall == nil {
 		fake.listRepositoriesByOrgReturnsOnCall = make(map[int]struct {
@@ -93,7 +93,7 @@ func (fake *FakeGitHubClient) ListRepositoriesByOrgReturnsOnCall(i int, result1 
 	}{result1, result2}
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByUser(arg1 lager.Logger, arg2 string) ([]revok.GitHubRepository, error) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByUser(arg1 lager.Logger, arg2 string) ([]revok.GitHubRepository, error) {
 	fake.listRepositoriesByUserMutex.Lock()
 	ret, specificReturn := fake.listRepositoriesByUserReturnsOnCall[len(fake.listRepositoriesByUserArgsForCall)]
 	fake.listRepositoriesByUserArgsForCall = append(fake.listRepositoriesByUserArgsForCall, struct {
@@ -111,19 +111,19 @@ func (fake *FakeGitHubClient) ListRepositoriesByUser(arg1 lager.Logger, arg2 str
 	return fake.listRepositoriesByUserReturns.result1, fake.listRepositoriesByUserReturns.result2
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByUserCallCount() int {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByUserCallCount() int {
 	fake.listRepositoriesByUserMutex.RLock()
 	defer fake.listRepositoriesByUserMutex.RUnlock()
 	return len(fake.listRepositoriesByUserArgsForCall)
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByUserArgsForCall(i int) (lager.Logger, string) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByUserArgsForCall(i int) (lager.Logger, string) {
 	fake.listRepositoriesByUserMutex.RLock()
 	defer fake.listRepositoriesByUserMutex.RUnlock()
 	return fake.listRepositoriesByUserArgsForCall[i].arg1, fake.listRepositoriesByUserArgsForCall[i].arg2
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByUserReturns(result1 []revok.GitHubRepository, result2 error) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByUserReturns(result1 []revok.GitHubRepository, result2 error) {
 	fake.ListRepositoriesByUserStub = nil
 	fake.listRepositoriesByUserReturns = struct {
 		result1 []revok.GitHubRepository
@@ -131,7 +131,7 @@ func (fake *FakeGitHubClient) ListRepositoriesByUserReturns(result1 []revok.GitH
 	}{result1, result2}
 }
 
-func (fake *FakeGitHubClient) ListRepositoriesByUserReturnsOnCall(i int, result1 []revok.GitHubRepository, result2 error) {
+func (fake *FakeRepoDiscovererGitHubClient) ListRepositoriesByUserReturnsOnCall(i int, result1 []revok.GitHubRepository, result2 error) {
 	fake.ListRepositoriesByUserStub = nil
 	if fake.listRepositoriesByUserReturnsOnCall == nil {
 		fake.listRepositoriesByUserReturnsOnCall = make(map[int]struct {
@@ -145,7 +145,7 @@ func (fake *FakeGitHubClient) ListRepositoriesByUserReturnsOnCall(i int, result1
 	}{result1, result2}
 }
 
-func (fake *FakeGitHubClient) Invocations() map[string][][]interface{} {
+func (fake *FakeRepoDiscovererGitHubClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.listRepositoriesByOrgMutex.RLock()
@@ -159,7 +159,7 @@ func (fake *FakeGitHubClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeGitHubClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeRepoDiscovererGitHubClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -171,4 +171,4 @@ func (fake *FakeGitHubClient) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ revok.GitHubClient = new(FakeGitHubClient)
+var _ revok.RepoDiscovererGitHubClient = new(FakeRepoDiscovererGitHubClient)

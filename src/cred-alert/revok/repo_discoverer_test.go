@@ -25,14 +25,14 @@ var _ = Describe("RepoDiscoverer", func() {
 		clock                *fakeclock.FakeClock
 		interval             time.Duration
 		cloneMsgCh           chan revok.CloneMsg
-		ghClient             *revokfakes.FakeGitHubClient
+		ghClient             *revokfakes.FakeRepoDiscovererGitHubClient
 		workdir              string
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		currentRepositoryID  uint
 		orgs                 []string
 		users                []string
 
-		runner  ifrit.Runner
+		runner  *revok.RepoDiscoverer
 		process ifrit.Process
 	)
 
@@ -49,7 +49,7 @@ var _ = Describe("RepoDiscoverer", func() {
 		workdir, err = ioutil.TempDir("", "revok-test")
 		Expect(err).NotTo(HaveOccurred())
 
-		ghClient = &revokfakes.FakeGitHubClient{}
+		ghClient = &revokfakes.FakeRepoDiscovererGitHubClient{}
 		ghClient.ListRepositoriesByOrgStub = func(l lager.Logger, orgName string) ([]revok.GitHubRepository, error) {
 			switch ghClient.ListRepositoriesByOrgCallCount() {
 			case 1:
