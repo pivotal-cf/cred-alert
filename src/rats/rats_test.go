@@ -16,10 +16,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const (
+	DefaultSlackTimeout = 15 * time.Second
+)
+
 var _ = Describe("Revok", func() {
 	var (
 		githubClient   *github.Client
 		messageHistory *slackHistory
+
+		slackTimeout time.Duration
 	)
 
 	BeforeEach(func() {
@@ -32,6 +38,15 @@ var _ = Describe("Revok", func() {
 		githubClient = github.NewClient(tc)
 
 		messageHistory = newSlackHistory(mustGetEnv("RATS_SLACK_TOKEN"), mustGetEnv("RATS_SLACK_CHANNEL"))
+
+		slackTimeoutEnv := os.Getenv("RATS_SLACK_TIMEOUT")
+		if slackTimeoutEnv == "" {
+			slackTimeout = DefaultSlackTimeout
+		} else {
+			var err error
+			slackTimeout, err = time.ParseDuration(slackTimeoutEnv)
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 
 	It("posts a message to Slack when a credential is committed to GitHub", func() {
@@ -43,7 +58,7 @@ var _ = Describe("Revok", func() {
 		sha := makeCommit(githubClient, owner, repo)
 
 		By("checking Slack")
-		AtSomePoint(messageHistory.recentMessages).Should(ContainAMessageAlertingAboutCredentialsIn(sha))
+		Eventually(messageHistory.recentMessages, slackTimeout).Should(ContainAMessageAlertingAboutCredentialsIn(sha))
 	})
 })
 
@@ -56,10 +71,6 @@ func mustGetEnv(name string) string {
 }
 
 var letters = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func AtSomePoint(fn func() []string) GomegaAsyncAssertion {
-	return Eventually(fn, 15*time.Second, 1*time.Second)
-}
 
 func ContainAMessageAlertingAboutCredentialsIn(sha string) types.GomegaMatcher {
 	return ContainElement(ContainSubstring(sha))

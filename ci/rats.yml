@@ -15,6 +15,7 @@ params:
   RATS_GITHUB_REPO:
   RATS_SLACK_TOKEN:
   RATS_SLACK_CHANNEL:
+  RATS_SLACK_TIMEOUT:
 
 run:
   path: cred-alert/ci/scripts/rats
