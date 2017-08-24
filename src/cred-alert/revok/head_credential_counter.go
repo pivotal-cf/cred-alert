@@ -7,14 +7,20 @@ import (
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
-	"github.com/tedsuo/ifrit"
 
 	"cred-alert/db"
 	"cred-alert/kolsch"
 	"cred-alert/sniff"
 )
 
-type headCredentialCounter struct {
+//go:generate counterfeiter . GitBranchCredentialsCounterClient
+
+type GitBranchCredentialsCounterClient interface {
+	BranchTargets(repoPath string) (map[string]string, error)
+	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
+}
+
+type HeadCredentialCounter struct {
 	logger               lager.Logger
 	branchRepository     db.BranchRepository
 	repositoryRepository db.RepositoryRepository
@@ -22,13 +28,6 @@ type headCredentialCounter struct {
 	interval             time.Duration
 	gitClient            GitBranchCredentialsCounterClient
 	sniffer              sniff.Sniffer
-}
-
-//go:generate counterfeiter . GitBranchCredentialsCounterClient
-
-type GitBranchCredentialsCounterClient interface {
-	BranchTargets(repoPath string) (map[string]string, error)
-	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
 }
 
 func NewHeadCredentialCounter(
@@ -39,8 +38,8 @@ func NewHeadCredentialCounter(
 	interval time.Duration,
 	gitClient GitBranchCredentialsCounterClient,
 	sniffer sniff.Sniffer,
-) ifrit.Runner {
-	return &headCredentialCounter{
+) *HeadCredentialCounter {
+	return &HeadCredentialCounter{
 		logger:               logger,
 		branchRepository:     branchRepository,
 		repositoryRepository: repositoryRepository,
@@ -51,7 +50,7 @@ func NewHeadCredentialCounter(
 	}
 }
 
-func (c *headCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+func (c *HeadCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	logger := c.logger.Session("head-credential-counter")
 	logger.Info("starting")
 
@@ -78,7 +77,7 @@ func (c *headCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struc
 	}
 }
 
-func (c *headCredentialCounter) work(
+func (c *HeadCredentialCounter) work(
 	cancel context.CancelFunc,
 	signals <-chan os.Signal,
 	logger lager.Logger,
