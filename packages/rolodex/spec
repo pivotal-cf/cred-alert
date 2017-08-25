@@ -90,7 +90,7 @@ files:
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/connectivity/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
-  - google.golang.org/grpc/grpclb/messages_only/grpc_lb_v1/*.{go,c} # gosub
+  - google.golang.org/grpc/grpclb/grpc_lb_v1/messages/*.{go,c} # gosub
   - google.golang.org/grpc/grpclog/*.{go,c} # gosub
   - google.golang.org/grpc/internal/*.{go,c} # gosub
   - google.golang.org/grpc/keepalive/*.{go,c} # gosub
