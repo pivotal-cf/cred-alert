@@ -29,7 +29,7 @@ var _ = Describe("Server", func() {
 
 		blobSearcher *searchfakes.FakeBlobSearcher
 		searcher     *searchfakes.FakeSearcher
-		server       revok.Server
+		server       *revok.Server
 	)
 
 	BeforeEach(func() {

@@ -20,13 +20,7 @@ import (
 
 //go:generate go-bindata -o web/bindata.go -ignore bindata -pkg web web/templates/...
 
-//go:generate counterfeiter . Server
-
-type Server interface {
-	revokpb.RevokServer
-}
-
-type server struct {
+type Server struct {
 	logger       lager.Logger
 	searcher     search.Searcher
 	blobSearcher search.BlobSearcher
@@ -41,8 +35,8 @@ func NewServer(
 	blobSearcher search.BlobSearcher,
 	repositoryRepository db.RepositoryRepository,
 	branchRepository db.BranchRepository,
-) Server {
-	return &server{
+) *Server {
+	return &Server{
 		logger:               logger,
 		searcher:             searcher,
 		blobSearcher:         blobSearcher,
@@ -51,7 +45,7 @@ func NewServer(
 	}
 }
 
-func (s *server) GetCredentialCounts(
+func (s *Server) GetCredentialCounts(
 	ctx context.Context,
 	in *revokpb.CredentialCountRequest,
 ) (*revokpb.CredentialCountResponse, error) {
@@ -75,7 +69,7 @@ func (s *server) GetCredentialCounts(
 	return response, nil
 }
 
-func (s *server) GetOrganizationCredentialCounts(
+func (s *Server) GetOrganizationCredentialCounts(
 	ctx context.Context,
 	in *revokpb.OrganizationCredentialCountRequest,
 ) (*revokpb.OrganizationCredentialCountResponse, error) {
@@ -107,7 +101,7 @@ func (s *server) GetOrganizationCredentialCounts(
 	return response, nil
 }
 
-func (s *server) GetRepositoryCredentialCounts(
+func (s *Server) GetRepositoryCredentialCounts(
 	ctx context.Context,
 	in *revokpb.RepositoryCredentialCountRequest,
 ) (*revokpb.RepositoryCredentialCountResponse, error) {
@@ -146,7 +140,7 @@ func (s *server) GetRepositoryCredentialCounts(
 	return response, nil
 }
 
-func (s *server) BoshBlobs(ctx context.Context, request *revokpb.BoshBlobsRequest) (*revokpb.BoshBlobsResponse, error) {
+func (s *Server) BoshBlobs(ctx context.Context, request *revokpb.BoshBlobsRequest) (*revokpb.BoshBlobsResponse, error) {
 	logger := s.logger.Session("bosh-blobs-endpoint")
 
 	repository := request.GetRepository()
@@ -167,7 +161,7 @@ func (s *server) BoshBlobs(ctx context.Context, request *revokpb.BoshBlobsReques
 	return &response, nil
 }
 
-func (s *server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {
+func (s *Server) Search(query *revokpb.SearchQuery, stream revokpb.Revok_SearchServer) error {
 	logger := s.logger.Session("search-endpoint")
 	logger.Info("hit")
 
