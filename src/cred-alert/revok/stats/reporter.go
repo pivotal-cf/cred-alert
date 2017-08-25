@@ -8,11 +8,9 @@ import (
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
-
-	"github.com/tedsuo/ifrit"
 )
 
-type reporter struct {
+type Reporter struct {
 	logger lager.Logger
 	clock  clock.Clock
 	db     db.StatsRepository
@@ -32,8 +30,8 @@ func NewReporter(
 	interval time.Duration,
 	db db.StatsRepository,
 	emitter metrics.Emitter,
-) ifrit.Runner {
-	return &reporter{
+) *Reporter {
+	return &Reporter{
 		logger: logger,
 		clock:  clock,
 		db:     db,
@@ -48,7 +46,7 @@ func NewReporter(
 	}
 }
 
-func (r *reporter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+func (r *Reporter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	logger := r.logger.Session("reporter", lager.Data{
 		"interval": r.interval.String(),
 	})
@@ -70,7 +68,7 @@ func (r *reporter) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}
 }
 
-func (r *reporter) reportStats(logger lager.Logger) {
+func (r *Reporter) reportStats(logger lager.Logger) {
 	reposCount, err := r.db.RepositoryCount()
 	if err != nil {
 		logger.Error("failed-to-get-repository-count", err)

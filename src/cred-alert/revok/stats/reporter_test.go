@@ -31,7 +31,7 @@ var _ = Describe("Reporter", func() {
 		fetchGauge        *metricsfakes.FakeGauge
 		credentialGauge   *metricsfakes.FakeGauge
 
-		runner  ifrit.Runner
+		runner  *stats.Reporter
 		process ifrit.Process
 	)
 
