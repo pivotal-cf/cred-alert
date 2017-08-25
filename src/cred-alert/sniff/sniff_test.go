@@ -27,7 +27,7 @@ var _ = Describe("Sniffer", func() {
 		expectedLine      *scanners.Line
 		expectedViolation scanners.Violation
 
-		sniffer sniff.Sniffer
+		sniffer *sniff.Sniffer
 	)
 
 	BeforeEach(func() {
@@ -143,7 +143,7 @@ var _ = Describe("Sniffer", func() {
 
 	Describe("DefaultSniffer", func() {
 		var lines []string
-		var sniffer sniff.Sniffer
+		var sniffer *sniff.Sniffer
 
 		BeforeEach(func() {
 			lines = strings.Split(fixtures.Credentials, "\n")

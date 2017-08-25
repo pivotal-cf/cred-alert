@@ -69,7 +69,7 @@ func (command *ScanCommand) Execute(args []string) error {
 	return nil
 }
 
-func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handleFunc sniff.ViolationHandlerFunc, cleaner *cleanup) error {
+func (c *ScanCommand) scanFile(logger lager.Logger, sniffer dirscanner.Sniffer, handleFunc sniff.ViolationHandlerFunc, cleaner *cleanup) error {
 	fi, err := os.Stat(c.File)
 	if err != nil {
 		return err
@@ -118,8 +118,8 @@ func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handl
 	return nil
 }
 
-func (c *ScanCommand) buildSniffer() (sniff.Sniffer, error) {
-	var sniffer sniff.Sniffer
+func (c *ScanCommand) buildSniffer() (*sniff.Sniffer, error) {
+	var sniffer *sniff.Sniffer
 
 	switch {
 	case c.Regexp != "":

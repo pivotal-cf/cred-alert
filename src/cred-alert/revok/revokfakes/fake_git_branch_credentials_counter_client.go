@@ -2,8 +2,8 @@
 package revokfakes
 
 import (
+	"cred-alert/gitclient"
 	"cred-alert/revok"
-	"cred-alert/sniff"
 	"sync"
 
 	"code.cloudfoundry.org/lager"
@@ -23,12 +23,12 @@ type FakeGitBranchCredentialsCounterClient struct {
 		result1 map[string]string
 		result2 error
 	}
-	BranchCredentialCountsStub        func(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
+	BranchCredentialCountsStub        func(lager.Logger, string, gitclient.Sniffer) (map[string]uint, error)
 	branchCredentialCountsMutex       sync.RWMutex
 	branchCredentialCountsArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 string
-		arg3 sniff.Sniffer
+		arg3 gitclient.Sniffer
 	}
 	branchCredentialCountsReturns struct {
 		result1 map[string]uint
@@ -93,13 +93,13 @@ func (fake *FakeGitBranchCredentialsCounterClient) BranchTargetsReturnsOnCall(i 
 	}{result1, result2}
 }
 
-func (fake *FakeGitBranchCredentialsCounterClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, arg3 sniff.Sniffer) (map[string]uint, error) {
+func (fake *FakeGitBranchCredentialsCounterClient) BranchCredentialCounts(arg1 lager.Logger, arg2 string, arg3 gitclient.Sniffer) (map[string]uint, error) {
 	fake.branchCredentialCountsMutex.Lock()
 	ret, specificReturn := fake.branchCredentialCountsReturnsOnCall[len(fake.branchCredentialCountsArgsForCall)]
 	fake.branchCredentialCountsArgsForCall = append(fake.branchCredentialCountsArgsForCall, struct {
 		arg1 lager.Logger
 		arg2 string
-		arg3 sniff.Sniffer
+		arg3 gitclient.Sniffer
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("BranchCredentialCounts", []interface{}{arg1, arg2, arg3})
 	fake.branchCredentialCountsMutex.Unlock()
@@ -118,7 +118,7 @@ func (fake *FakeGitBranchCredentialsCounterClient) BranchCredentialCountsCallCou
 	return len(fake.branchCredentialCountsArgsForCall)
 }
 
-func (fake *FakeGitBranchCredentialsCounterClient) BranchCredentialCountsArgsForCall(i int) (lager.Logger, string, sniff.Sniffer) {
+func (fake *FakeGitBranchCredentialsCounterClient) BranchCredentialCountsArgsForCall(i int) (lager.Logger, string, gitclient.Sniffer) {
 	fake.branchCredentialCountsMutex.RLock()
 	defer fake.branchCredentialCountsMutex.RUnlock()
 	return fake.branchCredentialCountsArgsForCall[i].arg1, fake.branchCredentialCountsArgsForCall[i].arg2, fake.branchCredentialCountsArgsForCall[i].arg3

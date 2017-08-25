@@ -4,8 +4,8 @@ import (
 	"archive/tar"
 	"cred-alert/scanners"
 	"cred-alert/scanners/dirscanner"
+	"cred-alert/scanners/dirscanner/dirscannerfakes"
 	"cred-alert/sniff"
-	"cred-alert/sniff/snifffakes"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -21,7 +21,7 @@ import (
 var _ = Describe("DirScanner", func() {
 	var (
 		scanner          *dirscanner.DirScanner
-		sniffer          *snifffakes.FakeSniffer
+		sniffer          *dirscannerfakes.FakeSniffer
 		logger           *lagertest.TestLogger
 		credentialCount  int
 		handlerCallCount int
@@ -39,7 +39,7 @@ var _ = Describe("DirScanner", func() {
 		}
 
 		credentialCount = 0
-		sniffer = &snifffakes.FakeSniffer{}
+		sniffer = &dirscannerfakes.FakeSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
 			for s.Scan(l) {
 				line := s.Line(l)

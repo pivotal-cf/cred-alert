@@ -12,7 +12,14 @@ import (
 	"cred-alert/sniff"
 )
 
+//go:generate counterfeiter . ScannerSniffer
+
+type ScannerSniffer interface {
+	Sniff(lager.Logger, sniff.Scanner, sniff.ViolationHandlerFunc) error
+}
+
 //go:generate counterfeiter . GitGetParentsDiffClient
+
 type GitGetParentsDiffClient interface {
 	GetParents(string, string) ([]string, error)
 	Diff(repoPath, parent, child string) (string, error)
@@ -23,7 +30,7 @@ type Scanner struct {
 	repositoryRepository db.RepositoryRepository
 	scanRepository       db.ScanRepository
 	credentialRepository db.CredentialRepository
-	sniffer              sniff.Sniffer
+	sniffer              ScannerSniffer
 }
 
 func NewScanner(
@@ -31,7 +38,7 @@ func NewScanner(
 	repositoryRepository db.RepositoryRepository,
 	scanRepository db.ScanRepository,
 	credentialRepository db.CredentialRepository,
-	sniffer sniff.Sniffer,
+	sniffer ScannerSniffer,
 ) *Scanner {
 	return &Scanner{
 		gitClient:            gitClient,

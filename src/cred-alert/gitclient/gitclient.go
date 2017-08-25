@@ -18,6 +18,12 @@ import (
 	git "gopkg.in/libgit2/git2go.v24"
 )
 
+//go:generate counterfeiter . Sniffer
+
+type Sniffer interface {
+	Sniff(lager.Logger, sniff.Scanner, sniff.ViolationHandlerFunc) error
+}
+
 const defaultRemoteName = "origin"
 
 var ErrInterrupted = errors.New("interrupted")
@@ -256,7 +262,7 @@ func (c *client) Diff(repoPath, parent, child string) (string, error) {
 func (c *client) BranchCredentialCounts(
 	logger lager.Logger,
 	repoPath string,
-	sniffer sniff.Sniffer,
+	sniffer Sniffer, // TODO: move this to the New() so callers do not need to know about it.
 ) (map[string]uint, error) {
 	c.locker.RLock(repoPath)
 	defer c.locker.RUnlock(repoPath)
@@ -393,10 +399,10 @@ type branchCounter struct {
 
 	logger  lager.Logger
 	repo    *git.Repository
-	sniffer sniff.Sniffer
+	sniffer Sniffer
 }
 
-func newBranchCounter(logger lager.Logger, repo *git.Repository, sniffer sniff.Sniffer) *branchCounter {
+func newBranchCounter(logger lager.Logger, repo *git.Repository, sniffer Sniffer) *branchCounter {
 	return &branchCounter{
 		entryCounts:  make(map[git.Oid]uint),
 		branchCounts: make(map[string]uint),

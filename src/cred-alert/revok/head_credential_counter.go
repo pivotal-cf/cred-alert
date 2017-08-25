@@ -9,15 +9,15 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/db"
+	"cred-alert/gitclient"
 	"cred-alert/kolsch"
-	"cred-alert/sniff"
 )
 
 //go:generate counterfeiter . GitBranchCredentialsCounterClient
 
 type GitBranchCredentialsCounterClient interface {
 	BranchTargets(repoPath string) (map[string]string, error)
-	BranchCredentialCounts(lager.Logger, string, sniff.Sniffer) (map[string]uint, error)
+	BranchCredentialCounts(lager.Logger, string, gitclient.Sniffer) (map[string]uint, error)
 }
 
 type HeadCredentialCounter struct {
@@ -27,7 +27,7 @@ type HeadCredentialCounter struct {
 	clock                clock.Clock
 	interval             time.Duration
 	gitClient            GitBranchCredentialsCounterClient
-	sniffer              sniff.Sniffer
+	sniffer              gitclient.Sniffer
 }
 
 func NewHeadCredentialCounter(
@@ -37,7 +37,7 @@ func NewHeadCredentialCounter(
 	clock clock.Clock,
 	interval time.Duration,
 	gitClient GitBranchCredentialsCounterClient,
-	sniffer sniff.Sniffer,
+	sniffer gitclient.Sniffer,
 ) *HeadCredentialCounter {
 	return &HeadCredentialCounter{
 		logger:               logger,

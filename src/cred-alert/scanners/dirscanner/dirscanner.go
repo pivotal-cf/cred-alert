@@ -16,16 +16,22 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+//go:generate counterfeiter . Sniffer
+
+type Sniffer interface {
+	Sniff(lager.Logger, sniff.Scanner, sniff.ViolationHandlerFunc) error
+}
+
 type DirScanner struct {
 	handler                    func(lager.Logger, scanners.Violation) error
-	sniffer                    sniff.Sniffer
+	sniffer                    Sniffer
 	inflateDir                 string
 	inflator                   inflator.Inflator
 	scannedDirContainsArchives bool
 }
 
 func New(
-	sniffer sniff.Sniffer,
+	sniffer Sniffer,
 	handler sniff.ViolationHandlerFunc,
 	inflateDir string,
 ) *DirScanner {

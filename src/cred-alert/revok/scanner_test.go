@@ -17,16 +17,16 @@ import (
 	"cred-alert/db/dbfakes"
 	"cred-alert/gitclient"
 	"cred-alert/revok"
+	"cred-alert/revok/revokfakes"
 	"cred-alert/scanners"
 	"cred-alert/sniff"
-	"cred-alert/sniff/snifffakes"
 )
 
 var _ = Describe("Scanner", func() {
 	var (
 		logger               *lagertest.TestLogger
 		gitClient            revok.GitGetParentsDiffClient
-		sniffer              *snifffakes.FakeSniffer
+		sniffer              *revokfakes.FakeScannerSniffer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		scanRepository       *dbfakes.FakeScanRepository
 		credentialRepository *dbfakes.FakeCredentialRepository
@@ -72,7 +72,7 @@ var _ = Describe("Scanner", func() {
 		credentialRepository = &dbfakes.FakeCredentialRepository{}
 
 		scannedOids = map[string]struct{}{}
-		sniffer = &snifffakes.FakeSniffer{}
+		sniffer = &revokfakes.FakeScannerSniffer{}
 		sniffer.SniffStub = func(l lager.Logger, s sniff.Scanner, h sniff.ViolationHandlerFunc) error {
 			var start, end int
 			for s.Scan(logger) {

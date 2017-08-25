@@ -28,28 +28,22 @@ type Scanner interface {
 	Line(lager.Logger) *scanners.Line
 }
 
-//go:generate counterfeiter . Sniffer
-
-type Sniffer interface {
-	Sniff(lager.Logger, Scanner, ViolationHandlerFunc) error
-}
-
 type ViolationHandlerFunc func(lager.Logger, scanners.Violation) error
 
-type sniffer struct {
+type Sniffer struct {
 	matcher          matchers.Matcher
 	exclusionMatcher matchers.Matcher
 }
 
-func NewSniffer(matcher, exclusionMatcher matchers.Matcher) Sniffer {
-	return &sniffer{
+func NewSniffer(matcher, exclusionMatcher matchers.Matcher) *Sniffer {
+	return &Sniffer{
 		matcher:          matcher,
 		exclusionMatcher: exclusionMatcher,
 	}
 }
 
-func NewDefaultSniffer() Sniffer {
-	return &sniffer{
+func NewDefaultSniffer() *Sniffer {
+	return &Sniffer{
 		matcher: matchers.UpcasedMulti(
 			matchers.Filter(matchers.Format(awsAccessKeyIDPattern), "AKIA"),
 			matchers.Format(awsSecretAccessKeyPattern),
@@ -68,7 +62,7 @@ func NewDefaultSniffer() Sniffer {
 	}
 }
 
-func (s *sniffer) Sniff(
+func (s *Sniffer) Sniff(
 	logger lager.Logger,
 	scanner Scanner,
 	handleViolation ViolationHandlerFunc,
