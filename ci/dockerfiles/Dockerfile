@@ -7,7 +7,7 @@ ENV HOME /
 ENV CLOUDSDK_PYTHON_SITEPACKAGES 1
 ENV PATH /google-cloud-sdk/bin:$PATH
 
-RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db && \
+RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24C74CD1D8 && \
     echo 'deb [arch=amd64,i386] http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.1/debian jessie main' >> /etc/apt/sources.list && \
     echo 'deb-src http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.1/debian jessie main' >> /etc/apt/sources.list && \
     debconf-set-selections << 'mariadb-server-10.1 mysql-server/root_password password root' && \
