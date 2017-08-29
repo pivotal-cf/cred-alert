@@ -12,10 +12,6 @@ import (
 	"cred-alert/metrics"
 )
 
-const (
-	maxOutstandingMessages = 16
-)
-
 type pubSubSubscriber struct {
 	logger       lager.Logger
 	subscription *pubsub.Subscription
@@ -55,7 +51,7 @@ func (p *pubSubSubscriber) Run(signals <-chan os.Signal, ready chan<- struct{}) 
 	cctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	p.subscription.ReceiveSettings.MaxOutstandingMessages = maxOutstandingMessages
+	p.subscription.ReceiveSettings.MaxOutstandingMessages = 4
 
 	go func() {
 		errs <- p.subscription.Receive(cctx, func(ctx context.Context, message *pubsub.Message) {
