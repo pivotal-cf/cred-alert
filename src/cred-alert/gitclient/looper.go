@@ -3,7 +3,7 @@ package gitclient
 import (
 	"path/filepath"
 
-	git "gopkg.in/libgit2/git2go.v24"
+	"gopkg.in/libgit2/git2go.v24"
 )
 
 type looper struct {

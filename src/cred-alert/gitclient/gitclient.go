@@ -15,7 +15,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
-	git "gopkg.in/libgit2/git2go.v24"
+	"gopkg.in/libgit2/git2go.v24"
 )
 
 const defaultRemoteName = "origin"
