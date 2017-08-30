@@ -92,6 +92,9 @@ func (c *ChangeFetcher) Fetch(
 	var fetchErr error
 	span := trace.FromContext(ctx).NewChild("fetch-changes")
 	c.fetchTimer.Time(logger, func() {
+		logger.Debug("fetching")
+		defer logger.Debug("fetched")
+
 		changes, fetchErr = c.gitClient.Fetch(repo.Path)
 	})
 	span.Finish()
