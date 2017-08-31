@@ -87,6 +87,7 @@ files:
   - google.golang.org/api/transport/http/*.{go,c} # gosub
   - google.golang.org/genproto/googleapis/rpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/*.{go,c} # gosub
+  - google.golang.org/grpc/balancer/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/connectivity/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
@@ -97,6 +98,7 @@ files:
   - google.golang.org/grpc/metadata/*.{go,c} # gosub
   - google.golang.org/grpc/naming/*.{go,c} # gosub
   - google.golang.org/grpc/peer/*.{go,c} # gosub
+  - google.golang.org/grpc/resolver/*.{go,c} # gosub
   - google.golang.org/grpc/stats/*.{go,c} # gosub
   - google.golang.org/grpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/tap/*.{go,c} # gosub
