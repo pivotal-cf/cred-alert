@@ -30,8 +30,10 @@ func BuildEmitter(apiKey string, environment string) Emitter {
 			DisableKeepAlives: true,
 		},
 	}
-	retryingClient := net.NewRetryingClient(httpClient, clock.NewClock())
-	client := datadog.NewClient(apiKey, retryingClient)
+
+	clock := clock.NewClock()
+	retryingClient := net.NewRetryingClient(httpClient, clock)
+	client := datadog.NewClient(apiKey, retryingClient, clock)
 
 	return NewEmitter(client, environment)
 }

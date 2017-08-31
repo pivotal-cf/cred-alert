@@ -5,12 +5,12 @@ import (
 	"cred-alert/net"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -65,12 +65,14 @@ type Client interface {
 type client struct {
 	apiKey string
 	client net.Client
+	clock  clock.Clock
 }
 
-func NewClient(apiKey string, httpClient net.Client) Client {
+func NewClient(apiKey string, httpClient net.Client, clock clock.Clock) Client {
 	return &client{
 		apiKey: apiKey,
 		client: httpClient,
+		clock:  clock,
 	}
 }
 
@@ -86,6 +88,8 @@ func (c *client) BuildMetric(metricType string, metricName string, count float32
 }
 
 func (c *client) PublishSeries(logger lager.Logger, series Series) {
+	var err error
+
 	payload, err := json.Marshal(request{
 		Series: series,
 	})
@@ -107,21 +111,27 @@ func (c *client) PublishSeries(logger lager.Logger, series Series) {
 	req.Header.Set("Content-type", "application/json")
 	req.Header.Set("Content-length", strconv.Itoa(len(payload)))
 
-	resp, err := c.client.Do(req)
-	if err != nil {
-		logger.Error("failed error sending metric to datadog:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusAccepted {
-		body, err := ioutil.ReadAll(resp.Body)
+	maxAttempts := 3
+	for attempts := 0; attempts < maxAttempts; attempts++ {
+		var resp *http.Response
+		resp, err = c.client.Do(req)
 		if err != nil {
-			logger.Error("failed reading body of error:", err)
+			logger.Debug("failed error sending metric to datadog", lager.Data{"error": err, "attempts": attempts})
+			continue
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusAccepted {
 			return
 		}
 
-		logger.Error("failed", fmt.Errorf("bad response (!202): %d - %s", resp.StatusCode, string(body)))
-		return
+		err = fmt.Errorf("unexpected status code from datadog, expected: %d, actual: %d", http.StatusAccepted, resp.StatusCode)
+		logger.Debug("failed: unexpected status code from datadog", lager.Data{"error": err})
+
+		if attempts < (maxAttempts - 1) {
+			c.clock.Sleep(1 * time.Second)
+		}
 	}
+
+	logger.Error("failed publishing series", err)
 }

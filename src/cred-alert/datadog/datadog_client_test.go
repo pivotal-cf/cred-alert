@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -23,6 +24,7 @@ var _ = Describe("Datadog", func() {
 	var (
 		client    datadog.Client
 		netClient *netfakes.FakeClient
+		fakeClock *fakeclock.FakeClock
 	)
 
 	BeforeEach(func() {
@@ -31,7 +33,9 @@ var _ = Describe("Datadog", func() {
 		netClient.DoStub = func(req *http.Request) (*http.Response, error) {
 			return httpClient.Do(req)
 		}
-		client = datadog.NewClient("api-key", netClient)
+		fakeClock = fakeclock.NewFakeClock(time.Now())
+
+		client = datadog.NewClient("api-key", netClient, fakeClock)
 	})
 
 	Describe("BuildCountMetric", func() {
@@ -119,15 +123,39 @@ var _ = Describe("Datadog", func() {
 
 		Context("when the server does not respond with StatusAccepted", func() {
 			BeforeEach(func() {
-				server.AppendHandlers(ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/api/v1/series", "api_key=api-key"),
-					ghttp.RespondWith(http.StatusInternalServerError, nil),
-				))
+				server.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/api/v1/series", "api_key=api-key"),
+						ghttp.RespondWith(http.StatusInternalServerError, nil),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/api/v1/series", "api_key=api-key"),
+						ghttp.RespondWith(http.StatusInternalServerError, nil),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/api/v1/series", "api_key=api-key"),
+						ghttp.RespondWith(http.StatusInternalServerError, nil),
+					),
+				)
 			})
 
-			It("logs an error", func() {
-				client.PublishSeries(logger, datadog.Series{})
+			It("retries after a 1 second timeout", func() {
+				done := make(chan struct{})
+
+				go func() {
+					defer GinkgoRecover()
+
+					client.PublishSeries(logger, datadog.Series{})
+					close(done)
+				}()
+
 				Eventually(logger).Should(gbytes.Say("failed"))
+				Eventually(server.ReceivedRequests).Should(HaveLen(1))
+				fakeClock.WaitForWatcherAndIncrement(1 * time.Second)
+				Eventually(server.ReceivedRequests).Should(HaveLen(2))
+				fakeClock.WaitForWatcherAndIncrement(1 * time.Second)
+				Eventually(server.ReceivedRequests).Should(HaveLen(3))
+				Eventually(done).Should(BeClosed())
 			})
 		})
 	})
