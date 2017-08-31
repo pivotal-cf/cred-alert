@@ -136,7 +136,6 @@ func (s *Scanner) scan(
 	return credentials, nil
 }
 
-// start is most recent; stop is parent
 func (s *Scanner) scanAncestors(
 	repoPath string,
 	scanFunc func(string, string) error,
