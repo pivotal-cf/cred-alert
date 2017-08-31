@@ -384,6 +384,7 @@ func newFetchOptions(privateKeyPath, publicKeyPath string) *git.FetchOptions {
 			CredentialsCallback:      credentialsCallback,
 			CertificateCheckCallback: certificateCheckCallback,
 		},
+		Prune: git.FetchPruneOn,
 	}
 }
 
