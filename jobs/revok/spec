@@ -24,10 +24,7 @@ templates:
 
 packages:
 - cred-alert
-- golang
 - git
-- libgit2
-- libssh2
 
 properties:
   revok.pubsub.project_name:

@@ -15,10 +15,7 @@ templates:
 
 packages:
 - rolodex
-- golang
 - git
-- libgit2
-- libssh2
 
 properties:
   rolodex.repository_url:

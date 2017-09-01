@@ -27,6 +27,7 @@ type Syncer interface {
 }
 
 //go:generate counterfeiter . GitSyncClient
+
 type GitSyncClient interface {
 	Fetch(string) (map[string][]string, error)
 	Clone(string, string) error
