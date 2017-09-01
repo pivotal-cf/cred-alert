@@ -169,6 +169,9 @@ func main() {
 		grpc.WithTransportCredentials(transportCreds),
 		grpc.WithUnaryInterceptor(traceClient.GRPCClientInterceptor()),
 	)
+	if err != nil {
+		log.Fatalf("failed to connect to rolodex: %s", err)
+	}
 
 	rolodexClient := rolodexpb.NewRolodexClient(conn)
 
@@ -282,7 +285,7 @@ func main() {
 	blobSearcher := search.NewBlobSearcher(repositoryRepository, fileLookup)
 	handler := api.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
 
-	serverTls := tlsConfig.Server(tlsconfig.WithClientAuthentication(caCertPool))
+	serverTLS := tlsConfig.Server(tlsconfig.WithClientAuthentication(caCertPool))
 
 	grpcServer := grpcrunner.New(
 		logger,
@@ -290,7 +293,7 @@ func main() {
 		func(server *grpc.Server) {
 			revokpb.RegisterRevokServer(server, handler)
 		},
-		grpc.Creds(credentials.NewTLS(serverTls)),
+		grpc.Creds(credentials.NewTLS(serverTLS)),
 	)
 
 	members = append(members, grouper.Member{
