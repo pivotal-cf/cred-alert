@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"fmt"
@@ -15,8 +15,6 @@ import (
 	"cred-alert/search"
 	"cred-alert/sniff/matchers"
 )
-
-//go:generate bash $GOPATH/scripts/generate_protos.sh
 
 type Server struct {
 	logger       lager.Logger

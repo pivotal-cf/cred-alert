@@ -1,4 +1,4 @@
-package server_test
+package api_test
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
-	"cred-alert/revok/server"
+	"cred-alert/revok/api"
 	"cred-alert/revokpb"
 	"cred-alert/search"
 	"cred-alert/search/searchfakes"
@@ -29,7 +29,7 @@ var _ = Describe("Server", func() {
 
 		blobSearcher *searchfakes.FakeBlobSearcher
 		searcher     *searchfakes.FakeSearcher
-		s            *server.Server
+		s            *api.Server
 	)
 
 	BeforeEach(func() {
@@ -41,7 +41,7 @@ var _ = Describe("Server", func() {
 		blobSearcher = &searchfakes.FakeBlobSearcher{}
 		searcher = &searchfakes.FakeSearcher{}
 
-		s = server.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
+		s = api.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
 	})
 
 	Describe("GetCredentialCounts", func() {
