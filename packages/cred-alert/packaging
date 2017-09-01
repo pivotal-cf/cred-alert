@@ -15,5 +15,6 @@ export CGO_LDFLAGS="${PKG_DIR}/libgit2/install/lib/libgit2.a -L${PKG_DIR}/libgit
 export CGO_CFLAGS="-I${PKG_DIR}/libgit2/install/include"
 export PKG_CONFIG_PATH=${PKG_DIR}/libgit2/install/lib/pkgconfig:$PKG_CONFIG_PATH
 
-go build -o ${BOSH_INSTALL_TARGET}/bin/revok-worker cred-alert/cmd/revok-worker
+go build -o ${BOSH_INSTALL_TARGET}/bin/revok-api cred-alert/cmd/revok-api
 go build -o ${BOSH_INSTALL_TARGET}/bin/revok-ingestor cred-alert/cmd/revok-ingestor
+go build -o ${BOSH_INSTALL_TARGET}/bin/revok-worker cred-alert/cmd/revok-worker

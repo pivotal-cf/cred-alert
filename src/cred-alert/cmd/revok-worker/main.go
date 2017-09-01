@@ -25,7 +25,6 @@ import (
 	flags "github.com/jessevdk/go-flags"
 	"github.com/pivotal-cf/paraphernalia/operate/admin"
 	"github.com/pivotal-cf/paraphernalia/secure/tlsconfig"
-	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/sigmon"
@@ -39,10 +38,7 @@ import (
 	"cred-alert/notifications"
 	"cred-alert/queue"
 	"cred-alert/revok"
-	"cred-alert/revok/api"
 	"cred-alert/revok/stats"
-	"cred-alert/revokpb"
-	"cred-alert/search"
 	"cred-alert/sniff"
 	"rolodex/rolodexpb"
 )
@@ -277,29 +273,6 @@ func main() {
 		{Name: "change-schedule-runner", Runner: changeScheduleRunner},
 		{Name: "debug", Runner: debug},
 	}
-
-	looper := gitclient.NewLooper()
-	searcher := search.NewSearcher(repositoryRepository, looper)
-
-	fileLookup := gitclient.NewFileLookup()
-	blobSearcher := search.NewBlobSearcher(repositoryRepository, fileLookup)
-	handler := api.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
-
-	serverTLS := tlsConfig.Server(tlsconfig.WithClientAuthentication(caCertPool))
-
-	grpcServer := grpcrunner.New(
-		logger,
-		fmt.Sprintf("%s:%d", cfg.API.BindIP, cfg.API.BindPort),
-		func(server *grpc.Server) {
-			revokpb.RegisterRevokServer(server, handler)
-		},
-		grpc.Creds(credentials.NewTLS(serverTLS)),
-	)
-
-	members = append(members, grouper.Member{
-		Name:   "grpc-server",
-		Runner: grpcServer,
-	})
 
 	pubSubClient, err := pubsub.NewClient(context.Background(), cfg.PubSub.ProjectName)
 	if err != nil {

@@ -23,6 +23,11 @@ var _ = Describe("Binaries", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("builds revok-worker-pi", func() {
+		_, err := gexec.Build("cred-alert/cmd/revok-worker-api")
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	It("builds stats-monitor", func() {
 		_, err := gexec.Build("cred-alert/cmd/stats-monitor")
 		Expect(err).NotTo(HaveOccurred())
