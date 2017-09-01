@@ -15,7 +15,6 @@ templates:
 
 packages:
 - cred-alert
-- pid_utils_revok
 
 properties:
   webhook.port:

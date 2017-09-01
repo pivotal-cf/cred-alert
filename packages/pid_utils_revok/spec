@@ -1,7 +1,0 @@
----
-name: pid_utils_revok
-
-dependencies: []
-
-files:
-- pid_utils.sh

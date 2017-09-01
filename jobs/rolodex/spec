@@ -19,7 +19,6 @@ packages:
 - git
 - libgit2
 - libssh2
-- pid_utils_revok
 
 properties:
   rolodex.repository_url:
