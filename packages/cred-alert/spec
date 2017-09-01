@@ -35,6 +35,7 @@ files:
   - cred-alert/notifications/*.{go,c} # gosub
   - cred-alert/queue/*.{go,c} # gosub
   - cred-alert/revok/*.{go,c} # gosub
+  - cred-alert/revok/api/*.{go,c} # gosub
   - cred-alert/revok/stats/*.{go,c} # gosub
   - cred-alert/revokpb/*.{go,c} # gosub
   - cred-alert/scanners/*.{go,c} # gosub
