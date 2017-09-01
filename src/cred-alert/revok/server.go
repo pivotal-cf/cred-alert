@@ -18,8 +18,6 @@ import (
 
 //go:generate bash $GOPATH/scripts/generate_protos.sh
 
-//go:generate go-bindata -o web/bindata.go -ignore bindata -pkg web web/templates/...
-
 type Server struct {
 	logger       lager.Logger
 	searcher     search.Searcher

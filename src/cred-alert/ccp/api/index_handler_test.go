@@ -1,9 +1,9 @@
 package api_test
 
 import (
-	"cred-alert/revok/api"
-	"cred-alert/revok/api/apifakes"
-	"cred-alert/revok/web"
+	"cred-alert/ccp/api"
+	"cred-alert/ccp/api/apifakes"
+	"cred-alert/ccp/web"
 	"cred-alert/revokpb"
 	"errors"
 	"html/template"

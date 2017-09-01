@@ -19,9 +19,9 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	"github.com/tedsuo/rata"
 
+	"cred-alert/ccp/api"
+	"cred-alert/ccp/web"
 	"cred-alert/config"
-	"cred-alert/revok/api"
-	"cred-alert/revok/web"
 	"cred-alert/revokpb"
 )
 

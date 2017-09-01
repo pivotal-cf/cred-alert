@@ -2,7 +2,7 @@
 package apifakes
 
 import (
-	"cred-alert/revok/api"
+	"cred-alert/ccp/api"
 	"cred-alert/revokpb"
 	"sync"
 
