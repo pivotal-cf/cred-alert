@@ -116,7 +116,7 @@ func (c *client) PublishSeries(logger lager.Logger, series Series) {
 		var resp *http.Response
 		resp, err = c.client.Do(req)
 		if err != nil {
-			logger.Debug("failed error sending metric to datadog", lager.Data{"error": err, "attempts": attempts})
+			logger.Debug("failed error sending metric to datadog", lager.Data{"error": err, "attempts": attempts, "payload": payload})
 			continue
 		}
 		defer resp.Body.Close()
@@ -126,12 +126,12 @@ func (c *client) PublishSeries(logger lager.Logger, series Series) {
 		}
 
 		err = fmt.Errorf("unexpected status code from datadog, expected: %d, actual: %d", http.StatusAccepted, resp.StatusCode)
-		logger.Debug("failed: unexpected status code from datadog", lager.Data{"error": err})
+		logger.Debug("failed: unexpected status code from datadog", lager.Data{"error": err, "payload": payload})
 
 		if attempts < (maxAttempts - 1) {
 			c.clock.Sleep(1 * time.Second)
 		}
 	}
 
-	logger.Error("failed publishing series", err)
+	logger.Error("failed publishing series", err, lager.Data{"payload": payload})
 }
