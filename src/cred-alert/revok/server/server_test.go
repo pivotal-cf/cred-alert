@@ -1,4 +1,4 @@
-package revok_test
+package server_test
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
-	"cred-alert/revok"
+	"cred-alert/revok/server"
 	"cred-alert/revokpb"
 	"cred-alert/search"
 	"cred-alert/search/searchfakes"
@@ -29,7 +29,7 @@ var _ = Describe("Server", func() {
 
 		blobSearcher *searchfakes.FakeBlobSearcher
 		searcher     *searchfakes.FakeSearcher
-		server       *revok.Server
+		s            *server.Server
 	)
 
 	BeforeEach(func() {
@@ -41,7 +41,7 @@ var _ = Describe("Server", func() {
 		blobSearcher = &searchfakes.FakeBlobSearcher{}
 		searcher = &searchfakes.FakeSearcher{}
 
-		server = revok.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
+		s = server.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
 	})
 
 	Describe("GetCredentialCounts", func() {
@@ -63,7 +63,7 @@ var _ = Describe("Server", func() {
 			}, nil)
 
 			request := &revokpb.CredentialCountRequest{}
-			response, err = server.GetCredentialCounts(context.Background(), request)
+			response, err = s.GetCredentialCounts(context.Background(), request)
 		})
 
 		It("does not error", func() {
@@ -93,7 +93,7 @@ var _ = Describe("Server", func() {
 
 			It("errors", func() {
 				request := &revokpb.CredentialCountRequest{}
-				_, err = server.GetCredentialCounts(context.Background(), request)
+				_, err = s.GetCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -123,7 +123,7 @@ var _ = Describe("Server", func() {
 			}, nil)
 
 			request := &revokpb.OrganizationCredentialCountRequest{}
-			response, err = server.GetOrganizationCredentialCounts(context.Background(), request)
+			response, err = s.GetOrganizationCredentialCounts(context.Background(), request)
 		})
 
 		It("does not error", func() {
@@ -157,7 +157,7 @@ var _ = Describe("Server", func() {
 
 			It("errors", func() {
 				request := &revokpb.OrganizationCredentialCountRequest{}
-				_, err = server.GetOrganizationCredentialCounts(context.Background(), request)
+				_, err = s.GetOrganizationCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -204,7 +204,7 @@ var _ = Describe("Server", func() {
 			}
 
 			request := &revokpb.RepositoryCredentialCountRequest{}
-			response, err := server.GetRepositoryCredentialCounts(context.Background(), request)
+			response, err := s.GetRepositoryCredentialCounts(context.Background(), request)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(response).NotTo(BeNil())
@@ -222,7 +222,7 @@ var _ = Describe("Server", func() {
 
 			It("errors", func() {
 				request := &revokpb.RepositoryCredentialCountRequest{}
-				_, err := server.GetRepositoryCredentialCounts(context.Background(), request)
+				_, err := s.GetRepositoryCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -234,7 +234,7 @@ var _ = Describe("Server", func() {
 
 			It("errors", func() {
 				request := &revokpb.RepositoryCredentialCountRequest{}
-				_, err := server.GetRepositoryCredentialCounts(context.Background(), request)
+				_, err := s.GetRepositoryCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -246,7 +246,7 @@ var _ = Describe("Server", func() {
 
 			It("errors", func() {
 				request := &revokpb.RepositoryCredentialCountRequest{}
-				_, err := server.GetRepositoryCredentialCounts(context.Background(), request)
+				_, err := s.GetRepositoryCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -272,7 +272,7 @@ var _ = Describe("Server", func() {
 					Name:  "repo-name",
 				},
 			}
-			response, err = server.BoshBlobs(context.Background(), request)
+			response, err = s.BoshBlobs(context.Background(), request)
 		})
 
 		It("does not error", func() {
@@ -297,7 +297,7 @@ var _ = Describe("Server", func() {
 
 			It("errors", func() {
 				request := &revokpb.BoshBlobsRequest{}
-				_, err = server.BoshBlobs(context.Background(), request)
+				_, err = s.BoshBlobs(context.Background(), request)
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -317,7 +317,7 @@ var _ = Describe("Server", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			grpcServer = grpc.NewServer()
-			revokpb.RegisterRevokServer(grpcServer, server)
+			revokpb.RegisterRevokServer(grpcServer, s)
 
 			go grpcServer.Serve(listener)
 

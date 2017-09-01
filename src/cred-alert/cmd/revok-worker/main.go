@@ -39,6 +39,7 @@ import (
 	"cred-alert/notifications"
 	"cred-alert/queue"
 	"cred-alert/revok"
+	"cred-alert/revok/server"
 	"cred-alert/revok/stats"
 	"cred-alert/revokpb"
 	"cred-alert/search"
@@ -279,7 +280,7 @@ func main() {
 
 	fileLookup := gitclient.NewFileLookup()
 	blobSearcher := search.NewBlobSearcher(repositoryRepository, fileLookup)
-	handler := revok.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
+	handler := server.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
 
 	serverTls := tlsConfig.Server(tlsconfig.WithClientAuthentication(caCertPool))
 

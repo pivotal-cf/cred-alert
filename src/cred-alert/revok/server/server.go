@@ -1,4 +1,4 @@
-package revok
+package server
 
 import (
 	"fmt"
