@@ -1,8 +1,0 @@
----
-executable: /var/vcap/packages/cred-alert/bin/revok-worker
-args:
-  - --config-file=/var/vcap/jobs/revok/config/config.yml
-limits:
-  open_files: 65536
-volumes:
-  - <%= p("revok.work_dir") %>

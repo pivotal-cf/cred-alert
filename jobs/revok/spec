@@ -6,7 +6,7 @@ description: |
   and SSH key and scans them for credentials.
 
 templates:
-  revok.yml.erb: config/bpm/revok.yml
+  bpm.yml.erb: config/bpm.yml
   config.yml.erb: config/config.yml
 
   github_private_key.erb: config/github_private_key
