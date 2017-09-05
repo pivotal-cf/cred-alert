@@ -18,6 +18,8 @@ import (
 	"gopkg.in/libgit2/git2go.v24"
 )
 
+const nullGitObjectID = "0000000000000000000000000000000000000000"
+
 const defaultRemoteName = "origin"
 
 var ErrInterrupted = errors.New("interrupted")
@@ -145,7 +147,11 @@ func (c *client) Fetch(repoPath string) (map[string][]string, error) {
 
 	changes := map[string][]string{}
 	updateTipsCallback := func(refname string, a *git.Oid, b *git.Oid) git.ErrorCode {
-		changes[refname] = []string{a.String(), b.String()}
+		// A is the existing local; this may be null in cases where there is no
+		// parent, e.g. the initial commit (or a checkout --orphan)
+		if b.String() != nullGitObjectID {
+			changes[refname] = []string{a.String(), b.String()}
+		}
 		return 0
 	}
 
@@ -379,11 +385,12 @@ func newFetchOptions(privateKeyPath, publicKeyPath string) *git.FetchOptions {
 	credentialsCallback := newCredentialsCallback(privateKeyPath, publicKeyPath)
 
 	return &git.FetchOptions{
-		UpdateFetchhead: true,
+		Prune: git.FetchPruneOn,
 		RemoteCallbacks: git.RemoteCallbacks{
 			CredentialsCallback:      credentialsCallback,
 			CertificateCheckCallback: certificateCheckCallback,
 		},
+		UpdateFetchhead: true,
 	}
 }
 
