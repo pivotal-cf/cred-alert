@@ -283,15 +283,15 @@ func main() {
 
 	fileLookup := gitclient.NewFileLookup()
 	blobSearcher := search.NewBlobSearcher(repositoryRepository, fileLookup)
-	handler := api.NewServer(logger, searcher, blobSearcher, repositoryRepository, branchRepository)
+	handler := api.NewSearchServer(logger, searcher, blobSearcher)
 
 	serverTLS := tlsConfig.Server(tlsconfig.WithClientAuthentication(caCertPool))
 
 	grpcServer := grpcrunner.New(
 		logger,
-		fmt.Sprintf("%s:%d", cfg.API.BindIP, cfg.API.BindPort),
+		fmt.Sprintf("127.0.0.1:%d", cfg.API.BindPort),
 		func(server *grpc.Server) {
-			revokpb.RegisterRevokServer(server, handler)
+			revokpb.RegisterRevokSearchServer(server, handler)
 		},
 		grpc.Creds(credentials.NewTLS(serverTLS)),
 	)

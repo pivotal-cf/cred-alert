@@ -1,0 +1,5 @@
+check process revok-api
+  with pidfile /var/vcap/sys/run/bpm/revok-api/revok-api.pid
+  start program "/var/vcap/packages/bpm/bin/bpm start revok-api"
+  stop program "/var/vcap/packages/bpm/bin/bpm stop revok-api"
+  group vcap

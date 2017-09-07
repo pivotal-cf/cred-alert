@@ -2,13 +2,14 @@ syntax = "proto3";
 
 package revokpb;
 
-service Revok {
+service RevokAPI {
   rpc GetCredentialCounts(CredentialCountRequest) returns (CredentialCountResponse) {}
   rpc GetOrganizationCredentialCounts(OrganizationCredentialCountRequest) returns (OrganizationCredentialCountResponse) {}
   rpc GetRepositoryCredentialCounts(RepositoryCredentialCountRequest) returns (RepositoryCredentialCountResponse) {}
+}
 
+service RevokSearch {
   rpc Search(SearchQuery) returns (stream SearchResult) {}
-
   rpc BoshBlobs(BoshBlobsRequest) returns (BoshBlobsResponse) {}
 }
 

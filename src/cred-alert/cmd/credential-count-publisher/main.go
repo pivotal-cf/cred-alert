@@ -109,7 +109,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	revokClient := revokpb.NewRevokClient(conn)
+	revokClient := revokpb.NewRevokAPIClient(conn)
 
 	handler, err := rata.NewRouter(web.Routes, rata.Handlers{
 		web.Index:        api.NewIndexHandler(logger, indexLayout, revokClient),

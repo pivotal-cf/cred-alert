@@ -66,7 +66,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	revokClient := revokpb.NewRevokClient(conn)
+	revokClient := revokpb.NewRevokSearchClient(conn)
 
 	ctx, cancel := context.WithCancel(context.Background())
 

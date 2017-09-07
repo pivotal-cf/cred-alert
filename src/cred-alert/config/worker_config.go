@@ -85,7 +85,6 @@ type WorkerConfig struct {
 	} `yaml:"identity"`
 
 	API struct {
-		BindIP   string `yaml:"bind_ip"`
 		BindPort uint16 `yaml:"bind_port"`
 	} `yaml:"rpc_server"`
 
