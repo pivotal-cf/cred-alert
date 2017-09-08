@@ -47,6 +47,10 @@ func main() {
 	}
 
 	cfg, err = config.LoadIngestorConfig(bs)
+	if err != nil {
+		logger.Error("failed-loading-config", err)
+		os.Exit(1)
+	}
 
 	errs := cfg.Validate()
 	if errs != nil {
