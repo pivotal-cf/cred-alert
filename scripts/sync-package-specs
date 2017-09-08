@@ -10,6 +10,7 @@ pushd packages/cred-alert
     gosub list \
       -a cred-alert/cmd/revok-worker \
       -a cred-alert/cmd/revok-ingestor \
+      -a cred-alert/cmd/revok-api \
       | \
       sed -e 's%\(.*\)%  - \1/*.{go,c} # gosub%g'
   } > spec.new
