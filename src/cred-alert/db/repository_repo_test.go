@@ -122,6 +122,34 @@ var _ = Describe("RepositoryRepo", func() {
 		})
 	})
 
+	Describe("Delete", func() {
+		var (
+			repository *db.Repository
+		)
+
+		BeforeEach(func() {
+			repository = &db.Repository{
+				Name:          "delete-repo-name",
+				Owner:         "owner-name",
+				Path:          "path-to-repo-on-disk",
+				SSHURL:        "repo-ssh-url",
+				Private:       true,
+				DefaultBranch: "master",
+			}
+			err := repo.Create(repository)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("deletes the repository from the database", func() {
+			err := repo.Delete(repository)
+			Expect(err).NotTo(HaveOccurred())
+
+			deletedRepo, ok, err := repo.Find(repository.Owner, repository.Name)
+			Expect(ok).To(BeFalse())
+			Expect(deletedRepo).To(Equal(db.Repository{}))
+		})
+	})
+
 	Describe("MarkAsCloned", func() {
 		var repository *db.Repository
 

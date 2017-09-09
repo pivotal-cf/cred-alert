@@ -18,6 +18,8 @@ type RepositoryRepository interface {
 
 	Update(*Repository) error
 
+	Delete(*Repository) error
+
 	Find(owner, name string) (Repository, bool, error)
 	MustFind(owner, name string) (Repository, error)
 
@@ -78,6 +80,10 @@ func (r *repositoryRepository) Update(repository *Repository) error {
 			"private":        repository.Private,
 		},
 	).Error
+}
+
+func (r *repositoryRepository) Delete(repository *Repository) error {
+	return r.db.Delete(repository).Error
 }
 
 func (r *repositoryRepository) All() ([]Repository, error) {

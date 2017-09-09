@@ -21,6 +21,14 @@ type GitHubOrganization struct {
 	Name string `json:"login"`
 }
 
+//go:generate counterfeiter . GithubService
+
+type GithubService interface {
+	ListRepositoriesByOrg(logger lager.Logger, orgName string) ([]GitHubRepository, error)
+	ListRepositoriesByUser(logger lager.Logger, userName string) ([]GitHubRepository, error)
+	GetRepo(logger lager.Logger, owner, repoName string) (*GitHubRepository, error)
+}
+
 type GitHubClient struct {
 	ghClient *github.Client
 }
@@ -121,4 +129,37 @@ func (c *GitHubClient) ListRepositoriesByUser(logger lager.Logger, userName stri
 	}
 
 	return repos, nil
+}
+
+func (c *GitHubClient) GetRepo(logger lager.Logger, owner, repoName string) (*GitHubRepository, error) {
+	logger = logger.Session("get-repository-by-owner")
+	var repo *GitHubRepository
+	for {
+		rs, resp, err := c.ghClient.Repositories.Get(context.TODO(), owner, repoName)
+
+		if err != nil {
+			logger.Error("failed", err, lager.Data{
+				"fetching-repo":   repoName,
+				"owner":           owner,
+				"response-status": resp.Status,
+			})
+			return nil, err
+		}
+
+		rawJSONBytes, err := json.Marshal(repo)
+		if err != nil {
+			logger.Error("failed-to-marshal-json", err)
+			return nil, err
+		}
+
+		repo = &GitHubRepository{
+			Name:          *rs.Name,
+			Owner:         *rs.Owner.Login,
+			SSHURL:        *rs.SSHURL,
+			Private:       *rs.Private,
+			DefaultBranch: *rs.DefaultBranch,
+			RawJSON:       rawJSONBytes,
+		}
+	}
+	return repo, nil
 }

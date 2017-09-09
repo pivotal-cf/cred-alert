@@ -56,6 +56,7 @@ var info = admin.ServiceInfo{
 func main() {
 	var cfg *config.WorkerConfig
 	var flagOpts config.WorkerOpts
+	var ghClient *revok.GitHubClient
 
 	logger := lager.NewLogger("revok-worker")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
@@ -207,9 +208,26 @@ func main() {
 		scanner,
 	)
 
+	if cfg.GitHub.AccessToken != "" {
+		githubHTTPClient := &http.Client{
+			Timeout: 30 * time.Second,
+			Transport: &oauth2.Transport{
+				Source: oauth2.StaticTokenSource(
+					&oauth2.Token{AccessToken: cfg.GitHub.AccessToken},
+				),
+				Base: &http.Transport{
+					DisableKeepAlives: true,
+				},
+			},
+		}
+
+		ghClient = revok.NewGitHubClient(github.NewClient(githubHTTPClient))
+	}
+
 	changeFetcher := revok.NewChangeFetcher(
 		logger,
 		gitClient,
+		ghClient,
 		notificationComposer,
 		repositoryRepository,
 		fetchRepository,
@@ -330,20 +348,6 @@ func main() {
 	})
 
 	if cfg.GitHub.AccessToken != "" {
-		githubHTTPClient := &http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &oauth2.Transport{
-				Source: oauth2.StaticTokenSource(
-					&oauth2.Token{AccessToken: cfg.GitHub.AccessToken},
-				),
-				Base: &http.Transport{
-					DisableKeepAlives: true,
-				},
-			},
-		}
-
-		ghClient := revok.NewGitHubClient(github.NewClient(githubHTTPClient))
-
 		repoDiscoverer := revok.NewRepoDiscoverer(
 			logger,
 			workdir,

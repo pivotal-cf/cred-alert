@@ -27,6 +27,7 @@ var _ = Describe("ChangeFetcher", func() {
 	var (
 		logger               *lagertest.TestLogger
 		gitFetcherClient     *revokfakes.FakeGitFetchClient
+		githubService        *revokfakes.FakeGithubService
 		notificationComposer *revokfakes.FakeChangeFetcherNotificationComposer
 		repositoryRepository *dbfakes.FakeRepositoryRepository
 		fetchRepository      *dbfakes.FakeFetchRepository
@@ -54,6 +55,7 @@ var _ = Describe("ChangeFetcher", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("repodiscoverer")
 		gitFetcherClient = &revokfakes.FakeGitFetchClient{}
+		githubService = &revokfakes.FakeGithubService{}
 
 		notificationComposer = &revokfakes.FakeChangeFetcherNotificationComposer{}
 
@@ -129,6 +131,7 @@ var _ = Describe("ChangeFetcher", func() {
 		fetcher = revok.NewChangeFetcher(
 			logger,
 			gitFetcherClient,
+			githubService,
 			notificationComposer,
 			repositoryRepository,
 			fetchRepository,
@@ -194,14 +197,29 @@ var _ = Describe("ChangeFetcher", func() {
 	})
 
 	Context("when there is an error fetching", func() {
-		BeforeEach(func() {
-			gitFetcherClient.FetchReturns(nil, errors.New("an-error"))
+		Context("when the repo exists in github", func() {
+			BeforeEach(func() {
+				gitFetcherClient.FetchReturns(nil, errors.New("an-error"))
+				githubService.GetRepoReturns(nil, nil)
 
-			fetch()
+				fetch()
+			})
+
+			It("registers the failed fetch", func() {
+				Expect(repositoryRepository.RegisterFailedFetchCallCount()).To(Equal(1))
+			})
 		})
+		Context("when the repo does not exist or is inaccessible in github", func() {
+			BeforeEach(func() {
+				gitFetcherClient.FetchReturns(nil, errors.New("an-error"))
+				githubService.GetRepoReturns(nil, errors.New("github-error"))
 
-		It("registers the failed fetch", func() {
-			Expect(repositoryRepository.RegisterFailedFetchCallCount()).To(Equal(1))
+				fetch()
+			})
+
+			It("deletes the entry from the database", func() {
+				Expect(repositoryRepository.DeleteCallCount()).To(Equal(1))
+			})
 		})
 	})
 

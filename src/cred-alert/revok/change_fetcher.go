@@ -26,6 +26,7 @@ type ChangeFetcherNotificationComposer interface {
 type ChangeFetcher struct {
 	logger               lager.Logger
 	gitClient            GitFetchClient
+	ghClient             GithubService
 	notificationComposer ChangeFetcherNotificationComposer
 	repositoryRepository db.RepositoryRepository
 	fetchRepository      db.FetchRepository
@@ -40,6 +41,7 @@ type ChangeFetcher struct {
 func NewChangeFetcher(
 	logger lager.Logger,
 	gitClient GitFetchClient,
+	ghClient GithubService,
 	notificationComposer ChangeFetcherNotificationComposer,
 	repositoryRepository db.RepositoryRepository,
 	fetchRepository db.FetchRepository,
@@ -48,6 +50,7 @@ func NewChangeFetcher(
 	return &ChangeFetcher{
 		logger:               logger,
 		gitClient:            gitClient,
+		ghClient:             ghClient,
 		notificationComposer: notificationComposer,
 		repositoryRepository: repositoryRepository,
 		fetchRepository:      fetchRepository,
@@ -139,6 +142,13 @@ func (c *ChangeFetcher) registerFetchResult(
 ) error {
 	if fetchErr != nil {
 		logger.Error("fetch-failed", fetchErr)
+
+		_, err := c.ghClient.GetRepo(logger, repo.Owner, repo.Name)
+		if err != nil {
+			c.repositoryRepository.Delete(&repo)
+			return err
+		}
+
 		c.fetchFailures.Inc(logger)
 
 		registerErr := c.repositoryRepository.RegisterFailedFetch(logger, &repo)
