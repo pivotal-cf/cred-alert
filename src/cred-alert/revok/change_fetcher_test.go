@@ -209,16 +209,33 @@ var _ = Describe("ChangeFetcher", func() {
 				Expect(repositoryRepository.RegisterFailedFetchCallCount()).To(Equal(1))
 			})
 		})
+
 		Context("when the repo does not exist or is inaccessible in github", func() {
 			BeforeEach(func() {
 				gitFetcherClient.FetchReturns(nil, errors.New("an-error"))
 				githubService.GetRepoReturns(nil, errors.New("github-error"))
+				Expect(repoToFetchPath).To(BeADirectory())
+			})
 
+			JustBeforeEach(func() {
 				fetch()
 			})
 
-			It("deletes the entry from the database", func() {
+			It("deletes the entry from the database and disk", func() {
 				Expect(repositoryRepository.DeleteCallCount()).To(Equal(1))
+				Expect(repoToFetchPath).NotTo(BeADirectory())
+				Expect(fetchErr).To(HaveOccurred())
+			})
+
+			Context("when deleting the repo from the db fails", func() {
+				BeforeEach(func() {
+					repositoryRepository.DeleteReturns(errors.New("db-error"))
+				})
+				It("logs an error and does not delete from disk", func() {
+					Expect(logger).To(Say("failed-to-delete-repo-from-db"))
+					Expect(repoToFetchPath).To(BeADirectory())
+					Expect(fetchErr).To(HaveOccurred())
+				})
 			})
 		})
 	})

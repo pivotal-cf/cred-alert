@@ -3,6 +3,7 @@ package revok
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	"cloud.google.com/go/trace"
 	"code.cloudfoundry.org/lager"
@@ -145,7 +146,19 @@ func (c *ChangeFetcher) registerFetchResult(
 
 		_, err := c.ghClient.GetRepo(logger, repo.Owner, repo.Name)
 		if err != nil {
-			c.repositoryRepository.Delete(&repo)
+			logger.Debug("removing-repo-from-db", lager.Data{"repo": repo.Name})
+			repoDeleteErr := c.repositoryRepository.Delete(&repo)
+			if repoDeleteErr != nil {
+				logger.Error("failed-to-delete-repo-from-db", repoDeleteErr)
+				return err
+			}
+
+			logger.Debug("removing-repo-from-disk", lager.Data{"path": repo.Path})
+			repoDeleteErr = os.RemoveAll(repo.Path)
+			if repoDeleteErr != nil {
+				logger.Error("failed-to-delete-repo-from-disk", repoDeleteErr)
+			}
+
 			return err
 		}
 
