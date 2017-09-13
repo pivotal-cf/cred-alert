@@ -4,7 +4,23 @@
 
 ## CLI
 
-### Building
+### Installing
+
+#### Downloading
+
+Pre-built versions of the `cred-alert-cli` binary are available for download. To 
+install download the correct version ([macOs][cred-alert-osx] or [Linux][cred-alert-linux]),
+rename the file `cred-alert-cli`, make it executable, and move it to a directory in `${PATH}`.
+
+```
+os_name=$(uname | awk '{print tolower($1)}')
+curl -o cred-alert-cli \
+  https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_${os_name}
+chmod 755 cred-alert-cli
+mv cred-alert-cli /usr/local/bin # <= or other directory in ${PATH}
+```
+
+#### Building
 
 The command line application can be built with the following command. Your
 `$GOPATH` should already be set correctly by `direnv`.
@@ -80,3 +96,6 @@ dependencies have changed them make sure to run `scripts/sync-submodules` in
 order to make sure that the submodules are updated correctly.
 
 You can generate a pretty commit message by running `scripts/commit-with-log`.
+
+[cred-alert-osx]: https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_darwin
+[cred-alert-linux]: https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_linux
