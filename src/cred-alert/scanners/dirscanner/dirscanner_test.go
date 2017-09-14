@@ -8,6 +8,7 @@ import (
 	"cred-alert/sniff/snifffakes"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -84,6 +85,24 @@ var _ = Describe("DirScanner", func() {
 			Expect(handlerCallCount).To(Equal(2))
 		})
 
+		Context("ignores vendor directories", func() {
+			BeforeEach(func() {
+				var err error
+				vendorPath := path.Join(tmpDir, "vendor")
+				err = os.MkdirAll(vendorPath, 0755)
+				Expect(err).NotTo(HaveOccurred())
+				err = ioutil.WriteFile(filepath.Join(vendorPath, "file1.txt"), []byte("credential"), 0600)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("ignores the vendor directory", func() {
+				err := scanner.Scan(logger, tmpDir)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(sniffer.SniffCallCount()).To(Equal(2))
+				Expect(credentialCount).To(Equal(2))
+				Expect(handlerCallCount).To(Equal(2))
+			})
+		})
 		Context("when the directory contains an archive", func() {
 			var violationDir string
 

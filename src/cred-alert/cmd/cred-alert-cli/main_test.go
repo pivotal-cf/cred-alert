@@ -385,9 +385,90 @@ index 940393e..fa5a232 100644
 							Expect(len(files)).To(Equal(1))
 						})
 					})
+
+					Context("when vendor directories are present", func() {
+						BeforeEach(func() {
+							Expect(os.RemoveAll(filepath.Join(outDir, "file1"))).To(Succeed())
+
+							vendorDir := path.Join(outDir, "vendor")
+							err := os.MkdirAll(vendorDir, 0755)
+							Expect(err).NotTo(HaveOccurred())
+
+							err = ioutil.WriteFile(path.Join(vendorDir, "file1"), []byte(offendingText), 0644)
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						It("ignores credentials in top level vendor directories", func() {
+							Eventually(session).Should(gexec.Exit(0))
+						})
+
+						Context("when there are nested vendor directories", func() {
+							BeforeEach(func() {
+								nestedVendor := path.Join(outDir, "foo", "vendor")
+								err := os.MkdirAll(nestedVendor, 0755)
+								Expect(err).NotTo(HaveOccurred())
+
+								err = ioutil.WriteFile(path.Join(nestedVendor, "file1"), []byte(offendingText), 0644)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							It("ignores credentials in nested level vendor directories", func() {
+								Eventually(session).Should(gexec.Exit(0))
+							})
+						})
+
+						Context("when there are nested vendor directories", func() {
+							BeforeEach(func() {
+								nestedVendor := path.Join(outDir, "foo", "vendorsarecool")
+								err := os.MkdirAll(nestedVendor, 0755)
+								Expect(err).NotTo(HaveOccurred())
+
+								err = ioutil.WriteFile(path.Join(nestedVendor, "file1"), []byte(offendingText), 0644)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							It("detects credentials in nested level directories with the word vendor in them", func() {
+								Eventually(session).Should(gexec.Exit(3))
+							})
+						})
+					})
 				})
 			})
+			Context("when the file is a zip file with a vendor directory", func() {
+				var (
+					inDir, outDir, zipFilePath string
+				)
 
+				BeforeEach(func() {
+					var err error
+					inDir, err = ioutil.TempDir("", "zipper-unzip-in")
+					Expect(err).NotTo(HaveOccurred())
+
+					vendorDir := path.Join(inDir, "vendor")
+					err = os.MkdirAll(vendorDir, 0755)
+					Expect(err).NotTo(HaveOccurred())
+
+					err = ioutil.WriteFile(path.Join(vendorDir, "file1"), []byte(offendingText), 0644)
+					Expect(err).NotTo(HaveOccurred())
+
+					outDir, err = ioutil.TempDir("", "zipper-unzip-out")
+					Expect(err).NotTo(HaveOccurred())
+
+					zipFilePath = path.Join(outDir, "out.zip")
+					err = zipit(inDir, zipFilePath, "")
+					Expect(err).NotTo(HaveOccurred())
+					cmdArgs = []string{"-f", zipFilePath}
+				})
+
+				AfterEach(func() {
+					os.RemoveAll(inDir)
+					os.RemoveAll(outDir)
+				})
+
+				It("ignores credentials in nested level vendor directories", func() {
+					Eventually(session).Should(gexec.Exit(0))
+				})
+			})
 			Context("when the file is a zip file", func() {
 				var (
 					inDir, outDir, zipFilePath string

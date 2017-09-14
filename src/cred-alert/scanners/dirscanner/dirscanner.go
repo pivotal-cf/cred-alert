@@ -75,6 +75,11 @@ func (s *DirScanner) scan(
 		wholePath := filepath.Join(path, child.Name())
 
 		if child.IsDir() {
+			_, excludedDirectory := excludedDirectories[child.Name()]
+			if excludedDirectory {
+				continue
+			}
+
 			err := s.scan(logger, wholePath, handler)
 			if err != nil {
 				return err
@@ -130,6 +135,10 @@ var skippableExtensions = map[string]struct{}{
 	".jpeg": {},
 	".jpg":  {},
 	".exe":  {},
+}
+
+var excludedDirectories = map[string]struct{}{
+	"vendor": {},
 }
 
 func probablyIsText(basename string) bool {
