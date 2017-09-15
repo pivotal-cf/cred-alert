@@ -44,7 +44,8 @@ metrics:
 
 slack:
   default_webhook_url: <%= p("revok.slack.default_webhook_url") %>
-  default_channel: <%= p("revok.slack.default_channel") %>
+  default_public_channel: <%= p("revok.slack.default_public_channel") %>
+  default_private_channel: <%= p("revok.slack.default_private_channel") %>
   team_webhook_urls: <%= p("revok.slack.team_webhook_urls").to_json %>
 
 mysql:
