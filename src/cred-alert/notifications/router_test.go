@@ -37,7 +37,7 @@ var _ = Describe("Router", func() {
 
 	Describe("Deliver", func() {
 		It("groups notifications into envelopes and sends them", func() {
-			addressBook.AddressForRepoStub = func(_ context.Context, _ lager.Logger, owner, name string) []notifications.Address {
+			addressBook.AddressForRepoStub = func(_ context.Context, _ lager.Logger, isPrivate bool, owner, name string) []notifications.Address {
 				repo := fmt.Sprintf("%s/%s", owner, name)
 
 				switch repo {

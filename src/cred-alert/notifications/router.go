@@ -60,7 +60,7 @@ func (r *router) filterAndGroupByDestination(ctx context.Context, logger lager.L
 			continue
 		}
 
-		addresses := r.addressBook.AddressForRepo(ctx, logger, notification.Owner, notification.Repository)
+		addresses := r.addressBook.AddressForRepo(ctx, logger, notification.Private, notification.Owner, notification.Repository)
 
 		for _, address := range addresses {
 			bag.envelopeToAddress(notification, address)

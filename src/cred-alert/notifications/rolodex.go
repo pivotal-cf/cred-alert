@@ -24,31 +24,40 @@ type Address struct {
 }
 
 type TeamURLs struct {
-	slackTeamURLs  map[string]string
-	defaultAddress Address
+	slackTeamURLs         map[string]string
+	defaultPublicAddress  Address
+	defaultPrivateAddress Address
 }
 
-func NewTeamURLs(defaultURL string, defaultChannel string, mapping map[string]string) TeamURLs {
+func NewTeamURLs(defaultURL string, defaultPublicChannel, defaultPrivateChannel string, mapping map[string]string) TeamURLs {
 	return TeamURLs{
 		slackTeamURLs: mapping,
-		defaultAddress: Address{
+		defaultPublicAddress: Address{
 			URL:     defaultURL,
-			Channel: defaultChannel,
+			Channel: defaultPublicChannel,
+		},
+		defaultPrivateAddress: Address{
+			URL:     defaultURL,
+			Channel: defaultPrivateChannel,
 		},
 	}
 }
 
-func (t TeamURLs) Default() Address {
-	return t.defaultAddress
+// TODO add isPrivate
+func (t TeamURLs) Default(isPrivate bool) Address {
+	if isPrivate {
+		return t.defaultPrivateAddress
+	}
+	return t.defaultPublicAddress
 }
 
-func (t TeamURLs) Lookup(logger lager.Logger, teamName string, channelName string) Address {
+func (t TeamURLs) Lookup(logger lager.Logger, isPrivate bool, teamName, channelName string) Address {
 	url, found := t.slackTeamURLs[teamName]
 	if !found {
 		logger.Info("unknown-slack-team", lager.Data{
 			"team-name": teamName,
 		})
-		return t.defaultAddress
+		return t.Default(isPrivate)
 	}
 
 	return Address{
@@ -60,7 +69,7 @@ func (t TeamURLs) Lookup(logger lager.Logger, teamName string, channelName strin
 //go:generate counterfeiter . AddressBook
 
 type AddressBook interface {
-	AddressForRepo(ctx context.Context, logger lager.Logger, owner, name string) []Address
+	AddressForRepo(ctx context.Context, logger lager.Logger, isPrivate bool, owner, name string) []Address
 }
 
 type rolodex struct {
@@ -75,7 +84,7 @@ func NewRolodex(client RolodexClient, teamURLs TeamURLs) AddressBook {
 	}
 }
 
-func (r *rolodex) AddressForRepo(ctx context.Context, logger lager.Logger, owner, name string) []Address {
+func (r *rolodex) AddressForRepo(ctx context.Context, logger lager.Logger, isPrivate bool, owner, name string) []Address {
 	logger = logger.Session("rolodex", lager.Data{
 		"owner":      owner,
 		"repository": name,
@@ -93,24 +102,23 @@ func (r *rolodex) AddressForRepo(ctx context.Context, logger lager.Logger, owner
 
 	if err != nil {
 		logger.Error("getting-owners-failed", err)
-
-		return []Address{r.teamURLs.Default()}
+		return []Address{r.teamURLs.Default(isPrivate)}
 	}
 
-	return r.addressesFor(logger, response.GetTeams())
+	return r.addressesForTeam(logger, isPrivate, response.GetTeams())
 }
 
-func (r *rolodex) addressesFor(logger lager.Logger, teams []*rolodexpb.Team) []Address {
+func (r *rolodex) addressesForTeam(logger lager.Logger, isPrivate bool, teams []*rolodexpb.Team) []Address {
 	if len(teams) == 0 {
 		logger.Info("no-owners-found")
-		return []Address{r.teamURLs.Default()}
+		return []Address{r.teamURLs.Default(isPrivate)}
 	}
 
 	addresses := []Address{}
 
 	for _, team := range teams {
 		channel := team.GetSlackChannel()
-		address := r.teamURLs.Lookup(logger, channel.GetTeam(), channel.GetName())
+		address := r.teamURLs.Lookup(logger, isPrivate, channel.GetTeam(), channel.GetName())
 		addresses = append(addresses, address)
 	}
 

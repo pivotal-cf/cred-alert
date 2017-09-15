@@ -18,7 +18,7 @@ func NewSimpleAddressBook(url, channel string) AddressBook {
 	}
 }
 
-func (s *simpleAddressBook) AddressForRepo(ctx context.Context, logger lager.Logger, owner, name string) []Address {
+func (s *simpleAddressBook) AddressForRepo(ctx context.Context, logger lager.Logger, isPrivate bool, owner, name string) []Address {
 	return []Address{{
 		URL:     s.url,
 		Channel: s.channel,

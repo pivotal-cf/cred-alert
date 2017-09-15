@@ -59,9 +59,10 @@ type WorkerConfig struct {
 	} `yaml:"metrics"`
 
 	Slack struct {
-		DefaultURL     string            `yaml:"default_webhook_url"`
-		DefaultChannel string            `yaml:"default_channel"`
-		TeamURLs       map[string]string `yaml:"team_webhook_urls"`
+		DefaultURL            string            `yaml:"default_webhook_url"`
+		DefaultPublicChannel  string            `yaml:"default_public_channel"`
+		DefaultPrivateChannel string            `yaml:"default_private_channel"`
+		TeamURLs              map[string]string `yaml:"team_webhook_urls"`
 	} `yaml:"slack"`
 
 	MySQL struct {

@@ -172,10 +172,13 @@ properties:
     description: |
       Default webhook URL for Slack notifications
 
-  revok.slack.default_channel:
+  revok.slack.default_public_channel:
     description: |
-      Default channel for Slack notifications
-    default: ""
+      Default channel for Slack notifications for public repos
+
+  revok.slack.default_private_channel:
+    description: |
+      Default channel for Slack notifications for private repos
 
   revok.slack.team_webhook_urls:
     description: |

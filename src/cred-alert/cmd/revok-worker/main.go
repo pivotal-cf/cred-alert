@@ -178,7 +178,8 @@ func main() {
 
 	teamURLs := notifications.NewTeamURLs(
 		cfg.Slack.DefaultURL,
-		cfg.Slack.DefaultChannel,
+		cfg.Slack.DefaultPublicChannel,
+		cfg.Slack.DefaultPrivateChannel,
 		cfg.Slack.TeamURLs,
 	)
 

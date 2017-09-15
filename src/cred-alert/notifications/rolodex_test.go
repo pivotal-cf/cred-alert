@@ -31,7 +31,7 @@ var _ = Describe("Rolodex", func() {
 	})
 
 	JustBeforeEach(func() {
-		urls := notifications.NewTeamURLs("default.slack.example.com/webhook", "default", mapping)
+		urls := notifications.NewTeamURLs("default.slack.example.com/webhook", "defaultPublic", "defaultPrivate", mapping)
 		rolodex = notifications.NewRolodex(client, urls)
 	})
 
@@ -67,7 +67,7 @@ var _ = Describe("Rolodex", func() {
 				})
 
 				It("asks for the correct repository", func() {
-					_ = rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
+					_ = rolodex.AddressForRepo(context.Background(), logger, false, "pivotal-cf", "cred-alert")
 					Expect(client.GetOwnersCallCount()).To(Equal(1))
 
 					ctx, clientRequest, _ := client.GetOwnersArgsForCall(0)
@@ -79,7 +79,7 @@ var _ = Describe("Rolodex", func() {
 				})
 
 				It("returns the addresses of the notification channel", func() {
-					addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
+					addresses := rolodex.AddressForRepo(context.Background(), logger, false, "pivotal-cf", "cred-alert")
 
 					Expect(addresses).To(HaveLen(2))
 
@@ -101,7 +101,7 @@ var _ = Describe("Rolodex", func() {
 				})
 
 				It("asks for the correct repository", func() {
-					_ = rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
+					_ = rolodex.AddressForRepo(context.Background(), logger, false, "pivotal-cf", "cred-alert")
 					Expect(client.GetOwnersCallCount()).To(Equal(1))
 
 					ctx, clientRequest, _ := client.GetOwnersArgsForCall(0)
@@ -111,19 +111,35 @@ var _ = Describe("Rolodex", func() {
 					_, set := ctx.Deadline()
 					Expect(set).To(BeTrue())
 				})
+				Context("when the repo is public", func() {
+					It("returns the default address", func() {
+						addresses := rolodex.AddressForRepo(context.Background(), logger, false, "pivotal-cf", "cred-alert")
 
-				It("returns the default address", func() {
-					addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
+						Expect(addresses).To(HaveLen(2))
 
-					Expect(addresses).To(HaveLen(2))
+						address := addresses[0]
+						Expect(address.URL).To(Equal("default.slack.example.com/webhook"))
+						Expect(address.Channel).To(Equal("defaultPublic"))
 
-					address := addresses[0]
-					Expect(address.URL).To(Equal("default.slack.example.com/webhook"))
-					Expect(address.Channel).To(Equal("default"))
+						address = addresses[1]
+						Expect(address.URL).To(Equal("pivotal-cf.slack.example.com/webhook"))
+						Expect(address.Channel).To(Equal("sec-blue"))
+					})
+				})
+				Context("when the repo is private", func() {
+					It("returns the default address", func() {
+						addresses := rolodex.AddressForRepo(context.Background(), logger, true, "pivotal-cf", "cred-alert")
 
-					address = addresses[1]
-					Expect(address.URL).To(Equal("pivotal-cf.slack.example.com/webhook"))
-					Expect(address.Channel).To(Equal("sec-blue"))
+						Expect(addresses).To(HaveLen(2))
+
+						address := addresses[0]
+						Expect(address.URL).To(Equal("default.slack.example.com/webhook"))
+						Expect(address.Channel).To(Equal("defaultPrivate"))
+
+						address = addresses[1]
+						Expect(address.URL).To(Equal("pivotal-cf.slack.example.com/webhook"))
+						Expect(address.Channel).To(Equal("sec-blue"))
+					})
 				})
 			})
 		})
@@ -139,13 +155,13 @@ var _ = Describe("Rolodex", func() {
 			})
 
 			It("returns the default channel", func() {
-				addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
+				addresses := rolodex.AddressForRepo(context.Background(), logger, false, "pivotal-cf", "cred-alert")
 
 				Expect(addresses).To(HaveLen(1))
 
 				address := addresses[0]
 				Expect(address.URL).To(Equal("default.slack.example.com/webhook"))
-				Expect(address.Channel).To(Equal("default"))
+				Expect(address.Channel).To(Equal("defaultPublic"))
 			})
 		})
 
@@ -158,18 +174,18 @@ var _ = Describe("Rolodex", func() {
 			})
 
 			It("logs the error", func() {
-				_ = rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
+				_ = rolodex.AddressForRepo(context.Background(), logger, false, "pivotal-cf", "cred-alert")
 				Expect(logger).To(gbytes.Say("error"))
 			})
 
 			It("returns the default channel even if the mapping existed", func() {
-				addresses := rolodex.AddressForRepo(context.Background(), logger, "pivotal-cf", "cred-alert")
+				addresses := rolodex.AddressForRepo(context.Background(), logger, false, "pivotal-cf", "cred-alert")
 
 				Expect(addresses).To(HaveLen(1))
 
 				address := addresses[0]
 				Expect(address.URL).To(Equal("default.slack.example.com/webhook"))
-				Expect(address.Channel).To(Equal("default"))
+				Expect(address.Channel).To(Equal("defaultPublic"))
 			})
 		})
 	})
