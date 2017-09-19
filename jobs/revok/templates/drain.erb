@@ -1,0 +1,30 @@
+#!/bin/bash
+
+log_file=/var/vcap/sys/log/revok/drain.log
+
+# Redirect stdout/stderr to logs, Redirect 3 to Stdout
+exec 3>&1
+exec 1>> $log_file
+exec 2>> $log_file
+
+pid=$(bpm pid revok)
+
+# Signal Revok Worker
+kill $pid
+
+# Wait 3 mins for Revok Worker to Exit
+counter=0
+maximum=35
+
+while ps $pid; do
+  if [ $counter -ge $maximum ]; then
+    echo "0" >&3
+    exit 0
+  fi
+
+  sleep 5
+  counter=$(( $counter + 1 ))
+done
+
+echo "0" >&3
+exit 0

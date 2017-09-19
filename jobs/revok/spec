@@ -9,6 +9,8 @@ templates:
   bpm.yml.erb: config/bpm.yml
   config.yml.erb: config/config.yml
 
+  drain.erb: bin/drain
+
   github_private_key.erb: config/github_private_key
   github_public_key.erb: config/github_public_key
 
