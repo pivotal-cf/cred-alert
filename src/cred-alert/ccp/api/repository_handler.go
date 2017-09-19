@@ -9,6 +9,7 @@ import (
 	context "golang.org/x/net/context"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"github.com/tedsuo/rata"
 
@@ -58,6 +59,11 @@ func (h *RepositoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	response, err := h.client.GetRepositoryCredentialCounts(context.Background(), request)
 	if err != nil {
 		h.logger.Error("failed-to-get-organization-credential-counts", err)
+		if grpc.Code(err) == codes.NotFound {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

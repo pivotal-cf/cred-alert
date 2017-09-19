@@ -12,6 +12,8 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -66,6 +68,22 @@ var _ = Describe("Repository Handler", func() {
 			handler.ServeHTTP(w, r)
 
 			Expect(w.Code).To(Equal(http.StatusInternalServerError))
+		})
+	})
+
+	Context("when getting credential counts returns an error", func() {
+		BeforeEach(func() {
+			fakeRevokClient.GetRepositoryCredentialCountsReturns(nil, grpc.Errorf(codes.NotFound, "..."))
+		})
+
+		It("Returns a HTTP 404", func() {
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest("GET", "https://example.com", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			handler.ServeHTTP(w, r)
+
+			Expect(w.Code).To(Equal(http.StatusNotFound))
 		})
 	})
 

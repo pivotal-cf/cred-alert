@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager/lagertest"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -235,6 +237,7 @@ var _ = Describe("Server", func() {
 				request := &revokpb.RepositoryCredentialCountRequest{}
 				_, err := s.GetRepositoryCredentialCounts(context.Background(), request)
 				Expect(err).To(HaveOccurred())
+				Expect(grpc.Code(err)).To(Equal(codes.NotFound))
 			})
 		})
 	})

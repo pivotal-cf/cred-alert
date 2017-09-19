@@ -1,10 +1,10 @@
 package api
 
 import (
-	"fmt"
-
 	"code.cloudfoundry.org/lager"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"cred-alert/db"
 	"cred-alert/revokpb"
@@ -97,7 +97,7 @@ func (s *Server) GetRepositoryCredentialCounts(
 	}
 
 	if !found {
-		return nil, fmt.Errorf("Repository not found: %s", in.GetName())
+		return nil, grpc.Errorf(codes.NotFound, "Repository not found")
 	}
 
 	credentialsForOwner, err := s.branchRepository.GetCredentialCountForRepo(in.GetOwner(), in.GetName())
