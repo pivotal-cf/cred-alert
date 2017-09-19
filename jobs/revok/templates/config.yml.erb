@@ -2,6 +2,8 @@
 work_dir: <%= p("revok.work_dir") %>
 credential_counter_interval: <%= p("revok.credential_counter_interval") %>
 
+git_path: /var/vcap/packages/git/bin/git
+
 <% if_p("revok.ignore_patterns") do |ignore_patterns| %>
 whitelist: <%= ignore_patterns %>
 <% end %>

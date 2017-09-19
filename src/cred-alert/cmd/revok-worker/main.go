@@ -134,7 +134,7 @@ func main() {
 	branchRepository := db.NewBranchRepository(database)
 
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
-	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
+	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath, cfg.GitPath)
 	repoWhitelist := notifications.BuildWhitelist(cfg.Whitelist...)
 	formatter := notifications.NewSlackNotificationFormatter()
 
@@ -282,6 +282,8 @@ func main() {
 		sniffer,
 	)
 
+	gitGCRunner := revok.NewGitGCRunner(logger, clk, repositoryRepository, gitClient, 24*time.Hour)
+
 	debug := admin.Runner(
 		"6060",
 		admin.WithInfo(info),
@@ -294,6 +296,7 @@ func main() {
 		{Name: "stats-reporter", Runner: statsReporter},
 		{Name: "head-credential-counter", Runner: headCredentialCounter},
 		{Name: "change-schedule-runner", Runner: changeScheduleRunner},
+		{Name: "git-gc-runner", Runner: gitGCRunner},
 		{Name: "debug", Runner: debug},
 	}
 

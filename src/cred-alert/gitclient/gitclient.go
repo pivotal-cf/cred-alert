@@ -9,6 +9,8 @@ import (
 	"cred-alert/sniff"
 	"errors"
 	"fmt"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/BurntSushi/locker"
@@ -27,13 +29,15 @@ var ErrInterrupted = errors.New("interrupted")
 type client struct {
 	privateKeyPath string
 	publicKeyPath  string
+	gitPath        string
 	locker         *locker.Locker
 }
 
-func New(privateKeyPath, publicKeyPath string) *client {
+func New(privateKeyPath, publicKeyPath, gitPath string) *client {
 	return &client{
 		privateKeyPath: privateKeyPath,
 		publicKeyPath:  publicKeyPath,
+		gitPath:        gitPath,
 		locker:         locker.NewLocker(),
 	}
 }
@@ -165,6 +169,15 @@ func (c *client) Fetch(repoPath string) (map[string][]string, error) {
 	}
 
 	return changes, nil
+}
+
+func (c *client) GC(repoPath string) error {
+	c.locker.Lock(repoPath)
+	defer c.locker.Unlock(repoPath)
+
+	gitDir := filepath.Join(repoPath, ".git")
+	cmd := exec.Command(c.gitPath, "--git-dir", gitDir, "gc")
+	return cmd.Run()
 }
 
 func (c *client) HardReset(repoPath, sha string) error {

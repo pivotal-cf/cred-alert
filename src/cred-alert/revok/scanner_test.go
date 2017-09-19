@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 
 	"code.cloudfoundry.org/lager"
@@ -51,7 +52,11 @@ var _ = Describe("Scanner", func() {
 		result = createCommit("refs/heads/master", baseRepoPath, "some-file", []byte("credential"), "Initial commit", nil)
 
 		logger = lagertest.NewTestLogger("revok-scanner")
-		gitClient = gitclient.New("private-key-path", "public-key-path")
+
+		gitPath, err := exec.LookPath("git")
+		Expect(err).NotTo(HaveOccurred())
+
+		gitClient = gitclient.New("private-key-path", "public-key-path", gitPath)
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 		repositoryRepository.MustFindReturns(db.Repository{
 			Model: db.Model{

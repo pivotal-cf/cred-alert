@@ -28,6 +28,8 @@ type WorkerConfig struct {
 
 	Whitelist []string `yaml:"whitelist"`
 
+	GitPath string `yaml:"git_path"`
+
 	GitHub struct {
 		AccessToken    string `yaml:"access_token"`
 		PrivateKeyPath string `yaml:"private_key_path"`

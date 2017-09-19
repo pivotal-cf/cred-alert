@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"code.cloudfoundry.org/lager/lagertest"
@@ -56,7 +57,10 @@ var _ = Describe("Cloner", func() {
 				ID: 42,
 			},
 		}
-		gitClient = gitclient.New("private-key-path", "public-key-path")
+
+		gitPath, err := exec.LookPath("git")
+		Expect(err).NotTo(HaveOccurred())
+		gitClient = gitclient.New("private-key-path", "public-key-path", gitPath)
 		repositoryRepository = &dbfakes.FakeRepositoryRepository{}
 		repositoryRepository.MustFindReturns(dbRepo, nil)
 
@@ -82,7 +86,6 @@ var _ = Describe("Cloner", func() {
 		notificationComposer = &revokfakes.FakeClonerNotificationComposer{}
 		scheduler = &revokfakes.FakeRepoChangeScheduler{}
 
-		var err error
 		repoPath, err = ioutil.TempDir("", "revok-test-base-repo")
 		Expect(err).NotTo(HaveOccurred())
 
