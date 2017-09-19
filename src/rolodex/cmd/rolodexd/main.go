@@ -57,7 +57,7 @@ func main() {
 	repository := rolodex.NewTeamRepository(logger, cfg.RepositoryPath)
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)
 	handler := rolodex.NewHandler(logger, repository, emitter)
-	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath)
+	gitClient := gitclient.New(cfg.GitHub.PrivateKeyPath, cfg.GitHub.PublicKeyPath, cfg.GitPath)
 	syncer := rolodex.NewSyncer(logger, emitter, cfg.RepositoryURL, cfg.RepositoryPath, gitClient, repository)
 
 	tlsConfig := tlsconfig.Build(

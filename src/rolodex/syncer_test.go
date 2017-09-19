@@ -102,7 +102,7 @@ var _ = Describe("Syncer", func() {
 
 		emitter.TimerReturns(fetchTimer)
 
-		gitClient := gitclient.New("", "")
+		gitClient := gitclient.New("", "", "")
 
 		teamRepository = &rolodexfakes.FakeTeamRepository{}
 

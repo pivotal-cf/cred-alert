@@ -26,6 +26,8 @@ type Config struct {
 	RepositoryPath string `yaml:"repository_path"`
 	RepositoryURL  string `yaml:"repository_url"`
 
+	GitPath string `yaml:"git_path"`
+
 	GitHub struct {
 		PrivateKeyPath string `yaml:"private_key_path"`
 		PublicKeyPath  string `yaml:"public_key_path"`
