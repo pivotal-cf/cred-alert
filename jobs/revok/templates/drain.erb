@@ -7,7 +7,7 @@ exec 3>&1
 exec 1>> $log_file
 exec 2>> $log_file
 
-pid=$(/var/vcap/packages/bpm/bin/bpm pid revok)
+pid=$(/var/vcap/jobs/bpm/bin/bpm pid revok)
 
 # Signal Revok Worker
 kill $pid
