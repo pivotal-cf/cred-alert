@@ -49,6 +49,9 @@ files:
   - github.com/BurntSushi/migration/*.{go,c} # gosub
   - github.com/cenkalti/backoff/*.{go,c} # gosub
   - github.com/certifi/gocertifi/*.{go,c} # gosub
+  - github.com/facebookgo/clock/*.{go,c} # gosub
+  - github.com/facebookgo/limitgroup/*.{go,c} # gosub
+  - github.com/facebookgo/muster/*.{go,c} # gosub
   - github.com/getsentry/raven-go/*.{go,c} # gosub
   - github.com/go-sql-driver/mysql/*.{go,c} # gosub
   - github.com/golang/protobuf/proto/*.{go,c} # gosub
@@ -63,6 +66,7 @@ files:
   - github.com/googleapis/gax-go/*.{go,c} # gosub
   - github.com/hashicorp/go-multierror/*.{go,c} # gosub
   - github.com/hashicorp/go-multierror/vendor/github.com/hashicorp/errwrap/*.{go,c} # gosub
+  - github.com/honeycombio/libhoney-go/*.{go,c} # gosub
   - github.com/jessevdk/go-flags/*.{go,c} # gosub
   - github.com/jinzhu/gorm/*.{go,c} # gosub
   - github.com/jinzhu/inflection/*.{go,c} # gosub
@@ -71,6 +75,7 @@ files:
   - github.com/pivotal-cf/paraphernalia/secure/tlsconfig/*.{go,c} # gosub
   - github.com/pivotal-cf/paraphernalia/serve/grpcrunner/*.{go,c} # gosub
   - github.com/pivotal-cf/paraphernalia/serve/requestid/*.{go,c} # gosub
+  - github.com/robdimsdale/honeylager/*.{go,c} # gosub
   - github.com/robfig/cron/*.{go,c} # gosub
   - github.com/satori/go.uuid/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/*.{go,c} # gosub
@@ -132,6 +137,7 @@ files:
   - google.golang.org/grpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/tap/*.{go,c} # gosub
   - google.golang.org/grpc/transport/*.{go,c} # gosub
+  - gopkg.in/alexcesaro/statsd.v2/*.{go,c} # gosub
   - gopkg.in/libgit2/git2go.v24/*.{go,c} # gosub
   - gopkg.in/yaml.v2/*.{go,c} # gosub
   - red/redpb/*.{go,c} # gosub
