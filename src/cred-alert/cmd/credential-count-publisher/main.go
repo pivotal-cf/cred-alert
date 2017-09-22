@@ -14,6 +14,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	flags "github.com/jessevdk/go-flags"
+	"github.com/robdimsdale/honeylager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
@@ -23,6 +24,11 @@ import (
 	"cred-alert/ccp/web"
 	"cred-alert/config"
 	"cred-alert/revokpb"
+)
+
+const (
+	honeycombWriteKeyEnvKey = "HONEYCOMB_WRITE_KEY"
+	honeycombDatasetEnvKey  = "HONEYCOMB_DATASET"
 )
 
 type Opts struct {
@@ -70,12 +76,26 @@ func init() {
 func main() {
 	var opts Opts
 
-	logger.Info("starting")
-
 	_, err := flags.ParseArgs(&opts, os.Args)
 	if err != nil {
 		os.Exit(1)
 	}
+
+	honeycombWriteKey := os.Getenv(honeycombWriteKeyEnvKey)
+	honeycombDataset := os.Getenv(honeycombDatasetEnvKey)
+	if honeycombWriteKey != "" && honeycombDataset != "" {
+		s := honeylager.NewSink(honeycombWriteKey, honeycombDataset, lager.DEBUG)
+		defer s.Close()
+		logger.RegisterSink(s)
+	} else {
+		logger.Info(fmt.Sprintf(
+			"Honeycomb not configured - need %s and %s",
+			honeycombWriteKeyEnvKey,
+			honeycombDatasetEnvKey,
+		))
+	}
+
+	logger.Info("starting")
 
 	serverAddr := fmt.Sprintf("%s:%d", opts.RPCServerAddress, opts.RPCServerPort)
 	listenAddr := fmt.Sprintf(":%d", opts.Port)

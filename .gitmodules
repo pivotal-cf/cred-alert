@@ -177,3 +177,27 @@
 	path = src/github.com/BurntSushi/locker
 	url = https://github.com/BurntSushi/locker
 	branch = master
+[submodule "src/github.com/facebookgo/muster"]
+	path = src/github.com/facebookgo/muster
+	url = https://github.com/facebookgo/muster
+	branch = master
+[submodule "src/github.com/honeycombio/libhoney-go"]
+	path = src/github.com/honeycombio/libhoney-go
+	url = https://github.com/honeycombio/libhoney-go
+	branch = master
+[submodule "src/github.com/robdimsdale/honeylager"]
+	path = src/github.com/robdimsdale/honeylager
+	url = https://github.com/robdimsdale/honeylager
+	branch = master
+[submodule "src/gopkg.in/alexcesaro/statsd.v2"]
+	path = src/gopkg.in/alexcesaro/statsd.v2
+	url = https://gopkg.in/alexcesaro/statsd.v2
+	branch = master
+[submodule "src/github.com/facebookgo/clock"]
+	path = src/github.com/facebookgo/clock
+	url = https://github.com/facebookgo/clock
+	branch = master
+[submodule "src/github.com/facebookgo/limitgroup"]
+	path = src/github.com/facebookgo/limitgroup
+	url = https://github.com/facebookgo/limitgroup
+	branch = master
