@@ -26,6 +26,7 @@ import (
 	"github.com/pivotal-cf/paraphernalia/operate/admin"
 	"github.com/pivotal-cf/paraphernalia/secure/tlsconfig"
 	"github.com/pivotal-cf/paraphernalia/serve/grpcrunner"
+	"github.com/robdimsdale/honeylager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/sigmon"
@@ -90,6 +91,12 @@ func main() {
 
 	if cfg.Metrics.SentryDSN != "" {
 		logger.RegisterSink(revok.NewSentrySink(cfg.Metrics.SentryDSN, cfg.Metrics.Environment))
+	}
+
+	if cfg.Metrics.HoneycombWriteKey != "" && cfg.Metrics.Environment != "" {
+		s := honeylager.NewSink(cfg.Metrics.HoneycombWriteKey, cfg.Metrics.Environment, lager.DEBUG)
+		defer s.Close()
+		logger.RegisterSink(s)
 	}
 
 	workdir := cfg.WorkDir

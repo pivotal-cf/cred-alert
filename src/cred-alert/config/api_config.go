@@ -23,8 +23,9 @@ type APIOpts struct {
 
 type APIConfig struct {
 	Metrics struct {
-		SentryDSN   string `yaml:"sentry_dsn"`
-		Environment string `yaml:"environment"`
+		SentryDSN         string `yaml:"sentry_dsn"`
+		Environment       string `yaml:"environment"`
+		HoneycombWriteKey string `yaml:"honeycomb_write_key"`
 	} `yaml:"metrics"`
 
 	MySQL struct {
