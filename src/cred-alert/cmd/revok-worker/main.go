@@ -222,7 +222,8 @@ func main() {
 			},
 		}
 
-		ghClient = revok.NewGitHubClient(github.NewClient(githubHTTPClient))
+		gh := github.NewClient(githubHTTPClient)
+		ghClient = revok.NewGitHubClient(gh.Repositories)
 	}
 
 	changeFetcher := revok.NewChangeFetcher(
