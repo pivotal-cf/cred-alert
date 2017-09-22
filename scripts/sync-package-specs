@@ -4,7 +4,7 @@ set -e
 
 set -o pipefail
 
-pushd packages/cred-alert
+pushd packages/cred-alert > /dev/null
   {
     cat spec | grep -v '# gosub'
     gosub list \
@@ -16,9 +16,9 @@ pushd packages/cred-alert
   } > spec.new
 
   mv spec.new spec
-popd
+popd > /dev/null
 
-pushd packages/rolodex
+pushd packages/rolodex > /dev/null
   {
     cat spec | grep -v '# gosub'
     gosub list \
@@ -28,4 +28,4 @@ pushd packages/rolodex
   } > spec.new
 
   mv spec.new spec
-popd
+popd > /dev/null
