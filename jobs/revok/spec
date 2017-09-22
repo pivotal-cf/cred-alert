@@ -170,6 +170,10 @@ properties:
     description: |
       Environment tag for metrics
 
+  revok.metrics.honeycomb_write_key:
+    description: |
+      Honeycomb API write key
+
   revok.slack.default_webhook_url:
     description: |
       Default webhook URL for Slack notifications

@@ -67,3 +67,7 @@ properties:
   rolodex.metrics.environment:
     description: |
       Environment tag for metrics
+
+  rolodex.metrics.honeycomb_write_key:
+    description: |
+      Honeycomb API write key

@@ -41,6 +41,9 @@ metrics:
 <% if_p("revok.metrics.environment") do |environment| %>
   environment: <%= environment %>
 <% end %>
+<% if_p("revok.metrics.honeycomb_write_key") do |honeycomb_write_key| %>
+  honeycomb_write_key: <%= honeycomb_write_key %>
+<% end %>
 
 <% require 'json' %>
 

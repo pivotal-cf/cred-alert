@@ -96,3 +96,7 @@ properties:
   revok-api.metrics.environment:
     description: |
       Environment tag for metrics
+
+  revok-api.metrics.honeycomb_write_key:
+    description: |
+      Honeycomb API write key

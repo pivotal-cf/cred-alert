@@ -50,6 +50,10 @@ properties:
     description: |
       Environment tag for metrics
 
+  metrics.honeycomb_write_key:
+    description: |
+      Honeycomb API write key
+
   identity.ca_certificate:
     description: |
       CA certificate

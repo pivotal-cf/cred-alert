@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	flags "github.com/jessevdk/go-flags"
+	"github.com/robdimsdale/honeylager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
 	"github.com/tedsuo/ifrit/http_server"
@@ -62,6 +63,12 @@ func main() {
 
 	if cfg.IsSentryConfigured() {
 		logger.RegisterSink(revok.NewSentrySink(cfg.Metrics.SentryDSN, cfg.Metrics.Environment))
+	}
+
+	if cfg.Metrics.HoneycombWriteKey != "" && cfg.Metrics.Environment != "" {
+		s := honeylager.NewSink(cfg.Metrics.HoneycombWriteKey, cfg.Metrics.Environment, lager.DEBUG)
+		defer s.Close()
+		logger.RegisterSink(s)
 	}
 
 	emitter := metrics.BuildEmitter(cfg.Metrics.DatadogAPIKey, cfg.Metrics.Environment)

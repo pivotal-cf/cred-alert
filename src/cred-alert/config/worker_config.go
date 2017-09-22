@@ -55,9 +55,10 @@ type WorkerConfig struct {
 	} `yaml:"trace"`
 
 	Metrics struct {
-		SentryDSN     string `yaml:"sentry_dsn"`
-		DatadogAPIKey string `yaml:"datadog_api_key"`
-		Environment   string `yaml:"environment"`
+		SentryDSN         string `yaml:"sentry_dsn"`
+		DatadogAPIKey     string `yaml:"datadog_api_key"`
+		Environment       string `yaml:"environment"`
+		HoneycombWriteKey string `yaml:"honeycomb_write_key"`
 	} `yaml:"metrics"`
 
 	Slack struct {
