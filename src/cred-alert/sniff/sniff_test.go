@@ -60,7 +60,41 @@ var _ = Describe("Sniffer", func() {
 			sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Violation) error {
 				return nil
 			})
-			Expect(exclusionMatcher.MatchCallCount()).To(Equal(3))
+			Eventually(scanner.ScanCallCount()).Should(Equal(4))
+			Consistently(exclusionMatcher.MatchCallCount()).Should(Equal(3))
+		})
+
+		Context("when changes are in a directory named `vendor`", func() {
+			BeforeEach(func() {
+				expectedLine = &scanners.Line{
+					Path:       "/test/vendor/somepath",
+					LineNumber: 42,
+					Content:    []byte("some-content"),
+				}
+
+				scanner.LineStub = func(logger lager.Logger) *scanners.Line {
+					if scanner.LineCallCount()%2 == 0 {
+						return &scanners.Line{
+							Path:       "/test/vendor/somepath",
+							LineNumber: 42,
+							Content:    []byte("some-content"),
+						}
+					}
+					return &scanners.Line{
+						Path:       "vendor/somepath",
+						LineNumber: 42,
+						Content:    []byte("some-content"),
+					}
+				}
+			})
+
+			It("ignores all files in a directory named `vendor`", func() {
+				sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Violation) error {
+					return nil
+				})
+				Eventually(scanner.ScanCallCount()).Should(Equal(4))
+				Consistently(exclusionMatcher.MatchCallCount()).Should(Equal(0))
+			})
 		})
 
 		It("calls the regular matcher with each line", func() {
