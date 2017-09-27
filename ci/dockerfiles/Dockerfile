@@ -18,7 +18,7 @@ RUN apt-get update && \
 # Install Common Dependencies
 RUN echo 'deb http://httpredir.debian.org/debian testing main' >> /etc/apt/sources.list && \
     apt-get update && \
-    apt-get install -y  unzip libgit2-dev pkg-config openjdk-8-jre-headless && \
+    apt-get install -y  unzip libgit2-dev=0.25.1+really0.24.6-1 pkg-config openjdk-8-jre-headless && \
     apt-get upgrade -y -qq && \
     apt-get -y clean && \
     apt-get -y autoremove --purge
