@@ -71,6 +71,15 @@ func (n *NotificationComposer) ScanAndNotify(
 			LineNumber: credential.LineNumber,
 			Private:    dbRepository.Private,
 		})
+		logger.Info("notifing-for-credential", lager.Data{
+			"credential_owner":       credential.Owner,
+			"credential_repository":  credential.Repository,
+			"credential_branch":      branch,
+			"credential_sha":         credential.SHA,
+			"credential_path":        credential.Path,
+			"credential_line_number": credential.LineNumber,
+			"credential_private":     credential.Private,
+		})
 	}
 
 	if len(batch) > 0 {
