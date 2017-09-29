@@ -9,10 +9,10 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/clock/fakeclock"
+	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
 	"golang.org/x/net/context"
 
-	"cred-alert/lgctx"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
@@ -33,7 +33,7 @@ var _ = Describe("PushEventProcessor", func() {
 	)
 
 	BeforeEach(func() {
-		ctx = lgctx.NewContext(context.Background(), lagertest.NewTestLogger("ingestor"))
+		ctx = lagerctx.NewContext(context.Background(), lagertest.NewTestLogger("ingestor"))
 		changeFetcher = &queuefakes.FakeChangeFetcher{}
 		endToEndGauge = &metricsfakes.FakeGauge{}
 

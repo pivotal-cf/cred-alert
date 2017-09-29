@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cloud.google.com/go/pubsub"
+	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	"cred-alert/crypto/cryptofakes"
-	"cred-alert/lgctx"
 	"cred-alert/metrics"
 	"cred-alert/metrics/metricsfakes"
 	"cred-alert/queue"
@@ -32,7 +32,7 @@ var _ = Describe("Signature Checker", func() {
 	)
 
 	BeforeEach(func() {
-		ctx = lgctx.NewContext(context.Background(), lagertest.NewTestLogger("signature-check"))
+		ctx = lagerctx.NewContext(context.Background(), lagertest.NewTestLogger("signature-check"))
 		verifier = &cryptofakes.FakeVerifier{}
 		child = &queuefakes.FakePubSubProcessor{}
 		verifyFailedCounter = &metricsfakes.FakeCounter{}

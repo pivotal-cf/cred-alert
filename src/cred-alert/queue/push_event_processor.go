@@ -10,9 +10,9 @@ import (
 	"cloud.google.com/go/trace"
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagerctx"
 
 	"cred-alert/crypto"
-	"cred-alert/lgctx"
 	"cred-alert/metrics"
 )
 
@@ -47,7 +47,7 @@ func NewPushEventProcessor(
 }
 
 func (proc *pushEventProcessor) Process(ctx context.Context, message *pubsub.Message) (bool, error) {
-	logger := lgctx.WithSession(ctx, "processing-push-event")
+	logger := lagerctx.WithSession(ctx, "processing-push-event")
 
 	span := proc.traceClient.NewSpan("io.pivotal.red.revok/CodePush")
 	defer span.Finish()

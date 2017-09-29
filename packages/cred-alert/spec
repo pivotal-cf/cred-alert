@@ -29,7 +29,6 @@ files:
   - cred-alert/gitclient/*.{go,c} # gosub
   - cred-alert/ingestor/*.{go,c} # gosub
   - cred-alert/kolsch/*.{go,c} # gosub
-  - cred-alert/lgctx/*.{go,c} # gosub
   - cred-alert/metrics/*.{go,c} # gosub
   - cred-alert/mimetype/*.{go,c} # gosub
   - cred-alert/net/*.{go,c} # gosub

@@ -6,9 +6,9 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagerctx"
 
 	"cred-alert/crypto"
-	"cred-alert/lgctx"
 	"cred-alert/metrics"
 )
 
@@ -30,7 +30,7 @@ func NewSignatureCheck(verify crypto.Verifier, emitter metrics.Emitter, processo
 
 func (s *sigCheck) Process(ctx context.Context, message *pubsub.Message) (bool, error) {
 	signature := message.Attributes["signature"]
-	logger := lgctx.WithData(ctx, lager.Data{
+	logger := lagerctx.WithData(ctx, lager.Data{
 		"signature": signature,
 	})
 

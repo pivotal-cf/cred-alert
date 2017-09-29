@@ -5,10 +5,10 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagerctx"
 	"github.com/tedsuo/ifrit"
 	"golang.org/x/net/context"
 
-	"cred-alert/lgctx"
 	"cred-alert/metrics"
 )
 
@@ -88,7 +88,7 @@ func (p *pubSubSubscriber) processMessage(ctx context.Context, message *pubsub.M
 		"pubsub-message":      message.ID,
 		"pubsub-publish-time": message.PublishTime.String(),
 	})
-	lctx := lgctx.NewContext(ctx, logger)
+	lctx := lagerctx.NewContext(ctx, logger)
 
 	p.processTimer.Time(logger, func() {
 		retryable, err = p.processor.Process(lctx, message)
