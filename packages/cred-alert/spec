@@ -17,6 +17,7 @@ files:
   - cloud.google.com/go/trace/*.{go,c} # gosub
   - code.cloudfoundry.org/clock/*.{go,c} # gosub
   - code.cloudfoundry.org/lager/*.{go,c} # gosub
+  - code.cloudfoundry.org/lager/lagerctx/*.{go,c} # gosub
   - cred-alert/cmd/revok-api/*.{go,c} # gosub
   - cred-alert/cmd/revok-ingestor/*.{go,c} # gosub
   - cred-alert/cmd/revok-worker/*.{go,c} # gosub
