@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"cred-alert/config"
-	"io/ioutil"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,13 +40,10 @@ var _ = Describe("Cert", func() {
 
 	Describe("LoadCertificatePool", func() {
 		It("loads a certificate pool", func() {
-			cert1, err := ioutil.ReadFile("_fixtures/My_Special_Unencrypted_Certificate.crt")
-			Expect(err).NotTo(HaveOccurred())
+			certPath1 := "_fixtures/My_Special_Unencrypted_Certificate.crt"
+			certPath2 := "_fixtures/My_Special_Encrypted_Certificate.crt"
 
-			cert2, err := ioutil.ReadFile("_fixtures/My_Special_Encrypted_Certificate.crt")
-			Expect(err).NotTo(HaveOccurred())
-
-			certPool, err := config.LoadCertificatePool(string(cert1), string(cert2))
+			certPool, err := config.LoadCertificatePool(certPath1, certPath2)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(certPool.Subjects()).To(HaveLen(2))

@@ -5,4 +5,4 @@ applications:
   disk_quota: 1024M
   buildpack: binary_buildpack
   stack: cflinuxfs2
-  command: "./ccp --client-cert-path=<(echo \"$CLIENT_CERT\") --client-key-path=<(echo \"$CLIENT_KEY\")"
+  command: "./ccp --ca-cert-path=<(echo \"$SERVER_CA_CERT\") --client-cert-path=<(echo \"$CLIENT_CERT\") --client-key-path=<(echo \"$CLIENT_KEY\")"
