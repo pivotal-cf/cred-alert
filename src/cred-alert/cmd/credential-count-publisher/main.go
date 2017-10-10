@@ -28,9 +28,7 @@ import (
 )
 
 const (
-	honeycombWriteKeyEnvKey = "HONEYCOMB_WRITE_KEY"
-	honeycombDatasetEnvKey  = "HONEYCOMB_DATASET"
-
+	// Required.
 	portEnvKey = "PORT"
 
 	// Passphrase for the client private key. Required if the key is encrypted.
@@ -41,10 +39,16 @@ const (
 
 	// Port for RPC server. Required.
 	rpcServerPortEnvKey = "RPC_SERVER_PORT"
+
+	// Required.
+	caCertEnvKey = "SERVER_CA_CERT"
+
+	// Optional
+	honeycombWriteKeyEnvKey = "HONEYCOMB_WRITE_KEY"
+	honeycombDatasetEnvKey  = "HONEYCOMB_DATASET"
 )
 
 type Opts struct {
-	CACertPath     string `long:"ca-cert-path" description:"Path to the CA certificate" required:"true"`
 	ClientCertPath string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
 	ClientKeyPath  string `long:"client-key-path" description:"Path to the client private key" required:"true"`
 }
@@ -129,7 +133,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	rootCertPool, err := config.LoadCertificatePool(opts.CACertPath)
+	caCert := mustGetEnv(logger, caCertEnvKey)
+
+	rootCertPool, err := config.LoadCertificatePool(caCert)
 	if err != nil {
 		log.Fatalln(err)
 	}
