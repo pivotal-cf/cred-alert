@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"code.cloudfoundry.org/lager"
-	flags "github.com/jessevdk/go-flags"
 	"github.com/robdimsdale/honeylager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
@@ -43,15 +42,16 @@ const (
 	// Required.
 	caCertEnvKey = "SERVER_CA_CERT"
 
+	// Required.
+	clientCertEnvKey = "CLIENT_CERT"
+
+	// Required.
+	clientKeyEnvKey = "CLIENT_KEY"
+
 	// Optional
 	honeycombWriteKeyEnvKey = "HONEYCOMB_WRITE_KEY"
 	honeycombDatasetEnvKey  = "HONEYCOMB_DATASET"
 )
-
-type Opts struct {
-	ClientCertPath string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
-	ClientKeyPath  string `long:"client-key-path" description:"Path to the client private key" required:"true"`
-}
 
 var (
 	indexLayout        *template.Template
@@ -84,13 +84,6 @@ func init() {
 }
 
 func main() {
-	var opts Opts
-
-	_, err := flags.ParseArgs(&opts, os.Args)
-	if err != nil {
-		os.Exit(1)
-	}
-
 	honeycombWriteKey := os.Getenv(honeycombWriteKeyEnvKey)
 	honeycombDataset := os.Getenv(honeycombDatasetEnvKey)
 	if honeycombWriteKey != "" && honeycombDataset != "" {
@@ -121,12 +114,15 @@ func main() {
 		logger.Fatal("failed-to-parse-rpc-server-port", err)
 	}
 
+	clientCertStr := mustGetEnv(clientCertEnvKey)
+	clientKeyStr := mustGetEnv(clientKeyEnvKey)
+
 	serverAddr := fmt.Sprintf("%s:%d", rpcServerAddress, rpcServerPort)
 	listenAddr := fmt.Sprintf(":%d", port)
 
 	clientCert, err := config.LoadCertificate(
-		opts.ClientCertPath,
-		opts.ClientKeyPath,
+		clientCertStr,
+		clientKeyStr,
 		os.Getenv(clientKeyPassphraseEnvKey),
 	)
 	if err != nil {
