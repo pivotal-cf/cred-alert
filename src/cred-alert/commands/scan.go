@@ -14,7 +14,7 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/inflator"
-	"cred-alert/kolsch"
+	credlog "cred-alert/log"
 	"cred-alert/mimetype"
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
@@ -86,7 +86,7 @@ func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handl
 		}
 	}()
 
-	quietLogger := kolsch.NewLogger()
+	quietLogger := credlog.NewNullLogger()
 	scanner := dirscanner.New(sniffer, handleFunc, inflateDir)
 	if fi.IsDir() {
 		return scanner.Scan(quietLogger, c.File)

@@ -18,7 +18,7 @@ files:
   - cred-alert/datadog/*.{go,c} # gosub
   - cred-alert/db/*.{go,c} # gosub
   - cred-alert/gitclient/*.{go,c} # gosub
-  - cred-alert/kolsch/*.{go,c} # gosub
+  - cred-alert/log/*.{go,c} # gosub
   - cred-alert/metrics/*.{go,c} # gosub
   - cred-alert/mimetype/*.{go,c} # gosub
   - cred-alert/net/*.{go,c} # gosub

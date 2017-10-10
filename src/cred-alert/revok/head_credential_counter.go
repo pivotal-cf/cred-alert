@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/db"
-	"cred-alert/kolsch"
+	credlog "cred-alert/log"
 	"cred-alert/sniff"
 )
 
@@ -60,7 +60,7 @@ func (c *HeadCredentialCounter) Run(signals <-chan os.Signal, ready chan<- struc
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	quietLogger := kolsch.NewLogger()
+	quietLogger := credlog.NewNullLogger()
 
 	c.work(cancel, signals, logger, quietLogger)
 

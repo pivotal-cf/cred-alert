@@ -6,7 +6,7 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"cred-alert/db"
-	"cred-alert/kolsch"
+	credlog "cred-alert/log"
 	"cred-alert/scanners"
 	"cred-alert/scanners/diffscanner"
 	"cred-alert/sniff"
@@ -73,7 +73,7 @@ func (s *Scanner) scan(
 	startSHA string,
 	stopSHA string,
 ) ([]db.Credential, error) {
-	quietLogger := kolsch.NewLogger()
+	quietLogger := credlog.NewNullLogger()
 	scan := s.scanRepository.Start(quietLogger, "repo-scan", branch, startSHA, stopSHA, &dbRepository)
 
 	var credentials []db.Credential
