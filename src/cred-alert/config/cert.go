@@ -6,17 +6,25 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 )
 
-func LoadCertificate(cert, key, password string) (tls.Certificate, error) {
-	certBytes := []byte(cert)
-	keyBytes := []byte(key)
-
+func LoadCertificate(certPath, keyPath, password string) (tls.Certificate, error) {
 	if password == "" {
-		return tls.X509KeyPair(certBytes, keyBytes)
+		return tls.LoadX509KeyPair(certPath, keyPath)
 	}
 
-	block, _ := pem.Decode(keyBytes)
+	certBytes, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	encryptedKeyBytes, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	block, _ := pem.Decode(encryptedKeyBytes)
 	if block == nil {
 		return tls.Certificate{}, errors.New("error decoding PEM in key file")
 	}
@@ -30,9 +38,9 @@ func LoadCertificate(cert, key, password string) (tls.Certificate, error) {
 		Type:  "PRIVATE KEY", // go don't care
 		Bytes: decryptedKeyBytes,
 	}
-	encodedKeyBytes := pem.EncodeToMemory(pemBlock)
+	keyBytes := pem.EncodeToMemory(pemBlock)
 
-	return tls.X509KeyPair(certBytes, encodedKeyBytes)
+	return tls.X509KeyPair(certBytes, keyBytes)
 }
 
 func LoadCertificatePool(certs ...string) (*x509.CertPool, error) {
