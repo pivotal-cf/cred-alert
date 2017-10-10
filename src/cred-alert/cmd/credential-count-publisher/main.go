@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"google.golang.org/grpc"
@@ -29,18 +30,23 @@ import (
 const (
 	honeycombWriteKeyEnvKey = "HONEYCOMB_WRITE_KEY"
 	honeycombDatasetEnvKey  = "HONEYCOMB_DATASET"
+
+	portEnvKey = "PORT"
+
+	// Passphrase for the client private key. Required if the key is encrypted.
+	clientKeyPassphraseEnvKey = "CLIENT_KEY_PASSPHRASE"
+
+	// Address for RPC server. Required.
+	rpcServerAddressEnvKey = "RPC_SERVER_ADDRESS"
+
+	// Port for RPC server. Required.
+	rpcServerPortEnvKey = "RPC_SERVER_PORT"
 )
 
 type Opts struct {
-	Port uint16 `long:"port" default:"8080" description:"Port to listen on."`
-
-	RPCServerAddress string `long:"rpc-server-address" description:"Address for RPC server." required:"true"`
-	RPCServerPort    uint16 `long:"rpc-server-port" description:"Port for RPC server." required:"true"`
-
-	CACertPath          string `long:"ca-cert-path" description:"Path to the CA certificate" required:"true"`
-	ClientCertPath      string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
-	ClientKeyPath       string `long:"client-key-path" description:"Path to the client private key" required:"true"`
-	ClientKeyPassphrase string `long:"client-key-passphrase" description:"Passphrase for the client private key, if encrypted"`
+	CACertPath     string `long:"ca-cert-path" description:"Path to the CA certificate" required:"true"`
+	ClientCertPath string `long:"client-cert-path" description:"Path to the client certificate" required:"true"`
+	ClientKeyPath  string `long:"client-key-path" description:"Path to the client private key" required:"true"`
 }
 
 var (
@@ -97,13 +103,27 @@ func main() {
 
 	logger.Info("starting")
 
-	serverAddr := fmt.Sprintf("%s:%d", opts.RPCServerAddress, opts.RPCServerPort)
-	listenAddr := fmt.Sprintf(":%d", opts.Port)
+	portStr := mustGetEnv(logger, portEnvKey)
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		logger.Fatal("failed-to-parse-port", err)
+	}
+
+	rpcServerAddress := mustGetEnv(logger, rpcServerAddressEnvKey)
+
+	rpcServerPortStr := mustGetEnv(logger, rpcServerPortEnvKey)
+	rpcServerPort, err := strconv.Atoi(rpcServerPortStr)
+	if err != nil {
+		logger.Fatal("failed-to-parse-rpc-server-port", err)
+	}
+
+	serverAddr := fmt.Sprintf("%s:%d", rpcServerAddress, rpcServerPort)
+	listenAddr := fmt.Sprintf(":%d", port)
 
 	clientCert, err := config.LoadCertificate(
 		opts.ClientCertPath,
 		opts.ClientKeyPath,
-		opts.ClientKeyPassphrase,
+		os.Getenv(clientKeyPassphraseEnvKey),
 	)
 	if err != nil {
 		log.Fatalln(err)
@@ -155,4 +175,14 @@ func keepAliveDial(addr string, timeout time.Duration) (net.Conn, error) {
 		KeepAlive: 60 * time.Second,
 	}
 	return d.Dial("tcp", addr)
+}
+
+func mustGetEnv(logger lager.Logger, key string) string {
+	val := os.Getenv(key)
+	err := fmt.Errorf("failed-to-get-env-key")
+	if val == "" {
+		logger.Fatal("failed-to-get-env-key", err, lager.Data{"missing-env-key": key})
+	}
+
+	return val
 }
