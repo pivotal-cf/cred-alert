@@ -43,6 +43,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.Body.Close()
+	r.Header.Set("Content-Type", "application/json")
 
 	var payload []byte
 	for i, secretKey := range h.secretKeys {
