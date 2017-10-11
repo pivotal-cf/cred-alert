@@ -107,15 +107,15 @@ func main() {
 
 	logger.Info("starting")
 
-	portStr := mustGetEnv(logger, portEnvKey)
+	portStr := mustGetEnv(portEnvKey)
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		logger.Fatal("failed-to-parse-port", err)
 	}
 
-	rpcServerAddress := mustGetEnv(logger, rpcServerAddressEnvKey)
+	rpcServerAddress := mustGetEnv(rpcServerAddressEnvKey)
 
-	rpcServerPortStr := mustGetEnv(logger, rpcServerPortEnvKey)
+	rpcServerPortStr := mustGetEnv(rpcServerPortEnvKey)
 	rpcServerPort, err := strconv.Atoi(rpcServerPortStr)
 	if err != nil {
 		logger.Fatal("failed-to-parse-rpc-server-port", err)
@@ -133,7 +133,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	caCert := mustGetEnv(logger, caCertEnvKey)
+	caCert := mustGetEnv(caCertEnvKey)
 
 	rootCertPool, err := config.LoadCertificatePool(caCert)
 	if err != nil {
@@ -183,7 +183,7 @@ func keepAliveDial(addr string, timeout time.Duration) (net.Conn, error) {
 	return d.Dial("tcp", addr)
 }
 
-func mustGetEnv(logger lager.Logger, key string) string {
+func mustGetEnv(key string) string {
 	val := os.Getenv(key)
 	err := fmt.Errorf("failed-to-get-env-key")
 	if val == "" {
