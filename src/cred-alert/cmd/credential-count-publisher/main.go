@@ -121,8 +121,8 @@ func main() {
 	listenAddr := fmt.Sprintf(":%d", port)
 
 	clientCert, err := config.LoadCertificate(
-		clientCertStr,
-		clientKeyStr,
+		[]byte(clientCertStr),
+		[]byte(clientKeyStr),
 		os.Getenv(clientKeyPassphraseEnvKey),
 	)
 	if err != nil {
@@ -131,7 +131,7 @@ func main() {
 
 	caCert := mustGetEnv(caCertEnvKey)
 
-	rootCertPool, err := config.LoadCertificatePool(caCert)
+	rootCertPool, err := config.LoadCertificatePool([]byte(caCert))
 	if err != nil {
 		log.Fatalln(err)
 	}

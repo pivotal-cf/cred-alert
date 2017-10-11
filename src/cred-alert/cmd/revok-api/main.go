@@ -142,7 +142,7 @@ func main() {
 }
 
 func loadCerts(certificatePath, privateKeyPath, privateKeyPassphrase, caCertificatePath string) (tls.Certificate, *x509.CertPool) {
-	certificate, err := config.LoadCertificate(
+	certificate, err := config.LoadCertificateFromFiles(
 		certificatePath,
 		privateKeyPath,
 		privateKeyPassphrase,
@@ -151,7 +151,7 @@ func loadCerts(certificatePath, privateKeyPath, privateKeyPassphrase, caCertific
 		log.Fatalln(err)
 	}
 
-	caCertPool, err := config.LoadCertificatePool(caCertificatePath)
+	caCertPool, err := config.LoadCertificatePoolFromFiles(caCertificatePath)
 	if err != nil {
 		log.Fatalln(err)
 	}

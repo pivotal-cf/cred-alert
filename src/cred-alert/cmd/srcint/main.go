@@ -40,7 +40,7 @@ func main() {
 
 	serverAddr := fmt.Sprintf("%s:%d", opts.RPCServerAddress, opts.RPCServerPort)
 
-	clientCert, err := config.LoadCertificate(
+	clientCert, err := config.LoadCertificateFromFiles(
 		opts.ClientCertPath,
 		opts.ClientKeyPath,
 		opts.ClientKeyPassphrase,
@@ -49,7 +49,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	rootCertPool, err := config.LoadCertificatePool(opts.CACertPath)
+	rootCertPool, err := config.LoadCertificatePoolFromFiles(opts.CACertPath)
 	if err != nil {
 		log.Fatalln(err)
 	}

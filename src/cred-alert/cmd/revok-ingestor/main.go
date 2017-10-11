@@ -96,7 +96,7 @@ func main() {
 	router.Handle("/webhook", ingestor.NewHandler(logger, in, clk, emitter, cfg.GitHub.WebhookSecretTokens))
 	router.Handle("/healthcheck", revok.NewObliviousHealthCheck())
 
-	certificate, err := config.LoadCertificate(
+	certificate, err := config.LoadCertificateFromFiles(
 		cfg.Identity.CertificatePath,
 		cfg.Identity.PrivateKeyPath,
 		cfg.Identity.PrivateKeyPassphrase,
@@ -105,7 +105,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	caCertPool, err := config.LoadCertificatePool(cfg.Identity.CACertificatePath)
+	caCertPool, err := config.LoadCertificatePoolFromFiles(cfg.Identity.CACertificatePath)
 	if err != nil {
 		log.Fatalln(err)
 	}

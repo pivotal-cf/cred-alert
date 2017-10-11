@@ -47,7 +47,7 @@ func main() {
 		logger.RegisterSink(s)
 	}
 
-	certificate, err := config.LoadCertificate(
+	certificate, err := config.LoadCertificateFromFiles(
 		cfg.RPC.CertificatePath,
 		cfg.RPC.PrivateKeyPath,
 		cfg.RPC.PrivateKeyPassphrase,
@@ -56,7 +56,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	clientCertPool, err := config.LoadCertificatePool(cfg.RPC.CACertificatePath)
+	clientCertPool, err := config.LoadCertificatePoolFromFiles(cfg.RPC.CACertificatePath)
 	if err != nil {
 		log.Fatalln(err)
 	}
