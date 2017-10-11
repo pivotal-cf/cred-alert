@@ -43,18 +43,13 @@ func LoadCertificate(certPath, keyPath, password string) (tls.Certificate, error
 	return tls.X509KeyPair(certBytes, keyBytes)
 }
 
-func LoadCertificatePool(certFiles ...string) (*x509.CertPool, error) {
+func LoadCertificatePool(certs ...string) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 
-	for _, certFileName := range certFiles {
-		bs, err := ioutil.ReadFile(certFileName)
-		if err != nil {
-			return certPool, err
-		}
-
-		ok := certPool.AppendCertsFromPEM(bs)
+	for _, cert := range certs {
+		ok := certPool.AppendCertsFromPEM([]byte(cert))
 		if !ok {
-			return certPool, fmt.Errorf("failed to append client certs from pem: %s", err.Error())
+			return certPool, fmt.Errorf("failed to append client certs from pem")
 		}
 	}
 
