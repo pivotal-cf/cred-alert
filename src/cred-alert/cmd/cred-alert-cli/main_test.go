@@ -170,19 +170,33 @@ index 940393e..fa5a232 100644
 			})
 
 			Context("when parsing a large diff", func() {
+				var buf []byte
 				BeforeEach(func() {
 					cmdArgs = []string{"--diff"}
-					buf := make([]byte, diffscanner.MaxLineSize*3)
+					buf = make([]byte, diffscanner.MaxLineSize*3)
 					for i := range buf {
 						buf[i] = 'A'
 					}
-					stdin = offendingDiff + "\n" + "+" + string(buf) + "\n"
 				})
 
-				It("fails with error when a line is too long", func() {
-					Eventually(session.Out).Should(gbytes.Say("FAILED.*scanning failed"))
-					Eventually(session.Exited).Should(BeClosed())
-					Expect(session.ExitCode).ToNot(Equal(0))
+				Context("when diff has credentials", func() {
+					BeforeEach(func() {
+						stdin = offendingDiff + "\n" + "+" + string(buf) + "\n"
+					})
+					It("fails with error when a line is too long", func() {
+						Eventually(session.Out).Should(gbytes.Say("FAILED.*scanning failed"))
+						Eventually(session).Should(gexec.Exit(3))
+					})
+				})
+
+				Context("when diff has no credentials", func() {
+					BeforeEach(func() {
+						stdin = "+" + string(buf) + "\n"
+					})
+					It("fails with error when a line is too long", func() {
+						Eventually(session.Out).Should(gbytes.Say("FAILED.*scanning failed"))
+						Eventually(session).ShouldNot(gexec.Exit(0))
+					})
 				})
 			})
 

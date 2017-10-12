@@ -56,14 +56,18 @@ func (command *ScanCommand) Execute(args []string) error {
 			return err
 		}
 	case command.Diff:
-		sniffer.Sniff(logger, diffscanner.NewDiffScanner(os.Stdin), handler.HandleViolation)
+		err = sniffer.Sniff(logger, diffscanner.NewDiffScanner(os.Stdin), handler.HandleViolation)
 	default:
-		sniffer.Sniff(logger, filescanner.New(os.Stdin, "STDIN"), handler.HandleViolation)
+		err = sniffer.Sniff(logger, filescanner.New(os.Stdin, "STDIN"), handler.HandleViolation)
 	}
 
 	if handler.count > 0 {
 		showCredentialWarning()
 		clean.exit(3)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	return nil
