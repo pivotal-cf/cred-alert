@@ -67,7 +67,7 @@ func (command *ScanCommand) Execute(args []string) error {
 	}
 
 	if err != nil {
-		return err
+		clean.exit(1)
 	}
 
 	return nil
