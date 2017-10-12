@@ -1,3 +1,3 @@
 package sniff
 
-const RulesVersion = 10
+const RulesVersion = 11

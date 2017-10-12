@@ -32,6 +32,15 @@ type FakeScanner struct {
 	lineReturnsOnCall map[int]struct {
 		result1 *scanners.Line
 	}
+	ErrStub        func() error
+	errMutex       sync.RWMutex
+	errArgsForCall []struct{}
+	errReturns     struct {
+		result1 error
+	}
+	errReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -132,6 +141,46 @@ func (fake *FakeScanner) LineReturnsOnCall(i int, result1 *scanners.Line) {
 	}{result1}
 }
 
+func (fake *FakeScanner) Err() error {
+	fake.errMutex.Lock()
+	ret, specificReturn := fake.errReturnsOnCall[len(fake.errArgsForCall)]
+	fake.errArgsForCall = append(fake.errArgsForCall, struct{}{})
+	fake.recordInvocation("Err", []interface{}{})
+	fake.errMutex.Unlock()
+	if fake.ErrStub != nil {
+		return fake.ErrStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.errReturns.result1
+}
+
+func (fake *FakeScanner) ErrCallCount() int {
+	fake.errMutex.RLock()
+	defer fake.errMutex.RUnlock()
+	return len(fake.errArgsForCall)
+}
+
+func (fake *FakeScanner) ErrReturns(result1 error) {
+	fake.ErrStub = nil
+	fake.errReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeScanner) ErrReturnsOnCall(i int, result1 error) {
+	fake.ErrStub = nil
+	if fake.errReturnsOnCall == nil {
+		fake.errReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.errReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeScanner) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -139,6 +188,8 @@ func (fake *FakeScanner) Invocations() map[string][][]interface{} {
 	defer fake.scanMutex.RUnlock()
 	fake.lineMutex.RLock()
 	defer fake.lineMutex.RUnlock()
+	fake.errMutex.RLock()
+	defer fake.errMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -1,6 +1,8 @@
 package filescanner_test
 
 import (
+	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -18,6 +20,8 @@ var _ = Describe("File", func() {
 		fileScanner sniff.Scanner
 
 		fileHandle *os.File
+		readCloser io.ReadCloser
+		fileName   string
 		logger     lager.Logger
 	)
 
@@ -31,20 +35,24 @@ line3`
 		var err error
 		fileHandle, err = ioutil.TempFile("", "file-scanner-test-temp")
 		Expect(err).NotTo(HaveOccurred())
+		fileName = fileHandle.Name()
 
 		err = ioutil.WriteFile(fileHandle.Name(), []byte(fileContent), 0644)
 		Expect(err).NotTo(HaveOccurred())
+		readCloser = fileHandle
 	})
 
 	AfterEach(func() {
 		err := fileHandle.Close()
 		Expect(err).NotTo(HaveOccurred())
 
-		os.RemoveAll(fileHandle.Name())
+		if fileName != "" {
+			os.RemoveAll(fileName)
+		}
 	})
 
 	JustBeforeEach(func() {
-		fileScanner = filescanner.New(fileHandle, fileHandle.Name())
+		fileScanner = filescanner.New(readCloser, fileName)
 	})
 
 	It("returns true when the scan results in a line", func() {
@@ -70,4 +78,28 @@ line3`
 		line := fileScanner.Line(logger)
 		Expect(line.LineNumber).To(Equal(3))
 	})
+
+	Context("when the file reader errors", func() {
+		BeforeEach(func() {
+			readCloser = &ErrReader{Err: errors.New("my awesome error")}
+			fileName = ""
+		})
+
+		It("returns any error encountered while scanning", func() {
+			Expect(fileScanner.Scan(logger)).To(BeFalse())
+			Expect(fileScanner.Err()).To(HaveOccurred())
+		})
+	})
 })
+
+type ErrReader struct {
+	Err error
+}
+
+func (r *ErrReader) Close() error {
+	return nil
+}
+
+func (r *ErrReader) Read(b []byte) (int, error) {
+	return 0, r.Err
+}

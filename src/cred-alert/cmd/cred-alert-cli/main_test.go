@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"archive/zip"
+	"cred-alert/scanners/diffscanner"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -166,6 +167,23 @@ index 940393e..fa5a232 100644
 
 				ItShowsTheCredentialInTheOutput("AKIAJDHEYSPVNSHFKSMS")
 				ItTellsPeopleHowToRemoveTheirCredentials()
+			})
+
+			Context("when parsing a large diff", func() {
+				BeforeEach(func() {
+					cmdArgs = []string{"--diff"}
+					buf := make([]byte, diffscanner.MaxLineSize*3)
+					for i := range buf {
+						buf[i] = 'A'
+					}
+					stdin = offendingDiff + "\n" + "+" + string(buf) + "\n"
+				})
+
+				It("fails with error when a line is too long", func() {
+					Eventually(session.Out).Should(gbytes.Say("FAILED.*scanning failed"))
+					Eventually(session.Exited).Should(BeClosed())
+					Expect(session.ExitCode).ToNot(Equal(0))
+				})
 			})
 
 			Context("when no credentials are found", func() {

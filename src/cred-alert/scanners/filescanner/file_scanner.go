@@ -13,6 +13,7 @@ type fileScanner struct {
 	reader      *bufio.Reader
 	lineNumber  int
 	currentLine []byte
+	err         error
 }
 
 func New(r io.Reader, filename string) *fileScanner {
@@ -29,6 +30,7 @@ func (s *fileScanner) Scan(logger lager.Logger) bool {
 	line, err := s.reader.ReadBytes('\n')
 	if err != nil && err != io.EOF {
 		logger.Error("bufio-error", err)
+		s.err = err
 		return false
 	}
 
@@ -57,4 +59,8 @@ func (s *fileScanner) Line(logger lager.Logger) *scanners.Line {
 		LineNumber: lineNumber,
 		Path:       path,
 	}
+}
+
+func (s *fileScanner) Err() error {
+	return s.err
 }

@@ -103,6 +103,29 @@ index 468bc36..4c112c7 100644
 				Expect(scanner.Scan(logger)).To(BeTrue())
 				Expect(scanner.Scan(logger)).To(BeTrue())
 				Expect(scanner.Scan(logger)).To(BeFalse())
+				Expect(scanner.Err()).NotTo(HaveOccurred())
+			})
+
+			Context("when the file is too long", func() {
+				BeforeEach(func() {
+					diffPart1 := `diff --git a/some-file.txt b/some-file.txt
+index dbb2891..c2bce43 100644
+--- a/some-file.txt
++++ b/some-file.txt
+@@ -1,2 +1 @@
++something`
+					diffPart2 := "+second line of content"
+					buf := make([]byte, diffscanner.MaxLineSize*3)
+					for i := range buf {
+						buf[i] = 'A'
+					}
+					diff = diffPart1 + "\n" + string(buf) + diffPart2
+				})
+				It("Err function returns 'token too long' error", func() {
+					Expect(scanner.Scan(logger)).To(BeTrue())
+					Expect(scanner.Scan(logger)).To(BeFalse())
+					Expect(scanner.Err()).To(HaveOccurred())
+				})
 			})
 		})
 
@@ -119,6 +142,7 @@ index dbb2891..c2bce43 100644
 
 			It("returns false", func() {
 				Expect(scanner.Scan(logger)).To(BeFalse())
+				Expect(scanner.Err()).NotTo(HaveOccurred())
 			})
 		})
 	})
@@ -150,6 +174,7 @@ index dbb2891..c2bce43 100644
 				Expect(line.Path).To(Equal("some-file.txt"))
 				Expect(line.Content).To(Equal([]byte("second changed line")))
 				Expect(line.LineNumber).To(Equal(49))
+				Expect(scanner.Err()).NotTo(HaveOccurred())
 			})
 
 			Context("when an added/changed line looks like a file header", func() {
@@ -170,6 +195,7 @@ index dbb2891..5751378 100644
 					Expect(line.Path).To(Equal("some-file.txt"))
 					Expect(line.Content).To(Equal([]byte("++new line")))
 					Expect(line.LineNumber).To(Equal(3))
+					Expect(scanner.Err()).NotTo(HaveOccurred())
 				})
 			})
 		})
@@ -188,6 +214,7 @@ index dbb2891..5751378 100644
 				Expect(scanner.Line(logger).Path).To(Equal("some-other-file.txt"))
 				Expect(scanner.Scan(logger)).To(BeTrue())
 				Expect(scanner.Line(logger).Path).To(Equal("some-other-file.txt"))
+				Expect(scanner.Err()).NotTo(HaveOccurred())
 			})
 		})
 	})

@@ -3,6 +3,7 @@ package sniff
 import (
 	"cred-alert/scanners"
 	"cred-alert/sniff/matchers"
+	"fmt"
 	"regexp"
 
 	"code.cloudfoundry.org/lager"
@@ -27,6 +28,7 @@ const privateKeyHeaderPattern = `-----BEGIN(.*)PRIVATE KEY-----`
 type Scanner interface {
 	Scan(lager.Logger) bool
 	Line(lager.Logger) *scanners.Line
+	Err() error
 }
 
 //go:generate counterfeiter . Sniffer
@@ -106,6 +108,10 @@ func (s *sniffer) Sniff(
 				result = multierror.Append(result, err)
 			}
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("\033[31m[FAILED]\033[0m scanning failed: %s\n", err)
+		result = multierror.Append(result, err)
 	}
 
 	logger.Debug("done")

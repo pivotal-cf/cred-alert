@@ -10,6 +10,8 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+const MaxLineSize = 1024 * 1024
+
 var fileHeaderRegexp = regexp.MustCompile(`^\+\+\+\s(?:\w\/(.*)|/dev/null)$`)
 var hunkHeaderRegexp = regexp.MustCompile(`^@@.*\+(\d+),?\d*\s@@`)
 var addedOrExistingLineRegexp = regexp.MustCompile(`^([\s\+])(.*)`)
@@ -22,9 +24,12 @@ type DiffScanner struct {
 }
 
 func NewDiffScanner(diff io.Reader) *DiffScanner {
-	return &DiffScanner{
+	buf := make([]byte, 0, 4096)
+	s := &DiffScanner{
 		scanner: bufio.NewScanner(diff),
 	}
+	s.scanner.Buffer(buf, MaxLineSize)
+	return s
 }
 
 func (d *DiffScanner) Scan(logger lager.Logger) bool {
@@ -71,4 +76,8 @@ func (d *DiffScanner) Line(lager.Logger) *scanners.Line {
 		LineNumber: d.currentLineNumber,
 		Path:       d.currentPath,
 	}
+}
+
+func (d *DiffScanner) Err() error {
+	return d.scanner.Err()
 }

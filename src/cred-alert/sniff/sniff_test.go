@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	multierror "github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -62,6 +63,23 @@ var _ = Describe("Sniffer", func() {
 			})
 			Eventually(scanner.ScanCallCount()).Should(Equal(4))
 			Consistently(exclusionMatcher.MatchCallCount()).Should(Equal(3))
+		})
+
+		Context("when error occurred during scanning", func() {
+			BeforeEach(func() {
+				scanner.ErrReturns(errors.New("my awesome error"))
+			})
+
+			It("returns the scan error", func() {
+
+				err := sniffer.Sniff(logger, scanner, func(lager.Logger, scanners.Violation) error {
+					return nil
+				})
+				Eventually(scanner.ScanCallCount()).Should(Equal(4))
+				Consistently(exclusionMatcher.MatchCallCount()).Should(Equal(3))
+				expErr := multierror.Append(nil, errors.New("my awesome error"))
+				Expect(err).To(MatchError(expErr))
+			})
 		})
 
 		Context("when changes are in a directory named `vendor`", func() {
