@@ -1,6 +1,7 @@
 ---
 processes:
   - name: rolodex
+    ephemeral_disk: true
     executable: /var/vcap/packages/rolodex/bin/rolodexd
     args:
       - --config-file=/var/vcap/jobs/rolodex/config/config.yml
