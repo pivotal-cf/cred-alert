@@ -1,6 +1,6 @@
 ---
 processes:
-  ingestor:
-    executable: /var/vcap/packages/cred-alert/bin/revok-ingestor
-    args:
-      - --config-file=/var/vcap/jobs/ingestor/config/config.yml
+  name: ingestor:
+  executable: /var/vcap/packages/cred-alert/bin/revok-ingestor
+  args:
+    - --config-file=/var/vcap/jobs/ingestor/config/config.yml
