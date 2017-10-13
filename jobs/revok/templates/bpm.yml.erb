@@ -6,5 +6,7 @@ processes:
       - --config-file=/var/vcap/jobs/revok/config/config.yml
     limits:
       open_files: 65536
+    persistent_disk: true
     additional_volumes:
-      - <%= p("revok.work_dir") %>
+      - path: <%= p("revok.work_dir") %>
+        writable: true
