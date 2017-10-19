@@ -121,6 +121,7 @@ files:
   - google.golang.org/genproto/protobuf/field_mask/*.{go,c} # gosub
   - google.golang.org/grpc/*.{go,c} # gosub
   - google.golang.org/grpc/balancer/*.{go,c} # gosub
+  - google.golang.org/grpc/balancer/roundrobin/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/connectivity/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
@@ -133,6 +134,7 @@ files:
   - google.golang.org/grpc/naming/*.{go,c} # gosub
   - google.golang.org/grpc/peer/*.{go,c} # gosub
   - google.golang.org/grpc/resolver/*.{go,c} # gosub
+  - google.golang.org/grpc/resolver/dns/*.{go,c} # gosub
   - google.golang.org/grpc/stats/*.{go,c} # gosub
   - google.golang.org/grpc/status/*.{go,c} # gosub
   - google.golang.org/grpc/tap/*.{go,c} # gosub
