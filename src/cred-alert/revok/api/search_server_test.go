@@ -236,6 +236,7 @@ var _ = Describe("SearchServer", func() {
 				stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
 					Regex: "",
 				})
+				Expect(err).NotTo(HaveOccurred())
 
 				_, err = stream.Recv()
 				Expect(err).To(MatchError(ContainSubstring("query regular expression may not be empty")))
@@ -256,6 +257,7 @@ var _ = Describe("SearchServer", func() {
 				stream, err := revokClient.Search(context.Background(), &revokpb.SearchQuery{
 					Regex: "((",
 				})
+				Expect(err).NotTo(HaveOccurred())
 
 				_, err = stream.Recv()
 				Expect(err).To(MatchError(ContainSubstring("query regular expression is invalid: '(('")))
