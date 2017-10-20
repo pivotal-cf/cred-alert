@@ -176,7 +176,6 @@ func main() {
 		grpc.WithDialer(keepAliveDial),
 		grpc.WithTransportCredentials(transportCreds),
 		grpc.WithUnaryInterceptor(traceClient.GRPCClientInterceptor()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		log.Fatalf("failed to connect to rolodex: %s", err)
