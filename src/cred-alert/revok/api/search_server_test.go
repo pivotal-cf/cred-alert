@@ -105,7 +105,11 @@ var _ = Describe("SearchServer", func() {
 
 			go grpcServer.Serve(listener)
 
-			connection, err = grpc.Dial(listener.Addr().String(), grpc.WithInsecure())
+			connection, err = grpc.Dial(
+				listener.Addr().String(),
+				grpc.WithInsecure(),
+				grpc.WithBlock(),
+			)
 			Expect(err).NotTo(HaveOccurred())
 
 			revokClient = revokpb.NewRevokSearchClient(connection)

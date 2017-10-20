@@ -145,6 +145,7 @@ func main() {
 		serverAddr,
 		grpc.WithTransportCredentials(transportCreds),
 		grpc.WithDialer(keepAliveDial),
+		grpc.WithBlock(),
 	)
 	if err != nil {
 		log.Fatalf("failed to create handler: %s", err.Error())

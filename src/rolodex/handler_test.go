@@ -59,6 +59,7 @@ var _ = Describe("Handler", func() {
 		clientConn, err = grpc.Dial(
 			addr,
 			grpc.WithInsecure(),
+			grpc.WithBlock(),
 		)
 		Expect(err).NotTo(HaveOccurred())
 
