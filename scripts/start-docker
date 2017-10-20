@@ -11,5 +11,6 @@ sudo docker pull pivotalcf/cred-alert-ci:latest
 sudo docker run \
   -v  ${scripts_path}/..:/cred-alert \
   -e "GOPATH=/cred-alert" \
+  -w /cred-alert \
   -it pivotalcf/cred-alert-ci:latest \
-  /bin/bash -c 'export PATH=$PATH:$GOPATH/bin; /bin/bash'
+  /bin/bash -c 'export PATH=$PATH:$GOPATH/bin && service mysql start && /bin/bash'
