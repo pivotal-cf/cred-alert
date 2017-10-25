@@ -3,9 +3,9 @@ git/git-2.10.1.tar.gz:
   object_id: 55d1a453-2c54-4b96-80dd-1674575711b7
   sha: 8da73bdfc3d351ba8806ea85d8e29df18b47252d
 golang/golang-linux-amd64.tar.gz:
-  size: 104197862
-  object_id: 9bbf4218-50e6-49f9-44ca-29204970a7b5
-  sha: 8ab67607ac917684560e699b76b3121f5799e24e
+  size: 104247844
+  object_id: bcc6e296-f241-4286-6afd-c7d570501285
+  sha: 94c889e039e3d2e94ed95e8f8cb747c5bc1c2b58
 libgit2/libgit2.tar.gz:
   size: 4180212
   object_id: 0ba34c38-f749-439d-5bcf-532a9e9efde6
