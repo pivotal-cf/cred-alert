@@ -30,13 +30,19 @@ type ScanCommand struct {
 	ShowCredentials bool   `long:"show-suspected-credentials" description:"allow credentials to be shown in output"`
 	Regexp          string `long:"regexp" description:"override default regexp matcher" value-name:"REGEXP"`
 	RegexpFile      string `long:"regexp-file" description:"path to regexp file" value-name:"PATH"`
+	Debug           bool   `long:"debug" description:"enables debug logging"`
 }
 
 func (command *ScanCommand) Execute(args []string) error {
 	warnIfOldExecutable()
 
 	logger := lager.NewLogger("scan")
-	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
+
+	if command.Debug {
+		logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	} else {
+		logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
+	}
 
 	if command.Regexp != "" && command.RegexpFile != "" {
 		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Two options specified for Regexp, only using: --regexp", command.Regexp)
@@ -74,6 +80,10 @@ func (command *ScanCommand) Execute(args []string) error {
 }
 
 func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handleFunc sniff.ViolationHandlerFunc, cleaner *cleanup) error {
+	logger = logger.Session("scan-file", lager.Data{"file": c.File})
+	logger.Debug("starting")
+	defer logger.Debug("starting")
+
 	fi, err := os.Stat(c.File)
 	if err != nil {
 		return err
@@ -90,7 +100,12 @@ func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handl
 		}
 	}()
 
-	quietLogger := credlog.NewNullLogger()
+	var quietLogger lager.Logger
+	quietLogger = credlog.NewNullLogger()
+	if c.Debug {
+		quietLogger = logger
+	}
+
 	scanner := dirscanner.New(sniffer, handleFunc, inflateDir)
 	if fi.IsDir() {
 		return scanner.Scan(quietLogger, c.File)
@@ -264,6 +279,8 @@ func (c *credentialCounter) HandleViolation(logger lager.Logger, violation scann
 		output = output + fmt.Sprintf(" [%s]", violation.Credential())
 	}
 	fmt.Println(output)
+
+	logger.Debug("violation-found", lager.Data{"violation": violation, "count": c.count})
 
 	return nil
 }

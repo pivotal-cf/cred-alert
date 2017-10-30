@@ -49,8 +49,8 @@ func (s *fileScanner) Line(logger lager.Logger) *scanners.Line {
 	path := s.path
 
 	logger = logger.Session("line", lager.Data{
-		"liner-number": lineNumber,
-		"path":         path,
+		"line-number": lineNumber,
+		"path":        path,
 	})
 	logger.Debug("starting")
 	logger.Debug("done")
