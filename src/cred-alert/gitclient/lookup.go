@@ -1,6 +1,6 @@
 package gitclient
 
-import "gopkg.in/libgit2/git2go.v24"
+import "gopkg.in/libgit2/git2go.v26"
 
 //go:generate counterfeiter . FileLookup
 

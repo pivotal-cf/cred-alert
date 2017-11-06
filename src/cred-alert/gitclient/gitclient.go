@@ -17,7 +17,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
-	"gopkg.in/libgit2/git2go.v24"
+	"gopkg.in/libgit2/git2go.v26"
 )
 
 const nullGitObjectID = "0000000000000000000000000000000000000000"
