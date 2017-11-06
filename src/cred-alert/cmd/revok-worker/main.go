@@ -263,6 +263,9 @@ func main() {
 		changeScheduler,
 	)
 
+	// TODO (CEV): Make configurable
+	const defaultMaxAge = time.Hour * 24
+
 	dirscanUpdater := revok.NewRescanner(
 		logger,
 		scanRepository,
@@ -270,6 +273,7 @@ func main() {
 		scanner,
 		router,
 		emitter,
+		defaultMaxAge,
 	)
 
 	statsReporter := stats.NewReporter(

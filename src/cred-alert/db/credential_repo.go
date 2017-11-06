@@ -1,6 +1,10 @@
 package db
 
-import "github.com/jinzhu/gorm"
+import (
+	"time"
+
+	"github.com/jinzhu/gorm"
+)
 
 //go:generate counterfeiter . CredentialRepository
 
@@ -19,16 +23,18 @@ func NewCredentialRepository(db *gorm.DB) CredentialRepository {
 
 func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 	rows, err := r.db.DB().Query(`
-    SELECT c.owner,
-           c.repository,
-           c.sha,
-           c.path,
-           c.line_number,
-           c.match_start,
-           c.match_end,
-           c.private
-    FROM credentials c
-    WHERE c.scan_id = ?`, scanID)
+	   SELECT c.owner,
+	          c.repository,
+	          c.sha,
+	          c.path,
+	          c.line_number,
+	          c.match_start,
+	          c.match_end,
+	          c.private,
+	          c.created_at,
+	          c.updated_at
+	   FROM credentials c
+	   WHERE c.scan_id = ?`, scanID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +51,8 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 		matchStart int
 		matchEnd   int
 		private    bool
+		createdAt  time.Time
+		updatedAt  time.Time
 	)
 
 	for rows.Next() {
@@ -57,6 +65,8 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 			&matchStart,
 			&matchEnd,
 			&private,
+			&createdAt,
+			&updatedAt,
 		)
 		if scanErr != nil {
 			return nil, scanErr
@@ -71,6 +81,10 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 			MatchStart: matchStart,
 			MatchEnd:   matchEnd,
 			Private:    private,
+			Model: Model{
+				CreatedAt: createdAt,
+				UpdatedAt: updatedAt,
+			},
 		})
 	}
 

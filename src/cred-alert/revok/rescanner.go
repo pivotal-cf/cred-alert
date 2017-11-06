@@ -2,6 +2,7 @@ package revok
 
 import (
 	"os"
+	"time"
 
 	"code.cloudfoundry.org/lager"
 
@@ -26,6 +27,7 @@ type Rescanner struct {
 	router         notifications.Router
 	successCounter metrics.Counter
 	failedCounter  metrics.Counter
+	maxAge         time.Duration
 }
 
 func NewRescanner(
@@ -35,6 +37,7 @@ func NewRescanner(
 	scanner RescannerScanner,
 	router notifications.Router,
 	emitter metrics.Emitter,
+	maxAge time.Duration,
 ) *Rescanner {
 	return &Rescanner{
 		logger:         logger,
@@ -44,6 +47,7 @@ func NewRescanner(
 		router:         router,
 		successCounter: emitter.Counter("revok.rescanner.success"),
 		failedCounter:  emitter.Counter("revok.rescanner.failed"),
+		maxAge:         maxAge,
 	}
 }
 
@@ -93,8 +97,13 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		return err
 	}
 
-	credMap := map[string]db.Credential{}
+	var latestCred time.Time
+
+	credMap := make(map[string]db.Credential, len(oldCredentials))
 	for _, cred := range oldCredentials {
+		if cred.CreatedAt.After(latestCred) {
+			latestCred = cred.CreatedAt
+		}
 		credMap[cred.Hash()] = cred
 	}
 
@@ -125,6 +134,11 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 				Private:    cred.Private,
 			})
 		}
+	}
+
+	// De-dupe an old scan using looser match criteria
+	if r.maxAge > 0 && time.Since(latestCred) >= r.maxAge {
+		// do filtering things
 	}
 
 	if len(batch) > 0 {
