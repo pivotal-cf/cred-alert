@@ -12,7 +12,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/libgit2/git2go.v26"
+	"gopkg.in/libgit2/git2go.v24"
 
 	"testing"
 )
