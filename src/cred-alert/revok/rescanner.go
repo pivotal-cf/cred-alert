@@ -122,6 +122,11 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 
 	r.successCounter.Inc(logger)
 
+	// CEV: De-dupe based on Hash(), I'm not sure how
+	// effective/ineffective this is (I'm assuming it
+	// must be missing some stuff since since we're
+	// working on a story to reduce dupes).
+	//
 	var batch []notifications.Notification
 	for _, cred := range newCredentials {
 		if _, ok := credMap[cred.Hash()]; !ok {
@@ -136,7 +141,11 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		}
 	}
 
-	// De-dupe an old scan using looser match criteria
+	// TODO (CEV): Filter based on cred created_at date, we don't
+	// want to remove creds that we haven't alerted for.
+	//
+	// This could probably be combined with the above filtering loop.
+	//
 	if r.maxAge > 0 && time.Since(latestCred) >= r.maxAge {
 		// do filtering things
 	}
