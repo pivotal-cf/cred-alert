@@ -2,7 +2,6 @@ package revok
 
 import (
 	"os"
-	"time"
 
 	"code.cloudfoundry.org/lager"
 
@@ -27,7 +26,6 @@ type Rescanner struct {
 	router         notifications.Router
 	successCounter metrics.Counter
 	failedCounter  metrics.Counter
-	maxAge         time.Duration
 }
 
 func NewRescanner(
@@ -37,7 +35,6 @@ func NewRescanner(
 	scanner RescannerScanner,
 	router notifications.Router,
 	emitter metrics.Emitter,
-	maxAge time.Duration,
 ) *Rescanner {
 	return &Rescanner{
 		logger:         logger,
@@ -47,7 +44,6 @@ func NewRescanner(
 		router:         router,
 		successCounter: emitter.Counter("revok.rescanner.success"),
 		failedCounter:  emitter.Counter("revok.rescanner.failed"),
-		maxAge:         maxAge,
 	}
 }
 

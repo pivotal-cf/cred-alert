@@ -2,7 +2,6 @@ package revok_test
 
 import (
 	"errors"
-	"time"
 
 	"cred-alert/db"
 	"cred-alert/db/dbfakes"
@@ -128,7 +127,6 @@ var _ = Describe("Rescanner", func() {
 			scanner,
 			router,
 			emitter,
-			time.Hour*24,
 		)
 		process = ginkgomon.Invoke(runner)
 	})

@@ -1,8 +1,6 @@
 package db
 
 import (
-	"time"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -32,8 +30,6 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 	          c.match_start,
 	          c.match_end,
 	          c.private,
-	          c.created_at,
-	          c.updated_at
 	   FROM credentials c
 	   WHERE c.scan_id = ?`, scanID)
 	if err != nil {
@@ -52,8 +48,6 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 		matchStart int
 		matchEnd   int
 		private    bool
-		createdAt  time.Time
-		updatedAt  time.Time
 	)
 
 	for rows.Next() {
@@ -66,8 +60,6 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 			&matchStart,
 			&matchEnd,
 			&private,
-			&createdAt,
-			&updatedAt,
 		)
 		if scanErr != nil {
 			return nil, scanErr
@@ -82,10 +74,6 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 			MatchStart: matchStart,
 			MatchEnd:   matchEnd,
 			Private:    private,
-			Model: Model{
-				CreatedAt: createdAt,
-				UpdatedAt: updatedAt,
-			},
 		})
 	}
 
