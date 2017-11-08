@@ -1,6 +1,7 @@
 package revok
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -122,22 +123,38 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 
 	r.successCounter.Inc(logger)
 
+	// Maybe: check against creds table using: owner, repo, sha, path, line, match start/end
+
+	// \
+	//
+
 	// CEV: De-dupe based on Hash(), I'm not sure how
 	// effective/ineffective this is (I'm assuming it
 	// must be missing some stuff since since we're
 	// working on a story to reduce dupes).
 	//
+	fmt.Printf("Old Map size is %#v\n", len(credMap))
+	fmt.Printf("New list size is %#v\n", len(newCredentials))
 	var batch []notifications.Notification
 	for _, cred := range newCredentials {
-		if _, ok := credMap[cred.Hash()]; !ok {
-			batch = append(batch, notifications.Notification{
-				Owner:      cred.Owner,
-				Repository: cred.Repository,
-				SHA:        cred.SHA,
-				Path:       cred.Path,
-				LineNumber: cred.LineNumber,
-				Private:    cred.Private,
-			})
+		credReported, err := r.credRepo.CredentialReported(&cred, sniff.RulesVersion)
+		if err != nil {
+			return err
+		}
+		if !credReported {
+			if _, ok := credMap[cred.Hash()]; !ok {
+				fmt.Printf("key is %s\n", cred.Hash())
+				batch = append(batch, notifications.Notification{
+					Owner:      cred.Owner,
+					Repository: cred.Repository,
+					SHA:        cred.SHA,
+					Path:       cred.Path,
+					LineNumber: cred.LineNumber,
+					Private:    cred.Private,
+				})
+			}
+		} else {
+			fmt.Printf("Not notifying for: %s\n\n", cred.Hash())
 		}
 	}
 

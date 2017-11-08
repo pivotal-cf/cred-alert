@@ -296,6 +296,72 @@ var _ = Describe("Rescanner", func() {
 		})
 	})
 
+	Context("when a credential is found that was previously found", func() {
+		var newCred db.Credential
+		BeforeEach(func() {
+			creds := []db.Credential{
+				{
+					Owner:      "some-owner",
+					Repository: "some-repo",
+					SHA:        "some-sha",
+					Path:       "some-path",
+					LineNumber: 1,
+					MatchStart: 2,
+					MatchEnd:   3,
+					Private:    true,
+				},
+				{
+					Owner:      "some-other-owner",
+					Repository: "some-other-repo",
+					SHA:        "some-other-sha",
+					Path:       "some-other-path",
+					LineNumber: 1,
+					MatchStart: 2,
+					MatchEnd:   3,
+					Private:    true,
+				},
+			}
+
+			credentialRepository.ForScanWithIDStub = func(int) ([]db.Credential, error) {
+				return creds, nil
+			}
+
+			newCred = db.Credential{
+				Owner:      "new-owner",
+				Repository: "new-repo",
+				SHA:        "new-sha",
+				Path:       "new-path",
+				LineNumber: 11,
+				MatchStart: 22,
+				MatchEnd:   33,
+				Private:    true,
+			}
+			scanner.ScanStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error) {
+				return append(creds, newCred), nil
+			}
+
+			credentialRepository.CredentialReportedStub = func(cred *db.Credential, ruleVersion int) (bool, error) {
+				return cred.Owner == newCred.Owner && cred.Repository == newCred.Repository, nil
+			}
+		})
+
+		FIt("does not send a notification for the new credentials", func() {
+			Consistently(router.DeliverCallCount).Should(Equal(1))
+
+			_, _, batch := router.DeliverArgsForCall(0)
+			Expect(batch).To(Equal([]notifications.Notification{
+				{
+					Owner:      "new-owner",
+					Repository: "new-repo",
+					SHA:        "new-sha",
+					Path:       "new-path",
+					LineNumber: 11,
+					Private:    true,
+				},
+			}))
+		})
+	})
+
 	Context("when no new credentials are found", func() {
 		BeforeEach(func() {
 			scanner.ScanStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error) {
