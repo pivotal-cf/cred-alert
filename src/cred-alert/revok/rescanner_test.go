@@ -63,6 +63,11 @@ var _ = Describe("Rescanner", func() {
 		}, nil)
 
 		credentialRepository = &dbfakes.FakeCredentialRepository{}
+
+		credentialRepository.CredentialReportedStub = func(_ *db.Credential) (bool, error) {
+			return false, nil
+		}
+
 		credentialRepository.ForScanWithIDStub = func(int) ([]db.Credential, error) {
 			if credentialRepository.ForScanWithIDCallCount() == 1 {
 				return []db.Credential{
@@ -299,6 +304,17 @@ var _ = Describe("Rescanner", func() {
 	Context("when a credential is found that was previously found", func() {
 		var newCred db.Credential
 		BeforeEach(func() {
+			scanRepository.ScansNotYetRunWithVersionReturns([]db.PriorScan{
+				{
+					ID:         1,
+					Branch:     "some-branch",
+					StartSHA:   "some-start-sha",
+					StopSHA:    "",
+					Repository: "some-repository",
+					Owner:      "some-owner",
+				},
+			}, nil)
+
 			creds := []db.Credential{
 				{
 					Owner:      "some-owner",
@@ -340,13 +356,13 @@ var _ = Describe("Rescanner", func() {
 				return append(creds, newCred), nil
 			}
 
-			credentialRepository.CredentialReportedStub = func(cred *db.Credential, ruleVersion int) (bool, error) {
-				return cred.Owner == newCred.Owner && cred.Repository == newCred.Repository, nil
+			credentialRepository.CredentialReportedStub = func(cred *db.Credential) (bool, error) {
+				return cred.Owner != newCred.Owner && cred.Repository != newCred.Repository, nil
 			}
 		})
 
-		FIt("does not send a notification for the new credentials", func() {
-			Consistently(router.DeliverCallCount).Should(Equal(1))
+		It("does not send a notification for the new credentials", func() {
+			Eventually(router.DeliverCallCount).Should(Equal(1))
 
 			_, _, batch := router.DeliverArgsForCall(0)
 			Expect(batch).To(Equal([]notifications.Notification{

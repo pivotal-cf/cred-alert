@@ -3,6 +3,7 @@ package db_test
 import (
 	"cred-alert/db"
 	"database/sql"
+	"time"
 
 	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -25,6 +26,7 @@ var _ = Describe("CredentialRepo", func() {
 		gormDB, err = dbRunner.GormDB()
 		Expect(err).NotTo(HaveOccurred())
 		sqlDB = gormDB.DB()
+		clock = fakeclock.NewFakeClock(time.Now())
 
 		repo = db.NewCredentialRepository(gormDB)
 		scanRepo = db.NewScanRepository(gormDB, clock)
@@ -190,8 +192,9 @@ var _ = Describe("CredentialRepo", func() {
 
 			//insert credential
 			_, err = sqlDB.Exec(`
-				INSERT INTO credentials(owner, repository, sha, path, line_number, match_start, match_end)
+				INSERT INTO credentials(scan_id, owner, repository, sha, path, line_number, match_start, match_end)
 				VALUES (
+					?,
 					'some-owner',
 					'some-repo',
 					'some-sha',
@@ -199,14 +202,14 @@ var _ = Describe("CredentialRepo", func() {
 					1,
 					2,
 					3
-				)`)
+				)`, expectedScanID)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
-		FContext("when credential already reported", func() {
+		Context("when credential already reported", func() {
 			It("should return true", func() {
 				cred := db.Credential{
-					ScanID:     uint(expectedScanID),
+					ScanID:     uint(expectedScanID - 1),
 					Owner:      "some-owner",
 					Repository: "some-repo",
 					SHA:        "some-sha",
@@ -221,9 +224,10 @@ var _ = Describe("CredentialRepo", func() {
 				Expect(exists).To(BeTrue())
 			})
 		})
-		FContext("when credential not reported", func() {
+		Context("when credential not reported", func() {
 			It("should return false", func() {
 				cred := db.Credential{
+					ScanID:     uint(expectedScanID - 1),
 					Owner:      "other-owner",
 					Repository: "other-repository",
 					SHA:        "other-sha",

@@ -1,7 +1,6 @@
 package revok
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -98,13 +97,8 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		return err
 	}
 
-	var latestCred time.Time
-
 	credMap := make(map[string]db.Credential, len(oldCredentials))
 	for _, cred := range oldCredentials {
-		if cred.CreatedAt.After(latestCred) {
-			latestCred = cred.CreatedAt
-		}
 		credMap[cred.Hash()] = cred
 	}
 
@@ -123,48 +117,26 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 
 	r.successCounter.Inc(logger)
 
-	// Maybe: check against creds table using: owner, repo, sha, path, line, match start/end
-
-	// \
-	//
-
-	// CEV: De-dupe based on Hash(), I'm not sure how
-	// effective/ineffective this is (I'm assuming it
-	// must be missing some stuff since since we're
-	// working on a story to reduce dupes).
-	//
-	fmt.Printf("Old Map size is %#v\n", len(credMap))
-	fmt.Printf("New list size is %#v\n", len(newCredentials))
 	var batch []notifications.Notification
 	for _, cred := range newCredentials {
-		credReported, err := r.credRepo.CredentialReported(&cred, sniff.RulesVersion)
+		if _, ok := credMap[cred.Hash()]; ok {
+			continue
+		}
+		credReported, err := r.credRepo.CredentialReported(&cred)
 		if err != nil {
-			return err
+			return err // TODO: immediately return OR continue, but return first error
 		}
-		if !credReported {
-			if _, ok := credMap[cred.Hash()]; !ok {
-				fmt.Printf("key is %s\n", cred.Hash())
-				batch = append(batch, notifications.Notification{
-					Owner:      cred.Owner,
-					Repository: cred.Repository,
-					SHA:        cred.SHA,
-					Path:       cred.Path,
-					LineNumber: cred.LineNumber,
-					Private:    cred.Private,
-				})
-			}
-		} else {
-			fmt.Printf("Not notifying for: %s\n\n", cred.Hash())
-		}
-	}
 
-	// TODO (CEV): Filter based on cred created_at date, we don't
-	// want to remove creds that we haven't alerted for.
-	//
-	// This could probably be combined with the above filtering loop.
-	//
-	if r.maxAge > 0 && time.Since(latestCred) >= r.maxAge {
-		// do filtering things
+		if !credReported {
+			batch = append(batch, notifications.Notification{
+				Owner:      cred.Owner,
+				Repository: cred.Repository,
+				SHA:        cred.SHA,
+				Path:       cred.Path,
+				LineNumber: cred.LineNumber,
+				Private:    cred.Private,
+			})
+		}
 	}
 
 	if len(batch) > 0 {
