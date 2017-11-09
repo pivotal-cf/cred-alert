@@ -1,12 +1,15 @@
 package db
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+)
 
 //go:generate counterfeiter . CredentialRepository
 
 type CredentialRepository interface {
 	ForScanWithID(int) ([]Credential, error)
 	UniqueSHAsForRepoAndRulesVersion(Repository, int) ([]string, error)
+	CredentialReported(cred *Credential) (bool, error)
 }
 
 type credentialRepository struct {
@@ -19,16 +22,16 @@ func NewCredentialRepository(db *gorm.DB) CredentialRepository {
 
 func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 	rows, err := r.db.DB().Query(`
-    SELECT c.owner,
-           c.repository,
-           c.sha,
-           c.path,
-           c.line_number,
-           c.match_start,
-           c.match_end,
-           c.private
-    FROM credentials c
-    WHERE c.scan_id = ?`, scanID)
+	   SELECT c.owner,
+	          c.repository,
+	          c.sha,
+	          c.path,
+	          c.line_number,
+	          c.match_start,
+	          c.match_end,
+	          c.private,
+	   FROM credentials c
+	   WHERE c.scan_id = ?`, scanID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,4 +106,22 @@ func (r *credentialRepository) UniqueSHAsForRepoAndRulesVersion(repo Repository,
 	}
 
 	return shas, nil
+}
+
+func (r *credentialRepository) CredentialReported(cred *Credential) (bool, error) {
+	const query = `
+  SELECT EXISTS (SELECT *
+                 FROM  credentials
+                 WHERE  owner = ?
+                        AND repository = ?
+                        AND sha = ?
+                        AND path = ?
+                        AND line_number = ?
+                        AND match_start = ?
+                        AND match_end = ?
+											  AND scan_id <> ? );`
+	var exists bool
+	err := r.db.DB().QueryRow(query, cred.Owner, cred.Repository, cred.SHA, cred.Path,
+		cred.LineNumber, cred.MatchStart, cred.MatchEnd, cred.ScanID).Scan(&exists)
+	return exists, err
 }

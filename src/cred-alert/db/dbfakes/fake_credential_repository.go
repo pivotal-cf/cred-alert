@@ -34,6 +34,19 @@ type FakeCredentialRepository struct {
 		result1 []string
 		result2 error
 	}
+	CredentialReportedStub        func(cred *db.Credential) (bool, error)
+	credentialReportedMutex       sync.RWMutex
+	credentialReportedArgsForCall []struct {
+		cred *db.Credential
+	}
+	credentialReportedReturns struct {
+		result1 bool
+		result2 error
+	}
+	credentialReportedReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -141,6 +154,57 @@ func (fake *FakeCredentialRepository) UniqueSHAsForRepoAndRulesVersionReturnsOnC
 	}{result1, result2}
 }
 
+func (fake *FakeCredentialRepository) CredentialReported(cred *db.Credential) (bool, error) {
+	fake.credentialReportedMutex.Lock()
+	ret, specificReturn := fake.credentialReportedReturnsOnCall[len(fake.credentialReportedArgsForCall)]
+	fake.credentialReportedArgsForCall = append(fake.credentialReportedArgsForCall, struct {
+		cred *db.Credential
+	}{cred})
+	fake.recordInvocation("CredentialReported", []interface{}{cred})
+	fake.credentialReportedMutex.Unlock()
+	if fake.CredentialReportedStub != nil {
+		return fake.CredentialReportedStub(cred)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.credentialReportedReturns.result1, fake.credentialReportedReturns.result2
+}
+
+func (fake *FakeCredentialRepository) CredentialReportedCallCount() int {
+	fake.credentialReportedMutex.RLock()
+	defer fake.credentialReportedMutex.RUnlock()
+	return len(fake.credentialReportedArgsForCall)
+}
+
+func (fake *FakeCredentialRepository) CredentialReportedArgsForCall(i int) *db.Credential {
+	fake.credentialReportedMutex.RLock()
+	defer fake.credentialReportedMutex.RUnlock()
+	return fake.credentialReportedArgsForCall[i].cred
+}
+
+func (fake *FakeCredentialRepository) CredentialReportedReturns(result1 bool, result2 error) {
+	fake.CredentialReportedStub = nil
+	fake.credentialReportedReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCredentialRepository) CredentialReportedReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.CredentialReportedStub = nil
+	if fake.credentialReportedReturnsOnCall == nil {
+		fake.credentialReportedReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.credentialReportedReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCredentialRepository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -148,6 +212,8 @@ func (fake *FakeCredentialRepository) Invocations() map[string][][]interface{} {
 	defer fake.forScanWithIDMutex.RUnlock()
 	fake.uniqueSHAsForRepoAndRulesVersionMutex.RLock()
 	defer fake.uniqueSHAsForRepoAndRulesVersionMutex.RUnlock()
+	fake.credentialReportedMutex.RLock()
+	defer fake.credentialReportedMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

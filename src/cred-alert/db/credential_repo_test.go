@@ -3,7 +3,10 @@ package db_test
 import (
 	"cred-alert/db"
 	"database/sql"
+	"time"
 
+	"code.cloudfoundry.org/clock/fakeclock"
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/jinzhu/gorm"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,9 +14,11 @@ import (
 
 var _ = Describe("CredentialRepo", func() {
 	var (
-		repo   db.CredentialRepository
-		gormDB *gorm.DB
-		sqlDB  *sql.DB
+		clock    *fakeclock.FakeClock
+		repo     db.CredentialRepository
+		scanRepo db.ScanRepository
+		gormDB   *gorm.DB
+		sqlDB    *sql.DB
 	)
 
 	BeforeEach(func() {
@@ -21,8 +26,10 @@ var _ = Describe("CredentialRepo", func() {
 		gormDB, err = dbRunner.GormDB()
 		Expect(err).NotTo(HaveOccurred())
 		sqlDB = gormDB.DB()
+		clock = fakeclock.NewFakeClock(time.Now())
 
 		repo = db.NewCredentialRepository(gormDB)
+		scanRepo = db.NewScanRepository(gormDB, clock)
 	})
 
 	Describe("UniqueSHAsForRepoAndRulesVersion", func() {
@@ -152,6 +159,92 @@ var _ = Describe("CredentialRepo", func() {
 			shas, err := repo.UniqueSHAsForRepoAndRulesVersion(dbRepository, 4)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(shas).To(Equal([]string{"matching-sha", "another-matching-sha"}))
+		})
+	})
+	Describe("CredentialReported", func() {
+		var existingScanID int
+		var repositoryID uint
+		BeforeEach(func() {
+			//Insert repository
+			_, err := gormDB.DB().Exec(`
+					INSERT INTO repositories (name, owner)
+					VALUES (
+						'some-repo',
+						'some-owner'
+					)
+				`)
+			Expect(err).NotTo(HaveOccurred())
+			err = gormDB.DB().QueryRow(`SELECT id FROM repositories ORDER BY id DESC LIMIT 1`).Scan(&repositoryID)
+			Expect(err).NotTo(HaveOccurred())
+
+			repository := &db.Repository{
+				Model: db.Model{
+					ID: repositoryID,
+				},
+			}
+
+			//Insert scan
+			logger := lagertest.NewTestLogger("commit-repository")
+			err = scanRepo.Start(logger, "scan-type", "branch", "some-start-sha", "some-stop-sha", repository).Finish()
+			Expect(err).NotTo(HaveOccurred())
+			err = gormDB.DB().QueryRow(`SELECT id FROM scans ORDER BY id DESC LIMIT 1`).Scan(&existingScanID)
+			Expect(err).NotTo(HaveOccurred())
+
+			//insert credential
+			_, err = sqlDB.Exec(`
+				INSERT INTO credentials(scan_id, owner, repository, sha, path, line_number, match_start, match_end)
+				VALUES (
+					?,
+					'some-owner',
+					'some-repo',
+					'some-sha',
+					'some-path',
+					1,
+					2,
+					3
+				)`, existingScanID)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+		Context("when credential already reported", func() {
+			It("should return true", func() {
+				cred := db.Credential{
+					//Need a different scan id to indicate this
+					// is a subsequent scan
+					ScanID:     uint(existingScanID + 1),
+					Owner:      "some-owner",
+					Repository: "some-repo",
+					SHA:        "some-sha",
+					Path:       "some-path",
+					LineNumber: 1,
+					MatchStart: 2,
+					MatchEnd:   3,
+				}
+				exists, err := repo.CredentialReported(&cred)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).To(BeTrue())
+			})
+		})
+		Context("when credential not reported", func() {
+			It("should return false", func() {
+				cred := db.Credential{
+					//Need a different scan id to indicate this
+					// is a subsequent scan
+					ScanID:     uint(existingScanID + 1),
+					Owner:      "other-owner",
+					Repository: "other-repository",
+					SHA:        "other-sha",
+					Path:       "other-path",
+					LineNumber: 11,
+					MatchStart: 22,
+					MatchEnd:   33,
+				}
+				exists, err := repo.CredentialReported(&cred)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).To(BeFalse())
+			})
 		})
 	})
 })

@@ -93,7 +93,7 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		return err
 	}
 
-	credMap := map[string]db.Credential{}
+	credMap := make(map[string]db.Credential, len(oldCredentials))
 	for _, cred := range oldCredentials {
 		credMap[cred.Hash()] = cred
 	}
@@ -113,9 +113,22 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 
 	r.successCounter.Inc(logger)
 
+	var first error
 	var batch []notifications.Notification
 	for _, cred := range newCredentials {
-		if _, ok := credMap[cred.Hash()]; !ok {
+		if _, ok := credMap[cred.Hash()]; ok {
+			continue
+		}
+		credReported, err := r.credRepo.CredentialReported(&cred)
+
+		if err != nil {
+			if first == nil {
+				first = err
+			}
+			logger.Error("failed-checking-for-existing-credential", err)
+		}
+
+		if !credReported {
 			batch = append(batch, notifications.Notification{
 				Owner:      cred.Owner,
 				Repository: cred.Repository,
@@ -134,5 +147,5 @@ func (r *Rescanner) work(logger lager.Logger, priorScan db.PriorScan) error {
 		}
 	}
 
-	return nil
+	return first
 }

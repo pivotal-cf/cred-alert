@@ -62,6 +62,11 @@ var _ = Describe("Rescanner", func() {
 		}, nil)
 
 		credentialRepository = &dbfakes.FakeCredentialRepository{}
+
+		credentialRepository.CredentialReportedStub = func(_ *db.Credential) (bool, error) {
+			return false, nil
+		}
+
 		credentialRepository.ForScanWithIDStub = func(int) ([]db.Credential, error) {
 			if credentialRepository.ForScanWithIDCallCount() == 1 {
 				return []db.Credential{
@@ -288,6 +293,83 @@ var _ = Describe("Rescanner", func() {
 					SHA:        "some-sha",
 					Path:       "some-other-path",
 					LineNumber: 2,
+					Private:    true,
+				},
+			}))
+		})
+	})
+
+	Context("when an existing credential is scanned again", func() {
+		var newCred db.Credential
+		BeforeEach(func() {
+			scanRepository.ScansNotYetRunWithVersionReturns([]db.PriorScan{
+				{
+					ID:         1,
+					Branch:     "some-branch",
+					StartSHA:   "some-start-sha",
+					StopSHA:    "",
+					Repository: "some-repository",
+					Owner:      "some-owner",
+				},
+			}, nil)
+
+			creds := []db.Credential{
+				{
+					Owner:      "some-owner",
+					Repository: "some-repo",
+					SHA:        "some-sha",
+					Path:       "some-path",
+					LineNumber: 1,
+					MatchStart: 2,
+					MatchEnd:   3,
+					Private:    true,
+				},
+				{
+					Owner:      "some-other-owner",
+					Repository: "some-other-repo",
+					SHA:        "some-other-sha",
+					Path:       "some-other-path",
+					LineNumber: 1,
+					MatchStart: 2,
+					MatchEnd:   3,
+					Private:    true,
+				},
+			}
+
+			credentialRepository.ForScanWithIDStub = func(int) ([]db.Credential, error) {
+				return creds, nil
+			}
+
+			newCred = db.Credential{
+				Owner:      "new-owner",
+				Repository: "new-repo",
+				SHA:        "new-sha",
+				Path:       "new-path",
+				LineNumber: 11,
+				MatchStart: 22,
+				MatchEnd:   33,
+				Private:    true,
+			}
+			scanner.ScanStub = func(lager.Logger, string, string, map[string]struct{}, string, string, string) ([]db.Credential, error) {
+				return append(creds, newCred), nil
+			}
+
+			credentialRepository.CredentialReportedStub = func(cred *db.Credential) (bool, error) {
+				return cred.Owner != newCred.Owner && cred.Repository != newCred.Repository, nil
+			}
+		})
+
+		It("does not send a notification for the new credentials", func() {
+			Eventually(router.DeliverCallCount).Should(Equal(1))
+
+			_, _, batch := router.DeliverArgsForCall(0)
+			Expect(batch).To(Equal([]notifications.Notification{
+				{
+					Owner:      "new-owner",
+					Repository: "new-repo",
+					SHA:        "new-sha",
+					Path:       "new-path",
+					LineNumber: 11,
 					Private:    true,
 				},
 			}))
