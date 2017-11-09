@@ -75,6 +75,7 @@ files:
   - github.com/pivotal-cf/paraphernalia/secure/tlsconfig/*.{go,c} # gosub
   - github.com/pivotal-cf/paraphernalia/serve/grpcrunner/*.{go,c} # gosub
   - github.com/pivotal-cf/paraphernalia/serve/requestid/*.{go,c} # gosub
+  - github.com/pkg/errors/*.{go,c} # gosub
   - github.com/robdimsdale/honeylager/*.{go,c} # gosub
   - github.com/robfig/cron/*.{go,c} # gosub
   - github.com/satori/go.uuid/*.{go,c} # gosub

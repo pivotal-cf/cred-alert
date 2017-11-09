@@ -201,3 +201,7 @@
 	path = src/github.com/facebookgo/limitgroup
 	url = https://github.com/facebookgo/limitgroup
 	branch = master
+[submodule "src/github.com/pkg/errors"]
+	path = src/github.com/pkg/errors
+	url = https://github.com/pkg/errors
+	branch = master
