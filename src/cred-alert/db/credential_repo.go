@@ -29,7 +29,7 @@ func (r *credentialRepository) ForScanWithID(scanID int) ([]Credential, error) {
 	          c.line_number,
 	          c.match_start,
 	          c.match_end,
-	          c.private,
+	          c.private
 	   FROM credentials c
 	   WHERE c.scan_id = ?`, scanID)
 	if err != nil {
