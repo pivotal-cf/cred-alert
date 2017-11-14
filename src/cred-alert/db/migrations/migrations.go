@@ -27,4 +27,5 @@ var Migrations = []migration.Migrator{
 	RemoveCredentialCountsAndRawJson,
 	AddIndexToRepositories,
 	RemoveFetchIDFromScan,
+	IndexCredentialsSha,
 }
