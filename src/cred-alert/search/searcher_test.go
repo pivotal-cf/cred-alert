@@ -157,7 +157,8 @@ var _ = Describe("Searcher", func() {
 					Eventually(results.C()).Should(BeClosed())
 					Expect(results.Err()).NotTo(HaveOccurred())
 
-					Expect(logger.LogMessages()).To(HaveLen(0))
+					Expect(logger.LogMessages()).To(HaveLen(2))
+					Expect(logger.LogMessages()).To(ContainElement("searcher.search-current.searching-repo"))
 				})
 			})
 		})
