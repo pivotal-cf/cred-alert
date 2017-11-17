@@ -63,6 +63,7 @@ func (s *searcher) SearchCurrent(ctx context.Context, logger lager.Logger, match
 				"owner": repo.Owner,
 				"repo":  repo.Name,
 			})
+			logger.Info("searching-repo")
 
 			select {
 			case <-ctx.Done():

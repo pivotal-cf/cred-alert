@@ -33,6 +33,7 @@ func NewSearchServer(
 
 func (s *SearchServer) BoshBlobs(ctx context.Context, request *revokpb.BoshBlobsRequest) (*revokpb.BoshBlobsResponse, error) {
 	logger := s.logger.Session("bosh-blobs-endpoint")
+	logger.Info("intiating-blob-search")
 
 	repository := request.GetRepository()
 	blobs, err := s.blobSearcher.ListBlobs(logger, repository.GetOwner(), repository.GetName())
@@ -54,7 +55,7 @@ func (s *SearchServer) BoshBlobs(ctx context.Context, request *revokpb.BoshBlobs
 
 func (s *SearchServer) Search(query *revokpb.SearchQuery, stream revokpb.RevokSearch_SearchServer) error {
 	logger := s.logger.Session("search-endpoint")
-	logger.Info("hit")
+	logger.Info("intiating-search")
 
 	regex := query.GetRegex()
 	if regex == "" {

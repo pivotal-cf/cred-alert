@@ -59,6 +59,7 @@ func main() {
 		RootCAs:      rootCertPool,
 	})
 
+	fmt.Println("Establishing connection...")
 	conn, err := grpc.Dial(
 		serverAddr,
 		grpc.WithTransportCredentials(transportCreds),
@@ -83,6 +84,7 @@ func main() {
 		}
 	}()
 
+	fmt.Println("Sending search query to server...")
 	stream, err := revokClient.Search(ctx, &revokpb.SearchQuery{
 		Regex: opts.Query,
 	})
