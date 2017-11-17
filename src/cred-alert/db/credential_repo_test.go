@@ -206,6 +206,7 @@ var _ = Describe("CredentialRepo", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 		})
+
 		Context("when credential already reported", func() {
 			It("should return true", func() {
 				cred := db.Credential{
@@ -225,7 +226,30 @@ var _ = Describe("CredentialRepo", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(exists).To(BeTrue())
 			})
+
+			Context("when it is the same credential with a different owner", func() {
+				It("should return true", func() {
+					cred := db.Credential{
+						//Need a different scan id to indicate this
+						// is a subsequent scan
+						ScanID:     uint(existingScanID + 1),
+						Owner:      "some-other-owner",
+						Repository: "some-repo",
+						SHA:        "some-sha",
+						Path:       "some-path",
+						LineNumber: 1,
+						MatchStart: 2,
+						MatchEnd:   3,
+					}
+					exists, err := repo.CredentialReported(&cred)
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(exists).To(BeTrue())
+				})
+
+			})
 		})
+
 		Context("when credential not reported", func() {
 			It("should return false", func() {
 				cred := db.Credential{

@@ -112,8 +112,7 @@ func (r *credentialRepository) CredentialReported(cred *Credential) (bool, error
 	const query = `
   SELECT EXISTS (SELECT *
                  FROM  credentials
-                 WHERE  owner = ?
-                        AND repository = ?
+                 WHERE  repository = ?
                         AND sha = ?
                         AND path = ?
                         AND line_number = ?
@@ -121,7 +120,7 @@ func (r *credentialRepository) CredentialReported(cred *Credential) (bool, error
                         AND match_end = ?
 											  AND scan_id <> ? );`
 	var exists bool
-	err := r.db.DB().QueryRow(query, cred.Owner, cred.Repository, cred.SHA, cred.Path,
+	err := r.db.DB().QueryRow(query, cred.Repository, cred.SHA, cred.Path,
 		cred.LineNumber, cred.MatchStart, cred.MatchEnd, cred.ScanID).Scan(&exists)
 	return exists, err
 }
