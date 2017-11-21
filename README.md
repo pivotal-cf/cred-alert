@@ -100,9 +100,9 @@ You can generate a pretty commit message by running `scripts/commit-with-log`.
 [cred-alert-osx]: https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_darwin
 [cred-alert-linux]: https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_linux
 
-## srcint cli
+# srcint cli
 
-srcint cli is used to query all the repos that cred-alert scans for a particular pattern. 
+The srcint cli is used to query all the repos that cred-alert scans for a particular pattern. 
 It can take a text or a regex as query
 
-For more information, read [this](https://github.com/pivotal-cf/sec-red-meta/blob/master/docs/srcint.md)
+More information available [here](https://github.com/pivotal-cf/sec-red-meta/blob/master/docs/srcint.md)
