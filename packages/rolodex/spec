@@ -106,6 +106,7 @@ files:
   - google.golang.org/grpc/peer/*.{go,c} # gosub
   - google.golang.org/grpc/resolver/*.{go,c} # gosub
   - google.golang.org/grpc/resolver/dns/*.{go,c} # gosub
+  - google.golang.org/grpc/resolver/manual/*.{go,c} # gosub
   - google.golang.org/grpc/resolver/passthrough/*.{go,c} # gosub
   - google.golang.org/grpc/stats/*.{go,c} # gosub
   - google.golang.org/grpc/status/*.{go,c} # gosub
