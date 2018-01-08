@@ -105,4 +105,4 @@ You can generate a pretty commit message by running `scripts/commit-with-log`.
 The srcint cli is used to query all the repos that cred-alert scans for a particular pattern. 
 It can take a text or a regex as query
 
-More information available [here](https://github.com/pivotal-cf/sec-red-meta/blob/master/docs/srcint.md)
+More information available [here](https://github.com/pivotal-cf/cred-alert/blob/master/docs/srcint.md)
