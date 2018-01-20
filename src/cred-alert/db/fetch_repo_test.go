@@ -59,7 +59,7 @@ var _ = Describe("FetchRepo", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 
-			actualName = uuid.NewV4().String()
+			actualName = uuid.Must(uuid.NewV4()).String()
 			repository = &db.Repository{
 				Name:          actualName,
 				Owner:         "owner-name",

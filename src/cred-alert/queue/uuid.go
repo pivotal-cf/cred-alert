@@ -15,5 +15,5 @@ func NewGenerator() *uuidGenerator {
 }
 
 func (u *uuidGenerator) Generate() string {
-	return uuid.NewV4().String()
+	return uuid.Must(uuid.NewV4()).String()
 }

@@ -169,7 +169,7 @@ var _ = Describe("Scan Repository", func() {
 
 			BeforeEach(func() {
 				repository = &db.Repository{
-					Name:          uuid.NewV4().String(),
+					Name:          uuid.Must(uuid.NewV4()).String(),
 					Owner:         "owner-name",
 					Path:          "path-to-repo-on-disk",
 					SSHURL:        "repo-ssh-url",
