@@ -213,7 +213,7 @@ func showCredentialWarning() {
 	fmt.Println("   to skip the hook for now.")
 	fmt.Println()
 	fmt.Println("4. A false positive which isn't a credential at all! Please let us know about ")
-	fmt.Println("   the this case in our Slack channel (#pcf-sec-enablement).")
+	fmt.Println("   the this case in our Slack channel (#pcf-security-triage).")
 }
 
 func inflateArchive(
