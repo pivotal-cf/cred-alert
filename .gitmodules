@@ -207,4 +207,4 @@
 	branch = master
 [submodule "src/github.com/gorilla/websocket"]
 	path = src/github.com/gorilla/websocket
-	url = https://github.com/gorilla/websocket.git
+	url = https://github.com/gorilla/websocket
