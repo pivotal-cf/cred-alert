@@ -205,3 +205,6 @@
 	path = src/github.com/pkg/errors
 	url = https://github.com/pkg/errors
 	branch = master
+[submodule "src/github.com/gorilla/websocket"]
+	path = src/github.com/gorilla/websocket
+	url = https://github.com/gorilla/websocket.git
