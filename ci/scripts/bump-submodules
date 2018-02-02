@@ -6,25 +6,44 @@ MESSAGE_PATH="$PWD/bump-submodules-message/message"
 IN_REPO_PATH="$PWD/repo"
 OUT_REPO_PATH="$PWD/bumped-repo"
 
+echo ""
+echo "### CLONING REPO ###"
 git clone "$IN_REPO_PATH" "$OUT_REPO_PATH"
 
+echo ""
+echo "### Changing directory to: '$OUT_REPO_PATH' ###"
 cd "$OUT_REPO_PATH"
 
+echo ""
+echo "### Updating submodules ###"
 git submodule update --init --remote
 
+echo ""
+echo "### go get: 'github.com/vito/gosub' ###"
 go get github.com/vito/gosub
+
 export GOPATH="$PWD"
+
+echo ""
+echo "### Syncing package specs ###"
 ./scripts/sync-package-specs
+
+echo ""
+echo "### Syncing submodules ###"
 ./scripts/sync-submodules
 
 git clean -ffd
 git add -A
 
 STATUS=$(git status --porcelain)
-
 if [ "$STATUS" == "" ]; then
+  echo ""
+  echo "### No updated submodules - exiting now ###"
   exit 0
 fi
+
+echo ""
+echo "### Updated submodules - committing changes ###"
 
 git config --global user.name "Submodule Bumper"
 git config --global user.email "pcf-security-enablement+submodule-bumper@pivotal.io"
