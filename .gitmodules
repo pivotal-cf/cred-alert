@@ -208,3 +208,7 @@
 [submodule "src/github.com/gorilla/websocket"]
 	path = src/github.com/gorilla/websocket
 	url = https://github.com/gorilla/websocket
+[submodule "src/go.opencensus.io"]
+	path = src/go.opencensus.io
+	url = https://github.com/census-instrumentation/opencensus-go
+	branch = master

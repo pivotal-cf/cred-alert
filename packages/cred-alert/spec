@@ -84,6 +84,15 @@ files:
   - github.com/tedsuo/ifrit/grouper/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/http_server/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/sigmon/*.{go,c} # gosub
+  - go.opencensus.io/internal/*.{go,c} # gosub
+  - go.opencensus.io/internal/tagencoding/*.{go,c} # gosub
+  - go.opencensus.io/plugin/grpc/*.{go,c} # gosub
+  - go.opencensus.io/plugin/grpc/grpcstats/*.{go,c} # gosub
+  - go.opencensus.io/plugin/grpc/grpctrace/*.{go,c} # gosub
+  - go.opencensus.io/stats/*.{go,c} # gosub
+  - go.opencensus.io/tag/*.{go,c} # gosub
+  - go.opencensus.io/trace/*.{go,c} # gosub
+  - go.opencensus.io/trace/propagation/*.{go,c} # gosub
   - golang.org/x/net/context/*.{go,c} # gosub
   - golang.org/x/net/context/ctxhttp/*.{go,c} # gosub
   - golang.org/x/net/http2/*.{go,c} # gosub
