@@ -86,10 +86,10 @@ files:
   - github.com/tedsuo/ifrit/sigmon/*.{go,c} # gosub
   - go.opencensus.io/internal/*.{go,c} # gosub
   - go.opencensus.io/internal/tagencoding/*.{go,c} # gosub
-  - go.opencensus.io/plugin/grpc/*.{go,c} # gosub
-  - go.opencensus.io/plugin/grpc/grpcstats/*.{go,c} # gosub
-  - go.opencensus.io/plugin/grpc/grpctrace/*.{go,c} # gosub
+  - go.opencensus.io/plugin/ocgrpc/*.{go,c} # gosub
   - go.opencensus.io/stats/*.{go,c} # gosub
+  - go.opencensus.io/stats/internal/*.{go,c} # gosub
+  - go.opencensus.io/stats/view/*.{go,c} # gosub
   - go.opencensus.io/tag/*.{go,c} # gosub
   - go.opencensus.io/trace/*.{go,c} # gosub
   - go.opencensus.io/trace/propagation/*.{go,c} # gosub
