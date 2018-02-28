@@ -15,6 +15,7 @@ files:
   - cloud.google.com/go/internal/version/*.{go,c} # gosub
   - cloud.google.com/go/pubsub/*.{go,c} # gosub
   - cloud.google.com/go/pubsub/apiv1/*.{go,c} # gosub
+  - cloud.google.com/go/pubsub/internal/distribution/*.{go,c} # gosub
   - cloud.google.com/go/trace/*.{go,c} # gosub
   - code.cloudfoundry.org/clock/*.{go,c} # gosub
   - code.cloudfoundry.org/lager/*.{go,c} # gosub
