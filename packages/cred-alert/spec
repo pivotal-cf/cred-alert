@@ -85,12 +85,12 @@ files:
   - github.com/tedsuo/ifrit/grouper/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/http_server/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/sigmon/*.{go,c} # gosub
+  - go.opencensus.io/exporter/stackdriver/propagation/*.{go,c} # gosub
   - go.opencensus.io/internal/*.{go,c} # gosub
   - go.opencensus.io/internal/tagencoding/*.{go,c} # gosub
   - go.opencensus.io/plugin/ocgrpc/*.{go,c} # gosub
   - go.opencensus.io/plugin/ochttp/*.{go,c} # gosub
   - go.opencensus.io/plugin/ochttp/propagation/b3/*.{go,c} # gosub
-  - go.opencensus.io/plugin/ochttp/propagation/google/*.{go,c} # gosub
   - go.opencensus.io/stats/*.{go,c} # gosub
   - go.opencensus.io/stats/internal/*.{go,c} # gosub
   - go.opencensus.io/stats/view/*.{go,c} # gosub
