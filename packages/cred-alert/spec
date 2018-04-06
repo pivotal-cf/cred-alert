@@ -96,6 +96,7 @@ files:
   - go.opencensus.io/stats/view/*.{go,c} # gosub
   - go.opencensus.io/tag/*.{go,c} # gosub
   - go.opencensus.io/trace/*.{go,c} # gosub
+  - go.opencensus.io/trace/internal/*.{go,c} # gosub
   - go.opencensus.io/trace/propagation/*.{go,c} # gosub
   - golang.org/x/net/context/*.{go,c} # gosub
   - golang.org/x/net/context/ctxhttp/*.{go,c} # gosub
