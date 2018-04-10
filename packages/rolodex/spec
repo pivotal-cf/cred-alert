@@ -106,6 +106,7 @@ files:
   - google.golang.org/grpc/balancer/*.{go,c} # gosub
   - google.golang.org/grpc/balancer/base/*.{go,c} # gosub
   - google.golang.org/grpc/balancer/roundrobin/*.{go,c} # gosub
+  - google.golang.org/grpc/channelz/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/connectivity/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
