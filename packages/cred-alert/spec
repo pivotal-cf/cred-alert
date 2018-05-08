@@ -105,7 +105,6 @@ files:
   - golang.org/x/net/http2/hpack/*.{go,c} # gosub
   - golang.org/x/net/idna/*.{go,c} # gosub
   - golang.org/x/net/internal/timeseries/*.{go,c} # gosub
-  - golang.org/x/net/lex/httplex/*.{go,c} # gosub
   - golang.org/x/net/trace/*.{go,c} # gosub
   - golang.org/x/oauth2/*.{go,c} # gosub
   - golang.org/x/oauth2/google/*.{go,c} # gosub
