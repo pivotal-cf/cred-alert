@@ -19,10 +19,11 @@ type Runner struct {
 
 func (runner *Runner) Setup() {
 	runner.dbConfig = &mysql.Config{
-		User:            "root",
-		Net:             "tcp",
-		Addr:            "127.0.0.1:3306",
-		MultiStatements: true,
+		User:                 "root",
+		Net:                  "tcp",
+		Addr:                 "127.0.0.1:3306",
+		MultiStatements:      true,
+		AllowNativePasswords: true,
 		Params: map[string]string{
 			"charset":   "utf8",
 			"parseTime": "True",
