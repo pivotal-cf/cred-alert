@@ -86,6 +86,7 @@ files:
   - github.com/tedsuo/ifrit/http_server/*.{go,c} # gosub
   - github.com/tedsuo/ifrit/sigmon/*.{go,c} # gosub
   - go.opencensus.io/exporter/stackdriver/propagation/*.{go,c} # gosub
+  - go.opencensus.io/exporterutil/*.{go,c} # gosub
   - go.opencensus.io/internal/*.{go,c} # gosub
   - go.opencensus.io/internal/tagencoding/*.{go,c} # gosub
   - go.opencensus.io/plugin/ocgrpc/*.{go,c} # gosub
@@ -146,9 +147,9 @@ files:
   - google.golang.org/grpc/credentials/oauth/*.{go,c} # gosub
   - google.golang.org/grpc/encoding/*.{go,c} # gosub
   - google.golang.org/grpc/encoding/proto/*.{go,c} # gosub
-  - google.golang.org/grpc/grpclb/grpc_lb_v1/messages/*.{go,c} # gosub
   - google.golang.org/grpc/grpclog/*.{go,c} # gosub
   - google.golang.org/grpc/internal/*.{go,c} # gosub
+  - google.golang.org/grpc/internal/grpcrand/*.{go,c} # gosub
   - google.golang.org/grpc/keepalive/*.{go,c} # gosub
   - google.golang.org/grpc/metadata/*.{go,c} # gosub
   - google.golang.org/grpc/naming/*.{go,c} # gosub
