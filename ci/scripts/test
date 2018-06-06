@@ -10,5 +10,5 @@ service mysql start
 pushd ${GOPATH}
   go install github.com/onsi/ginkgo/ginkgo
 
-  ./scripts/test -race $@
+  ./scripts/test -race "$@"
 popd
