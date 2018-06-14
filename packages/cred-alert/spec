@@ -149,6 +149,7 @@ files:
   - google.golang.org/grpc/encoding/proto/*.{go,c} # gosub
   - google.golang.org/grpc/grpclog/*.{go,c} # gosub
   - google.golang.org/grpc/internal/*.{go,c} # gosub
+  - google.golang.org/grpc/internal/backoff/*.{go,c} # gosub
   - google.golang.org/grpc/internal/grpcrand/*.{go,c} # gosub
   - google.golang.org/grpc/keepalive/*.{go,c} # gosub
   - google.golang.org/grpc/metadata/*.{go,c} # gosub
