@@ -140,7 +140,6 @@ files:
   - google.golang.org/grpc/balancer/*.{go,c} # gosub
   - google.golang.org/grpc/balancer/base/*.{go,c} # gosub
   - google.golang.org/grpc/balancer/roundrobin/*.{go,c} # gosub
-  - google.golang.org/grpc/channelz/*.{go,c} # gosub
   - google.golang.org/grpc/codes/*.{go,c} # gosub
   - google.golang.org/grpc/connectivity/*.{go,c} # gosub
   - google.golang.org/grpc/credentials/*.{go,c} # gosub
@@ -150,6 +149,7 @@ files:
   - google.golang.org/grpc/grpclog/*.{go,c} # gosub
   - google.golang.org/grpc/internal/*.{go,c} # gosub
   - google.golang.org/grpc/internal/backoff/*.{go,c} # gosub
+  - google.golang.org/grpc/internal/channelz/*.{go,c} # gosub
   - google.golang.org/grpc/internal/grpcrand/*.{go,c} # gosub
   - google.golang.org/grpc/keepalive/*.{go,c} # gosub
   - google.golang.org/grpc/metadata/*.{go,c} # gosub
