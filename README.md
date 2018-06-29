@@ -24,7 +24,7 @@ mv cred-alert-cli /usr/local/bin # <= or other directory in ${PATH}
 The command line application can be built with the following command. Your
 `$GOPATH` should already be set correctly by `direnv`.
 
-    $ go build cred-alert/cmd/cred-alert-cli
+    $ go install github.com/pivotal-cf/cred-alert
 
 ### Examples
 
@@ -34,28 +34,28 @@ Use --help to see all options.
 
 #### Scan a file
 
-    $ ./cred-alert-cli scan -f src/cred-alert/product.zip
+    $ ./cred-alert scan -f src/cred-alert/product.zip
 
 #### Scan a directory
 
-    $ ./cred-alert-cli scan -f src/cred-alert
+    $ ./cred-alert scan -f .
 
 #### Scan from standard input
 
-    $ cat src/cred-alert/sniff/patterns/samples_for_test.go | ./cred-alert-cli scan
+    $ cat sniff/patterns/samples_for_test.go | ./cred-alert scan
 
 ##### Scanning git diffs
 
 Cred alert supports scanning diffs on standard input. When scanning a diff use the
 `--diff` flag.
 
-    $ git diff | ./cred-alert-cli scan --diff
+    $ git diff | ./cred-alert scan --diff
 
 #### Scan with custom RegExp
 
 To override the default RegExp in order to scan for a specific vulnerability, use --regexp for a single RegExp or --regexp-file for newline delimited RegExp file
 
-    $ git diff | ./cred-alert-cli scan --diff --regexp-file custom-regexp
+    $ git diff | ./cred-alert scan --diff --regexp-file custom-regexp
 
 #### Exit status
 
@@ -71,19 +71,6 @@ To override the default RegExp in order to scan for a specific vulnerability, us
 
 ## Development
 
-You'll need to install `gosub` in order to manage the submodules of this
-project. It can be installed by running the following command (try to install
-this in an outer $GOPATH so that you do not clutter up this directory with the
-tooling):
-
-    $ go get github.com/vito/gosub
-
-In order to have your $GOPATH and $PATH set up properly when you enter this
-directory you should install `direnv`. On macOS you can install this by running
-this command and following the instructions to set up your shell:
-
-    $ brew install direnv
-
 The tests can be run using the `ginkgo` command line tool. This can be
 installed with:
 
@@ -94,18 +81,7 @@ installed with:
 
     $ go get github.com/maxbrunsfeld/counterfeiter
 
-You can `go get` and edit the files like normal in this repository. If any
-dependencies have changed them make sure to run `scripts/sync-submodules` in
-order to make sure that the submodules are updated correctly.
-
 You can generate a pretty commit message by running `scripts/commit-with-log`.
 
 [cred-alert-osx]: https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_darwin
 [cred-alert-linux]: https://s3.amazonaws.com/cred-alert/cli/current-release/cred-alert-cli_linux
-
-# srcint cli
-
-The srcint cli is used to query all the repos that cred-alert scans for a particular pattern. 
-It can take a text or a regex as query
-
-More information available [here](https://github.com/pivotal-cf/cred-alert/blob/master/docs/srcint.md)
