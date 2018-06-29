@@ -2,9 +2,5 @@
 
 set -e -u
 
-for unit in src/cred-alert src/rolodex src/red src/teamstr; do
-  pushd $unit > /dev/null
-    ginkgo -r -p "$@"
-  popd > /dev/null
-done
+ginkgo -r -p "$@"
 
