@@ -1,8 +1,0 @@
----
-name: libgit2
-
-dependencies:
-- libssh2
-
-files:
-- libgit2/libgit2.tar.gz

@@ -1,7 +1,0 @@
-set -e
-
-tar xzf libssh2/libssh2-1.7.0.tar.gz && cd libssh2-1.7.0
-
-./configure --prefix=${BOSH_INSTALL_TARGET}
-make
-make install

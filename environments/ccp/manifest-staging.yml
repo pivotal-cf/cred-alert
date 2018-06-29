@@ -1,8 +1,0 @@
-applications:
-- name: ccp-staging
-  instances: 1
-  memory: 128M
-  disk_quota: 1024M
-  buildpack: binary_buildpack
-  stack: cflinuxfs2
-  command: "./ccp"

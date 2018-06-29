@@ -1,8 +1,0 @@
----
-name: git
-
-dependencies:
-  - zlib
-
-files:
-  - git/git-2.10.1.tar.gz
