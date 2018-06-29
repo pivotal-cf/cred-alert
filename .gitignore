@@ -21,3 +21,4 @@ releases/**/*.tgz
 *#
 
 cred-alert-cli
+cred-alert

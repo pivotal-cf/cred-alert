@@ -2,12 +2,12 @@
 
 set -e
 
-export GOPATH=$PWD/cred-alert
+export GOPATH=$PWD/gopath
 export PATH=$GOPATH/bin:$PATH
 
 service mysql start
 
-pushd ${GOPATH}
+pushd ${GOPATH}/github.com/pivotal-cf/cred-alert
   go install github.com/onsi/ginkgo/ginkgo
 
   ./scripts/test -race "$@"

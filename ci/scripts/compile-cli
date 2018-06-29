@@ -2,11 +2,13 @@
 
 set -e -u
 
-export GOPATH="${PWD}/cred-alert"
+export GOPATH="${PWD}/gopath"
 export PATH="${GOPATH}/bin:${PATH}"
 
 version=$(git --git-dir=${GOPATH}/.git rev-parse --short HEAD)
 
 OUTPUT="${PWD}/cred-alert-cli-${GOOS}"
 
-go build -ldflags "-X cred-alert/commands.version=${version}" -x -v -o "${OUTPUT}/cred-alert-cli_${GOOS}" "cred-alert/cmd/cred-alert-cli"
+cd "${GOPATH}/github.com/pivotal-cf/cred-alert"
+
+go build -ldflags "-X github.com/pivotal-cf/cred-alert/commands.version=${version}" -x -v -o "${OUTPUT}/cred-alert-cli_${GOOS}"
