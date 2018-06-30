@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-set -e
-
-cat > credentials.yml <<EOF
-$CREDENTIALS
-EOF
-
-bosh-cli build-manifest $MANIFEST_PATH -l credentials.yml > manifest/manifest.yml

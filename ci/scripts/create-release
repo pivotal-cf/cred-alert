@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+set -eu -o pipefail
 
-set -e -u
+export GOPATH="${PWD}/go"
+export PATH="${GOPATH}/bin:${PATH}"
+
+cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
 
 # set tag name
 date +%Y-%m-%d-%H-%M-%S > release-params/tag-name

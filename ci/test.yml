@@ -8,7 +8,7 @@ image_resource:
 
 inputs:
 - name: cred-alert
-  path: gopath/src/github.com/pivotal-cf/cred-alert
+  path: go/src/github.com/pivotal-cf/cred-alert
 
 run:
-  path: cred-alert/ci/scripts/test
+  path: go/src/github.com/pivotal-cf/cred-alert/ci/scripts/test

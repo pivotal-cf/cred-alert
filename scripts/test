@@ -1,6 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -eu -o pipefail
 
-set -e -u
+cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ..; pwd)
 
-ginkgo -r -p "$@"
+pushd "${cred_alert_root}"
+  # TODO install from vendor
+  go get github.com/onsi/ginkgo/ginkgo && \
+  go install github.com/onsi/ginkgo/ginkgo
 
+  ginkgo -race -failOnPending -keepGoing -randomizeSuites "$@"
+popd

@@ -8,9 +8,10 @@ image_resource:
 
 inputs:
 - name: cred-alert
+  path: go/src/github.com/pivotal-cf/cred-alert
 
 outputs:
 - name: release-params
 
 run:
-  path: cred-alert/ci/scripts/create-release
+  path: go/src/github.com/pivotal-cf/cred-alert/ci/scripts/create-release

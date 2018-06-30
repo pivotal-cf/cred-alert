@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
+set -eu -o pipefail
 
-set -e
+export GOPATH="${PWD}/go"
+export PATH="${GOPATH}/bin:${PATH}"
 
-export GOPATH=$PWD/gopath
-export PATH=$GOPATH/bin:$PATH
+cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
 
-service mysql start
-
-pushd ${GOPATH}/github.com/pivotal-cf/cred-alert
-  go install github.com/onsi/ginkgo/ginkgo
-
-  ./scripts/test -race "$@"
+pushd "${cred_alert_root}"
+  scripts/test
 popd

@@ -7,7 +7,7 @@ image_resource:
 
 inputs:
 - name: cred-alert
-  path: gopath/src/github.com/pivotal-cf/cred-alert
+  path: go/src/github.com/pivotal-cf/cred-alert
 
 outputs:
 - name: cred-alert-cli-darwin
@@ -16,4 +16,4 @@ params:
   GOOS: darwin
 
 run:
-  path: cred-alert/ci/scripts/compile-cli
+  path: go/src/github.com/pivotal-cf/cred-alert/ci/scripts/compile-cli

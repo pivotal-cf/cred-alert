@@ -1,4 +1,0 @@
-[submodule "src/github.com/rakyll/magicmime"]
-	path = src/github.com/rakyll/magicmime
-	url = https://github.com/rakyll/magicmime
-	branch = master

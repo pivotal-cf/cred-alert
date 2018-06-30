@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+export GOPATH="${PWD}/go"
+export PATH="${GOPATH}/bin:${PATH}"
+
+cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
+
+OUT_REPO_PATH="${PWD}/bumped-repo"
+
+pushd "${cred_alert_root}"
+  dep ensure -update
+
+  git clean -ffd
+  git add -A
+
+  STATUS=$(git status --porcelain)
+
+  echo ""
+
+  if [ "${STATUS}" == "" ]; then
+    echo "### NO updated dependencies ###"
+  else
+    echo "### Updated dependencies ###"
+
+    git config --global user.name "Dependency Updater"
+    git config --global user.email "pcf-security-enablement+dependency-updater@pivotal.io"
+
+    git commit -m "Update Dependencies"
+  fi
+
+  git clone "${cred_alert_root}" "${OUT_REPO_PATH}"
+popd

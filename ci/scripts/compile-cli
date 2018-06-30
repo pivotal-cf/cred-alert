@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
+set -eu -o pipefail
 
-set -e -u
-
-export GOPATH="${PWD}/gopath"
+export GOPATH="${PWD}/go"
 export PATH="${GOPATH}/bin:${PATH}"
 
-version=$(git --git-dir=${GOPATH}/.git rev-parse --short HEAD)
+cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
 
-OUTPUT="${PWD}/cred-alert-cli-${GOOS}"
+OUTPUT_FILE="${PWD}/cred-alert-cli-${GOOS}/cred-alert-cli_${GOOS}"
 
-cd "${GOPATH}/github.com/pivotal-cf/cred-alert"
+pushd "/go/src/github.com/pivotal-cf/cred-alert"
+  version="$(git rev-parse --short HEAD)"
 
-go build -ldflags "-X github.com/pivotal-cf/cred-alert/commands.version=${version}" -x -v -o "${OUTPUT}/cred-alert-cli_${GOOS}"
+  go build \
+    -ldflags "-X github.com/pivotal-cf/cred-alert/commands.version=${version}" \
+    -x -v -o "${OUTPUT_FILE}"
+popd
