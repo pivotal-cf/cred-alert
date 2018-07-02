@@ -1,0 +1,172 @@
+---
+resources:
+- name: daily
+  type: time
+  source:
+    interval: 24h
+
+- name: golang
+  type: docker-image
+  source:
+    repository: golang
+    tag: latest
+
+- name: github-release
+  type: github-release
+  source:
+    user: pivotal-cf
+    repository: cred-alert
+    access_token: ((ci-credentials/Notes/sec-triage-ci-write))
+
+- name: cred-alert-image
+  type: docker-image
+  source:
+    repository: pivotalcf/cred-alert-ci
+    username: ((ci-credentials/Notes/docker-username))
+    email: ((ci-credentials/Notes/docker-email))
+    password: ((ci-credentials/Notes/docker-password))
+
+- name: cred-alert
+  type: git
+  source:
+    uri: git@github.com:pivotal-cf/cred-alert.git
+    branch: master
+    private_key: ((ci-credentials/Notes/pcf-sec-triage-ci-github-key))
+    ignore_paths:
+    - ci/dockerfiles/Dockerfile
+
+- name: cli-rc-linux
+  type: s3
+  source:
+    bucket: cred-alert
+    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    private: true
+    versioned_file: cli/release-candidates/cred-alert-cli_linux
+
+- name: cli-rc-darwin
+  type: s3
+  source:
+    bucket: cred-alert
+    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    private: true
+    versioned_file: cli/release-candidates/cred-alert-cli_darwin
+
+- name: cli-linux
+  type: s3
+  source:
+    bucket: cred-alert
+    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    versioned_file: cli/current-release/cred-alert-cli_linux
+
+- name: cli-darwin
+  type: s3
+  source:
+    bucket: cred-alert
+    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    versioned_file: cli/current-release/cred-alert-cli_darwin
+
+jobs:
+- name: build-image
+  serial: true
+  plan:
+  - aggregate:
+    - get: cred-alert
+      trigger: true
+    - get: golang
+      trigger: true
+      params: {save: true}
+  - put: cred-alert-image
+    params:
+      load_base: golang
+      build: cred-alert/ci/dockerfiles
+
+- name: update-dependencies
+  serial: true
+  plan:
+  - aggregate:
+    - get: cred-alert
+    - get: cred-alert-image
+    - get: daily
+      trigger: true
+  - task: update-dependencies
+    file: cred-alert/ci/tasks/update-dependencies.yml
+  - task: test
+    file: cred-alert/ci/tasks/test.yml
+    input_mapping:
+      cred-alert: updated-repo
+  - put: cred-alert
+    params:
+      repository: updated-repo
+      rebase: true
+
+- name: test
+  plan:
+  - aggregate:
+    - get: cred-alert-image
+      trigger: true
+    - get: cred-alert
+      trigger: true
+  - task: test
+    file: cred-alert/ci/tasks/test.yml
+
+- name: cli-rc
+  plan:
+  - aggregate:
+    - get: cred-alert-image
+      trigger: true
+      passed: [test]
+    - get: cred-alert
+      trigger: true
+      passed: [test]
+  - aggregate:
+    - do:
+      - task: compile-linux
+        file: cred-alert/ci/tasks/compile-linux-cli.yml
+      - put: cli-rc-linux
+        params:
+          file: "cred-alert-cli-linux/cred-alert-cli_linux"
+    - do:
+      - task: compile-darwin
+        file: cred-alert/ci/tasks/compile-darwin-cli.yml
+      - put: cli-rc-darwin
+        params:
+          file: "cred-alert-cli-darwin/cred-alert-cli_darwin"
+
+- name: ship-cli
+  plan:
+  - aggregate:
+    - get: cred-alert-image
+      trigger: true
+      passed: [cli-rc]
+    - get: cred-alert
+      passed: [cli-rc]
+      params:
+        submodules: none
+    - get: cli-rc-linux
+      passed: [cli-rc]
+    - get: cli-rc-darwin
+      passed: [cli-rc]
+  - aggregate:
+    - put: cli-linux
+      params:
+        file: "cli-rc-linux/cred-alert-cli_linux"
+        acl: public-read
+    - put: cli-darwin
+      params:
+        file: "cli-rc-darwin/cred-alert-cli_darwin"
+        acl: public-read
+    - do:
+      - task: create-release
+        file: cred-alert/ci/tasks/create-release.yml
+      - put: github-release
+        params:
+          name: release-params/tag-name
+          tag: release-params/tag-name
+          commitish: release-params/commit-sha
+          globs:
+          - "cli-rc-linux/cred-alert-cli_linux"
+          - "cli-rc-darwin/cred-alert-cli_darwin"
