@@ -149,7 +149,6 @@ jobs:
   plan:
   - aggregate:
     - get: cred-alert-image
-      trigger: true
       passed: [cli-rc]
     - get: cred-alert
       passed: [cli-rc]
