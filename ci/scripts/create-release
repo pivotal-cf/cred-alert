@@ -5,11 +5,12 @@ export GOPATH="${PWD}/go"
 export PATH="${GOPATH}/bin:${PATH}"
 
 cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
+release_params_path="${PWD}/release-params"
 
 # set tag name
-date +%Y-%m-%d-%H-%M-%S > release-params/tag-name
+date +%Y-%m-%d-%H-%M-%S > "${release_params_path}/tag-name"
 
 # set tag commit
-pushd cred-alert
-  git rev-parse HEAD > ../release-params/commit-sha
+pushd "${cred_alert_root}"
+  git rev-parse HEAD > "${release_params_path}"/commit-sha
 popd
