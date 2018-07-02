@@ -26,6 +26,15 @@ resources:
     email: ((ci-credentials/Notes/docker-email))
     password: ((ci-credentials/Notes/docker-password))
 
+- name: cred-alert-docker
+  type: git
+  source:
+    uri: git@github.com:pivotal-cf/cred-alert.git
+    branch: master
+    private_key: ((ci-credentials/Notes/pcf-sec-triage-ci-github-key))
+    paths:
+    - ci/docker/Dockerfile
+
 - name: cred-alert
   type: git
   source:
@@ -33,7 +42,7 @@ resources:
     branch: master
     private_key: ((ci-credentials/Notes/pcf-sec-triage-ci-github-key))
     ignore_paths:
-    - ci/dockerfiles/Dockerfile
+    - ci/docker/Dockerfile
 
 - name: cli-rc-linux
   type: s3
@@ -74,7 +83,7 @@ jobs:
   serial: true
   plan:
   - aggregate:
-    - get: cred-alert
+    - get: cred-alert-docker
       trigger: true
     - get: golang
       trigger: true
@@ -82,7 +91,7 @@ jobs:
   - put: cred-alert-image
     params:
       load_base: golang
-      build: cred-alert/ci/dockerfiles
+      build: cred-alert-docker/ci/docker
 
 - name: update-dependencies
   serial: true
