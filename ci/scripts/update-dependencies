@@ -9,7 +9,7 @@ cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
 OUT_REPO_PATH="${PWD}/updated-repo"
 
 pushd "${cred_alert_root}"
-  dep ensure -update
+  dep ensure -update -v
 
   git clean -ffd
   git add -A
