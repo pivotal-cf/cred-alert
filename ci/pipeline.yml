@@ -105,7 +105,9 @@ jobs:
   - aggregate:
     - get: cred-alert
     - get: dep
-      globs: dep-linux-amd64
+      params:
+        globs:
+        - dep-linux-amd64
     - get: cred-alert-image
     - get: daily
       trigger: true

@@ -4,8 +4,10 @@ set -eu -o pipefail
 export GOPATH="${PWD}/go"
 export PATH="${GOPATH}/bin:${PATH}"
 
-cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
+mkdir -p "${GOPATH}/bin"
 install -b dep/dep-linux-amd64 "${GOPATH}/bin/dep"
+
+cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
 
 OUT_REPO_PATH="${PWD}/updated-repo"
 
