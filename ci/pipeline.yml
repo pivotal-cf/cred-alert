@@ -35,6 +35,12 @@ resources:
     paths:
     - ci/docker/Dockerfile
 
+- name: dep
+  type: github-release
+  source:
+    owner: golang
+    repository: dep
+
 - name: cred-alert
   type: git
   source:
@@ -98,6 +104,8 @@ jobs:
   plan:
   - aggregate:
     - get: cred-alert
+    - get: dep
+      globs: dep-linux-amd64
     - get: cred-alert-image
     - get: daily
       trigger: true

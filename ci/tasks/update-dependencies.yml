@@ -9,6 +9,7 @@ image_resource:
 inputs:
 - name: cred-alert
   path: go/src/github.com/pivotal-cf/cred-alert
+- name: dep
 
 outputs:
 - name: updated-repo
