@@ -129,13 +129,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "32a936f46389aa10549d60bd7833e54b01685d09"
+  revision = "6f138e0f60713a248abf7046f1014a3ba90f5341"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "3c6ecd8f22c6f40fbeec94c000a069d7d87c7624"
+  revision = "1b2967e3c290b7c545b3db0deeda16e9be4f98a2"
 
 [[projects]]
   name = "golang.org/x/text"
