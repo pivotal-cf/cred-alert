@@ -129,7 +129,7 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "6f138e0f60713a248abf7046f1014a3ba90f5341"
+  revision = "292b43bbf7cb8d35ddf40f8d5100ef3837cced3f"
 
 [[projects]]
   branch = "master"
