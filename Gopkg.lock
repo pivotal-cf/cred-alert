@@ -171,15 +171,15 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "f4c29de78a2a91c00474a2e689954305c350adf9"
+  revision = "19491d39cadbd9cd33f26ca22cc89ba4ba38251c"
 
 [[projects]]
   branch = "master"
-  digest = "1:6171b61a4a42ff7c8a1bd0cfb569c247e1654ec4d918b7da84228974216751f5"
+  digest = "1:4d7a8265af700258feaff86722049eb5b787240d66dfaf45ff4962f09de6e0be"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "34b17bdb430002e9db9ae7ddc8480b9fa05edc22"
+  revision = "acbc56fc7007d2a01796d5bde54f39e3b3e95945"
 
 [[projects]]
   digest = "1:aa4d6967a3237f8367b6bf91503964a77183ecf696f1273e8ad3551bb4412b5f"
