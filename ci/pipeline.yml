@@ -21,10 +21,10 @@ resources:
 - name: cred-alert-image
   type: docker-image
   source:
-    repository: pivotalcf/cred-alert-ci
-    username: ((ci-credentials/Notes/docker-username))
-    email: ((ci-credentials/Notes/docker-email))
-    password: ((ci-credentials/Notes/docker-password))
+    repository: pcfsecuritytriage/cred-alert-ci
+    username: ((Docker Hub/Username))
+    email: ((Docker Hub/Notes/email))
+    password: ((Docker Hub/Password))
 
 - name: cred-alert-docker
   type: git
