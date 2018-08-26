@@ -163,7 +163,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:1d3f083a0b29a9db5ac57dc4d486dbb97cd58696bae3da441a375916b7e8c53b"
+  digest = "1:fd35bc6003cfae47dd6041db172fb971f3e08991ecdf2971bd03dcabedef3b0b"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -171,7 +171,7 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "4bcd98cce591d8c7061bf313d7a3cbad05b58549"
+  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
 
 [[projects]]
   branch = "master"
