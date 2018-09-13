@@ -139,7 +139,7 @@
   version = "v1.6.0"
 
 [[projects]]
-  digest = "1:58418daa018f162c520512737c19ecd42582524b0f900f2eee7c212ce55cf0da"
+  digest = "1:d6d3014e71a3504f7fda993889cfdc09ef5b70b46b00dd6bd078943585944352"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -158,8 +158,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "b6ea1ea48f981d0f615a154a45eabb9dd466556d"
-  version = "v1.4.1"
+  revision = "7615b9433f86a8bdf29709bf288bc4fd0636a369"
+  version = "v1.4.2"
 
 [[projects]]
   branch = "master"
@@ -171,7 +171,7 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
+  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
 
 [[projects]]
   branch = "master"
