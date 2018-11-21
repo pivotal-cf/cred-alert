@@ -112,7 +112,7 @@
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
 
 [[projects]]
-  digest = "1:42e29deef12327a69123b9cb2cb45fee4af5c12c2a23c6e477338279a052703f"
+  digest = "1:5f4b78246f0bcb105b1e3b2b9e22b52a57cd02f57a8078572fe27c62f4a75ff7"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -135,11 +135,11 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "3774a09d95489ccaa16032e0770d08ea77ba6184"
-  version = "v1.6.0"
+  revision = "2e1be8f7d90e9d3e3e58b0ce470f2f14d075406f"
+  version = "v1.7.0"
 
 [[projects]]
-  digest = "1:d6d3014e71a3504f7fda993889cfdc09ef5b70b46b00dd6bd078943585944352"
+  digest = "1:b4764603c54d74435f246901248aefb2b9d430bb7b160afde1afc41d89d48f1a"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -158,8 +158,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "7615b9433f86a8bdf29709bf288bc4fd0636a369"
-  version = "v1.4.2"
+  revision = "65fb64232476ad9046e57c26cd0bff3d3a8dc6cd"
+  version = "v1.4.3"
 
 [[projects]]
   branch = "master"
@@ -175,11 +175,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:44010c69a8af2745fcdc6b4c57b126b4dd3de5cb01b6a5ba97a1781a24df0886"
+  digest = "1:225564f71149334315118db714e1ea87513e4a11cf4acb27e26bc7577cebfa0b"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "ec83556a53fe16b65c452a104ea9d1e86a671852"
+  revision = "0cf1ed9e522b7dbb416f080a5c8003de9b702bf4"
 
 [[projects]]
   digest = "1:aa4d6967a3237f8367b6bf91503964a77183ecf696f1273e8ad3551bb4412b5f"
