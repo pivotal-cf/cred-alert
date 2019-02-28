@@ -67,7 +67,7 @@ To override the default RegExp in order to scan for a specific vulnerability, us
 
 ### Additional usage documentation
 
-[Cred-Alert CLI Instructions - SIMPLE](https://sites.google.com/a/pivotal.io/cloud-foundry/program-management/security/cred-alert-cli-instructions?pli=1)
+[Cred-Alert CLI Instructions - SIMPLE](https://sites.google.com/a/pivotal.io/cloud-foundry/process/security/cred-alert-cli-instructions)
 
 ## Development
 
