@@ -89,7 +89,7 @@ jobs:
 - name: build-image
   serial: true
   plan:
-  - aggregate:
+  - in_parallel:
     - get: cred-alert-docker
       trigger: true
     - get: golang
@@ -103,7 +103,7 @@ jobs:
 - name: update-dependencies
   serial: true
   plan:
-  - aggregate:
+  - in_parallel:
     - get: cred-alert
     - get: dep
       params:
@@ -125,7 +125,7 @@ jobs:
 
 - name: test
   plan:
-  - aggregate:
+  - in_parallel:
     - get: cred-alert-image
       trigger: true
     - get: cred-alert
@@ -135,14 +135,14 @@ jobs:
 
 - name: cli-rc
   plan:
-  - aggregate:
+  - in_parallel:
     - get: cred-alert-image
       trigger: true
       passed: [test]
     - get: cred-alert
       trigger: true
       passed: [test]
-  - aggregate:
+  - in_parallel:
     - do:
       - task: compile-linux
         file: cred-alert/ci/tasks/compile-linux-cli.yml
@@ -158,7 +158,7 @@ jobs:
 
 - name: ship-cli
   plan:
-  - aggregate:
+  - in_parallel:
     - get: cred-alert-image
       passed: [cli-rc]
     - get: cred-alert
@@ -169,7 +169,7 @@ jobs:
       passed: [cli-rc]
     - get: cli-rc-darwin
       passed: [cli-rc]
-  - aggregate:
+  - in_parallel:
     - put: cli-linux
       params:
         file: "cli-rc-linux/cred-alert-cli_linux"
