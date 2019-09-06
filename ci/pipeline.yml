@@ -148,12 +148,14 @@ jobs:
   - in_parallel:
     - do:
       - task: compile-linux
+        image: cred-alert-image
         file: cred-alert/ci/tasks/compile-linux-cli.yml
       - put: cli-rc-linux
         params:
           file: "cred-alert-cli-linux/cred-alert-cli_linux"
     - do:
       - task: compile-darwin
+        image: cred-alert-image
         file: cred-alert/ci/tasks/compile-darwin-cli.yml
       - put: cli-rc-darwin
         params:

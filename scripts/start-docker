@@ -3,7 +3,7 @@ set -eu -o pipefail
 
 cred_alert_path=$(cd "$(dirname "${BASH_SOURCE}")"; cd ..; pwd)
 
-cred_alert_image="pivotalcf/cred-alert-ci:latest"
+cred_alert_image="pcfsecuritytriage/cred-alert-ci:latest"
 
 docker pull "${cred_alert_image}"
 
