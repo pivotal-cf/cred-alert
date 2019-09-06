@@ -131,6 +131,7 @@ jobs:
     - get: cred-alert
       trigger: true
   - task: test
+    image: cred-alert-image
     file: cred-alert/ci/tasks/test.yml
 
 - name: cli-rc
