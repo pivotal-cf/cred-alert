@@ -39,11 +39,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f668349b83f7d779567c880550534addeca7ebadfdcf44b0b9c39be61864b4b7"
+  digest = "1:2c83286b05339b874cf821a3cd5b20c5415c904e6804baa47479f1a28956730e"
   name = "github.com/hashicorp/go-multierror"
   packages = ["."]
   pruneopts = "UT"
-  revision = "886a7fbe3eb1c874d46f623bfa70af45f425b3d1"
+  revision = "bdca7bb83f603b80ef756bb953fe1dafa9cd00a2"
 
 [[projects]]
   digest = "1:a1038ef593beb4771c8f0f9c26e8b00410acd800af5c6864651d9bf160ea1813"
@@ -88,20 +88,20 @@
   revision = "2bc1f35cddc0cc527b4bc3dce8578fc2a6c11384"
 
 [[projects]]
-  digest = "1:2fa7b0155cd54479a755c629de26f888a918e13f8857a2c442205d825368e084"
+  digest = "1:7c084e0e780596dd2a7e20d25803909a9a43689c153de953520dfbc0b0e51166"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3a70a971f94a22f2fa562ffcc7a0eb45f5daf045"
-  version = "v0.1.1"
+  revision = "8029fb3788e5a4a9c00e415f586a6d033f5d38b3"
+  version = "v0.1.2"
 
 [[projects]]
-  digest = "1:e150b5fafbd7607e2d638e4e5cf43aa4100124e5593385147b0a74e2733d8b0d"
+  digest = "1:36325ebb862e0382f2f14feef409ba9351271b89ada286ae56836c603d43b59c"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c2a7a6ca930a4cd0bc33a3f298eb71960732a3a7"
-  version = "v0.0.7"
+  revision = "e1f7b56ace729e4a73a29a6b4fac6cd5fcda7ab3"
+  version = "v0.0.9"
 
 [[projects]]
   branch = "master"
@@ -112,7 +112,7 @@
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
 
 [[projects]]
-  digest = "1:e9c3bb68a6c9470302b8046d4647e0612a2ea6037b9c6a47de60c0a90db504f8"
+  digest = "1:aed50c53dce3e0ee52c84e5515b8b85404af5b7efc6a9199ab0035b8c25efcb8"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -135,11 +135,11 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "eea6ad008b96acdaa524f5b409513bf062b500ad"
-  version = "v1.8.0"
+  revision = "974566c482abc93ffd3df6f4626e79076c7ed290"
+  version = "v1.10.1"
 
 [[projects]]
-  digest = "1:029c6999f3efa5f1cd3f8b9e02a8bc4276cc439d2dc8dc73cd98e4efd5c76cba"
+  digest = "1:f10e746cdde740b68ae11142c351de99e8a669c5aa5a2df9ac10294cb052ab39"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -158,12 +158,12 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "90e289841c1ed79b7a598a7cd9959750cb5e89e2"
-  version = "v1.5.0"
+  revision = "bdebf9e0ece900259084cfa4121b97ce1a540939"
+  version = "v1.7.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:d5d8006ff2f825ddeac50550bbe002464b1f85810666e700a68459e91e2f875f"
+  digest = "1:a167b5c532f3245f5a147ade26185f16d6ee8f8d3f6c9846f447e9d8b9705505"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -171,18 +171,18 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "afa5a82059c6356159f699d81beff22a81842231"
+  revision = "ba9fcec4b297b415637633c5a6e8fa592e4a16c3"
 
 [[projects]]
   branch = "master"
-  digest = "1:55565b142e38b7d00c39ce9a86fc70bbfa37c4f2f00d8ff2343f433c351db8e3"
+  digest = "1:767025ef5997eeba9a3b7fba288b8b9e71b44f0e3a2ec6dcd01f144d3dc8f173"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "953cdadca894cdc07be76fc99f95b40c28f06623"
+  revision = "749cb33beabd9aa6d3178e3de05bcc914f70b2bf"
 
 [[projects]]
-  digest = "1:aa4d6967a3237f8367b6bf91503964a77183ecf696f1273e8ad3551bb4412b5f"
+  digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
   name = "golang.org/x/text"
   packages = [
     "encoding",
@@ -196,6 +196,8 @@
     "encoding/traditionalchinese",
     "encoding/unicode",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
     "internal/tag",
     "internal/utf8internal",
     "language",
@@ -204,8 +206,8 @@
     "unicode/cldr",
   ]
   pruneopts = "UT"
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
