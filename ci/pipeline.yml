@@ -113,8 +113,10 @@ jobs:
     - get: daily
       trigger: true
   - task: update-dependencies
+    image: cred-alert-image
     file: cred-alert/ci/tasks/update-dependencies.yml
   - task: test
+    image: cred-alert-image
     file: cred-alert/ci/tasks/test.yml
     input_mapping:
       cred-alert: updated-repo
