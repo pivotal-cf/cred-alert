@@ -14,7 +14,6 @@ OUT_REPO_PATH="${PWD}/updated-repo"
 pushd "${cred_alert_root}"
   dep ensure -update -v
 
-  git clean -ffd
   git add -A
 
   STATUS=$(git status --porcelain)
