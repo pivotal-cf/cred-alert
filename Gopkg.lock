@@ -112,7 +112,7 @@
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
 
 [[projects]]
-  digest = "1:aed50c53dce3e0ee52c84e5515b8b85404af5b7efc6a9199ab0035b8c25efcb8"
+  digest = "1:717e9abbff2a22363e45a4ff0ea7eca541dbf20d63e1b11fdd00cb31cb932140"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -135,8 +135,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "974566c482abc93ffd3df6f4626e79076c7ed290"
-  version = "v1.10.1"
+  revision = "72b6ab036f78c4bf1a9748c3941dd7c3de54917a"
+  version = "v1.10.2"
 
 [[projects]]
   digest = "1:f10e746cdde740b68ae11142c351de99e8a669c5aa5a2df9ac10294cb052ab39"
@@ -163,7 +163,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a167b5c532f3245f5a147ade26185f16d6ee8f8d3f6c9846f447e9d8b9705505"
+  digest = "1:94002ae1eb37d085f9aca990b3246b0cf6f0d114b5c0924aedd8eaf2a912143f"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -171,15 +171,15 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "c5a3c61f89f3ed696ec36b629ef1b97541165225"
+  revision = "2ec189313ef0a07735684caebd1ba8b8ebca456f"
 
 [[projects]]
   branch = "master"
-  digest = "1:1b90e63244513e8514749f45da58e89350d35cb3e12416ce6ed95f41c2a1f177"
+  digest = "1:84ed4fd3f7c52941feec4832e385f61377a01b4c98a0f868f16f10c2469fc0fe"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "bb3f8db39f24d596342144141f45701e604f5aed"
+  revision = "b397fe3ad8ed895c98fa54584f61835a88e65ff5"
 
 [[projects]]
   digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
@@ -227,12 +227,12 @@
   revision = "dd632973f1e7218eb1089048e0798ec9ae7dceb8"
 
 [[projects]]
-  digest = "1:1033856ca84153217fda9f527e1c02e11b636e28ad2ab19f2ea4a06e4abbe8e1"
+  digest = "1:59f10c1537d2199d9115d946927fe31165959a95190849c82ff11e05803528b0"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "bb4e33bf68bf89cad44d386192cbed201f35b241"
-  version = "v2.2.3"
+  revision = "f221b8435cfb71e54062f6c6e99e9ade30b124d5"
+  version = "v2.2.4"
 
 [solve-meta]
   analyzer-name = "dep"
