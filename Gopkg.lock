@@ -171,7 +171,7 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "daa7c04131f568e31c51927b359a2d197a357058"
+  revision = "2180aed2234323691e9fd264fb1d32d20ff04b27"
 
 [[projects]]
   branch = "master"
@@ -179,7 +179,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "d32e6e3b99c40f2bfaea45ea9596ed539eed1c0d"
+  revision = "59a1497f0cead4659791683f1514d15ae8cf3934"
 
 [[projects]]
   digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
