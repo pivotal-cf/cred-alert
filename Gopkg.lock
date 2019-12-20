@@ -139,7 +139,7 @@
   version = "v1.11.0"
 
 [[projects]]
-  digest = "1:248935a9880f3a784e99fdab4fb9bbcefa2275bc760b38aa38f75bb998eb8785"
+  digest = "1:f4aed098ea34a8877f6d5f30ab71dd3d92f14a94dca7f5218f9f171bf3b00471"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -158,8 +158,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "546170b0b9468c25bdb85712975c5a7f3c540ee9"
-  version = "v1.8.0"
+  revision = "22a9feb22fe99439870ed2e013401725a9d495df"
+  version = "v1.8.1"
 
 [[projects]]
   branch = "master"
@@ -179,7 +179,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "4a24b406529242041050cb1dec3e0e4c46a5f1b6"
+  revision = "af0d71d358abe0ba3594483a5d519f429dbae3e9"
 
 [[projects]]
   digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
