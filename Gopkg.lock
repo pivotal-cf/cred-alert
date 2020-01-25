@@ -15,7 +15,7 @@
   name = "code.cloudfoundry.org/archiver"
   packages = ["compressor"]
   pruneopts = "UT"
-  revision = "de371c650795cc0e3e3a4bed0ecbea32efa017b5"
+  revision = "58571d524acee8195e7f84b70df36d74f75e263c"
 
 [[projects]]
   digest = "1:3634f744a1562db223595409dbe6bfc9ab88841938445bc092a0d851cb9db006"
@@ -175,11 +175,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8a44970c7e8c0a1c8646af14605c1ffd31374074d68101c2e11d7761df12c9d1"
+  digest = "1:fea09edda033799f8e99ab9042bda910bf1e3bf088c03eaf2ba8aba3adbbc8bf"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "e047566fdf82409bf7a52212cf71df83ea2772fb"
+  revision = "9fbb57f87de9ccfe3a99d4e3270ce8a926ebba4f"
 
 [[projects]]
   digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
