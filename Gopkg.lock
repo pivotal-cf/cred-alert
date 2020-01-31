@@ -15,7 +15,7 @@
   name = "code.cloudfoundry.org/archiver"
   packages = ["compressor"]
   pruneopts = "UT"
-  revision = "d46e448f0c5d63adc31e2081b9db3ddd87c348e0"
+  revision = "4ca7245c29b165a2c839a50fafde2c863cd955b1"
 
 [[projects]]
   digest = "1:3634f744a1562db223595409dbe6bfc9ab88841938445bc092a0d851cb9db006"
