@@ -112,7 +112,7 @@
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
 
 [[projects]]
-  digest = "1:89a071f4773bd23b5f03a31653b05dfe8cb708254aeb34d4cdb9651a4ddcbd6d"
+  digest = "1:3a7da5fe2be70407dd32d2e79e04ff15c2d592cd0336b71ea480688c9fc572db"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -135,11 +135,11 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "388ac7e50a3abf0798010091d5094171f4aefc0b"
-  version = "v1.11.0"
+  revision = "40598150331533e3cd497f21dcce387dae84b561"
+  version = "v1.12.0"
 
 [[projects]]
-  digest = "1:f4aed098ea34a8877f6d5f30ab71dd3d92f14a94dca7f5218f9f171bf3b00471"
+  digest = "1:1cebadc5bc9a0d87b1cc7317d278c084cf03bd1cec25aef6ba7a2a4d65f80d4d"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -158,12 +158,12 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "22a9feb22fe99439870ed2e013401725a9d495df"
-  version = "v1.8.1"
+  revision = "6be6c439588487cd908a3a700795660c2a16dfec"
+  version = "v1.9.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:fcad7cd3276afdd1f069c25887ef7ddba9d773145d0f17831e005a0d904c3579"
+  digest = "1:8c294aabd4396170f5bcbb763d558e4c8d21ded4b2a1618dfb664e58a4fffeef"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -171,15 +171,15 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "6afb5195e5aab057fda82e27171243402346b0ad"
+  revision = "16171245cfb220d5317888b716d69c1fb4e7992b"
 
 [[projects]]
   branch = "master"
-  digest = "1:fea09edda033799f8e99ab9042bda910bf1e3bf088c03eaf2ba8aba3adbbc8bf"
+  digest = "1:72b7c210f8cfe1431d2f300fbf37f25e52aa77324b05ab6b698483054033803e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "9fbb57f87de9ccfe3a99d4e3270ce8a926ebba4f"
+  revision = "d101bd2416d505c0448a6ce8a282482678040a89"
 
 [[projects]]
   digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
