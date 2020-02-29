@@ -88,12 +88,12 @@
   revision = "2bc1f35cddc0cc527b4bc3dce8578fc2a6c11384"
 
 [[projects]]
-  digest = "1:4a29eeb25603debe8f2098a9902c4d3851034cf70d33be428826e86e8c30a1b0"
+  digest = "1:0109cf4321a15313ec895f42e723e1f76121c6975ea006abfa20012272ec0937"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   pruneopts = "UT"
-  revision = "98ec13f34aabf44cc914c65a1cfb7b9bc815aef1"
-  version = "v0.1.4"
+  revision = "68e95eba382c972aafde02ead2cd2426a8a92480"
+  version = "v0.1.6"
 
 [[projects]]
   digest = "1:0c58d31abe2a2ccb429c559b6292e7df89dcda675456fecc282fa90aa08273eb"
