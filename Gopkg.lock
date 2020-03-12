@@ -221,13 +221,13 @@
   revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
 
 [[projects]]
-  digest = "1:925a2ad8acf10a486cdae4366eaf45847b16d6d7448e654814d8f1d51adeefe4"
+  digest = "1:80057945464ffb5b0da1f026beb8df0e8dbd098eaf771a349291bed2cd29a83e"
   name = "gopkg.in/fsnotify.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "4bf2d1fec78374803a39307bfb8d340688f4f28e"
+  revision = "45d7d09e39ef4ac08d493309fa031790c15bfe8a"
   source = "https://github.com/fsnotify/fsnotify.git"
-  version = "v1.4.8"
+  version = "v1.4.9"
 
 [[projects]]
   branch = "v1"
