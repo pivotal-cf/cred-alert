@@ -171,7 +171,7 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "244492dfa37ae2ce87222fd06250a03160745faa"
+  revision = "63522dbf7eec79acb34c1eb827fb0527d168c182"
 
 [[projects]]
   branch = "master"
