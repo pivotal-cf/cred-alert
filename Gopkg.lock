@@ -179,7 +179,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "ea54a3c99b9bf45d4c6a58010c98f4ba23e70265"
+  revision = "59c9f1ba88faf592b225274f69c5ef1e4ebacf82"
 
 [[projects]]
   digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
