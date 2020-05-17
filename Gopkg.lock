@@ -30,6 +30,14 @@
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:80057945464ffb5b0da1f026beb8df0e8dbd098eaf771a349291bed2cd29a83e"
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "45d7d09e39ef4ac08d493309fa031790c15bfe8a"
+  version = "v1.4.9"
+
+[[projects]]
   digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
   name = "github.com/hashicorp/errwrap"
   packages = ["."]
@@ -44,20 +52,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "2004d9dba6b07a5b8d133209244f376680f9d472"
-
-[[projects]]
-  digest = "1:a1038ef593beb4771c8f0f9c26e8b00410acd800af5c6864651d9bf160ea1813"
-  name = "github.com/hpcloud/tail"
-  packages = [
-    ".",
-    "ratelimiter",
-    "util",
-    "watch",
-    "winfile",
-  ]
-  pruneopts = "UT"
-  revision = "a30252cb686a21eb2d0b98132633053ec2f7f1e5"
-  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -112,7 +106,21 @@
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
 
 [[projects]]
-  digest = "1:3a7da5fe2be70407dd32d2e79e04ff15c2d592cd0336b71ea480688c9fc572db"
+  digest = "1:a9f00de9b605c251f5f1eba5d34c238131f0a7d38f6e7126c6bacc073f314865"
+  name = "github.com/nxadm/tail"
+  packages = [
+    ".",
+    "ratelimiter",
+    "util",
+    "watch",
+    "winfile",
+  ]
+  pruneopts = "UT"
+  revision = "327c577245448d8192115e77a76ea3d6aee88202"
+  version = "v1.4.4"
+
+[[projects]]
+  digest = "1:0aeeb8b2bdb9d59c74b92b32a4751209e615f6c26aea01fe1c4675d26ff0a72f"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -135,8 +143,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "40598150331533e3cd497f21dcce387dae84b561"
-  version = "v1.12.0"
+  revision = "cc0216944b25a88d3259699a029d4e601fb8a222"
+  version = "v1.12.1"
 
 [[projects]]
   digest = "1:c218ecde80086a2c5427e431d84409ca2ed07d36e4fce140a42ccb74944e2a28"
@@ -222,15 +230,6 @@
   ]
   pruneopts = "UT"
   revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
-
-[[projects]]
-  digest = "1:80057945464ffb5b0da1f026beb8df0e8dbd098eaf771a349291bed2cd29a83e"
-  name = "gopkg.in/fsnotify.v1"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "45d7d09e39ef4ac08d493309fa031790c15bfe8a"
-  source = "https://github.com/fsnotify/fsnotify.git"
-  version = "v1.4.9"
 
 [[projects]]
   branch = "v1"
