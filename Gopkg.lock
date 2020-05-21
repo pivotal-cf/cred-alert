@@ -120,7 +120,7 @@
   version = "v1.4.4"
 
 [[projects]]
-  digest = "1:0aeeb8b2bdb9d59c74b92b32a4751209e615f6c26aea01fe1c4675d26ff0a72f"
+  digest = "1:03d51cc28c39351c2d48ebba4df3fc070300c91882059d0d0a5425643d514f90"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -143,11 +143,11 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "cc0216944b25a88d3259699a029d4e601fb8a222"
-  version = "v1.12.1"
+  revision = "149d5d94b7be4ef2a9c67c5b2de17584aa6073fe"
+  version = "v1.12.2"
 
 [[projects]]
-  digest = "1:c218ecde80086a2c5427e431d84409ca2ed07d36e4fce140a42ccb74944e2a28"
+  digest = "1:07a376627678fdc71a579cd8c35b22b6f1fd0d47f14945fb8e30630defef850e"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -166,8 +166,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "1a3d249459a44387a05ca2d2c2b3d5f3db596dcb"
-  version = "v1.10.0"
+  revision = "904ac6ab26e9a888bdff3467eea03b6122a1c027"
+  version = "v1.10.1"
 
 [[projects]]
   branch = "master"
@@ -179,7 +179,7 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "59133d7f0dd7cb4ec46ee7b17b1b71cff79e0309"
+  revision = "0ba52f642ac2f9371a88bfdde41f4b4e195a37c0"
 
 [[projects]]
   branch = "master"
