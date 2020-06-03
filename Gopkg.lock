@@ -180,18 +180,18 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "3c3fba18258b2a1398a025a6aeb7374d2a470009"
+  revision = "627f9648deb96c27737b83199d44bb5c1010cbcf"
 
 [[projects]]
   branch = "master"
-  digest = "1:020620a097c2bfd056c8db7d31a69ea2cfed874ce985763dcd9ae00f9fa5f74b"
+  digest = "1:a88fe0246d085e14829adc0333b68f26934b9898ad6a1cbe48bd4b4a24cb5a9a"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "05986578812163b26672dabd9b425240ae2bb0ad"
+  revision = "6fdc65e7d9800cc59998e8ac0d9406a20ff5f399"
 
 [[projects]]
   digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
