@@ -184,14 +184,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a88fe0246d085e14829adc0333b68f26934b9898ad6a1cbe48bd4b4a24cb5a9a"
+  digest = "1:328ca567cfbcad62096874ab5819f9fc79a75b9566fa16202546b68b8bc9ca86"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "f1bc736245b146b19d485cdbc534f9a765257080"
+  revision = "981b61492c3565ea113dc1621ca30ef897df5586"
 
 [[projects]]
   digest = "1:27f1a11ecfee360418360997a013764fd4da959413ad1a8ac2ea5b38508048fc"
