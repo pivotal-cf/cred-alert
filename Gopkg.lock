@@ -47,11 +47,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8aa2b4301dac6d0e002849c008f0d017ef0f6b50813cb7ac3b0dbc04fc3fb8be"
+  digest = "1:cf4bb0573459a88f3de24daad650bb41bd134629c890b41f279fd5e5fd07f1c7"
   name = "github.com/hashicorp/go-multierror"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2004d9dba6b07a5b8d133209244f376680f9d472"
+  revision = "0d28cf682dbe774898e42a3db11b7ce24b36751a"
 
 [[projects]]
   branch = "master"
