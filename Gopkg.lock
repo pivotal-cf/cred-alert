@@ -120,7 +120,7 @@
   version = "v1.4.4"
 
 [[projects]]
-  digest = "1:f5ecb02c69fe8f58cd8726c039afab301108420d96d695b9afe3fd24023ca800"
+  digest = "1:e114df9f39b26463cbbdc288fd788136d8c8a095e4f92d75e78592fa0eab307b"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -144,8 +144,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "4943fe132fbcccacbd3d896c73e7ff993558259b"
-  version = "v1.13.0"
+  revision = "9c254cb251dc962dc20ca91d0279c870095cfcf9"
+  version = "v1.14.0"
 
 [[projects]]
   digest = "1:07a376627678fdc71a579cd8c35b22b6f1fd0d47f14945fb8e30630defef850e"
