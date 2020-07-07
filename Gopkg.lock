@@ -99,11 +99,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2b32af4d2a529083275afc192d1067d8126b578c7a9613b26600e4df9c735155"
+  digest = "1:156ffa10bf53a39da78ff667c0084fd09d87b2345708d697f6faa45b7571dfa4"
   name = "github.com/mgutz/ansi"
   packages = ["."]
   pruneopts = "UT"
-  revision = "9520e82c474b0a04dd04f8a40959027271bab992"
+  revision = "d51e80ef957dba7f19388ca64afefbd5a096af30"
 
 [[projects]]
   digest = "1:a9f00de9b605c251f5f1eba5d34c238131f0a7d38f6e7126c6bacc073f314865"
@@ -180,7 +180,7 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "4c5254603344ea4a8ae4bed7e296a9588303e14f"
+  revision = "ab34263943818b32f575efc978a3d24e80b04bd7"
 
 [[projects]]
   branch = "master"
