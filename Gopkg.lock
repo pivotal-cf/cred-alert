@@ -191,7 +191,7 @@
     "unix",
   ]
   pruneopts = "UT"
-  revision = "0e2f3a69832c9e0de74996506b9f1373a5873c56"
+  revision = "2d971f7391a4d28ed2c2fb0ed305ba994eedc255"
 
 [[projects]]
   digest = "1:27f1a11ecfee360418360997a013764fd4da959413ad1a8ac2ea5b38508048fc"
