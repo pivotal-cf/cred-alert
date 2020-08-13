@@ -180,7 +180,7 @@
     "html/charset",
   ]
   pruneopts = "UT"
-  revision = "ab34263943818b32f575efc978a3d24e80b04bd7"
+  revision = "3edf25e44fccea9e11b919341e952fca722ef460"
 
 [[projects]]
   branch = "master"
@@ -191,7 +191,7 @@
     "unix",
   ]
   pruneopts = "UT"
-  revision = "1b9f1253b3ed7b65abba1a5ee3f58da72dae0ab7"
+  revision = "6a926be9bd1de9da2007a5071f42528afca90858"
 
 [[projects]]
   digest = "1:27f1a11ecfee360418360997a013764fd4da959413ad1a8ac2ea5b38508048fc"
