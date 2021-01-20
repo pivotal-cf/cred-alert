@@ -8,7 +8,7 @@ resources:
 - name: golang
   type: docker-image
   source:
-    repository: golang
+    repository: harbor-repo.vmware.com/dockerhub-proxy-cache/library/golang
     tag: latest
 
 - name: github-release
@@ -21,10 +21,9 @@ resources:
 - name: cred-alert-image
   type: docker-image
   source:
-    repository: pcfsecuritytriage/cred-alert-ci
-    username: ((Docker Hub/Username))
-    email: ((Docker Hub/Notes/email))
-    password: ((Docker Hub/Password))
+    repository: harbor-repo.vmware.com/davos/cred-alert-ci
+    username: ((Harbor Internal/Username))
+    password: ((Harbor Internal/Password))
 
 - name: cred-alert-docker
   type: git

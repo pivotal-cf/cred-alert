@@ -1,4 +1,4 @@
-FROM golang:latest
+FROM harbor-repo.vmware.com/dockerhub-proxy-cache/library/golang:latest
 MAINTAINER PCF Security Enablement <pcf-security-enablement@pivotal.io>
 
 ENV TERM dumb
