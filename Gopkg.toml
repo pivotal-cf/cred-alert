@@ -46,10 +46,6 @@
   name = "github.com/kardianos/osext"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/mgutz/ansi"
-
-[[constraint]]
   name = "github.com/onsi/ginkgo"
   version = "1.5.0"
 

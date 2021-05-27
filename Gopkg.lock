@@ -98,14 +98,6 @@
   version = "v0.0.12"
 
 [[projects]]
-  branch = "master"
-  digest = "1:156ffa10bf53a39da78ff667c0084fd09d87b2345708d697f6faa45b7571dfa4"
-  name = "github.com/mgutz/ansi"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "d51e80ef957dba7f19388ca64afefbd5a096af30"
-
-[[projects]]
   digest = "1:a9f00de9b605c251f5f1eba5d34c238131f0a7d38f6e7126c6bacc073f314865"
   name = "github.com/nxadm/tail"
   packages = [
@@ -260,7 +252,6 @@
     "github.com/inconshreveable/go-update",
     "github.com/jessevdk/go-flags",
     "github.com/kardianos/osext",
-    "github.com/mgutz/ansi",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gbytes",

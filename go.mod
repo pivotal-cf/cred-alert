@@ -14,7 +14,6 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/nxadm/tail v1.4.4 // indirect
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
