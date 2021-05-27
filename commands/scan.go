@@ -9,8 +9,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/kardianos/osext"
-
 	"code.cloudfoundry.org/lager"
 
 	"github.com/pivotal-cf/cred-alert/inflator"
@@ -243,7 +241,7 @@ func inflateArchive(
 func warnIfOldExecutable() {
 	const twoWeeks = 14 * 24 * time.Hour
 
-	exePath, err := osext.Executable()
+	exePath, err := os.Executable()
 	if err != nil {
 		return
 	}

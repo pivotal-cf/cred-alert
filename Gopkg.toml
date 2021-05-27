@@ -42,10 +42,6 @@
   name = "github.com/inconshreveable/go-update"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/kardianos/osext"
-
-[[constraint]]
   name = "github.com/onsi/ginkgo"
   version = "1.5.0"
 

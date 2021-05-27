@@ -74,14 +74,6 @@
   version = "v1.4.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f433da6fbabb0bd1bd730fd340782015c644123d02eb78c20c69ce03352daad1"
-  name = "github.com/kardianos/osext"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2bc1f35cddc0cc527b4bc3dce8578fc2a6c11384"
-
-[[projects]]
   digest = "1:864f9b9a3bc9255934cbb5e94d5f761d726085894915403289fbae6fb3415f98"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
@@ -251,7 +243,6 @@
     "github.com/hashicorp/go-multierror",
     "github.com/inconshreveable/go-update",
     "github.com/jessevdk/go-flags",
-    "github.com/kardianos/osext",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gbytes",
