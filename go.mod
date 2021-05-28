@@ -9,7 +9,6 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1-0.20200629155928-0d28cf682dbe
-	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect

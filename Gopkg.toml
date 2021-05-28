@@ -38,10 +38,6 @@
   name = "github.com/hashicorp/go-multierror"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/inconshreveable/go-update"
-
-[[constraint]]
   name = "github.com/onsi/ginkgo"
   version = "1.5.0"
 

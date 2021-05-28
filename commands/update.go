@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"runtime"
 
-	update "github.com/inconshreveable/go-update"
+	"github.com/pivotal-cf/cred-alert/apply"
 )
 
 const s3Path = "https://s3.amazonaws.com/cred-alert/cli/current-release"
@@ -31,7 +31,7 @@ func (command *UpdateCommand) Execute(args []string) error {
 	}
 	defer resp.Body.Close()
 
-	err = update.Apply(resp.Body, update.Options{})
+	err = apply.Apply(resp.Body)
 	if err != nil {
 		fmt.Println("failed :(")
 		return err

@@ -18,11 +18,6 @@ github.com/hashicorp/errwrap
 # github.com/hashicorp/go-multierror v1.1.1-0.20200629155928-0d28cf682dbe
 ## explicit
 github.com/hashicorp/go-multierror
-# github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
-## explicit
-github.com/inconshreveable/go-update
-github.com/inconshreveable/go-update/internal/binarydist
-github.com/inconshreveable/go-update/internal/osext
 # github.com/jessevdk/go-flags v1.4.0
 ## explicit
 github.com/jessevdk/go-flags
