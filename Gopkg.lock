@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  branch = "default"
-  digest = "1:689356645256109cbadece53d48cad960830d9737f75489dcb09922153350191"
-  name = "bitbucket.org/taruti/mimemagic"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "e5179c80a024fe516da65f0b006f56fa7800694e"
-
-[[projects]]
   branch = "master"
   digest = "1:1b4a782ebff9f17b80a4d98f07fbc071d03f99983529cce1122391558642806b"
   name = "code.cloudfoundry.org/archiver"
@@ -224,7 +216,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "bitbucket.org/taruti/mimemagic",
     "code.cloudfoundry.org/archiver/compressor",
     "code.cloudfoundry.org/lager",
     "code.cloudfoundry.org/lager/lagertest",

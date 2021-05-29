@@ -101,7 +101,7 @@ func (s *DirScanner) scan(
 			}
 		} else {
 			br := bufio.NewReader(f)
-			mime, isArchive := mimetype.IsArchive(logger, br)
+			mime, isArchive := mimetype.IsArchive(wholePath)
 			if isArchive {
 				s.scannedDirContainsArchives = true
 				destPath := filepath.Join(s.inflateDir, path, child.Name())

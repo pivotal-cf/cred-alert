@@ -1,7 +1,6 @@
 package inflator
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -133,7 +132,7 @@ func (i *inflator) recursivelyExtractArchivesInDir(logger lager.Logger, dir stri
 				continue
 			}
 
-			mime, isArchive := mimetype.IsArchive(logger, bufio.NewReader(fh))
+			mime, isArchive := mimetype.IsArchive(absPath)
 
 			err = fh.Close()
 			if err != nil {

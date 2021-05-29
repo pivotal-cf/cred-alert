@@ -1,6 +1,3 @@
-# bitbucket.org/taruti/mimemagic v0.0.0-20120314151349-e5179c80a024
-## explicit
-bitbucket.org/taruti/mimemagic
 # code.cloudfoundry.org/archiver v0.0.0-20200131002800-4ca7245c29b1
 ## explicit
 code.cloudfoundry.org/archiver/compressor

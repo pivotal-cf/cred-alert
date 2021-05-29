@@ -115,7 +115,7 @@ func (c *ScanCommand) scanFile(logger lager.Logger, sniffer sniff.Sniffer, handl
 	}
 
 	br := bufio.NewReader(file)
-	if mime, isArchive := mimetype.IsArchive(logger, br); isArchive {
+	if mime, isArchive := mimetype.IsArchive(c.File); isArchive {
 		inflate := inflator.New()
 		defer inflate.Close()
 

@@ -3,7 +3,6 @@ module github.com/pivotal-cf/cred-alert
 go 1.16
 
 require (
-	bitbucket.org/taruti/mimemagic v0.0.0-20120314151349-e5179c80a024
 	code.cloudfoundry.org/archiver v0.0.0-20200131002800-4ca7245c29b1
 	code.cloudfoundry.org/lager v1.1.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect

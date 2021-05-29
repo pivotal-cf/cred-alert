@@ -1,5 +1,3 @@
-bitbucket.org/taruti/mimemagic v0.0.0-20120314151349-e5179c80a024 h1:ZVEtxUBovI1CMcmmbJTiXty8PIuiszcsREpGgfPRTFk=
-bitbucket.org/taruti/mimemagic v0.0.0-20120314151349-e5179c80a024/go.mod h1:SK3ZibXcOAUXNzKDFwVbcimuU+Sw2GCdxZHtZ+yyZrA=
 code.cloudfoundry.org/archiver v0.0.0-20200131002800-4ca7245c29b1 h1:yd4N3o8xBCMu3z6hyIMH9SoPATjRyovVUNdefRZBsws=
 code.cloudfoundry.org/archiver v0.0.0-20200131002800-4ca7245c29b1/go.mod h1:EU/KcUvh4qBVN6ffu/b8t9x7SurDot+AO0HqEZ+9QOg=
 code.cloudfoundry.org/lager v1.1.0 h1:v0RELJ2jqTeF2DW7PNjZaaGlrXbVxJBVz3uLxdP3fuY=
