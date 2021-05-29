@@ -8,7 +8,6 @@ import (
 	"github.com/pivotal-cf/cred-alert/sniff/matchers"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/hashicorp/go-multierror"
 )
 
 const bashStringInterpolationPattern = `"$`
@@ -106,15 +105,25 @@ func (s *sniffer) Sniff(
 			err := handleViolation(logger, violation)
 			if err != nil {
 				logger.Error("failed", err)
-				result = multierror.Append(result, err)
+				result = AppendError(result, err)
 			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("\033[31m[FAILED]\033[0m scanning failed: %s\n", err)
-		result = multierror.Append(result, err)
+		result = AppendError(result, err)
 	}
 
 	logger.Debug("done")
 	return result
+}
+
+func AppendError(err1 error, err2 error) error {
+	if err1 == nil {
+		return err2
+	} else if err2 == nil {
+		return err1
+	} else {
+		return fmt.Errorf("%s\n%s", err1.Error(), err2.Error())
+	}
 }

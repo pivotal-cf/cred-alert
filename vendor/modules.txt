@@ -9,12 +9,6 @@ code.cloudfoundry.org/lager/lagertest
 # github.com/fsnotify/fsnotify v1.4.9
 ## explicit
 github.com/fsnotify/fsnotify
-# github.com/hashicorp/errwrap v1.0.0
-## explicit
-github.com/hashicorp/errwrap
-# github.com/hashicorp/go-multierror v1.1.1-0.20200629155928-0d28cf682dbe
-## explicit
-github.com/hashicorp/go-multierror
 # github.com/jessevdk/go-flags v1.4.0
 ## explicit
 github.com/jessevdk/go-flags
