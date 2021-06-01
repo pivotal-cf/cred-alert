@@ -626,7 +626,7 @@ index 940393e..fa5a232 100644
 					outDir, err = ioutil.TempDir("", "tar-out")
 					Expect(err).NotTo(HaveOccurred())
 
-					tarFilePath := path.Join(outDir, "out.tar")
+					tarFilePath := path.Join(outDir, "out.tgz")
 
 					c := compressor.NewTgz()
 					err = c.Compress(inDir, tarFilePath)
