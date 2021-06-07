@@ -16,21 +16,21 @@ resources:
   source:
     user: pivotal-cf
     repository: cred-alert
-    access_token: ((ci-credentials/Notes/sec-triage-ci-write))
+    access_token: ((ci-credentials.sec-triage-ci-write))
 
 - name: cred-alert-image
   type: docker-image
   source:
     repository: harbor-repo.vmware.com/davos/cred-alert-ci
-    username: ((Harbor Internal/Username))
-    password: ((Harbor Internal/Password))
+    username: ((harbor-internal.username))
+    password: ((harbor-internal.password))
 
 - name: cred-alert-docker
   type: git
   source:
     uri: git@github.com:pivotal-cf/cred-alert.git
     branch: master
-    private_key: ((ci-credentials/Notes/pcf-sec-triage-ci-github-key))
+    private_key: ((ci-credentials.pcf-sec-triage-ci-github-key))
     paths:
     - ci/docker/Dockerfile
 
@@ -39,14 +39,14 @@ resources:
   source:
     owner: golang
     repository: dep
-    access_token: ((ci-credentials/Notes/sec-triage-ci-github-public-read))
+    access_token: ((ci-credentials.sec-triage-ci-github-public-read))
 
 - name: cred-alert
   type: git
   source:
     uri: git@github.com:pivotal-cf/cred-alert.git
     branch: master
-    private_key: ((ci-credentials/Notes/pcf-sec-triage-ci-github-key))
+    private_key: ((ci-credentials.pcf-sec-triage-ci-github-key))
     ignore_paths:
     - ci/docker/Dockerfile
 
@@ -54,8 +54,8 @@ resources:
   type: s3
   source:
     bucket: cred-alert
-    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
-    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    access_key_id: ((ci-credentials.sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials.sec-red-ci-secret-access-key))
     private: true
     versioned_file: cli/release-candidates/cred-alert-cli_linux
 
@@ -63,8 +63,8 @@ resources:
   type: s3
   source:
     bucket: cred-alert
-    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
-    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    access_key_id: ((ci-credentials.sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials.sec-red-ci-secret-access-key))
     private: true
     versioned_file: cli/release-candidates/cred-alert-cli_darwin
 
@@ -72,16 +72,16 @@ resources:
   type: s3
   source:
     bucket: cred-alert
-    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
-    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    access_key_id: ((ci-credentials.sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials.sec-red-ci-secret-access-key))
     versioned_file: cli/current-release/cred-alert-cli_linux
 
 - name: cli-darwin
   type: s3
   source:
     bucket: cred-alert
-    access_key_id: ((ci-credentials/Notes/sec-red-ci-access-key-id))
-    secret_access_key: ((ci-credentials/Notes/sec-red-ci-secret-access-key))
+    access_key_id: ((ci-credentials.sec-red-ci-access-key-id))
+    secret_access_key: ((ci-credentials.sec-red-ci-secret-access-key))
     versioned_file: cli/current-release/cred-alert-cli_darwin
 
 jobs:
