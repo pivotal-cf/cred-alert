@@ -135,61 +135,33 @@ jobs:
     image: cred-alert-image
     file: cred-alert/ci/tasks/test.yml
 
-- name: cli-rc
-  plan:
-  - in_parallel:
-    - get: cred-alert-image
-      trigger: true
-      passed: [test]
-    - get: cred-alert
-      trigger: true
-      passed: [test]
-  - in_parallel:
-    - do:
-      - task: compile-linux
-        image: cred-alert-image
-        file: cred-alert/ci/tasks/compile-linux-cli.yml
-      - put: cli-rc-linux
-        params:
-          file: "cred-alert-cli-linux/cred-alert-cli_linux"
-    - do:
-      - task: compile-darwin
-        image: cred-alert-image
-        file: cred-alert/ci/tasks/compile-darwin-cli.yml
-      - put: cli-rc-darwin
-        params:
-          file: "cred-alert-cli-darwin/cred-alert-cli_darwin"
-
 - name: ship-cli
   plan:
   - in_parallel:
     - get: cred-alert-image
-      passed: [cli-rc]
+      passed: [test]
     - get: cred-alert
-      passed: [cli-rc]
+      passed: [test]
       params:
         submodules: none
-    - get: cli-rc-linux
-      passed: [cli-rc]
-    - get: cli-rc-darwin
-      passed: [cli-rc]
+  - do:
+    - task: compile-release
+      image: cred-alert-image
+      file: cred-alert/ci/tasks/compile-release.yml
   - in_parallel:
     - put: cli-linux
       params:
-        file: "cli-rc-linux/cred-alert-cli_linux"
+        file: "cred-alert-cli/cred-alert-cli_linux"
         acl: public-read
     - put: cli-darwin
       params:
-        file: "cli-rc-darwin/cred-alert-cli_darwin"
+        file: "cred-alert-cli/cred-alert-cli_darwin"
         acl: public-read
-    - do:
-      - task: create-release
-        file: cred-alert/ci/tasks/create-release.yml
-      - put: github-release
-        params:
-          name: release-params/tag-name
-          tag: release-params/tag-name
-          commitish: release-params/commit-sha
-          globs:
-          - "cli-rc-linux/cred-alert-cli_linux"
-          - "cli-rc-darwin/cred-alert-cli_darwin"
+    - put: github-release
+      params:
+        name: release-params/tag-name
+        tag: release-params/tag-name
+        commitish: release-params/commit-sha
+        globs:
+        - "cred-alert-cli/cred-alert-cli_linux"
+        - "cred-alert-cli/cred-alert-cli_darwin"
