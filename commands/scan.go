@@ -32,8 +32,6 @@ type ScanCommand struct {
 }
 
 func (command *ScanCommand) Execute(args []string) error {
-	warnIfOldExecutable()
-
 	logger := lager.NewLogger("scan")
 
 	if command.Debug {
@@ -236,26 +234,6 @@ func inflateArchive(
 	fmt.Println()
 
 	return nil
-}
-
-func warnIfOldExecutable() {
-	const twoWeeks = 14 * 24 * time.Hour
-
-	exePath, err := os.Executable()
-	if err != nil {
-		return
-	}
-
-	info, err := os.Stat(exePath)
-	if err != nil {
-		return
-	}
-
-	mtime := info.ModTime()
-
-	if time.Since(mtime) > twoWeeks {
-		fmt.Fprintln(os.Stderr, yellow("[WARN]"), "Executable is old! Please consider running `cred-alert-cli update`.")
-	}
 }
 
 func newCredentialCounter(showCreds bool) *credentialCounter {

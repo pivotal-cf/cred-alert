@@ -107,37 +107,6 @@ index 940393e..fa5a232 100644
 			})
 		}
 
-		ItTellsPeopleToUpdateIfTheBinaryIsOld := func() {
-			Context("when the executable is not over 2 weeks old", func() {
-				It("does not display a warning telling the user to upgrade", func() {
-					Consistently(session.Err).ShouldNot(gbytes.Say("cred-alert-cli update"))
-				})
-			})
-
-			Context("when the executable is over 2 weeks old", func() {
-				JustBeforeEach(func() {
-					cmdArgs = append([]string{"scan"}, cmdArgs...)
-					cmd := exec.Command(oldCliPath, cmdArgs...)
-					if stdin != "" {
-						cmd.Stdin = strings.NewReader(stdin)
-					}
-
-					var err error
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("displays a warning telling the user to upgrade", func() {
-					Eventually(session.Err).Should(gbytes.Say("cred-alert-cli update"))
-				})
-
-				It("does not stop scanning as normal", func() {
-					Eventually(session.Out).Should(gbytes.Say("[CRED]"))
-					Eventually(session).Should(gexec.Exit(3))
-				})
-			})
-		}
-
 		Context("when given content on stdin", func() {
 			BeforeEach(func() {
 				stdin = offendingText
@@ -153,7 +122,6 @@ index 940393e..fa5a232 100644
 			})
 
 			ItTellsPeopleHowToRemoveTheirCredentials()
-			ItTellsPeopleToUpdateIfTheBinaryIsOld()
 			ItShowsTheCredentialInTheOutput("AKIASOMEMORETEXTHERE")
 
 			Context("when given a --diff flag", func() {
@@ -334,7 +302,6 @@ index 940393e..fa5a232 100644
 			})
 
 			ItTellsPeopleHowToRemoveTheirCredentials()
-			ItTellsPeopleToUpdateIfTheBinaryIsOld()
 
 			It("scans the file", func() {
 				Eventually(session.Out).Should(gbytes.Say("[CRED]"))
@@ -387,7 +354,6 @@ index 940393e..fa5a232 100644
 					})
 
 					ItTellsPeopleHowToRemoveTheirCredentials()
-					ItTellsPeopleToUpdateIfTheBinaryIsOld()
 
 					Context("and there is an archive in the folder", func() {
 						BeforeEach(func() {
