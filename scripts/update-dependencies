@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+echo module github.com/pivotal-cf/cred-alert > go.mod
+rm go.sum
+rm -r vendor
+go mod vendor
