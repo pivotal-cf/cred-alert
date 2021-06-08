@@ -1,10 +1,5 @@
 ---
 resources:
-- name: daily
-  type: time
-  source:
-    interval: 24h
-
 - name: golang
   type: docker-image
   source:
@@ -42,24 +37,6 @@ resources:
     private_key: ((ci-credentials.pcf-sec-triage-ci-github-key))
     ignore_paths:
     - ci/docker/Dockerfile
-
-- name: cli-rc-linux
-  type: s3
-  source:
-    bucket: cred-alert
-    access_key_id: ((ci-credentials.sec-red-ci-access-key-id))
-    secret_access_key: ((ci-credentials.sec-red-ci-secret-access-key))
-    private: true
-    versioned_file: cli/release-candidates/cred-alert-cli_linux
-
-- name: cli-rc-darwin
-  type: s3
-  source:
-    bucket: cred-alert
-    access_key_id: ((ci-credentials.sec-red-ci-access-key-id))
-    secret_access_key: ((ci-credentials.sec-red-ci-secret-access-key))
-    private: true
-    versioned_file: cli/release-candidates/cred-alert-cli_darwin
 
 - name: cli-linux
   type: s3
