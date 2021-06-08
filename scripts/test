@@ -5,8 +5,7 @@ cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ..; pwd)
 
 pushd "${cred_alert_root}"
   # TODO install from vendor
-  go get github.com/onsi/ginkgo/ginkgo && \
-  go install github.com/onsi/ginkgo/ginkgo
-
+  go get github.com/onsi/ginkgo/ginkgo
+  go install -mod=readonly github.com/onsi/ginkgo/ginkgo
   ginkgo -race -failOnPending -keepGoing -randomizeSuites "$@"
 popd
