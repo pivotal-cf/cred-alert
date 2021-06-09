@@ -108,10 +108,20 @@ jobs:
       passed: [test]
       params:
         submodules: none
-  - do:
-    - task: compile-release
-      image: cred-alert-image
-      file: cred-alert/ci/tasks/compile-release.yml
+  - task: test
+    image: cred-alert-image
+    file: cred-alert/ci/tasks/test.yml
+  - task: compile-release
+    image: cred-alert-image
+    file: cred-alert/ci/tasks/compile-release.yml
+  - put: github-release
+    params:
+      name: release-params/tag-name
+      tag: release-params/tag-name
+      commitish: release-params/commit-sha
+      globs:
+      - "cred-alert-cli/cred-alert-cli_linux"
+      - "cred-alert-cli/cred-alert-cli_darwin"
   - in_parallel:
     - put: cli-linux
       params:
@@ -121,11 +131,3 @@ jobs:
       params:
         file: "cred-alert-cli/cred-alert-cli_darwin"
         acl: public-read
-    - put: github-release
-      params:
-        name: release-params/tag-name
-        tag: release-params/tag-name
-        commitish: release-params/commit-sha
-        globs:
-        - "cred-alert-cli/cred-alert-cli_linux"
-        - "cred-alert-cli/cred-alert-cli_darwin"

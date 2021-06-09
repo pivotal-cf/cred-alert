@@ -5,18 +5,20 @@ export GOPATH="${PWD}/go"
 export PATH="${GOPATH}/bin:${PATH}"
 
 cred_alert_root=$(cd "$(dirname "${BASH_SOURCE}")"; cd ../..; pwd)
+release_params_path="${PWD}/release-params"
+cred_alert_cli_path="${PWD}/cred-alert-cli"
 
 pushd "${cred_alert_root}"
   tag_name=$(date +%Y-%m-%d-%H-%M-%S)
   commit_sha="$(git rev-parse HEAD)"
   version="$tag_name ($commit_sha)"
 
-  echo $tag_name > "${PWD}/release-params/tag-name"
-  echo $commit_sha > "${PWD}/release-params/commit-sha"
+  echo $tag_name > "${release_params_path}/tag-name"
+  echo $commit_sha > "${release_params_path}/commit-sha"
 
   for goos in darwin linux; do
     GOOS=$goos go build \
       -ldflags "-X 'github.com/pivotal-cf/cred-alert/commands.version=${version}'" \
-      -x -v -o "${PWD}/cred-alert-cli/cred-alert-cli_${goos}"
+      -x -v -o "${cred_alert_cli_path}/cred-alert-cli_${goos}"
   done
 popd
